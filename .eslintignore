@@ -1,0 +1,5 @@
+!/**/.eslintrc.js
+!/*.js
+*.custom.js
+/src/compiled/
+/web-ext-artifacts/

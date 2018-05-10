@@ -1,0 +1,30 @@
+{
+  "private": true,
+  "scripts": {
+    "start": "concurrently --kill-others --raw npm:rollup npm:webext",
+    "rollup": "rollup --config --watch",
+    "webext": "web-ext run",
+    "build": "rollup --config --environment PROD && web-ext build",
+    "eslint": "eslint .",
+    "eslint:fix": "npm run eslint -- --fix",
+    "flow": "flow",
+    "web-ext": "web-ext"
+  },
+  "devDependencies": {
+    "babel-eslint": "8.2.3",
+    "concurrently": "github:kimmobrunfeldt/concurrently#e99e6f4545d655437bcd1b1f6f86d343f06a0ff7",
+    "eslint": "4.19.1",
+    "eslint-config-lydell": "7.0.0",
+    "eslint-plugin-flowtype": "2.46.3",
+    "eslint-plugin-flowtype-errors": "3.5.1",
+    "eslint-plugin-import": "2.11.0",
+    "eslint-plugin-prettier": "2.6.0",
+    "eslint-plugin-sort-imports-es6-autofix": "0.3.0",
+    "flow-bin": "0.72.0",
+    "prettier": "1.12.1",
+    "rimraf": "2.6.2",
+    "rollup": "0.58.2",
+    "rollup-plugin-flow": "1.1.1",
+    "web-ext": "2.6.0"
+  }
+}

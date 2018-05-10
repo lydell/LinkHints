@@ -1,0 +1,5 @@
+*.custom.js
+/node_modules/
+/src/compiled/
+/src/manifest.json
+/web-ext-artifacts/
