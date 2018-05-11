@@ -35,6 +35,7 @@ module.exports = {
         node: false,
       },
       globals: {
+        BROWSER: false,
         browser: false,
         console: false,
         document: false,

@@ -4,4 +4,8 @@ import { sayHello } from "./utils";
 
 sayHello("background");
 
-console.log("browser", browser);
+if (BROWSER === ("chrome": Browser)) {
+  console.log("chrome!", browser);
+} else if (BROWSER === ("firefox": Browser)) {
+  console.log("firefox!", browser);
+}

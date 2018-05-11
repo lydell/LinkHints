@@ -1,18 +1,27 @@
 {
   "private": true,
   "scripts": {
-    "start": "concurrently --kill-others --raw npm:rollup npm:webext",
-    "rollup": "rollup --config --watch",
-    "webext": "web-ext run",
-    "build": "rollup --config --environment PROD && web-ext build",
-    "eslint": "eslint .",
-    "eslint:fix": "npm run eslint -- --fix",
+    "start": "concurrently --kill-others --raw npm:compile npm:refresh",
+    "compile": "npm run rollup -- --config --watch",
+    "refresh": "npm run web-ext -- run",
+    "build": "npm run rollup -- --config && npm run web-ext -- build",
+    "build:chrome": "cross-env BROWSER=chrome npm run build",
+    "build:firefox": "cross-env BROWSER=firefox npm run build",
+    "png-icons": "flow-node scripts/png-icons.js",
+    "rollup": "flow-node node_modules/.bin/rollup",
+    "web-ext": "flow-node node_modules/.bin/web-ext",
     "flow": "flow",
-    "web-ext": "web-ext"
+    "eslint": "eslint .",
+    "eslint:fix": "npm run eslint -- --fix"
+  },
+  "dependencies": {
+    "webextension-polyfill": "0.2.1"
   },
   "devDependencies": {
     "babel-eslint": "8.2.3",
     "concurrently": "github:kimmobrunfeldt/concurrently#e99e6f4545d655437bcd1b1f6f86d343f06a0ff7",
+    "cross-env": "5.1.5",
+    "cross-spawn": "6.0.5",
     "eslint": "4.19.1",
     "eslint-config-lydell": "7.0.0",
     "eslint-plugin-flowtype": "2.46.3",
@@ -21,10 +30,14 @@
     "eslint-plugin-prettier": "2.6.0",
     "eslint-plugin-sort-imports-es6-autofix": "0.3.0",
     "flow-bin": "0.72.0",
+    "mkdirp": "0.5.1",
     "prettier": "1.12.1",
     "rimraf": "2.6.2",
     "rollup": "0.58.2",
     "rollup-plugin-flow": "1.1.1",
-    "web-ext": "2.6.0"
+    "rollup-plugin-replace": "2.0.0",
+    "rollup-plugin-uglify": "3.0.0",
+    "web-ext": "2.6.0",
+    "write": "1.0.3"
   }
 }

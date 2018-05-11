@@ -1,5 +1,7 @@
 *.custom.js
 /node_modules/
 /src/compiled/
+/src/icons/*.html
+/src/icons/**/*.svg
 /src/manifest.json
-/web-ext-artifacts/
+/dist*/
