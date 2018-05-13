@@ -1,5 +1,6 @@
 // @flow
 
-import { sayHello } from "./utils";
+import AllFramesProgram from "./program";
 
-sayHello("allFrames");
+const program = new AllFramesProgram();
+program.start();
