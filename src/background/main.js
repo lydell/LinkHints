@@ -2,9 +2,7 @@
 
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
-import { sayHello } from "./utils";
-
-sayHello("background");
+import BackgroundProgram from "./program";
 
 if (BROWSER === ("chrome": Browser)) {
   console.log("chrome!", browser);
@@ -12,7 +10,7 @@ if (BROWSER === ("chrome": Browser)) {
   console.log("firefox!", browser);
 }
 
-const keyboardShortcuts: Array<KeyboardMapping> = [
+const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   {
     shortcut: {
       key: "e",
@@ -22,9 +20,41 @@ const keyboardShortcuts: Array<KeyboardMapping> = [
       metaKey: false,
       shiftKey: false,
     },
-    action: {
-      type: "Background",
-      name: "EnterHintsModeGeneral",
-    },
+    action: { type: "EnterHintsMode" },
   },
 ];
+
+const hintChars = "fjdkslaghrueiwoncmv";
+
+const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
+  {
+    shortcut: {
+      key: "Escape",
+      code: "Escape",
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: { type: "ExitHintsMode" },
+  },
+].concat(
+  ...hintChars.split("").map(char => ({
+    shortcut: {
+      key: char,
+      code: `Key${char.toUpperCase()}`,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: { type: "PressHintChar", char },
+  }))
+);
+
+const program = new BackgroundProgram({
+  normalKeyboardShortcuts,
+  hintsKeyboardShortcuts,
+});
+
+program.start();

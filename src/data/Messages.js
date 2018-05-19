@@ -1,14 +1,20 @@
 // @flow
 
-import type { KeyboardMapping } from "./KeyboardShortcuts";
+import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
-export type FromAllFrames = {|
-  type: "AllFramesScriptAdded",
-|};
+export type FromAllFrames =
+  | {|
+      type: "AllFramesScriptAdded",
+    |}
+  | {|
+      type: "KeyboardShortcutMatched",
+      action: KeyboardAction,
+    |};
 
 export type ToAllFrames = {|
   type: "StateSync",
   keyboardShortcuts: Array<KeyboardMapping>,
+  suppressByDefault: boolean,
 |};
 
 export type FromTopFrame = {|

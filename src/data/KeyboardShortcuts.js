@@ -2,17 +2,15 @@
 
 export type KeyboardAction =
   | {|
-      type: "Background",
-      name: KeyboardActionBackground,
+      type: "EnterHintsMode",
     |}
   | {|
-      type: "Content",
-      name: KeyboardActionContent,
+      type: "ExitHintsMode",
+    |}
+  | {|
+      type: "PressHintChar",
+      char: string,
     |};
-
-export type KeyboardActionBackground = "EnterHintsModeGeneral";
-
-export type KeyboardActionContent = "TODO";
 
 export type KeyboardShortcut = {|
   key: string,

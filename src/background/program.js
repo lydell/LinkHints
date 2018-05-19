@@ -10,57 +10,68 @@ import type {
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 export default class BackgroundProgram {
-  keyboardShortcuts: Array<KeyboardMapping>;
+  normalKeyboardShortcuts: Array<KeyboardMapping>;
+  hintsKeyboardShortcuts: Array<KeyboardMapping>;
 
-  constructor() {
-    this.keyboardShortcuts = [
-      {
-        shortcut: {
-          key: "e",
-          code: "KeyE",
-          altKey: false,
-          ctrlKey: true,
-          metaKey: false,
-          shiftKey: false,
-        },
-        action: {
-          type: "Background",
-          name: "EnterHintsModeGeneral",
-        },
-      },
-    ];
+  constructor({
+    normalKeyboardShortcuts,
+    hintsKeyboardShortcuts,
+  }: {|
+    normalKeyboardShortcuts: Array<KeyboardMapping>,
+    hintsKeyboardShortcuts: Array<KeyboardMapping>,
+  |}) {
+    this.normalKeyboardShortcuts = normalKeyboardShortcuts;
+    this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
   }
 
   start() {
     browser.runtime.onMessage.addListener(this.onMessage.bind(this));
   }
 
-  async sendAllFramesMessage(message: ToAllFrames): Promise<any> {
-    return this.sendMessage(message);
+  async sendAllFramesMessage(
+    message: ToAllFrames,
+    { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+  ): Promise<any> {
+    return this.sendMessage(message, { tabId, frameId });
   }
 
   async sendTopFrameMessage(message: ToTopFrame): Promise<any> {
     return this.sendMessage(message);
   }
 
-  async sendMessage(message: any): Promise<any> {
+  async sendMessage(
+    message: any,
+    { tabId: passedTabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+  ): Promise<any> {
     try {
-      // TODO: Need to be able to send message to a specific tab, and a specific frame.
-      const currentTab = await browser.tabs.query({ active: true });
-      return browser.tabs.sendMessage(currentTab.id, message);
+      const tabId =
+        passedTabId == null
+          ? (await browser.tabs.query({ active: true })).id
+          : passedTabId;
+      return frameId == null
+        ? browser.tabs.sendMessage(tabId, message)
+        : browser.tabs.sendMessage(tabId, message, { frameId });
     } catch (error) {
       console.error("BackgroundProgram#sendMessage failed", message, error);
       throw error;
     }
   }
 
-  onMessage(message: FromAllFrames | FromTopFrame) {
+  onMessage(message: FromAllFrames | FromTopFrame, sender: MessageSender) {
     switch (message.type) {
       case "AllFramesScriptAdded":
-        this.sendAllFramesMessage({
-          type: "StateSync",
-          keyboardShortcuts: this.keyboardShortcuts,
-        });
+        this.sendAllFramesMessage(
+          {
+            type: "StateSync",
+            keyboardShortcuts: this.normalKeyboardShortcuts,
+            suppressByDefault: false,
+          },
+          { tabId: sender.tab == null ? undefined : sender.tab.id }
+        );
+        break;
+
+      case "KeyboardShortcutMatched":
+        console.log("KeyboardShortcutMatched", message.action);
         break;
 
       case "TODO":
