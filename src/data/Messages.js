@@ -2,6 +2,18 @@
 
 import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
+export type ToContent =
+  | {|
+      type: "ToAllFrames",
+      message: ToAllFrames,
+    |}
+  | {|
+      type: "ToTopFrame",
+      message: ToTopFrame,
+    |};
+
+export type FromContent = FromAllFrames | FromTopFrame;
+
 export type FromAllFrames =
   | {|
       type: "AllFramesScriptAdded",

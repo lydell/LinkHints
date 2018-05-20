@@ -2,9 +2,9 @@
 
 import { unreachable } from "../utils/main";
 import type {
-  FromAllFrames,
-  FromTopFrame,
+  FromContent,
   ToAllFrames,
+  ToContent,
   ToTopFrame,
 } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
@@ -32,15 +32,18 @@ export default class BackgroundProgram {
     message: ToAllFrames,
     { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
   ): Promise<any> {
-    return this.sendMessage(message, { tabId, frameId });
+    return this.sendMessage(
+      { type: "ToAllFrames", message },
+      { tabId, frameId }
+    );
   }
 
   async sendTopFrameMessage(message: ToTopFrame): Promise<any> {
-    return this.sendMessage(message);
+    return this.sendMessage({ type: "ToTopFrame", message });
   }
 
   async sendMessage(
-    message: any,
+    message: ToContent,
     { tabId: passedTabId, frameId }: {| tabId?: number, frameId?: number |} = {}
   ): Promise<any> {
     try {
@@ -57,7 +60,7 @@ export default class BackgroundProgram {
     }
   }
 
-  onMessage(message: FromAllFrames | FromTopFrame, sender: MessageSender) {
+  onMessage(message: FromContent, sender: MessageSender) {
     switch (message.type) {
       case "AllFramesScriptAdded":
         this.sendAllFramesMessage(

@@ -1,7 +1,7 @@
 // @flow
 
 import { unreachable } from "../utils/main";
-import type { FromAllFrames, ToAllFrames } from "../data/Messages";
+import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 export default class AllFramesProgram {
@@ -32,7 +32,13 @@ export default class AllFramesProgram {
     }
   }
 
-  onMessage(message: ToAllFrames) {
+  onMessage(wrappedMessage: ToContent) {
+    if (wrappedMessage.type !== "ToAllFrames") {
+      return;
+    }
+
+    const { message } = wrappedMessage;
+
     switch (message.type) {
       case "StateSync":
         this.keyboardShortcuts = message.keyboardShortcuts;
