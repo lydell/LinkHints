@@ -1,6 +1,6 @@
 // @flow
 
-import { unreachable } from "../utils/main";
+import { bind, unreachable } from "../utils/main";
 import type {
   FromContent,
   ToAllFrames,
@@ -22,14 +22,16 @@ export default class BackgroundProgram {
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
+
+    bind(this, ["onMessage"]);
   }
 
   start() {
-    browser.runtime.onMessage.addListener(this.onMessage.bind(this));
+    browser.runtime.onMessage.addListener(this.onMessage);
   }
 
   stop() {
-    // TODO: Remove listener.
+    browser.runtime.onMessage.removeListener(this.onMessage);
   }
 
   async sendAllFramesMessage(

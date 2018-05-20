@@ -1,10 +1,12 @@
 // @flow
 
-import { unreachable } from "../utils/main";
+import { bind, unreachable } from "../utils/main";
 import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
+
+const KEYBOARD_OPTIONS = { capture: false };
 
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
@@ -15,6 +17,8 @@ export default class AllFramesProgram {
     this.keyboardShortcuts = [];
     this.suppressByDefault = false;
     this.elementManager = new ElementManager();
+
+    bind(this, ["onMessage", "onKeydown"]);
   }
 
   start() {
@@ -22,16 +26,14 @@ export default class AllFramesProgram {
       type: "AllFramesScriptAdded",
     });
 
-    browser.runtime.onMessage.addListener(this.onMessage.bind(this));
-
-    window.addEventListener("keydown", this.onKeydown.bind(this), false);
-
+    browser.runtime.onMessage.addListener(this.onMessage);
+    window.addEventListener("keydown", this.onKeydown, KEYBOARD_OPTIONS);
     this.elementManager.start();
   }
 
   stop() {
-    // TODO: Remove listeners as well.
-
+    browser.runtime.onMessage.removeListener(this.onMessage);
+    window.removeEventListener("keydown", this.onKeydown, KEYBOARD_OPTIONS);
     this.elementManager.stop();
   }
 
