@@ -15,6 +15,7 @@ import type {
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
+  topFrameIds: Map<number, number>;
 
   constructor({
     normalKeyboardShortcuts,
@@ -25,6 +26,7 @@ export default class BackgroundProgram {
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
+    this.topFrameIds = new Map();
 
     bind(this, ["onMessage"]);
   }
@@ -86,8 +88,10 @@ export default class BackgroundProgram {
         this.onKeyboardShortcut(message.action);
         break;
 
-      case "TODO":
-        console.log("BackgroundProgram#onMessage TODO message");
+      case "TopFrameScriptAdded":
+        if (sender.tab != null && sender.frameId != null) {
+          this.topFrameIds.set(sender.tab.id, sender.frameId);
+        }
         break;
 
       default:

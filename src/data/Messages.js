@@ -30,7 +30,7 @@ export type ToAllFrames = {|
 |};
 
 export type FromTopFrame = {|
-  type: "TODO",
+  type: "TopFrameScriptAdded",
 |};
 
 export type ToTopFrame = {|

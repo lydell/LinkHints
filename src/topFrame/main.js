@@ -1,3 +1,6 @@
 // @flow
 
-console.log("topFrame");
+import TopFrameProgram from "./Program";
+
+const program = new TopFrameProgram();
+program.start();
