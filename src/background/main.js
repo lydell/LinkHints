@@ -2,7 +2,7 @@
 
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
-import BackgroundProgram from "./program";
+import BackgroundProgram from "./Program";
 
 if (BROWSER === ("chrome": Browser)) {
   console.log("chrome!", browser);

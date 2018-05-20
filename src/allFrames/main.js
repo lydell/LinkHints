@@ -1,6 +1,6 @@
 // @flow
 
-import AllFramesProgram from "./program";
+import AllFramesProgram from "./Program";
 
 const program = new AllFramesProgram();
 program.start();
