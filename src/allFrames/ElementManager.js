@@ -6,11 +6,17 @@ type ElementData = {|
   type: ElementType,
 |};
 
-type Rect = {|
+type Viewport = {|
   top: number,
   bottom: number,
   left: number,
   right: number,
+|};
+
+type HintMeasurements = {|
+  x: number,
+  y: number,
+  area: number,
 |};
 
 const MIN = 2; // px
@@ -99,11 +105,11 @@ export default class ElementManager {
 
   getVisibleElements(
     types: Set<ElementType>,
-    viewport: Rect
+    viewport: Viewport
   ): Array<{|
     element: HTMLElement,
     data: ElementData,
-    rect: Rect,
+    measurements: HintMeasurements,
   |}> {
     return Array.from(this.visibleElements, element => {
       const data = this.elements.get(element);
@@ -116,27 +122,45 @@ export default class ElementManager {
         return undefined;
       }
 
-      const rect = getRect(element, viewport);
+      const measurements = getMeasurements(element, viewport);
 
-      if (rect.bottom - rect.top < MIN || rect.right - rect.left < MIN) {
+      if (measurements == null) {
         return undefined;
       }
 
       return {
         element,
         data,
-        rect,
+        measurements,
       };
     }).filter(Boolean);
   }
 }
 
-function getRect(element: HTMLElement, viewport: Rect): Rect {
-  const rect = element.getBoundingClientRect();
-  return {
-    top: Math.min(rect.top, viewport.bottom),
-    bottom: Math.min(rect.bottom, viewport.top),
-    left: Math.min(rect.left, viewport.right),
-    right: Math.max(rect.right, viewport.left),
+function getMeasurements(
+  element: HTMLElement,
+  viewport: Viewport
+): ?HintMeasurements {
+  const rawRect = element.getBoundingClientRect();
+
+  const rect = {
+    top: Math.min(rawRect.top, viewport.bottom),
+    bottom: Math.min(rawRect.bottom, viewport.top),
+    left: Math.min(rawRect.left, viewport.right),
+    right: Math.max(rawRect.right, viewport.left),
   };
+
+  const height = rect.bottom - rect.top;
+  const width = rect.right - rect.left;
+
+  // Skip elements that are fully or almost fully outside the viewport, because
+  // of the IntersectionObserver misreporting, frames being partially off-screen
+  // or elements just being very close to the edge.
+  return height < MIN || width < MIN
+    ? undefined
+    : {
+        x: rect.left,
+        y: rect.top + height / 2,
+        area: width * height,
+      };
 }
