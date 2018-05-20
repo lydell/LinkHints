@@ -28,6 +28,10 @@ export default class BackgroundProgram {
     browser.runtime.onMessage.addListener(this.onMessage.bind(this));
   }
 
+  stop() {
+    // TODO: Remove listener.
+  }
+
   async sendAllFramesMessage(
     message: ToAllFrames,
     { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}

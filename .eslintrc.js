@@ -36,6 +36,8 @@ module.exports = {
       },
       globals: {
         BROWSER: false,
+        IntersectionObserver: false,
+        MutationObserver: false,
         browser: false,
         console: false,
         document: false,

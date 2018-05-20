@@ -4,13 +4,17 @@ import { unreachable } from "../utils/main";
 import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
+import ElementManager from "./ElementManager";
+
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
+  elementManager: ElementManager;
 
   constructor() {
     this.keyboardShortcuts = [];
     this.suppressByDefault = false;
+    this.elementManager = new ElementManager();
   }
 
   start() {
@@ -21,6 +25,14 @@ export default class AllFramesProgram {
     browser.runtime.onMessage.addListener(this.onMessage.bind(this));
 
     window.addEventListener("keydown", this.onKeydown.bind(this), false);
+
+    this.elementManager.start();
+  }
+
+  stop() {
+    // TODO: Remove listeners as well.
+
+    this.elementManager.stop();
   }
 
   async sendMessage(message: FromAllFrames): Promise<any> {
