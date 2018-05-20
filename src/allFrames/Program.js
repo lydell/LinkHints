@@ -68,7 +68,8 @@ export default class AllFramesProgram {
         };
         console.log(
           "StartFindElements",
-          this.elementManager.getVisibleElements(new Set(["link"]), viewport)
+          this.elementManager.getVisibleElements(new Set(["link"]), viewport),
+          this
         );
         break;
       }

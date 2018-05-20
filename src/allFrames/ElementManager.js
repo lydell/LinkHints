@@ -145,7 +145,7 @@ function getMeasurements(
 
   const rect = {
     top: Math.min(rawRect.top, viewport.bottom),
-    bottom: Math.min(rawRect.bottom, viewport.top),
+    bottom: Math.max(rawRect.bottom, viewport.top),
     left: Math.min(rawRect.left, viewport.right),
     right: Math.max(rawRect.right, viewport.left),
   };
