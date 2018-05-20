@@ -7,7 +7,10 @@ import type {
   ToContent,
   ToTopFrame,
 } from "../data/Messages";
-import type { KeyboardMapping } from "../data/KeyboardShortcuts";
+import type {
+  KeyboardAction,
+  KeyboardMapping,
+} from "../data/KeyboardShortcuts";
 
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
@@ -80,7 +83,7 @@ export default class BackgroundProgram {
         break;
 
       case "KeyboardShortcutMatched":
-        console.log("KeyboardShortcutMatched", message.action);
+        this.onKeyboardShortcut(message.action);
         break;
 
       case "TODO":
@@ -89,6 +92,25 @@ export default class BackgroundProgram {
 
       default:
         unreachable(message.type, message);
+    }
+  }
+
+  onKeyboardShortcut(action: KeyboardAction) {
+    switch (action.type) {
+      case "EnterHintsMode":
+        console.log("EnterHintsMode");
+        break;
+
+      case "ExitHintsMode":
+        console.log("ExitHintsMode");
+        break;
+
+      case "PressHintChar":
+        console.log("PressHintChar", action.char);
+        break;
+
+      default:
+        unreachable(action.type, action);
     }
   }
 }
