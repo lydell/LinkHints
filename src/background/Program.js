@@ -85,7 +85,10 @@ export default class BackgroundProgram {
         break;
 
       case "KeyboardShortcutMatched":
-        this.onKeyboardShortcut(message.action);
+        this.onKeyboardShortcut(
+          message.action,
+          sender.tab == null ? undefined : sender.tab.id
+        );
         break;
 
       case "TopFrameScriptAdded":
@@ -99,10 +102,18 @@ export default class BackgroundProgram {
     }
   }
 
-  onKeyboardShortcut(action: KeyboardAction) {
+  onKeyboardShortcut(action: KeyboardAction, tabId?: number) {
     switch (action.type) {
       case "EnterHintsMode":
-        console.log("EnterHintsMode");
+        this.sendAllFramesMessage(
+          { type: "StartFindElements" },
+          tabId == null
+            ? undefined
+            : {
+                tabId,
+                frameId: this.topFrameIds.get(tabId),
+              }
+        );
         break;
 
       case "ExitHintsMode":

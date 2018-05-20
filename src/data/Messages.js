@@ -23,11 +23,15 @@ export type FromAllFrames =
       action: KeyboardAction,
     |};
 
-export type ToAllFrames = {|
-  type: "StateSync",
-  keyboardShortcuts: Array<KeyboardMapping>,
-  suppressByDefault: boolean,
-|};
+export type ToAllFrames =
+  | {|
+      type: "StateSync",
+      keyboardShortcuts: Array<KeyboardMapping>,
+      suppressByDefault: boolean,
+    |}
+  | {|
+      type: "StartFindElements",
+    |};
 
 export type FromTopFrame = {|
   type: "TopFrameScriptAdded",

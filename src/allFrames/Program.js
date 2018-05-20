@@ -59,6 +59,20 @@ export default class AllFramesProgram {
         this.suppressByDefault = message.suppressByDefault;
         break;
 
+      case "StartFindElements": {
+        const viewport = {
+          top: 0,
+          bottom: window.innerHeight,
+          left: 0,
+          right: window.innerWidth,
+        };
+        console.log(
+          "StartFindElements",
+          this.elementManager.getVisibleElements(new Set(["link"]), viewport)
+        );
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
