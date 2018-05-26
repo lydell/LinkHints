@@ -79,6 +79,7 @@ export default class BackgroundProgram {
             type: "StateSync",
             keyboardShortcuts: this.normalKeyboardShortcuts,
             suppressByDefault: false,
+            oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
           },
           { tabId: sender.tab == null ? undefined : sender.tab.id }
         );
@@ -128,4 +129,10 @@ export default class BackgroundProgram {
         unreachable(action.type, action);
     }
   }
+}
+
+function makeOneTimeWindowMessage(): string {
+  const array = new Uint32Array(3);
+  window.crypto.getRandomValues(array);
+  return array.join("");
 }

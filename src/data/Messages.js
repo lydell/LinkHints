@@ -28,6 +28,7 @@ export type ToAllFrames =
       type: "StateSync",
       keyboardShortcuts: Array<KeyboardMapping>,
       suppressByDefault: boolean,
+      oneTimeWindowMessageToken: string,
     |}
   | {|
       type: "StartFindElements",

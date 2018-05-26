@@ -5,20 +5,24 @@ import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
+import type { Viewport } from "./ElementManager";
 
 const KEYBOARD_OPTIONS = { capture: false };
+const WINDOW_MESSAGE_OPTIONS = { capture: true };
 
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
   elementManager: ElementManager;
+  oneTimeWindowMessageToken: ?string;
 
   constructor() {
     this.keyboardShortcuts = [];
     this.suppressByDefault = false;
     this.elementManager = new ElementManager();
+    this.oneTimeWindowMessageToken = undefined;
 
-    bind(this, ["onMessage", "onKeydown"]);
+    bind(this, ["onMessage", "onKeydown", "onWindowMessage"]);
   }
 
   start() {
@@ -28,6 +32,11 @@ export default class AllFramesProgram {
 
     browser.runtime.onMessage.addListener(this.onMessage);
     window.addEventListener("keydown", this.onKeydown, KEYBOARD_OPTIONS);
+    window.addEventListener(
+      "message",
+      this.onWindowMessage,
+      WINDOW_MESSAGE_OPTIONS
+    );
     this.elementManager.start();
   }
 
@@ -57,6 +66,7 @@ export default class AllFramesProgram {
       case "StateSync":
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.suppressByDefault = message.suppressByDefault;
+        this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
         break;
 
       case "StartFindElements": {
@@ -66,16 +76,38 @@ export default class AllFramesProgram {
           left: 0,
           right: window.innerWidth,
         };
-        console.log(
-          "StartFindElements",
-          this.elementManager.getVisibleElements(new Set(["link"]), viewport),
-          this
-        );
+        this.reportVisibleElements(viewport);
         break;
       }
 
       default:
         unreachable(message.type, message);
+    }
+  }
+
+  onWindowMessage(event: MessageEvent) {
+    console.log("onWindowMessage", event);
+    if (
+      this.oneTimeWindowMessageToken != null &&
+      event.data != null &&
+      typeof event.data === "object" &&
+      !Array.isArray(event.data) &&
+      event.data.token === this.oneTimeWindowMessageToken
+    ) {
+      let viewport = undefined;
+      try {
+        viewport = parseWindowMessage(event.data);
+      } catch (error) {
+        console.warn(
+          "Ignoring bad window message",
+          this.oneTimeWindowMessageToken,
+          event,
+          error
+        );
+        return;
+      }
+      this.reportVisibleElements(viewport);
+      this.oneTimeWindowMessageToken = undefined;
     }
   }
 
@@ -104,9 +136,53 @@ export default class AllFramesProgram {
       suppressEvent(event);
     }
   }
+
+  reportVisibleElements(viewport: Viewport) {
+    const elements = this.elementManager.getVisibleElements(
+      new Set(["link"]),
+      viewport
+    );
+
+    const frames = this.elementManager.getVisibleElements(
+      new Set(["frame"]),
+      viewport
+    );
+
+    for (const { element: frame } of frames) {
+      if (
+        frame instanceof window.HTMLIFrameElement ||
+        frame instanceof window.HTMLFrameElement
+      ) {
+        const message = {
+          ...viewport,
+          token: this.oneTimeWindowMessageToken,
+        };
+        console.log("postMessage", message);
+        frame.contentWindow.postMessage(message, "*");
+      }
+    }
+
+    console.log("reportVisibleElements", elements, frames);
+  }
 }
 
 function suppressEvent(event: Event) {
   event.preventDefault();
   event.stopPropagation();
+}
+
+function parseWindowMessage(arg: { [string]: mixed }): Viewport {
+  return {
+    top: assertViewportNumber(arg.top, "top"),
+    bottom: assertViewportNumber(arg.bottom, "bottom"),
+    left: assertViewportNumber(arg.left, "left"),
+    right: assertViewportNumber(arg.right, "right"),
+  };
+}
+
+function assertViewportNumber(value: mixed, property: string): number {
+  if (!(typeof value === "number" && value >= 0 && Number.isFinite(value))) {
+    throw new Error(`Invalid Viewport '${property}': ${String(value)}`);
+  }
+  return value;
 }

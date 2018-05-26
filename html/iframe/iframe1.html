@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>iframes</title>
+    <style>
+      body {
+        margin: 0;
+      }
+
+      p {
+        margin: 30px;
+      }
+
+      .frames {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 30px;
+        padding: 30px;
+        width: 190vw;
+      }
+
+      iframe {
+        width: 100%;
+        height: 50vh;
+      }
+    </style>
+  </head>
+  <body>
+    <p>iframe1 <a href="./iframe2.html">link to iframe2.html</a> and <a href="./index.html">link to index.html</a></p>
+    <div class="frames">
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+      <iframe src="./iframe2.html"></iframe>
+    </div>
+  </body>
+</html>

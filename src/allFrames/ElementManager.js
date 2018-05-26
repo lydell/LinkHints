@@ -1,12 +1,12 @@
 // @flow
 
-type ElementType = "link";
+type ElementType = "link" | "frame";
 
 type ElementData = {|
   type: ElementType,
 |};
 
-type Viewport = {|
+export type Viewport = {|
   top: number,
   bottom: number,
   left: number,
@@ -86,8 +86,9 @@ export default class ElementManager {
   addElements(parent: HTMLElement) {
     const elements = [parent, ...parent.querySelectorAll("*")];
     for (const element of elements) {
-      if (element.nodeName === "A") {
-        this.elements.set(element, { type: "link" });
+      const type = getElementType(element);
+      if (type != null) {
+        this.elements.set(element, { type });
         this.intersectionObserver.observe(element);
       }
     }
@@ -163,4 +164,16 @@ function getMeasurements(
         y: rect.top + height / 2,
         area: width * height,
       };
+}
+
+function getElementType(element: HTMLElement): ?ElementType {
+  switch (element.nodeName) {
+    case "A":
+      return "link";
+    case "FRAME":
+    case "IFRAME":
+      return "frame";
+    default:
+      return undefined;
+  }
 }
