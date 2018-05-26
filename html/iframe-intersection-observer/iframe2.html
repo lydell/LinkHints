@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>iframe1</title>
+    <style>
+      #probe {
+        height: 100px;
+        margin: 80vh 0;
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="probe"></div>
+    <script>
+      const observer = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          console.log(entry.isIntersecting ? "Intersecting" : "Outside");
+        }
+      });
+      observer.observe(probe);
+    </script>
+  </body>
+</html>

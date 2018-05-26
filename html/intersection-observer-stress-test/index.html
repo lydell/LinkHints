@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>IntersectionObserver stress test</title>
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
+        grid-gap: 5px;
+      }
+
+      .item {
+        background-color: lightgrey;
+        padding-bottom: 100%;
+      }
+
+      .button {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const visibleItems = new Set();
+      let lastCommittedItems = new Set();
+
+      const observer = new IntersectionObserver(callback);
+      function callback(entries) {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visibleItems.add(entry.target);
+          } else {
+            visibleItems.delete(entry.target);
+          }
+        }
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      for (let i = 0; i < 100e3; i++) {
+        const item = document.createElement("div");
+        item.className = "item";
+        grid.appendChild(item);
+        observer.observe(item);
+      }
+      document.body.append(grid);
+
+      const button = document.createElement("button");
+      button.className = "button";
+      button.textContent = "Commit";
+      button.onclick = () => {
+        const records = observer.takeRecords();
+        console.log("takeRecords", records.length);
+        callback(records);
+
+        for (const item of lastCommittedItems) {
+          item.style.backgroundColor = "";
+        }
+
+        for (const item of visibleItems) {
+          item.style.backgroundColor = "red";
+        }
+
+        lastCommittedItems = new Set(visibleItems);
+      }
+      document.body.append(button);
+    </script>
+  </body>
+</html>
