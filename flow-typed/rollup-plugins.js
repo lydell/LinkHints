@@ -8,6 +8,6 @@ declare module "rollup-plugin-replace" {
   declare module.exports: Function;
 }
 
-declare module "rollup-plugin-uglify" {
+declare module "rollup-plugin-terser" {
   declare module.exports: Function;
 }
