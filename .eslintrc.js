@@ -15,6 +15,8 @@ module.exports = {
   },
   rules: Object.assign({}, baseRules({ flow: true, import: true }), {
     "flowtype-errors/show-errors": "error",
+    "flowtype/array-style-complex-type": "error",
+    "flowtype/array-style-simple-type": "error",
     "func-style": "off",
     "prettier/prettier": "error",
     "sort-imports-es6-autofix/sort-imports-es6": "error",
