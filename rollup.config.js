@@ -3,7 +3,7 @@
 const fs = require("fs");
 
 const replace = require("rollup-plugin-replace");
-const uglify = require("rollup-plugin-uglify");
+const { terser } = require("rollup-plugin-terser");
 const rimraf = require("rimraf");
 const flow = require("rollup-plugin-flow");
 
@@ -11,7 +11,8 @@ const config = require("./project.config");
 
 const PROD = config.browser != null;
 
-const UGLIFY_OPTIONS = {
+const TERSER_OPTIONS = {
+  ecma: 8,
   compress: {
     booleans: false,
     comparisons: false,
@@ -29,9 +30,9 @@ const UGLIFY_OPTIONS = {
   mangle: false,
   output: {
     beautify: true,
-    bracketize: true,
-    indent_level: 2,
+    braces: true,
     comments: /\S/,
+    indent_level: 2,
   },
 };
 
@@ -77,7 +78,7 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
             replace({
               BROWSER: JSON.stringify(config.browser),
             }),
-            uglify(UGLIFY_OPTIONS),
+            terser(TERSER_OPTIONS),
           ]),
     ].filter(Boolean),
   };
