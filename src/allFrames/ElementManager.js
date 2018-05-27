@@ -11,7 +11,7 @@ export type Offsets = {|
   offsetY: number,
 |};
 
-type Viewport = {|
+export type Viewport = {|
   left: number,
   right: number,
   top: number,
@@ -116,6 +116,7 @@ export default class ElementManager {
     data: ElementData,
     measurements: HintMeasurements,
   |}> {
+    // this.visibleElements = new Set(this.elements.keys());
     return Array.from(this.visibleElements, element => {
       const data = this.elements.get(element);
 

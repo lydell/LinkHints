@@ -5,7 +5,7 @@ import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Offsets } from "./ElementManager";
+import type { Offsets, Viewport } from "./ElementManager";
 
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
@@ -70,7 +70,14 @@ export default class AllFramesProgram {
         break;
 
       case "StartFindElements": {
-        this.reportVisibleElements({ offsetY: 0, offsetX: 0 });
+        const viewport = {
+          left: 0,
+          right: window.innerWidth,
+          top: 0,
+          bottom: window.innerHeight,
+        };
+        const offsets = { offsetY: 0, offsetX: 0 };
+        this.reportVisibleElements(offsets, viewport);
         break;
       }
 
@@ -80,7 +87,6 @@ export default class AllFramesProgram {
   }
 
   onWindowMessage(event: MessageEvent) {
-    console.log("onWindowMessage", event);
     if (
       this.oneTimeWindowMessageToken != null &&
       event.data != null &&
@@ -89,8 +95,9 @@ export default class AllFramesProgram {
       event.data.token === this.oneTimeWindowMessageToken
     ) {
       let offsets = undefined;
+      let viewport = undefined;
       try {
-        offsets = parseWindowMessage(event.data);
+        ({ offsets, viewport } = parseWindowMessage(event.data));
       } catch (error) {
         console.warn(
           "Ignoring bad window message",
@@ -100,7 +107,7 @@ export default class AllFramesProgram {
         );
         return;
       }
-      this.reportVisibleElements(offsets);
+      this.reportVisibleElements(offsets, viewport);
       this.oneTimeWindowMessageToken = undefined;
     }
   }
@@ -143,14 +150,7 @@ export default class AllFramesProgram {
     }
   }
 
-  reportVisibleElements(offsets: Offsets) {
-    const viewport = {
-      left: 0,
-      right: window.innerWidth,
-      top: 0,
-      bottom: window.innerHeight,
-    };
-
+  reportVisibleElements(offsets: Offsets, viewport: Viewport) {
     const elements = this.elementManager.getVisibleElements(
       new Set(["link"]),
       offsets,
@@ -169,6 +169,7 @@ export default class AllFramesProgram {
           token: this.oneTimeWindowMessageToken,
           offsetX: offsets.offsetX + frameOffsets.offsetX,
           offsetY: offsets.offsetY + frameOffsets.offsetY,
+          ...viewport,
         };
         frame.contentWindow.postMessage(message, "*");
       }
@@ -191,7 +192,9 @@ function suppressEvent(event: Event) {
   event.stopPropagation();
 }
 
-function parseWindowMessage(arg: { [string]: mixed }): Offsets {
+function parseWindowMessage(arg: {
+  [string]: mixed,
+}): {| offsets: Offsets, viewport: Viewport |} {
   function getNumber(property: string): number {
     const value = arg[property];
     if (!(typeof value === "number" && Number.isFinite(value))) {
@@ -199,9 +202,18 @@ function parseWindowMessage(arg: { [string]: mixed }): Offsets {
     }
     return value;
   }
+
   return {
-    offsetX: getNumber("offsetX"),
-    offsetY: getNumber("offsetY"),
+    offsets: {
+      offsetX: getNumber("offsetX"),
+      offsetY: getNumber("offsetY"),
+    },
+    viewport: {
+      left: getNumber("left"),
+      right: getNumber("right"),
+      top: getNumber("top"),
+      bottom: getNumber("bottom"),
+    },
   };
 }
 

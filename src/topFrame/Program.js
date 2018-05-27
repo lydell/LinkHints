@@ -65,9 +65,9 @@ export default class TopFrameProgram {
       element.className = "synth-hint";
       element.style.setProperty(
         "transform",
-        `translate(calc(${hintMeasurements.x}px - 100%), calc(${
-          hintMeasurements.y
-        }px - 50%))`,
+        `translate(calc(${Math.round(
+          hintMeasurements.x
+        )}px - 100%), calc(${Math.round(hintMeasurements.y)}px - 50%))`,
         "important"
       );
       container.append(element);

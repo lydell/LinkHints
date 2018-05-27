@@ -109,6 +109,7 @@ export default class BackgroundProgram {
 
       case "ReportVisibleElements": {
         const { frameId } = sender;
+        // console.log("ReportVisibleElements", frameId, message);
         if (frameId != null) {
           const elements = message.elements.map(
             ({ type, hintMeasurements, url }) => ({
