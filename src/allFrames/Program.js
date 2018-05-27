@@ -7,9 +7,6 @@ import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 import ElementManager from "./ElementManager";
 import type { Viewport } from "./ElementManager";
 
-const KEYBOARD_OPTIONS = { capture: false };
-const WINDOW_MESSAGE_OPTIONS = { capture: true };
-
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
@@ -22,7 +19,12 @@ export default class AllFramesProgram {
     this.elementManager = new ElementManager();
     this.oneTimeWindowMessageToken = undefined;
 
-    bind(this, ["onMessage", "onKeydown", "onWindowMessage"]);
+    bind(this, [
+      "onMessage",
+      "onKeydownCapture",
+      "onKeydownBubble",
+      "onWindowMessage",
+    ]);
   }
 
   start() {
@@ -31,18 +33,16 @@ export default class AllFramesProgram {
     });
 
     browser.runtime.onMessage.addListener(this.onMessage);
-    window.addEventListener("keydown", this.onKeydown, KEYBOARD_OPTIONS);
-    window.addEventListener(
-      "message",
-      this.onWindowMessage,
-      WINDOW_MESSAGE_OPTIONS
-    );
+    window.addEventListener("keydown", this.onKeydownCapture, true);
+    window.addEventListener("keydown", this.onKeydownBubble, false);
+    window.addEventListener("message", this.onWindowMessage, true);
     this.elementManager.start();
   }
 
   stop() {
     browser.runtime.onMessage.removeListener(this.onMessage);
-    window.removeEventListener("keydown", this.onKeydown, KEYBOARD_OPTIONS);
+    window.removeEventListener("keydown", this.onKeydownCapture, true);
+    window.removeEventListener("keydown", this.onKeydownBubble, false);
     this.elementManager.stop();
   }
 
@@ -108,6 +108,18 @@ export default class AllFramesProgram {
       }
       this.reportVisibleElements(viewport);
       this.oneTimeWindowMessageToken = undefined;
+    }
+  }
+
+  onKeydownCapture(event: KeyboardEvent) {
+    if (this.suppressByDefault) {
+      this.onKeydown(event);
+    }
+  }
+
+  onKeydownBubble(event: KeyboardEvent) {
+    if (!this.suppressByDefault) {
+      this.onKeydown(event);
     }
   }
 
