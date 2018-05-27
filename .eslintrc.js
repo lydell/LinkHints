@@ -38,6 +38,9 @@ module.exports = {
       },
       globals: {
         BROWSER: false,
+        HTMLAnchorElement: false,
+        HTMLFrameElement: false,
+        HTMLIFrameElement: false,
         IntersectionObserver: false,
         MutationObserver: false,
         browser: false,

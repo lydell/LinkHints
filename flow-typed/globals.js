@@ -4,6 +4,8 @@ declare type Browser = "chrome" | "firefox";
 
 declare var BROWSER: Browser;
 
+declare type HTMLFrameElement = HTMLIFrameElement;
+
 declare type MessageSender = {|
   tab?: Tab,
   frameId?: number,

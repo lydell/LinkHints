@@ -2,6 +2,7 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
+  ExtendedElementReport,
   FromContent,
   ToAllFrames,
   ToContent,
@@ -16,6 +17,10 @@ export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   topFrameIds: Map<number, number>;
+  pendingElements: {|
+    elements: Array<ExtendedElementReport>,
+    pendingFrames: number,
+  |};
 
   constructor({
     normalKeyboardShortcuts,
@@ -27,6 +32,10 @@ export default class BackgroundProgram {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.topFrameIds = new Map();
+    this.pendingElements = {
+      elements: [],
+      pendingFrames: 0,
+    };
 
     bind(this, ["onMessage"]);
   }
@@ -98,6 +107,26 @@ export default class BackgroundProgram {
         }
         break;
 
+      case "ReportVisibleElements": {
+        const { frameId } = sender;
+        if (frameId != null) {
+          const elements = message.elements.map(
+            ({ type, hintMeasurements, url }) => ({
+              type,
+              hintMeasurements,
+              url,
+              frameId,
+            })
+          );
+          this.pendingElements.elements.push(...elements);
+          this.pendingElements.pendingFrames += message.pendingFrames - 1;
+          if (this.pendingElements.pendingFrames <= 0) {
+            console.log("Gathered all elements", this.pendingElements.elements);
+          }
+        }
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
@@ -115,10 +144,18 @@ export default class BackgroundProgram {
                 frameId: this.topFrameIds.get(tabId),
               }
         );
+        this.pendingElements = {
+          elements: [],
+          pendingFrames: 1,
+        };
         break;
 
       case "ExitHintsMode":
         console.log("ExitHintsMode");
+        this.pendingElements = {
+          elements: [],
+          pendingFrames: 0,
+        };
         break;
 
       case "PressHintChar":

@@ -5,7 +5,7 @@ import type { FromAllFrames, ToContent } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Viewport } from "./ElementManager";
+import type { Offsets } from "./ElementManager";
 
 export default class AllFramesProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
@@ -70,13 +70,7 @@ export default class AllFramesProgram {
         break;
 
       case "StartFindElements": {
-        const viewport = {
-          top: 0,
-          bottom: window.innerHeight,
-          left: 0,
-          right: window.innerWidth,
-        };
-        this.reportVisibleElements(viewport);
+        this.reportVisibleElements({ offsetY: 0, offsetX: 0 });
         break;
       }
 
@@ -94,9 +88,9 @@ export default class AllFramesProgram {
       !Array.isArray(event.data) &&
       event.data.token === this.oneTimeWindowMessageToken
     ) {
-      let viewport = undefined;
+      let offsets = undefined;
       try {
-        viewport = parseWindowMessage(event.data);
+        offsets = parseWindowMessage(event.data);
       } catch (error) {
         console.warn(
           "Ignoring bad window message",
@@ -106,7 +100,7 @@ export default class AllFramesProgram {
         );
         return;
       }
-      this.reportVisibleElements(viewport);
+      this.reportVisibleElements(offsets);
       this.oneTimeWindowMessageToken = undefined;
     }
   }
@@ -149,32 +143,51 @@ export default class AllFramesProgram {
     }
   }
 
-  reportVisibleElements(viewport: Viewport) {
+  reportVisibleElements(offsets: Offsets) {
+    const viewport = {
+      left: 0,
+      right: window.innerWidth,
+      top: 0,
+      bottom: window.innerHeight,
+    };
+
     const elements = this.elementManager.getVisibleElements(
       new Set(["link"]),
+      offsets,
       viewport
     );
 
+    // TODO: GetVisibleFrames?
     const frames = this.elementManager.getVisibleElements(
       new Set(["frame"]),
+      offsets,
       viewport
     );
 
     for (const { element: frame } of frames) {
       if (
-        frame instanceof window.HTMLIFrameElement ||
-        frame instanceof window.HTMLFrameElement
+        frame instanceof HTMLIFrameElement ||
+        frame instanceof HTMLFrameElement
       ) {
+        const frameOffsets = getFrameOffsets(frame);
         const message = {
-          ...viewport,
           token: this.oneTimeWindowMessageToken,
+          offsetX: offsets.offsetX + frameOffsets.offsetX,
+          offsetY: offsets.offsetY + frameOffsets.offsetY,
         };
-        console.log("postMessage", message);
         frame.contentWindow.postMessage(message, "*");
       }
     }
 
-    console.log("reportVisibleElements", elements, frames);
+    this.sendMessage({
+      type: "ReportVisibleElements",
+      elements: elements.map(({ element, data: { type }, measurements }) => ({
+        type,
+        url: element instanceof HTMLAnchorElement ? element.href : undefined,
+        hintMeasurements: measurements,
+      })),
+      pendingFrames: frames.length,
+    });
   }
 }
 
@@ -183,18 +196,31 @@ function suppressEvent(event: Event) {
   event.stopPropagation();
 }
 
-function parseWindowMessage(arg: { [string]: mixed }): Viewport {
+function parseWindowMessage(arg: { [string]: mixed }): Offsets {
+  function getNumber(property: string): number {
+    const value = arg[property];
+    if (!(typeof value === "number" && Number.isFinite(value))) {
+      throw new Error(`Invalid '${property}': ${String(value)}`);
+    }
+    return value;
+  }
   return {
-    top: assertViewportNumber(arg.top, "top"),
-    bottom: assertViewportNumber(arg.bottom, "bottom"),
-    left: assertViewportNumber(arg.left, "left"),
-    right: assertViewportNumber(arg.right, "right"),
+    offsetX: getNumber("offsetX"),
+    offsetY: getNumber("offsetY"),
   };
 }
 
-function assertViewportNumber(value: mixed, property: string): number {
-  if (!(typeof value === "number" && value >= 0 && Number.isFinite(value))) {
-    throw new Error(`Invalid Viewport '${property}': ${String(value)}`);
-  }
-  return value;
+function getFrameOffsets(frame: HTMLIFrameElement | HTMLFrameElement): Offsets {
+  const rect = frame.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(frame);
+  return {
+    offsetX:
+      rect.left +
+      parseFloat(computedStyle.getPropertyValue("border-left-width")) +
+      parseFloat(computedStyle.getPropertyValue("padding-left")),
+    offsetY:
+      rect.top +
+      parseFloat(computedStyle.getPropertyValue("border-top-width")) +
+      parseFloat(computedStyle.getPropertyValue("padding-top")),
+  };
 }

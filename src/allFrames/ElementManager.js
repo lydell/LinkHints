@@ -1,25 +1,28 @@
 // @flow
 
-type ElementType = "link" | "frame";
+export type ElementType = "link" | "frame";
 
 type ElementData = {|
   type: ElementType,
 |};
 
-export type Viewport = {|
-  top: number,
-  bottom: number,
-  left: number,
-  right: number,
+export type Offsets = {|
+  offsetX: number,
+  offsetY: number,
 |};
 
-type HintMeasurements = {|
+type Viewport = {|
+  left: number,
+  right: number,
+  top: number,
+  bottom: number,
+|};
+
+export type HintMeasurements = {|
   x: number,
   y: number,
   area: number,
 |};
-
-const MIN = 2; // px
 
 export default class ElementManager {
   elements: Map<HTMLElement, ElementData>;
@@ -106,6 +109,7 @@ export default class ElementManager {
 
   getVisibleElements(
     types: Set<ElementType>,
+    offsets: Offsets,
     viewport: Viewport
   ): Array<{|
     element: HTMLElement,
@@ -123,7 +127,7 @@ export default class ElementManager {
         return undefined;
       }
 
-      const measurements = getMeasurements(element, viewport);
+      const measurements = getMeasurements(element, offsets, viewport);
 
       if (measurements == null) {
         return undefined;
@@ -140,28 +144,26 @@ export default class ElementManager {
 
 function getMeasurements(
   element: HTMLElement,
+  offsets: Offsets,
   viewport: Viewport
 ): ?HintMeasurements {
-  const rawRect = element.getBoundingClientRect();
+  const rect = element.getBoundingClientRect();
 
-  const rect = {
-    top: Math.min(rawRect.top, viewport.bottom),
-    bottom: Math.max(rawRect.bottom, viewport.top),
-    left: Math.min(rawRect.left, viewport.right),
-    right: Math.max(rawRect.right, viewport.left),
+  const visibleRect = {
+    left: Math.max(offsets.offsetX + rect.left, viewport.left),
+    right: Math.min(offsets.offsetX + rect.right, viewport.right),
+    top: Math.max(offsets.offsetY + rect.top, viewport.top),
+    bottom: Math.min(offsets.offsetY + rect.bottom, viewport.bottom),
   };
 
-  const height = rect.bottom - rect.top;
-  const width = rect.right - rect.left;
+  const height = visibleRect.bottom - visibleRect.top;
+  const width = visibleRect.right - visibleRect.left;
 
-  // Skip elements that are fully or almost fully outside the viewport, because
-  // of the IntersectionObserver misreporting, frames being partially off-screen
-  // or elements just being very close to the edge.
-  return height < MIN || width < MIN
+  return height <= 0 || width <= 0
     ? undefined
     : {
-        x: rect.left,
-        y: rect.top + height / 2,
+        x: visibleRect.left,
+        y: visibleRect.top + height / 2,
         area: width * height,
       };
 }
