@@ -78,6 +78,6 @@ declare var browser: {|
       url?: string,
       windowId?: number,
       windowType?: number,
-    |}) => Promise<Tab>,
+    |}) => Promise<Array<Tab>>,
   |},
 |};

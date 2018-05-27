@@ -49,9 +49,14 @@ export type FromTopFrame = {|
   type: "TopFrameScriptAdded",
 |};
 
-export type ToTopFrame = {|
-  type: "TODO",
-|};
+export type ToTopFrame =
+  | {|
+      type: "Render",
+      elements: Array<ExtendedElementReport>,
+    |}
+  | {|
+      type: "Unrender",
+    |};
 
 export type ElementReport = {|
   type: ElementType,

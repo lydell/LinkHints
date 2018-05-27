@@ -1,7 +1,11 @@
 // @flow
 
 import { bind, unreachable } from "../utils/main";
-import type { FromTopFrame, ToContent } from "../data/Messages";
+import type {
+  ExtendedElementReport,
+  FromTopFrame,
+  ToContent,
+} from "../data/Messages";
 
 export default class TopFrameProgram {
   constructor() {
@@ -37,12 +41,47 @@ export default class TopFrameProgram {
     const { message } = wrappedMessage;
 
     switch (message.type) {
-      case "TODO":
-        console.log("TopFrameProgram TODO message", message);
+      case "Render":
+        this.render(message.elements);
+        break;
+
+      case "Unrender":
+        this.unrender();
         break;
 
       default:
         unreachable(message.type, message);
+    }
+  }
+
+  render(elements: Array<ExtendedElementReport>) {
+    const container = document.createElement("div");
+    container.id = "synth-hints";
+
+    for (const { hintMeasurements } of elements) {
+      const element = document.createElement("div");
+      const text = document.createTextNode("ab");
+      element.append(text);
+      element.className = "synth-hint";
+      element.style.setProperty(
+        "transform",
+        `translate(calc(${hintMeasurements.x}px - 100%), calc(${
+          hintMeasurements.y
+        }px - 50%))`,
+        "important"
+      );
+      container.append(element);
+    }
+
+    if (document.documentElement != null) {
+      document.documentElement.append(container);
+    }
+  }
+
+  unrender() {
+    const container = document.getElementById("synth-hints");
+    if (container != null) {
+      container.remove();
     }
   }
 }

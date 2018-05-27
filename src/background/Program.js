@@ -69,7 +69,7 @@ export default class BackgroundProgram {
     try {
       const tabId =
         passedTabId == null
-          ? (await browser.tabs.query({ active: true })).id
+          ? (await browser.tabs.query({ active: true }))[0].id
           : passedTabId;
       return frameId == null
         ? browser.tabs.sendMessage(tabId, message)
@@ -121,7 +121,23 @@ export default class BackgroundProgram {
           this.pendingElements.elements.push(...elements);
           this.pendingElements.pendingFrames += message.pendingFrames - 1;
           if (this.pendingElements.pendingFrames <= 0) {
-            console.log("Gathered all elements", this.pendingElements.elements);
+            this.sendAllFramesMessage(
+              {
+                type: "StateSync",
+                keyboardShortcuts: this.hintsKeyboardShortcuts,
+                suppressByDefault: true,
+                oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+              },
+              sender.tab == null
+                ? undefined
+                : {
+                    tabId: sender.tab.id,
+                  }
+            );
+            this.sendTopFrameMessage({
+              type: "Render",
+              elements: this.pendingElements.elements,
+            });
           }
         }
         break;
@@ -151,11 +167,19 @@ export default class BackgroundProgram {
         break;
 
       case "ExitHintsMode":
-        console.log("ExitHintsMode");
         this.pendingElements = {
           elements: [],
           pendingFrames: 0,
         };
+        this.sendAllFramesMessage({
+          type: "StateSync",
+          keyboardShortcuts: this.normalKeyboardShortcuts,
+          suppressByDefault: false,
+          oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+        });
+        this.sendTopFrameMessage({
+          type: "Unrender",
+        });
         break;
 
       case "PressHintChar":

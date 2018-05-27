@@ -47,6 +47,7 @@ module.exports = () =>
         matches: ["<all_urls>"],
         run_at: "document_start",
         js: [config.topFrame.output],
+        css: ["./topFrame/main.css"],
       },
     ],
   });
