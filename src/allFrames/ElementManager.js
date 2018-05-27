@@ -140,6 +140,17 @@ export default class ElementManager {
       };
     }).filter(Boolean);
   }
+
+  getVisibleFrames(): Array<HTMLIFrameElement | HTMLFrameElement> {
+    return Array.from(
+      this.visibleElements,
+      element =>
+        element instanceof HTMLIFrameElement ||
+        element instanceof HTMLFrameElement
+          ? element
+          : undefined
+    ).filter(Boolean);
+  }
 }
 
 function getMeasurements(

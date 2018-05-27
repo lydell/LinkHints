@@ -157,14 +157,9 @@ export default class AllFramesProgram {
       viewport
     );
 
-    // TODO: GetVisibleFrames?
-    const frames = this.elementManager.getVisibleElements(
-      new Set(["frame"]),
-      offsets,
-      viewport
-    );
+    const frames = this.elementManager.getVisibleFrames();
 
-    for (const { element: frame } of frames) {
+    for (const frame of frames) {
       if (
         frame instanceof HTMLIFrameElement ||
         frame instanceof HTMLFrameElement
