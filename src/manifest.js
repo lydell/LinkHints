@@ -21,8 +21,16 @@ module.exports = () =>
     icons: getIcons(config.browser),
     browser_action: {
       browser_style: true,
+      default_popup: "./popup/popup.html",
       default_icon: getDefaultIcon(config.browser),
       theme_icons: getThemeIcons(config.browser),
+    },
+    commands: {
+      _execute_browser_action: {
+        suggested_key: {
+          default: "Ctrl+Shift+D",
+        },
+      },
     },
     background: {
       scripts: [
