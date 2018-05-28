@@ -46,6 +46,7 @@ module.exports = {
         browser: false,
         console: false,
         document: false,
+        performance: false,
         window: false,
       },
     },

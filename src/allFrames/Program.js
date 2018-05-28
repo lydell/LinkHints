@@ -144,6 +144,7 @@ export default class AllFramesProgram {
       this.sendMessage({
         type: "KeyboardShortcutMatched",
         action: match.action,
+        timestamp: performance.now(),
       });
     } else if (this.suppressByDefault) {
       suppressEvent(event);

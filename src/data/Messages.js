@@ -27,6 +27,7 @@ export type FromAllFrames =
   | {|
       type: "KeyboardShortcutMatched",
       action: KeyboardAction,
+      timestamp: number,
     |}
   | {|
       type: "ReportVisibleElements",
@@ -45,9 +46,14 @@ export type ToAllFrames =
       type: "StartFindElements",
     |};
 
-export type FromTopFrame = {|
-  type: "TopFrameScriptAdded",
-|};
+export type FromTopFrame =
+  | {|
+      type: "TopFrameScriptAdded",
+    |}
+  | {|
+      type: "Rendered",
+      timestamp: number,
+    |};
 
 export type ToTopFrame =
   | {|

@@ -20,7 +20,10 @@ export default class BackgroundProgram {
   pendingElements: {|
     elements: Array<ExtendedElementReport>,
     pendingFrames: number,
+    startTime: ?number,
   |};
+
+  perfByTabId: Map<number, Array<number>>;
 
   constructor({
     normalKeyboardShortcuts,
@@ -35,7 +38,9 @@ export default class BackgroundProgram {
     this.pendingElements = {
       elements: [],
       pendingFrames: 0,
+      startTime: undefined,
     };
+    this.perfByTabId = new Map();
 
     bind(this, ["onMessage"]);
   }
@@ -97,7 +102,8 @@ export default class BackgroundProgram {
       case "KeyboardShortcutMatched":
         this.onKeyboardShortcut(
           message.action,
-          sender.tab == null ? undefined : sender.tab.id
+          sender.tab == null ? undefined : sender.tab.id,
+          message.timestamp
         );
         break;
 
@@ -144,12 +150,29 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "Rendered": {
+        const tabId = sender.tab == null ? undefined : sender.tab.id;
+        const { startTime } = this.pendingElements;
+        if (tabId != null && startTime != null) {
+          const duration = message.timestamp - startTime;
+          const previous = this.perfByTabId.get(tabId) || [];
+          const newItems = previous.concat(duration).slice(-10);
+          this.perfByTabId.set(tabId, newItems);
+          console.log("perf", newItems);
+        }
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
   }
 
-  onKeyboardShortcut(action: KeyboardAction, tabId?: number) {
+  onKeyboardShortcut(
+    action: KeyboardAction,
+    tabId: ?number,
+    timestamp: number
+  ) {
     switch (action.type) {
       case "EnterHintsMode":
         this.sendAllFramesMessage(
@@ -164,6 +187,7 @@ export default class BackgroundProgram {
         this.pendingElements = {
           elements: [],
           pendingFrames: 1,
+          startTime: timestamp,
         };
         break;
 
@@ -171,6 +195,7 @@ export default class BackgroundProgram {
         this.pendingElements = {
           elements: [],
           pendingFrames: 0,
+          startTime: undefined,
         };
         this.sendAllFramesMessage({
           type: "StateSync",

@@ -76,6 +76,11 @@ export default class TopFrameProgram {
     if (document.documentElement != null) {
       document.documentElement.append(container);
     }
+
+    this.sendMessage({
+      type: "Rendered",
+      timestamp: performance.now(),
+    });
   }
 
   unrender() {
