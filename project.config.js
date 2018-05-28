@@ -45,6 +45,10 @@ module.exports = {
     input: "topFrame/main.js",
     output: "compiled/topFrame.js",
   },
+  popup: {
+    input: "popup/main.js",
+    output: "compiled/popup.js",
+  },
   manifest: {
     input: "manifest.js",
     output: "manifest.json",

@@ -44,6 +44,7 @@ module.exports = [
   js(config.background),
   js(config.allFrames),
   js(config.topFrame),
+  js(config.popup),
   template(config.manifest),
   template(config.iconsCompilation),
   copy(config.polyfill),
