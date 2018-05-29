@@ -1,7 +1,7 @@
 // @flow
 
 import { bind, unreachable } from "../utils/main";
-import type { FromAllFrames, ToContent } from "../data/Messages";
+import type { FromAllFrames, FromBackground } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
@@ -48,14 +48,14 @@ export default class AllFramesProgram {
 
   async sendMessage(message: FromAllFrames): Promise<any> {
     try {
-      return browser.runtime.sendMessage((message: any));
+      return await browser.runtime.sendMessage((message: any));
     } catch (error) {
       console.error("AllFramesProgram#sendMessage failed", message, error);
       throw error;
     }
   }
 
-  onMessage(wrappedMessage: ToContent) {
+  onMessage(wrappedMessage: FromBackground) {
     if (wrappedMessage.type !== "ToAllFrames") {
       return;
     }

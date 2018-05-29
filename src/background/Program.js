@@ -3,9 +3,9 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
-  FromContent,
+  FromBackground,
   ToAllFrames,
-  ToContent,
+  ToBackground,
   ToTopFrame,
 } from "../data/Messages";
 import type {
@@ -68,7 +68,7 @@ export default class BackgroundProgram {
   }
 
   async sendMessage(
-    message: ToContent,
+    message: FromBackground,
     { tabId: passedTabId, frameId }: {| tabId?: number, frameId?: number |} = {}
   ): Promise<any> {
     try {
@@ -77,15 +77,15 @@ export default class BackgroundProgram {
           ? (await browser.tabs.query({ active: true }))[0].id
           : passedTabId;
       return frameId == null
-        ? browser.tabs.sendMessage(tabId, message)
-        : browser.tabs.sendMessage(tabId, message, { frameId });
+        ? await browser.tabs.sendMessage(tabId, message)
+        : await browser.tabs.sendMessage(tabId, message, { frameId });
     } catch (error) {
       console.error("BackgroundProgram#sendMessage failed", message, error);
       throw error;
     }
   }
 
-  onMessage(message: FromContent, sender: MessageSender) {
+  async onMessage(message: ToBackground, sender: MessageSender): Promise<any> {
     switch (message.type) {
       case "AllFramesScriptAdded":
         this.sendAllFramesMessage(
@@ -115,7 +115,6 @@ export default class BackgroundProgram {
 
       case "ReportVisibleElements": {
         const { frameId } = sender;
-        // console.log("ReportVisibleElements", frameId, message);
         if (frameId != null) {
           const elements = message.elements.map(
             ({ type, hintMeasurements, url }) => ({
@@ -158,14 +157,21 @@ export default class BackgroundProgram {
           const previous = this.perfByTabId.get(tabId) || [];
           const newItems = previous.concat(duration).slice(-10);
           this.perfByTabId.set(tabId, newItems);
-          console.log("perf", newItems);
         }
         break;
+      }
+
+      case "GetPerf": {
+        const tabId = (await browser.tabs.query({ active: true }))[0].id;
+        const perf = this.perfByTabId.get(tabId);
+        console.log("GetPerf", { tabId, perf, sender });
+        return perf == null ? [] : perf;
       }
 
       default:
         unreachable(message.type, message);
     }
+    return undefined;
   }
 
   onKeyboardShortcut(

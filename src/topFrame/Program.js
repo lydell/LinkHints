@@ -3,8 +3,8 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
+  FromBackground,
   FromTopFrame,
-  ToContent,
 } from "../data/Messages";
 
 export default class TopFrameProgram {
@@ -26,14 +26,14 @@ export default class TopFrameProgram {
 
   async sendMessage(message: FromTopFrame): Promise<any> {
     try {
-      return browser.runtime.sendMessage((message: any));
+      return await browser.runtime.sendMessage((message: any));
     } catch (error) {
       console.error("TopFrameProgram#sendMessage failed", message, error);
       throw error;
     }
   }
 
-  onMessage(wrappedMessage: ToContent) {
+  onMessage(wrappedMessage: FromBackground) {
     if (wrappedMessage.type !== "ToTopFrame") {
       return;
     }

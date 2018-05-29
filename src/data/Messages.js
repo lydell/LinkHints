@@ -8,7 +8,7 @@ import type {
 
 import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
-export type ToContent =
+export type FromBackground =
   | {|
       type: "ToAllFrames",
       message: ToAllFrames,
@@ -16,9 +16,13 @@ export type ToContent =
   | {|
       type: "ToTopFrame",
       message: ToTopFrame,
+    |}
+  | {|
+      type: "ToPopup",
+      message: ToPopup,
     |};
 
-export type FromContent = FromAllFrames | FromTopFrame;
+export type ToBackground = FromAllFrames | FromTopFrame | FromPopup;
 
 export type FromAllFrames =
   | {|
@@ -63,6 +67,14 @@ export type ToTopFrame =
   | {|
       type: "Unrender",
     |};
+
+export type FromPopup = {|
+  type: "GetPerf",
+|};
+
+export type ToPopup = {|
+  type: "TODO",
+|};
 
 export type ElementReport = {|
   type: ElementType,
