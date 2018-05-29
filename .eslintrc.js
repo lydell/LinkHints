@@ -23,7 +23,7 @@ module.exports = {
   }),
   overrides: [
     {
-      files: [".*.js", "*.config.js", "web-ext-config.js"],
+      files: [".*.js", "*.config.js", "web-ext-*.js"],
       rules: {
         "flowtype/require-parameter-type": "off",
         "flowtype/require-return-type": "off",
