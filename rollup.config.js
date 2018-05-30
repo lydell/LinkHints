@@ -1,6 +1,7 @@
 // @flow
 
 const fs = require("fs");
+const path = require("path");
 
 const replace = require("rollup-plugin-replace");
 const { terser } = require("rollup-plugin-terser");
@@ -47,6 +48,7 @@ module.exports = [
   js(config.popup),
   template(config.manifest),
   template(config.iconsCompilation),
+  html({ html: config.popupHtml, js: config.popup.output }),
   copy(config.polyfill),
 ].map(entry => ({
   ...entry,
@@ -122,6 +124,14 @@ function template(
       },
     ],
   };
+}
+
+function html(files /* : {|html:string,js:string|} */) {
+  return template({
+    input: "html.js",
+    output: files.html,
+    data: { js: path.relative(path.dirname(files.html), files.js) },
+  });
 }
 
 function copy({ input, output } /* : {| input: string, output: string, |} */) {

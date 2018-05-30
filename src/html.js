@@ -1,3 +1,7 @@
+// @flow
+
+module.exports = ({ js }: {| js: string |}) =>
+  `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,7 +9,7 @@
     <title>Synth</title>
   </head>
   <body>
-    <p>Popup!</p>
-    <script src="../compiled/popup.js"></script>
+    <script src="${js}"></script>
   </body>
 </html>
+  `.trim();

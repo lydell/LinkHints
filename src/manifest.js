@@ -21,7 +21,7 @@ module.exports = () =>
     icons: getIcons(config.browser),
     browser_action: {
       browser_style: true,
-      default_popup: "./popup/popup.html",
+      default_popup: config.popupHtml,
       default_icon: getDefaultIcon(config.browser),
       theme_icons: getThemeIcons(config.browser),
     },
