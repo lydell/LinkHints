@@ -42,11 +42,12 @@ export default class BackgroundProgram {
     };
     this.perfByTabId = new Map();
 
-    bind(this, ["onMessage"]);
+    bind(this, ["onMessage", "onTabRemoved"]);
   }
 
   start() {
     browser.runtime.onMessage.addListener(this.onMessage);
+    browser.tabs.onRemoved.addListener(this.onTabRemoved);
   }
 
   stop() {
@@ -221,6 +222,11 @@ export default class BackgroundProgram {
       default:
         unreachable(action.type, action);
     }
+  }
+
+  onTabRemoved(tabId: number) {
+    this.topFrameIds.delete(tabId);
+    this.perfByTabId.delete(tabId);
   }
 }
 

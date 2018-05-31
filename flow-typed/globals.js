@@ -47,6 +47,11 @@ declare type Tab = {|
   windowId: number,
 |};
 
+declare type TabRemoveInfo = {|
+  windowId: number,
+  isWindowClosing: boolean,
+|};
+
 declare type TabStatus = "loading" | "complete";
 
 declare var browser: {|
@@ -55,6 +60,7 @@ declare var browser: {|
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
   |},
   tabs: {|
+    onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
     sendMessage: (
       tabId: number,
       message: any,
