@@ -164,8 +164,8 @@ export default class BackgroundProgram {
       case "GetPerf": {
         const tabId = (await browser.tabs.query({ active: true }))[0].id;
         const perf = this.perfByTabId.get(tabId);
-        console.log("GetPerf", { tabId, perf, sender });
-        return perf == null ? [] : perf;
+        const hasFrameScripts = this.topFrameIds.has(tabId);
+        return hasFrameScripts ? (perf == null ? [] : perf) : null;
       }
 
       default:

@@ -9,12 +9,17 @@ export default class PopupProgram {
   }
 
   async start(): Promise<void> {
-    const perf = await this.sendMessage({
+    browser.runtime.onMessage.addListener(this.onMessage);
+
+    const perf: ?Array<number> = await this.sendMessage({
       type: "GetPerf",
     });
-    this.render(perf);
 
-    browser.runtime.onMessage.addListener(this.onMessage);
+    if (perf == null) {
+      this.renderDisabled();
+    } else {
+      this.render(perf);
+    }
   }
 
   stop() {
@@ -50,6 +55,14 @@ export default class PopupProgram {
   render(perf: Array<number>) {
     const container = document.createElement("pre");
     container.textContent = JSON.stringify(perf, undefined, 2);
+    if (document.body != null) {
+      document.body.append(container);
+    }
+  }
+
+  renderDisabled() {
+    const container = document.createElement("p");
+    container.textContent = "Synth is not allowed to run on this page.";
     if (document.body != null) {
       document.body.append(container);
     }
