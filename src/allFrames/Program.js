@@ -28,15 +28,15 @@ export default class AllFramesProgram {
   }
 
   start() {
-    this.sendMessage({
-      type: "AllFramesScriptAdded",
-    });
-
     browser.runtime.onMessage.addListener(this.onMessage);
     window.addEventListener("keydown", this.onKeydownCapture, true);
     window.addEventListener("keydown", this.onKeydownBubble, false);
     window.addEventListener("message", this.onWindowMessage, true);
     this.elementManager.start();
+
+    this.sendMessage({
+      type: "AllFramesScriptAdded",
+    });
   }
 
   stop() {

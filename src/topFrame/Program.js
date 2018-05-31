@@ -13,11 +13,11 @@ export default class TopFrameProgram {
   }
 
   start() {
+    browser.runtime.onMessage.addListener(this.onMessage);
+
     this.sendMessage({
       type: "TopFrameScriptAdded",
     });
-
-    browser.runtime.onMessage.addListener(this.onMessage);
   }
 
   stop() {
