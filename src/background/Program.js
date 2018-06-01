@@ -13,17 +13,20 @@ import type {
   KeyboardMapping,
 } from "../data/KeyboardShortcuts";
 
+type PendingElements = {|
+  tabId: ?number,
+  elements: Array<ExtendedElementReport>,
+  pendingFrames: number,
+  startTime: ?number,
+|};
+
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
-  topFrameIds: Map<number, number>;
-  pendingElements: {|
-    elements: Array<ExtendedElementReport>,
-    pendingFrames: number,
-    startTime: ?number,
-  |};
 
+  topFrameIds: Map<number, number>;
   perfByTabId: Map<number, Array<number>>;
+  pendingElements: PendingElements;
 
   constructor({
     normalKeyboardShortcuts,
@@ -35,11 +38,7 @@ export default class BackgroundProgram {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.topFrameIds = new Map();
-    this.pendingElements = {
-      elements: [],
-      pendingFrames: 0,
-      startTime: undefined,
-    };
+    this.pendingElements = makeEmptyPendingElements();
     this.perfByTabId = new Map();
 
     bind(this, ["onMessage", "onTabRemoved"]);
@@ -151,8 +150,7 @@ export default class BackgroundProgram {
       }
 
       case "Rendered": {
-        const tabId = sender.tab == null ? undefined : sender.tab.id;
-        const { startTime } = this.pendingElements;
+        const { tabId, startTime } = this.pendingElements;
         if (tabId != null && startTime != null) {
           const duration = message.timestamp - startTime;
           const previous = this.perfByTabId.get(tabId) || [];
@@ -192,6 +190,7 @@ export default class BackgroundProgram {
               }
         );
         this.pendingElements = {
+          tabId,
           elements: [],
           pendingFrames: 1,
           startTime: timestamp,
@@ -199,11 +198,7 @@ export default class BackgroundProgram {
         break;
 
       case "ExitHintsMode":
-        this.pendingElements = {
-          elements: [],
-          pendingFrames: 0,
-          startTime: undefined,
-        };
+        this.pendingElements = makeEmptyPendingElements();
         this.sendAllFramesMessage({
           type: "StateSync",
           keyboardShortcuts: this.normalKeyboardShortcuts,
@@ -227,6 +222,9 @@ export default class BackgroundProgram {
   onTabRemoved(tabId: number) {
     this.topFrameIds.delete(tabId);
     this.perfByTabId.delete(tabId);
+    if (tabId === this.pendingElements.tabId) {
+      this.pendingElements = makeEmptyPendingElements();
+    }
   }
 }
 
@@ -234,4 +232,14 @@ function makeOneTimeWindowMessage(): string {
   const array = new Uint32Array(3);
   window.crypto.getRandomValues(array);
   return array.join("");
+}
+
+// This is a function (not a constant), since `this.pendingElements` is mutated.
+function makeEmptyPendingElements(): PendingElements {
+  return {
+    tabId: undefined,
+    elements: [],
+    pendingFrames: 0,
+    startTime: undefined,
+  };
 }
