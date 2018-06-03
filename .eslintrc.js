@@ -31,7 +31,7 @@ module.exports = {
       },
     },
     {
-      files: ["src/*/**/*.js"],
+      files: ["src/*/**/*.js", "html/**/*.js"],
       env: {
         es6: true,
         node: false,
