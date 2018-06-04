@@ -2,8 +2,8 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
-  FromObserver,
   FromBackground,
+  FromObserver,
   ToBackground,
 } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";

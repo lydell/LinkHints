@@ -3,12 +3,12 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
-  FromObserver,
   FromBackground,
+  FromObserver,
   FromPopup,
   FromRenderer,
-  ToObserver,
   ToBackground,
+  ToObserver,
   ToRenderer,
 } from "../data/Messages";
 import type {
@@ -110,7 +110,6 @@ export default class BackgroundProgram {
           message.type,
           message
         );
-
         break;
 
       case "FromRenderer":
@@ -123,7 +122,6 @@ export default class BackgroundProgram {
           message.type,
           message
         );
-
         break;
 
       case "FromPopup":

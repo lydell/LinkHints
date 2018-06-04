@@ -1,10 +1,7 @@
 // @flow
 
 // TODO: Move these types somewhere.
-import type {
-  ElementType,
-  HintMeasurements,
-} from "../observer/ElementManager";
+import type { ElementType, HintMeasurements } from "../observer/ElementManager";
 
 import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
