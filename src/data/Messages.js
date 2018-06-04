@@ -22,7 +22,19 @@ export type FromBackground =
       message: ToPopup,
     |};
 
-export type ToBackground = FromAllFrames | FromTopFrame | FromPopup;
+export type ToBackground =
+  | {|
+      type: "FromAllFrames",
+      message: FromAllFrames,
+    |}
+  | {|
+      type: "FromTopFrame",
+      message: FromTopFrame,
+    |}
+  | {|
+      type: "FromPopup",
+      message: FromPopup,
+    |};
 
 export type FromAllFrames =
   | {|

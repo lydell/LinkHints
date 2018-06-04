@@ -5,6 +5,7 @@ import type {
   ExtendedElementReport,
   FromBackground,
   FromTopFrame,
+  ToBackground,
 } from "../data/Messages";
 
 export default class TopFrameProgram {
@@ -25,10 +26,18 @@ export default class TopFrameProgram {
   }
 
   async sendMessage(message: FromTopFrame): Promise<any> {
+    const wrappedMessage: ToBackground = {
+      type: "FromTopFrame",
+      message,
+    };
     try {
-      return await browser.runtime.sendMessage((message: any));
+      return await browser.runtime.sendMessage((wrappedMessage: any));
     } catch (error) {
-      console.error("TopFrameProgram#sendMessage failed", message, error);
+      console.error(
+        "TopFrameProgram#sendMessage failed",
+        wrappedMessage,
+        error
+      );
       throw error;
     }
   }

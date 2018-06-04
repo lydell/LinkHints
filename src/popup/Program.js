@@ -1,7 +1,7 @@
 // @flow
 
 import { bind, unreachable } from "../utils/main";
-import type { FromBackground, FromPopup } from "../data/Messages";
+import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 export default class PopupProgram {
   constructor() {
@@ -27,10 +27,14 @@ export default class PopupProgram {
   }
 
   async sendMessage(message: FromPopup): Promise<any> {
+    const wrappedMessage: ToBackground = {
+      type: "FromPopup",
+      message,
+    };
     try {
-      return await browser.runtime.sendMessage((message: any));
+      return await browser.runtime.sendMessage((wrappedMessage: any));
     } catch (error) {
-      console.error("PopupProgram#sendMessage failed", message, error);
+      console.error("PopupProgram#sendMessage failed", wrappedMessage, error);
       throw error;
     }
   }

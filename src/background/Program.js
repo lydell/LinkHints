@@ -3,7 +3,10 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
+  FromAllFrames,
   FromBackground,
+  FromPopup,
+  FromTopFrame,
   ToAllFrames,
   ToBackground,
   ToTopFrame,
@@ -18,6 +21,11 @@ type PendingElements = {|
   elements: Array<ExtendedElementReport>,
   pendingFrames: number,
   startTime: ?number,
+|};
+
+type MessageInfo = {|
+  tabId: number,
+  frameId: number,
 |};
 
 export default class BackgroundProgram {
@@ -86,6 +94,51 @@ export default class BackgroundProgram {
   }
 
   async onMessage(message: ToBackground, sender: MessageSender): Promise<any> {
+    const info =
+      sender.tab != null && sender.frameId != null
+        ? { tabId: sender.tab.id, frameId: sender.frameId }
+        : undefined;
+
+    switch (message.type) {
+      case "FromAllFrames":
+        if (info != null) {
+          return this.onAllFramesMessage(message.message, info);
+        }
+        console.error(
+          "BackgroundProgram#onMessage: Missing info",
+          info,
+          message.type,
+          message
+        );
+
+        break;
+
+      case "FromTopFrame":
+        if (info != null) {
+          return this.onTopFrameMessage(message.message, info);
+        }
+        console.error(
+          "BackgroundProgram#onMessage: Missing info",
+          info,
+          message.type,
+          message
+        );
+
+        break;
+
+      case "FromPopup":
+        return this.onPopupMessage(message.message);
+
+      default:
+        unreachable(message.type, message);
+    }
+    return undefined;
+  }
+
+  async onAllFramesMessage(
+    message: FromAllFrames,
+    info: MessageInfo
+  ): Promise<any> {
     switch (message.type) {
       case "AllFramesScriptAdded":
         this.sendAllFramesMessage(
@@ -95,59 +148,56 @@ export default class BackgroundProgram {
             suppressByDefault: false,
             oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
           },
-          { tabId: sender.tab == null ? undefined : sender.tab.id }
+          { tabId: info.tabId }
         );
         break;
 
       case "KeyboardShortcutMatched":
-        this.onKeyboardShortcut(
-          message.action,
-          sender.tab == null ? undefined : sender.tab.id,
-          message.timestamp
-        );
-        break;
-
-      case "TopFrameScriptAdded":
-        if (sender.tab != null && sender.frameId != null) {
-          this.topFrameIds.set(sender.tab.id, sender.frameId);
-        }
+        this.onKeyboardShortcut(message.action, info.tabId, message.timestamp);
         break;
 
       case "ReportVisibleElements": {
-        const { frameId } = sender;
-        if (frameId != null) {
-          const elements = message.elements.map(
-            ({ type, hintMeasurements, url }) => ({
-              type,
-              hintMeasurements,
-              url,
-              frameId,
-            })
+        const elements = message.elements.map(
+          ({ type, hintMeasurements, url }) => ({
+            type,
+            hintMeasurements,
+            url,
+            frameId: info.frameId,
+          })
+        );
+        this.pendingElements.elements.push(...elements);
+        this.pendingElements.pendingFrames += message.pendingFrames - 1;
+        if (this.pendingElements.pendingFrames <= 0) {
+          this.sendAllFramesMessage(
+            {
+              type: "StateSync",
+              keyboardShortcuts: this.hintsKeyboardShortcuts,
+              suppressByDefault: true,
+              oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+            },
+            { tabId: info.tabId }
           );
-          this.pendingElements.elements.push(...elements);
-          this.pendingElements.pendingFrames += message.pendingFrames - 1;
-          if (this.pendingElements.pendingFrames <= 0) {
-            this.sendAllFramesMessage(
-              {
-                type: "StateSync",
-                keyboardShortcuts: this.hintsKeyboardShortcuts,
-                suppressByDefault: true,
-                oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-              },
-              sender.tab == null
-                ? undefined
-                : {
-                    tabId: sender.tab.id,
-                  }
-            );
-            this.sendTopFrameMessage({
-              type: "Render",
-              elements: this.pendingElements.elements,
-            });
-          }
+          this.sendTopFrameMessage({
+            type: "Render",
+            elements: this.pendingElements.elements,
+          });
         }
         break;
       }
+
+      default:
+        unreachable(message.type, message);
+    }
+  }
+
+  async onTopFrameMessage(
+    message: FromTopFrame,
+    info: MessageInfo
+  ): Promise<any> {
+    switch (message.type) {
+      case "TopFrameScriptAdded":
+        this.topFrameIds.set(info.tabId, info.frameId);
+        break;
 
       case "Rendered": {
         const { tabId, startTime } = this.pendingElements;
@@ -160,6 +210,14 @@ export default class BackgroundProgram {
         break;
       }
 
+      default:
+        unreachable(message.type, message);
+    }
+    return undefined;
+  }
+
+  async onPopupMessage(message: FromPopup): Promise<any> {
+    switch (message.type) {
       case "GetPerf": {
         const tabId = (await browser.tabs.query({ active: true }))[0].id;
         const perf = this.perfByTabId.get(tabId);
