@@ -37,13 +37,13 @@ module.exports = {
     input: "background/main.js",
     output: "compiled/background.js",
   },
-  allFrames: {
-    input: "allFrames/main.js",
-    output: "compiled/allFrames.js",
+  observer: {
+    input: "observer/main.js",
+    output: "compiled/observer.js",
   },
-  topFrame: {
-    input: "topFrame/main.js",
-    output: "compiled/topFrame.js",
+  renderer: {
+    input: "renderer/main.js",
+    output: "compiled/renderer.js",
   },
   popup: {
     input: "popup/main.js",

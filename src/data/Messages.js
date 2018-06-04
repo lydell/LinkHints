@@ -4,18 +4,18 @@
 import type {
   ElementType,
   HintMeasurements,
-} from "../allFrames/ElementManager";
+} from "../observer/ElementManager";
 
 import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
 export type FromBackground =
   | {|
-      type: "ToAllFrames",
-      message: ToAllFrames,
+      type: "ToObserver",
+      message: ToObserver,
     |}
   | {|
-      type: "ToTopFrame",
-      message: ToTopFrame,
+      type: "ToRenderer",
+      message: ToRenderer,
     |}
   | {|
       type: "ToPopup",
@@ -24,21 +24,21 @@ export type FromBackground =
 
 export type ToBackground =
   | {|
-      type: "FromAllFrames",
-      message: FromAllFrames,
+      type: "FromObserver",
+      message: FromObserver,
     |}
   | {|
-      type: "FromTopFrame",
-      message: FromTopFrame,
+      type: "FromRenderer",
+      message: FromRenderer,
     |}
   | {|
       type: "FromPopup",
       message: FromPopup,
     |};
 
-export type FromAllFrames =
+export type FromObserver =
   | {|
-      type: "AllFramesScriptAdded",
+      type: "ObserverScriptAdded",
     |}
   | {|
       type: "KeyboardShortcutMatched",
@@ -51,7 +51,7 @@ export type FromAllFrames =
       pendingFrames: number,
     |};
 
-export type ToAllFrames =
+export type ToObserver =
   | {|
       type: "StateSync",
       keyboardShortcuts: Array<KeyboardMapping>,
@@ -62,16 +62,16 @@ export type ToAllFrames =
       type: "StartFindElements",
     |};
 
-export type FromTopFrame =
+export type FromRenderer =
   | {|
-      type: "TopFrameScriptAdded",
+      type: "RendererScriptAdded",
     |}
   | {|
       type: "Rendered",
       timestamp: number,
     |};
 
-export type ToTopFrame =
+export type ToRenderer =
   | {|
       type: "Render",
       elements: Array<ExtendedElementReport>,

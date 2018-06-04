@@ -3,13 +3,13 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
-  FromAllFrames,
+  FromObserver,
   FromBackground,
   FromPopup,
-  FromTopFrame,
-  ToAllFrames,
+  FromRenderer,
+  ToObserver,
   ToBackground,
-  ToTopFrame,
+  ToRenderer,
 } from "../data/Messages";
 import type {
   KeyboardAction,
@@ -32,7 +32,7 @@ export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
 
-  topFrameIds: Map<number, number>;
+  rendererIds: Map<number, number>;
   perfByTabId: Map<number, Array<number>>;
   pendingElements: PendingElements;
 
@@ -45,7 +45,7 @@ export default class BackgroundProgram {
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
-    this.topFrameIds = new Map();
+    this.rendererIds = new Map();
     this.pendingElements = makeEmptyPendingElements();
     this.perfByTabId = new Map();
 
@@ -61,18 +61,18 @@ export default class BackgroundProgram {
     browser.runtime.onMessage.removeListener(this.onMessage);
   }
 
-  async sendAllFramesMessage(
-    message: ToAllFrames,
+  async sendObserverMessage(
+    message: ToObserver,
     { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
   ): Promise<any> {
     return this.sendMessage(
-      { type: "ToAllFrames", message },
+      { type: "ToObserver", message },
       { tabId, frameId }
     );
   }
 
-  async sendTopFrameMessage(message: ToTopFrame): Promise<any> {
-    return this.sendMessage({ type: "ToTopFrame", message });
+  async sendRendererMessage(message: ToRenderer): Promise<any> {
+    return this.sendMessage({ type: "ToRenderer", message });
   }
 
   async sendMessage(
@@ -100,9 +100,9 @@ export default class BackgroundProgram {
         : undefined;
 
     switch (message.type) {
-      case "FromAllFrames":
+      case "FromObserver":
         if (info != null) {
-          return this.onAllFramesMessage(message.message, info);
+          return this.onObserverMessage(message.message, info);
         }
         console.error(
           "BackgroundProgram#onMessage: Missing info",
@@ -113,9 +113,9 @@ export default class BackgroundProgram {
 
         break;
 
-      case "FromTopFrame":
+      case "FromRenderer":
         if (info != null) {
-          return this.onTopFrameMessage(message.message, info);
+          return this.onRendererMessage(message.message, info);
         }
         console.error(
           "BackgroundProgram#onMessage: Missing info",
@@ -135,13 +135,13 @@ export default class BackgroundProgram {
     return undefined;
   }
 
-  async onAllFramesMessage(
-    message: FromAllFrames,
+  async onObserverMessage(
+    message: FromObserver,
     info: MessageInfo
   ): Promise<any> {
     switch (message.type) {
-      case "AllFramesScriptAdded":
-        this.sendAllFramesMessage(
+      case "ObserverScriptAdded":
+        this.sendObserverMessage(
           {
             type: "StateSync",
             keyboardShortcuts: this.normalKeyboardShortcuts,
@@ -168,7 +168,7 @@ export default class BackgroundProgram {
         this.pendingElements.elements.push(...elements);
         this.pendingElements.pendingFrames += message.pendingFrames - 1;
         if (this.pendingElements.pendingFrames <= 0) {
-          this.sendAllFramesMessage(
+          this.sendObserverMessage(
             {
               type: "StateSync",
               keyboardShortcuts: this.hintsKeyboardShortcuts,
@@ -177,7 +177,7 @@ export default class BackgroundProgram {
             },
             { tabId: info.tabId }
           );
-          this.sendTopFrameMessage({
+          this.sendRendererMessage({
             type: "Render",
             elements: this.pendingElements.elements,
           });
@@ -190,13 +190,13 @@ export default class BackgroundProgram {
     }
   }
 
-  async onTopFrameMessage(
-    message: FromTopFrame,
+  async onRendererMessage(
+    message: FromRenderer,
     info: MessageInfo
   ): Promise<any> {
     switch (message.type) {
-      case "TopFrameScriptAdded":
-        this.topFrameIds.set(info.tabId, info.frameId);
+      case "RendererScriptAdded":
+        this.rendererIds.set(info.tabId, info.frameId);
         break;
 
       case "Rendered": {
@@ -221,7 +221,7 @@ export default class BackgroundProgram {
       case "GetPerf": {
         const tabId = (await browser.tabs.query({ active: true }))[0].id;
         const perf = this.perfByTabId.get(tabId);
-        const hasFrameScripts = this.topFrameIds.has(tabId);
+        const hasFrameScripts = this.rendererIds.has(tabId);
         return hasFrameScripts ? (perf == null ? [] : perf) : null;
       }
 
@@ -238,13 +238,13 @@ export default class BackgroundProgram {
   ) {
     switch (action.type) {
       case "EnterHintsMode":
-        this.sendAllFramesMessage(
+        this.sendObserverMessage(
           { type: "StartFindElements" },
           tabId == null
             ? undefined
             : {
                 tabId,
-                frameId: this.topFrameIds.get(tabId),
+                frameId: this.rendererIds.get(tabId),
               }
         );
         this.pendingElements = {
@@ -257,13 +257,13 @@ export default class BackgroundProgram {
 
       case "ExitHintsMode":
         this.pendingElements = makeEmptyPendingElements();
-        this.sendAllFramesMessage({
+        this.sendObserverMessage({
           type: "StateSync",
           keyboardShortcuts: this.normalKeyboardShortcuts,
           suppressByDefault: false,
           oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
         });
-        this.sendTopFrameMessage({
+        this.sendRendererMessage({
           type: "Unrender",
         });
         break;
@@ -278,7 +278,7 @@ export default class BackgroundProgram {
   }
 
   onTabRemoved(tabId: number) {
-    this.topFrameIds.delete(tabId);
+    this.rendererIds.delete(tabId);
     this.perfByTabId.delete(tabId);
     if (tabId === this.pendingElements.tabId) {
       this.pendingElements = makeEmptyPendingElements();

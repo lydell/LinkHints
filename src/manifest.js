@@ -48,14 +48,14 @@ module.exports = () =>
         js: [
           getPolyfill(config.browser),
           config.setup.output,
-          config.allFrames.output,
+          config.observer.output,
         ].filter(Boolean),
       },
       {
         matches: ["<all_urls>"],
         run_at: "document_start",
-        js: [config.topFrame.output],
-        css: ["./topFrame/main.css"],
+        js: [config.renderer.output],
+        css: ["./renderer/main.css"],
       },
     ],
   });

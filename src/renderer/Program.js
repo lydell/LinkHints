@@ -4,11 +4,11 @@ import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
   FromBackground,
-  FromTopFrame,
+  FromRenderer,
   ToBackground,
 } from "../data/Messages";
 
-export default class TopFrameProgram {
+export default class RendererProgram {
   constructor() {
     bind(this, ["onMessage"]);
   }
@@ -17,7 +17,7 @@ export default class TopFrameProgram {
     browser.runtime.onMessage.addListener(this.onMessage);
 
     this.sendMessage({
-      type: "TopFrameScriptAdded",
+      type: "RendererScriptAdded",
     });
   }
 
@@ -25,16 +25,16 @@ export default class TopFrameProgram {
     browser.runtime.onMessage.removeListener(this.onMessage);
   }
 
-  async sendMessage(message: FromTopFrame): Promise<any> {
+  async sendMessage(message: FromRenderer): Promise<any> {
     const wrappedMessage: ToBackground = {
-      type: "FromTopFrame",
+      type: "FromRenderer",
       message,
     };
     try {
       return await browser.runtime.sendMessage((wrappedMessage: any));
     } catch (error) {
       console.error(
-        "TopFrameProgram#sendMessage failed",
+        "RendererProgram#sendMessage failed",
         wrappedMessage,
         error
       );
@@ -43,7 +43,7 @@ export default class TopFrameProgram {
   }
 
   onMessage(wrappedMessage: FromBackground) {
-    if (wrappedMessage.type !== "ToTopFrame") {
+    if (wrappedMessage.type !== "ToRenderer") {
       return;
     }
 

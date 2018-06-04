@@ -2,7 +2,7 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
-  FromAllFrames,
+  FromObserver,
   FromBackground,
   ToBackground,
 } from "../data/Messages";
@@ -11,7 +11,7 @@ import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 import ElementManager from "./ElementManager";
 import type { Offsets, Viewport } from "./ElementManager";
 
-export default class AllFramesProgram {
+export default class ObserverProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
   elementManager: ElementManager;
@@ -39,7 +39,7 @@ export default class AllFramesProgram {
     this.elementManager.start();
 
     this.sendMessage({
-      type: "AllFramesScriptAdded",
+      type: "ObserverScriptAdded",
     });
   }
 
@@ -50,16 +50,16 @@ export default class AllFramesProgram {
     this.elementManager.stop();
   }
 
-  async sendMessage(message: FromAllFrames): Promise<any> {
+  async sendMessage(message: FromObserver): Promise<any> {
     const wrappedMessage: ToBackground = {
-      type: "FromAllFrames",
+      type: "FromObserver",
       message,
     };
     try {
       return await browser.runtime.sendMessage((wrappedMessage: any));
     } catch (error) {
       console.error(
-        "AllFramesProgram#sendMessage failed",
+        "ObserverProgram#sendMessage failed",
         wrappedMessage,
         error
       );
@@ -68,7 +68,7 @@ export default class AllFramesProgram {
   }
 
   onMessage(wrappedMessage: FromBackground) {
-    if (wrappedMessage.type !== "ToAllFrames") {
+    if (wrappedMessage.type !== "ToObserver") {
       return;
     }
 
