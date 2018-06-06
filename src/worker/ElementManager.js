@@ -208,10 +208,10 @@ function getMeasurements(
   const rect = element.getBoundingClientRect();
 
   const visibleRect = {
-    left: Math.max(offsets.offsetX + rect.left, viewport.left),
-    right: Math.min(offsets.offsetX + rect.right, viewport.right),
-    top: Math.max(offsets.offsetY + rect.top, viewport.top),
-    bottom: Math.min(offsets.offsetY + rect.bottom, viewport.bottom),
+    left: offsets.offsetX + Math.max(rect.left, viewport.left),
+    right: offsets.offsetX + Math.min(rect.right, viewport.right),
+    top: offsets.offsetY + Math.max(rect.top, viewport.top),
+    bottom: offsets.offsetY + Math.min(rect.bottom, viewport.bottom),
   };
 
   const height = visibleRect.bottom - visibleRect.top;
