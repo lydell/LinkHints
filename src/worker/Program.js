@@ -205,14 +205,6 @@ function suppressEvent(event: Event) {
 }
 
 function parseViewports(rawViewports: mixed): Array<Viewport> {
-  function getNumber(arg: { [string]: mixed }, property: string): number {
-    const value = arg[property];
-    if (!(typeof value === "number" && Number.isFinite(value))) {
-      throw new Error(`Invalid '${property}': ${String(value)}`);
-    }
-    return value;
-  }
-
   if (!Array.isArray(rawViewports)) {
     throw new Error(`Expected an array, but got: ${typeof rawViewports}`);
   }
@@ -232,6 +224,14 @@ function parseViewports(rawViewports: mixed): Array<Viewport> {
       height: getNumber(viewport, "height"),
     };
   });
+}
+
+function getNumber(arg: { [string]: mixed }, property: string): number {
+  const value = arg[property];
+  if (!(typeof value === "number" && Number.isFinite(value))) {
+    throw new Error(`Invalid '${property}': ${String(value)}`);
+  }
+  return value;
 }
 
 function getFrameViewport(
