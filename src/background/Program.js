@@ -17,10 +17,9 @@ import type {
 } from "../data/KeyboardShortcuts";
 
 type PendingElements = {|
-  tabId: ?number,
   elements: Array<ExtendedElementReport>,
   pendingFrames: number,
-  startTime: ?number,
+  startTime: number,
 |};
 
 type MessageInfo = {|
@@ -28,13 +27,32 @@ type MessageInfo = {|
   frameId: number,
 |};
 
+type TabState = {|
+  rendererFrameId: number,
+  perf: Array<number>,
+  hintsState: HintsState,
+|};
+
+type HintsState =
+  | {|
+      type: "Idle",
+    |}
+  | {|
+      type: "Collecting",
+      pendingElements: PendingElements,
+    |}
+  | {|
+      type: "Hinting",
+      // TODO
+      elementsWithHints: Array<number>,
+      startTime: number,
+    |};
+
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
 
-  rendererIds: Map<number, number>;
-  perfByTabId: Map<number, Array<number>>;
-  pendingElements: PendingElements;
+  tabState: Map<number, TabState>;
 
   constructor({
     normalKeyboardShortcuts,
@@ -45,9 +63,7 @@ export default class BackgroundProgram {
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
-    this.rendererIds = new Map();
-    this.pendingElements = makeEmptyPendingElements();
-    this.perfByTabId = new Map();
+    this.tabState = new Map();
 
     bind(this, ["onMessage", "onTabRemoved"]);
   }
@@ -99,28 +115,38 @@ export default class BackgroundProgram {
         ? { tabId: sender.tab.id, frameId: sender.frameId }
         : undefined;
 
+    const tabStateRaw =
+      info == null ? undefined : this.tabState.get(info.tabId);
+    const tabState = tabStateRaw == null ? makeEmptyTabState() : tabStateRaw;
+
+    if (info != null && tabStateRaw == null) {
+      this.tabState.set(info.tabId, tabState);
+    }
+
     switch (message.type) {
       case "FromObserver":
         if (info != null) {
-          return this.onObserverMessage(message.message, info);
+          return this.onObserverMessage(message.message, info, tabState);
         }
         console.error(
           "BackgroundProgram#onMessage: Missing info",
           info,
           message.type,
-          message
+          message,
+          sender
         );
         break;
 
       case "FromRenderer":
         if (info != null) {
-          return this.onRendererMessage(message.message, info);
+          return this.onRendererMessage(message.message, info, tabState);
         }
         console.error(
           "BackgroundProgram#onMessage: Missing info",
           info,
           message.type,
-          message
+          message,
+          sender
         );
         break;
 
@@ -135,7 +161,8 @@ export default class BackgroundProgram {
 
   async onObserverMessage(
     message: FromObserver,
-    info: MessageInfo
+    info: MessageInfo,
+    tabState: TabState
   ): Promise<any> {
     switch (message.type) {
       case "ObserverScriptAdded":
@@ -151,10 +178,15 @@ export default class BackgroundProgram {
         break;
 
       case "KeyboardShortcutMatched":
-        this.onKeyboardShortcut(message.action, info.tabId, message.timestamp);
+        this.onKeyboardShortcut(message.action, info, message.timestamp);
         break;
 
       case "ReportVisibleElements": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Collecting") {
+          return;
+        }
+
         const elements = message.elements.map(
           ({ type, hintMeasurements, url }) => ({
             type,
@@ -163,9 +195,14 @@ export default class BackgroundProgram {
             frameId: info.frameId,
           })
         );
-        this.pendingElements.elements.push(...elements);
-        this.pendingElements.pendingFrames += message.pendingFrames - 1;
-        if (this.pendingElements.pendingFrames <= 0) {
+        hintsState.pendingElements.elements.push(...elements);
+        hintsState.pendingElements.pendingFrames += message.pendingFrames - 1;
+        if (hintsState.pendingElements.pendingFrames <= 0) {
+          tabState.hintsState = {
+            type: "Hinting",
+            startTime: hintsState.pendingElements.startTime,
+            elementsWithHints: [], // TODO
+          };
           this.sendObserverMessage(
             {
               type: "StateSync",
@@ -177,7 +214,7 @@ export default class BackgroundProgram {
           );
           this.sendRendererMessage({
             type: "Render",
-            elements: this.pendingElements.elements,
+            elements: hintsState.pendingElements.elements,
           });
         }
         break;
@@ -190,37 +227,36 @@ export default class BackgroundProgram {
 
   async onRendererMessage(
     message: FromRenderer,
-    info: MessageInfo
+    info: MessageInfo,
+    tabState: TabState
   ): Promise<any> {
     switch (message.type) {
       case "RendererScriptAdded":
-        this.rendererIds.set(info.tabId, info.frameId);
+        tabState.rendererFrameId = info.frameId;
         break;
 
       case "Rendered": {
-        const { tabId, startTime } = this.pendingElements;
-        if (tabId != null && startTime != null) {
-          const duration = message.timestamp - startTime;
-          const previous = this.perfByTabId.get(tabId) || [];
-          const newItems = previous.concat(duration).slice(-10);
-          this.perfByTabId.set(tabId, newItems);
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Hinting") {
+          return;
         }
+        const { startTime } = hintsState;
+        const duration = message.timestamp - startTime;
+        tabState.perf = tabState.perf.concat(duration).slice(-10);
         break;
       }
 
       default:
         unreachable(message.type, message);
     }
-    return undefined;
   }
 
   async onPopupMessage(message: FromPopup): Promise<any> {
     switch (message.type) {
       case "GetPerf": {
         const tabId = (await browser.tabs.query({ active: true }))[0].id;
-        const perf = this.perfByTabId.get(tabId);
-        const hasFrameScripts = this.rendererIds.has(tabId);
-        return hasFrameScripts ? (perf == null ? [] : perf) : null;
+        const tabState = this.tabState.get(tabId);
+        return tabState == null ? null : tabState.perf;
       }
 
       default:
@@ -231,30 +267,39 @@ export default class BackgroundProgram {
 
   onKeyboardShortcut(
     action: KeyboardAction,
-    tabId: ?number,
+    info: MessageInfo,
     timestamp: number
   ) {
     switch (action.type) {
-      case "EnterHintsMode":
+      case "EnterHintsMode": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null || tabState.hintsState.type !== "Idle") {
+          return;
+        }
         this.sendObserverMessage(
           { type: "StartFindElements" },
-          tabId == null
-            ? undefined
-            : {
-                tabId,
-                frameId: this.rendererIds.get(tabId),
-              }
+          {
+            tabId: info.tabId,
+            frameId: info.frameId,
+          }
         );
-        this.pendingElements = {
-          tabId,
-          elements: [],
-          pendingFrames: 1,
-          startTime: timestamp,
+        tabState.hintsState = {
+          type: "Collecting",
+          pendingElements: {
+            elements: [],
+            pendingFrames: 1,
+            startTime: timestamp,
+          },
         };
         break;
+      }
 
-      case "ExitHintsMode":
-        this.pendingElements = makeEmptyPendingElements();
+      case "ExitHintsMode": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null || tabState.hintsState.type !== "Hinting") {
+          return;
+        }
+        tabState.hintsState = { type: "Idle" };
         this.sendObserverMessage({
           type: "StateSync",
           keyboardShortcuts: this.normalKeyboardShortcuts,
@@ -265,6 +310,7 @@ export default class BackgroundProgram {
           type: "Unrender",
         });
         break;
+      }
 
       case "PressHintChar":
         console.log("PressHintChar", action.char);
@@ -276,11 +322,7 @@ export default class BackgroundProgram {
   }
 
   onTabRemoved(tabId: number) {
-    this.rendererIds.delete(tabId);
-    this.perfByTabId.delete(tabId);
-    if (tabId === this.pendingElements.tabId) {
-      this.pendingElements = makeEmptyPendingElements();
-    }
+    this.tabState.delete(tabId);
   }
 }
 
@@ -290,12 +332,13 @@ function makeOneTimeWindowMessage(): string {
   return array.join("");
 }
 
-// This is a function (not a constant), since `this.pendingElements` is mutated.
-function makeEmptyPendingElements(): PendingElements {
+// This is a function (not a constant), because of mutation.
+function makeEmptyTabState(): TabState {
   return {
-    tabId: undefined,
-    elements: [],
-    pendingFrames: 0,
-    startTime: undefined,
+    // This is a bit ugly, I know. This ID will quickly be replaced with a real
+    // one.
+    rendererFrameId: 0,
+    perf: [],
+    hintsState: { type: "Idle" },
   };
 }
