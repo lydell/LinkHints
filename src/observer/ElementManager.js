@@ -30,7 +30,7 @@ export default class ElementManager {
   visibleElements: Set<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
-  stopped: boolean;
+  bailed: boolean;
 
   constructor({ maxTrackedElements }: {| maxTrackedElements: number |}) {
     this.maxTrackedElements = maxTrackedElements;
@@ -44,7 +44,7 @@ export default class ElementManager {
     );
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
-    this.stopped = true;
+    this.bailed = false;
   }
 
   start() {
@@ -55,7 +55,6 @@ export default class ElementManager {
         childList: true,
         subtree: true,
       });
-      this.stopped = false;
     }
   }
 
@@ -64,7 +63,28 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
-    this.stopped = true;
+  }
+
+  // Stop tracking everything except frames (up to `maxTrackedElements` of them).
+  bail() {
+    if (this.bailed) {
+      return;
+    }
+
+    this.intersectionObserver.disconnect();
+    this.elements.clear();
+    this.visibleElements.clear();
+    this.bailed = true;
+
+    const { documentElement } = document;
+    if (documentElement != null) {
+      const frames = document.querySelectorAll("iframe, frame");
+      for (const frame of frames) {
+        this.addElements(frame);
+      }
+    }
+
+    console.log("bailed", this);
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
@@ -82,7 +102,7 @@ export default class ElementManager {
       for (const node of record.addedNodes) {
         if (node instanceof HTMLElement) {
           this.addElements(node);
-          if (this.stopped) {
+          if (this.bailed) {
             return;
           }
         }
@@ -101,12 +121,12 @@ export default class ElementManager {
     const elements = [parent, ...parent.querySelectorAll("*")];
     for (const element of elements) {
       const data = getElementData(element);
-      if (data != null) {
+      if (data != null && (!this.bailed || data.type === "frame")) {
         this.elements.set(element, data);
         this.intersectionObserver.observe(element);
         size++;
         if (size > this.maxTrackedElements) {
-          this.stop();
+          this.bail();
           break;
         }
       }
@@ -132,14 +152,14 @@ export default class ElementManager {
     data: ElementData,
     measurements: HintMeasurements,
   |}> {
-    const candidates = this.stopped
+    const candidates = this.bailed
       ? document.documentElement == null
         ? []
         : document.documentElement.querySelectorAll("*")
       : this.visibleElements;
 
     return Array.from(candidates, element => {
-      const data = this.stopped
+      const data = this.bailed
         ? getElementData(element)
         : this.elements.get(element);
 
@@ -166,13 +186,13 @@ export default class ElementManager {
   }
 
   getVisibleFrames(): Array<HTMLIFrameElement | HTMLFrameElement> {
-    // TODO: Handle the .stopped case.
     return Array.from(
       this.visibleElements,
       element =>
         (element instanceof HTMLIFrameElement ||
           element instanceof HTMLFrameElement) &&
-        // Needed on reddit.com
+        // Needed on reddit.com. There's a Google Ads iframe without `src` where
+        // `contentWindow` is null.
         element.contentWindow != null
           ? element
           : undefined
