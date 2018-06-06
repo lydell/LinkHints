@@ -146,8 +146,10 @@ export default class ElementManager {
     return Array.from(
       this.visibleElements,
       element =>
-        element instanceof HTMLIFrameElement ||
-        element instanceof HTMLFrameElement
+        (element instanceof HTMLIFrameElement ||
+          element instanceof HTMLFrameElement) &&
+        // Needed on reddit.com
+        element.contentWindow != null
           ? element
           : undefined
     ).filter(Boolean);
