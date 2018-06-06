@@ -4,12 +4,12 @@ import { bind, unreachable } from "../utils/main";
 import type {
   ExtendedElementReport,
   FromBackground,
-  FromObserver,
   FromPopup,
   FromRenderer,
+  FromWorker,
   ToBackground,
-  ToObserver,
   ToRenderer,
+  ToWorker,
 } from "../data/Messages";
 import type {
   KeyboardAction,
@@ -77,14 +77,11 @@ export default class BackgroundProgram {
     browser.runtime.onMessage.removeListener(this.onMessage);
   }
 
-  async sendObserverMessage(
-    message: ToObserver,
+  async sendWorkerMessage(
+    message: ToWorker,
     { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
   ): Promise<any> {
-    return this.sendMessage(
-      { type: "ToObserver", message },
-      { tabId, frameId }
-    );
+    return this.sendMessage({ type: "ToWorker", message }, { tabId, frameId });
   }
 
   async sendRendererMessage(message: ToRenderer): Promise<any> {
@@ -124,9 +121,9 @@ export default class BackgroundProgram {
     }
 
     switch (message.type) {
-      case "FromObserver":
+      case "FromWorker":
         if (info != null) {
-          return this.onObserverMessage(message.message, info, tabState);
+          return this.onWorkerMessage(message.message, info, tabState);
         }
         console.error(
           "BackgroundProgram#onMessage: Missing info",
@@ -159,14 +156,14 @@ export default class BackgroundProgram {
     return undefined;
   }
 
-  async onObserverMessage(
-    message: FromObserver,
+  async onWorkerMessage(
+    message: FromWorker,
     info: MessageInfo,
     tabState: TabState
   ): Promise<any> {
     switch (message.type) {
-      case "ObserverScriptAdded":
-        this.sendObserverMessage(
+      case "WorkerScriptAdded":
+        this.sendWorkerMessage(
           {
             type: "StateSync",
             keyboardShortcuts: this.normalKeyboardShortcuts,
@@ -203,7 +200,7 @@ export default class BackgroundProgram {
             startTime: hintsState.pendingElements.startTime,
             elementsWithHints: [], // TODO
           };
-          this.sendObserverMessage(
+          this.sendWorkerMessage(
             {
               type: "StateSync",
               keyboardShortcuts: this.hintsKeyboardShortcuts,
@@ -276,7 +273,7 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Idle") {
           return;
         }
-        this.sendObserverMessage(
+        this.sendWorkerMessage(
           { type: "StartFindElements" },
           {
             tabId: info.tabId,
@@ -300,7 +297,7 @@ export default class BackgroundProgram {
           return;
         }
         tabState.hintsState = { type: "Idle" };
-        this.sendObserverMessage({
+        this.sendWorkerMessage({
           type: "StateSync",
           keyboardShortcuts: this.normalKeyboardShortcuts,
           suppressByDefault: false,

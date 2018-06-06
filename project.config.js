@@ -37,9 +37,9 @@ module.exports = {
     input: "background/main.js",
     output: "compiled/background.js",
   },
-  observer: {
-    input: "observer/main.js",
-    output: "compiled/observer.js",
+  worker: {
+    input: "worker/main.js",
+    output: "compiled/worker.js",
   },
   renderer: {
     input: "renderer/main.js",

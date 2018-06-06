@@ -43,7 +43,7 @@ setup();
 module.exports = [
   js(config.setup),
   js(config.background),
-  js(config.observer),
+  js(config.worker),
   js(config.renderer),
   js(config.popup),
   template(config.manifest),

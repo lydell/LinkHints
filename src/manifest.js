@@ -48,7 +48,7 @@ module.exports = () =>
         js: [
           getPolyfill(config.browser),
           config.setup.output,
-          config.observer.output,
+          config.worker.output,
         ].filter(Boolean),
       },
       {

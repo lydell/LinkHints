@@ -1,14 +1,14 @@
 // @flow
 
 // TODO: Move these types somewhere.
-import type { ElementType, HintMeasurements } from "../observer/ElementManager";
+import type { ElementType, HintMeasurements } from "../worker/ElementManager";
 
 import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
 
 export type FromBackground =
   | {|
-      type: "ToObserver",
-      message: ToObserver,
+      type: "ToWorker",
+      message: ToWorker,
     |}
   | {|
       type: "ToRenderer",
@@ -21,8 +21,8 @@ export type FromBackground =
 
 export type ToBackground =
   | {|
-      type: "FromObserver",
-      message: FromObserver,
+      type: "FromWorker",
+      message: FromWorker,
     |}
   | {|
       type: "FromRenderer",
@@ -33,9 +33,9 @@ export type ToBackground =
       message: FromPopup,
     |};
 
-export type FromObserver =
+export type FromWorker =
   | {|
-      type: "ObserverScriptAdded",
+      type: "WorkerScriptAdded",
     |}
   | {|
       type: "KeyboardShortcutMatched",
@@ -48,7 +48,7 @@ export type FromObserver =
       pendingFrames: number,
     |};
 
-export type ToObserver =
+export type ToWorker =
   | {|
       type: "StateSync",
       keyboardShortcuts: Array<KeyboardMapping>,

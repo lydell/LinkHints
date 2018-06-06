@@ -3,7 +3,7 @@
 import { bind, unreachable } from "../utils/main";
 import type {
   FromBackground,
-  FromObserver,
+  FromWorker,
   ToBackground,
 } from "../data/Messages";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
@@ -18,7 +18,7 @@ import type { Offsets, Viewport } from "./ElementManager";
 // 10K should be enough for regular sites.
 const MAX_TRACKED_ELEMENTS = 10e3;
 
-export default class ObserverProgram {
+export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
   elementManager: ElementManager;
@@ -48,7 +48,7 @@ export default class ObserverProgram {
     this.elementManager.start();
 
     this.sendMessage({
-      type: "ObserverScriptAdded",
+      type: "WorkerScriptAdded",
     });
   }
 
@@ -59,25 +59,21 @@ export default class ObserverProgram {
     this.elementManager.stop();
   }
 
-  async sendMessage(message: FromObserver): Promise<any> {
+  async sendMessage(message: FromWorker): Promise<any> {
     const wrappedMessage: ToBackground = {
-      type: "FromObserver",
+      type: "FromWorker",
       message,
     };
     try {
       return await browser.runtime.sendMessage((wrappedMessage: any));
     } catch (error) {
-      console.error(
-        "ObserverProgram#sendMessage failed",
-        wrappedMessage,
-        error
-      );
+      console.error("WorkerProgram#sendMessage failed", wrappedMessage, error);
       throw error;
     }
   }
 
   onMessage(wrappedMessage: FromBackground) {
-    if (wrappedMessage.type !== "ToObserver") {
+    if (wrappedMessage.type !== "ToWorker") {
       return;
     }
 
