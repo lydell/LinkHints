@@ -2,7 +2,7 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
-  ExtendedElementReport,
+  ElementWithHint,
   FromBackground,
   FromRenderer,
   ToBackground,
@@ -63,13 +63,13 @@ export default class RendererProgram {
     }
   }
 
-  render(elements: Array<ExtendedElementReport>) {
+  render(elements: Array<ElementWithHint>) {
     const container = document.createElement("div");
     container.id = "synth-hints";
 
-    for (const { hintMeasurements } of elements) {
+    for (const { hintMeasurements, hint } of elements) {
       const element = document.createElement("div");
-      const text = document.createTextNode("ab");
+      const text = document.createTextNode(hint);
       element.append(text);
       element.className = "synth-hint";
       element.style.setProperty(

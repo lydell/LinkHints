@@ -3,6 +3,8 @@
 const fs = require("fs");
 const path = require("path");
 
+const resolve = require("rollup-plugin-node-resolve");
+const commonjs = require("rollup-plugin-commonjs");
 const replace = require("rollup-plugin-replace");
 const { terser } = require("rollup-plugin-terser");
 const rimraf = require("rimraf");
@@ -75,6 +77,8 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
     },
     plugins: [
       flow({ pretty: true }),
+      resolve(),
+      commonjs(),
       ...(config.browser == null
         ? []
         : [

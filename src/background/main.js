@@ -55,6 +55,7 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
+  hintChars,
 });
 
 program.start();

@@ -1,7 +1,10 @@
 // @flow
 
+import huffman from "n-ary-huffman";
+
 import { bind, unreachable } from "../utils/main";
 import type {
+  ElementWithHint,
   ExtendedElementReport,
   FromBackground,
   FromPopup,
@@ -43,26 +46,28 @@ type HintsState =
     |}
   | {|
       type: "Hinting",
-      // TODO
-      elementsWithHints: Array<number>,
+      elementsWithHints: Array<ElementWithHint>,
       startTime: number,
     |};
 
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
-
+  hintChars: string;
   tabState: Map<number, TabState>;
 
   constructor({
     normalKeyboardShortcuts,
     hintsKeyboardShortcuts,
+    hintChars,
   }: {|
     normalKeyboardShortcuts: Array<KeyboardMapping>,
     hintsKeyboardShortcuts: Array<KeyboardMapping>,
+    hintChars: string,
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
+    this.hintChars = hintChars;
     this.tabState = new Map();
 
     bind(this, ["onMessage", "onTabRemoved"]);
@@ -195,10 +200,27 @@ export default class BackgroundProgram {
         hintsState.pendingElements.elements.push(...elements);
         hintsState.pendingElements.pendingFrames += message.pendingFrames - 1;
         if (hintsState.pendingElements.pendingFrames <= 0) {
+          const elementsWithHints = hintsState.pendingElements.elements.map(
+            element => ({
+              type: element.type,
+              hintMeasurements: element.hintMeasurements,
+              url: element.url,
+              frameId: element.frameId,
+              weight: element.hintMeasurements.area,
+              hint: "",
+            })
+          );
+          const tree = huffman.createTree(
+            elementsWithHints,
+            this.hintChars.length
+          );
+          tree.assignCodeWords(this.hintChars, (item, codeWord) => {
+            item.hint = codeWord;
+          });
           tabState.hintsState = {
             type: "Hinting",
             startTime: hintsState.pendingElements.startTime,
-            elementsWithHints: [], // TODO
+            elementsWithHints,
           };
           this.sendWorkerMessage(
             {
@@ -211,7 +233,7 @@ export default class BackgroundProgram {
           );
           this.sendRendererMessage({
             type: "Render",
-            elements: hintsState.pendingElements.elements,
+            elements: elementsWithHints,
           });
           // $FlowIgnore: Not sure if this is wanted.
           browser.browserAction.setBadgeText({

@@ -71,7 +71,7 @@ export type FromRenderer =
 export type ToRenderer =
   | {|
       type: "Render",
-      elements: Array<ExtendedElementReport>,
+      elements: Array<ElementWithHint>,
     |}
   | {|
       type: "Unrender",
@@ -94,4 +94,10 @@ export type ElementReport = {|
 export type ExtendedElementReport = {|
   ...ElementReport,
   frameId: number,
+|};
+
+export type ElementWithHint = {|
+  ...ExtendedElementReport,
+  weight: number,
+  hint: string,
 |};
