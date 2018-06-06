@@ -235,7 +235,6 @@ export default class BackgroundProgram {
             type: "Render",
             elements: elementsWithHints,
           });
-          // $FlowIgnore: Not sure if this is wanted.
           browser.browserAction.setBadgeText({
             text: String(hintsState.pendingElements.elements.length),
             tabId: info.tabId,

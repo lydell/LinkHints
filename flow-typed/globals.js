@@ -55,6 +55,12 @@ declare type TabRemoveInfo = {|
 declare type TabStatus = "loading" | "complete";
 
 declare var browser: {|
+  browserAction: {|
+    setBadgeText: ({|
+      text: string,
+      tabId?: number,
+    |}) => void,
+  |},
   runtime: {|
     sendMessage: (message: any) => Promise<any>,
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
