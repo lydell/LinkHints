@@ -9,7 +9,7 @@ import type {
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Offsets, Viewport } from "./ElementManager";
+import type { Viewport } from "./ElementManager";
 
 // The single-page HTML specification has over 70K links! If trying to track all
 // of those, Firefox warns that the extension is slowing the page down while
@@ -92,9 +92,10 @@ export default class WorkerProgram {
           right: window.innerWidth,
           top: 0,
           bottom: window.innerHeight,
+          offsetY: 0,
+          offsetX: 0,
         };
-        const offsets = { offsetY: 0, offsetX: 0 };
-        this.reportVisibleElements(offsets, viewport);
+        this.reportVisibleElements([viewport]);
         break;
       }
 
@@ -111,10 +112,9 @@ export default class WorkerProgram {
       !Array.isArray(event.data) &&
       event.data.token === this.oneTimeWindowMessageToken
     ) {
-      let offsets = undefined;
-      let viewport = undefined;
+      let viewports = undefined;
       try {
-        ({ offsets, viewport } = parseWindowMessage(event.data));
+        viewports = parseViewports(event.data.viewports);
       } catch (error) {
         console.warn(
           "Ignoring bad window message",
@@ -124,7 +124,7 @@ export default class WorkerProgram {
         );
         return;
       }
-      this.reportVisibleElements(offsets, viewport);
+      this.reportVisibleElements(viewports);
       this.oneTimeWindowMessageToken = undefined;
     }
   }
@@ -168,11 +168,10 @@ export default class WorkerProgram {
     }
   }
 
-  reportVisibleElements(offsets: Offsets, viewport: Viewport) {
+  reportVisibleElements(viewports: Array<Viewport>) {
     const elements = this.elementManager.getVisibleElements(
       new Set(["link"]),
-      offsets,
-      viewport
+      viewports
     );
 
     const frames = this.elementManager.getVisibleFrames();
@@ -182,12 +181,9 @@ export default class WorkerProgram {
         frame instanceof HTMLIFrameElement ||
         frame instanceof HTMLFrameElement
       ) {
-        const frameOffsets = getFrameOffsets(frame);
         const message = {
           token: this.oneTimeWindowMessageToken,
-          offsetX: offsets.offsetX + frameOffsets.offsetX,
-          offsetY: offsets.offsetY + frameOffsets.offsetY,
-          ...viewport,
+          viewports: viewports.concat(getFrameViewport(frame)),
         };
         frame.contentWindow.postMessage(message, "*");
       }
@@ -210,10 +206,8 @@ function suppressEvent(event: Event) {
   event.stopPropagation();
 }
 
-function parseWindowMessage(arg: {
-  [string]: mixed,
-}): {| offsets: Offsets, viewport: Viewport |} {
-  function getNumber(property: string): number {
+function parseViewports(rawViewports: mixed): Array<Viewport> {
+  function getNumber(arg: { [string]: mixed }, property: string): number {
     const value = arg[property];
     if (!(typeof value === "number" && Number.isFinite(value))) {
       throw new Error(`Invalid '${property}': ${String(value)}`);
@@ -221,31 +215,54 @@ function parseWindowMessage(arg: {
     return value;
   }
 
-  return {
-    offsets: {
-      offsetX: getNumber("offsetX"),
-      offsetY: getNumber("offsetY"),
-    },
-    viewport: {
-      left: getNumber("left"),
-      right: getNumber("right"),
-      top: getNumber("top"),
-      bottom: getNumber("bottom"),
-    },
-  };
+  if (!Array.isArray(rawViewports)) {
+    throw new Error(`Expected an array, but got: ${typeof rawViewports}`);
+  }
+
+  return rawViewports.map(viewport => {
+    if (
+      viewport == null ||
+      typeof viewport !== "object" ||
+      Array.isArray(viewport)
+    ) {
+      throw new Error(`Expected an object, but got: ${typeof viewport}`);
+    }
+    return {
+      left: getNumber(viewport, "left"),
+      right: getNumber(viewport, "right"),
+      top: getNumber(viewport, "top"),
+      bottom: getNumber(viewport, "bottom"),
+      offsetX: getNumber(viewport, "offsetX"),
+      offsetY: getNumber(viewport, "offsetY"),
+    };
+  });
 }
 
-function getFrameOffsets(frame: HTMLIFrameElement | HTMLFrameElement): Offsets {
+function getFrameViewport(
+  frame: HTMLIFrameElement | HTMLFrameElement
+): Viewport {
   const rect = frame.getBoundingClientRect();
   const computedStyle = window.getComputedStyle(frame);
+  const border = {
+    left: parseFloat(computedStyle.getPropertyValue("border-left-width")),
+    right: parseFloat(computedStyle.getPropertyValue("border-right-width")),
+    top: parseFloat(computedStyle.getPropertyValue("border-top-width")),
+    bottom: parseFloat(computedStyle.getPropertyValue("border-bottom-width")),
+  };
+  const padding = {
+    left: parseFloat(computedStyle.getPropertyValue("padding-left")),
+    right: parseFloat(computedStyle.getPropertyValue("padding-right")),
+    top: parseFloat(computedStyle.getPropertyValue("padding-top")),
+    bottom: parseFloat(computedStyle.getPropertyValue("padding-bottom")),
+  };
   return {
-    offsetX:
-      rect.left +
-      parseFloat(computedStyle.getPropertyValue("border-left-width")) +
-      parseFloat(computedStyle.getPropertyValue("padding-left")),
-    offsetY:
-      rect.top +
-      parseFloat(computedStyle.getPropertyValue("border-top-width")) +
-      parseFloat(computedStyle.getPropertyValue("padding-top")),
+    left: 0,
+    right:
+      rect.width - border.left - border.right - padding.left - padding.right,
+    top: 0,
+    bottom:
+      rect.height - border.top - border.bottom - padding.top - padding.bottom,
+    offsetX: rect.left + border.left + padding.left,
+    offsetY: rect.top + border.top + padding.top,
   };
 }

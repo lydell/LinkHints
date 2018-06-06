@@ -6,16 +6,13 @@ type ElementData = {|
   type: ElementType,
 |};
 
-export type Offsets = {|
-  offsetX: number,
-  offsetY: number,
-|};
-
 export type Viewport = {|
   left: number,
   right: number,
   top: number,
   bottom: number,
+  offsetX: number,
+  offsetY: number,
 |};
 
 export type HintMeasurements = {|
@@ -145,8 +142,7 @@ export default class ElementManager {
 
   getVisibleElements(
     types: Set<ElementType>,
-    offsets: Offsets,
-    viewport: Viewport
+    viewports: Array<Viewport>
   ): Array<{|
     element: HTMLElement,
     data: ElementData,
@@ -171,7 +167,7 @@ export default class ElementManager {
         return undefined;
       }
 
-      const measurements = getMeasurements(element, offsets, viewport);
+      const measurements = getMeasurements(element, viewports);
 
       if (measurements == null) {
         return undefined;
@@ -202,17 +198,19 @@ export default class ElementManager {
 
 function getMeasurements(
   element: HTMLElement,
-  offsets: Offsets,
-  viewport: Viewport
+  viewports: Array<Viewport>
 ): ?HintMeasurements {
-  const rect = element.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
 
-  const visibleRect = {
-    left: offsets.offsetX + Math.max(rect.left, viewport.left),
-    right: offsets.offsetX + Math.min(rect.right, viewport.right),
-    top: offsets.offsetY + Math.max(rect.top, viewport.top),
-    bottom: offsets.offsetY + Math.min(rect.bottom, viewport.bottom),
-  };
+  const visibleRect = viewports.reduceRight(
+    (rect, viewport) => ({
+      left: viewport.offsetX + Math.max(rect.left, viewport.left),
+      right: viewport.offsetX + Math.min(rect.right, viewport.right),
+      top: viewport.offsetY + Math.max(rect.top, viewport.top),
+      bottom: viewport.offsetY + Math.min(rect.bottom, viewport.bottom),
+    }),
+    elementRect
+  );
 
   const height = visibleRect.bottom - visibleRect.top;
   const width = visibleRect.right - visibleRect.left;
