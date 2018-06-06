@@ -7,12 +7,10 @@ type ElementData = {|
 |};
 
 export type Viewport = {|
-  left: number,
-  right: number,
-  top: number,
-  bottom: number,
-  offsetX: number,
-  offsetY: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
 |};
 
 export type HintMeasurements = {|
@@ -204,10 +202,10 @@ function getMeasurements(
 
   const visibleRect = viewports.reduceRight(
     (rect, viewport) => ({
-      left: viewport.offsetX + Math.max(rect.left, viewport.left),
-      right: viewport.offsetX + Math.min(rect.right, viewport.right),
-      top: viewport.offsetY + Math.max(rect.top, viewport.top),
-      bottom: viewport.offsetY + Math.min(rect.bottom, viewport.bottom),
+      left: viewport.x + Math.max(rect.left, 0),
+      right: viewport.x + Math.min(rect.right, viewport.width),
+      top: viewport.y + Math.max(rect.top, 0),
+      bottom: viewport.y + Math.min(rect.bottom, viewport.height),
     }),
     elementRect
   );

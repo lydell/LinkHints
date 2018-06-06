@@ -88,12 +88,10 @@ export default class WorkerProgram {
 
       case "StartFindElements": {
         const viewport = {
-          left: 0,
-          right: window.innerWidth,
-          top: 0,
-          bottom: window.innerHeight,
-          offsetY: 0,
-          offsetX: 0,
+          x: 0,
+          y: 0,
+          width: window.innerWidth,
+          height: window.innerHeight,
         };
         this.reportVisibleElements([viewport]);
         break;
@@ -228,12 +226,10 @@ function parseViewports(rawViewports: mixed): Array<Viewport> {
       throw new Error(`Expected an object, but got: ${typeof viewport}`);
     }
     return {
-      left: getNumber(viewport, "left"),
-      right: getNumber(viewport, "right"),
-      top: getNumber(viewport, "top"),
-      bottom: getNumber(viewport, "bottom"),
-      offsetX: getNumber(viewport, "offsetX"),
-      offsetY: getNumber(viewport, "offsetY"),
+      x: getNumber(viewport, "x"),
+      y: getNumber(viewport, "y"),
+      width: getNumber(viewport, "width"),
+      height: getNumber(viewport, "height"),
     };
   });
 }
@@ -256,13 +252,11 @@ function getFrameViewport(
     bottom: parseFloat(computedStyle.getPropertyValue("padding-bottom")),
   };
   return {
-    left: 0,
-    right:
+    x: rect.left + border.left + padding.left,
+    y: rect.top + border.top + padding.top,
+    width:
       rect.width - border.left - border.right - padding.left - padding.right,
-    top: 0,
-    bottom:
+    height:
       rect.height - border.top - border.bottom - padding.top - padding.bottom,
-    offsetX: rect.left + border.left + padding.left,
-    offsetY: rect.top + border.top + padding.top,
   };
 }

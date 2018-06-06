@@ -282,7 +282,7 @@ export default class BackgroundProgram {
           { type: "StartFindElements" },
           {
             tabId: info.tabId,
-            frameId: info.frameId,
+            frameId: tabState.rendererFrameId,
           }
         );
         tabState.hintsState = {
