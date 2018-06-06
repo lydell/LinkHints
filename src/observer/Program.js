@@ -11,6 +11,13 @@ import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 import ElementManager from "./ElementManager";
 import type { Offsets, Viewport } from "./ElementManager";
 
+// The single-page HTML specification has over 70K links! If trying to track all
+// of those, Firefox warns that the extension is slowing the page down while
+// loading. When fully loaded, scrolling is noticeably laggy. On my computer,
+// the lag starts somewhere between 10K and 20K tracked links. Tracking at most
+// 10K should be enough for regular sites.
+const MAX_TRACKED_ELEMENTS = 10e3;
+
 export default class ObserverProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   suppressByDefault: boolean;
@@ -20,7 +27,9 @@ export default class ObserverProgram {
   constructor() {
     this.keyboardShortcuts = [];
     this.suppressByDefault = false;
-    this.elementManager = new ElementManager();
+    this.elementManager = new ElementManager({
+      maxTrackedElements: MAX_TRACKED_ELEMENTS,
+    });
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [

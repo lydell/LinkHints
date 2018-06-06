@@ -25,12 +25,16 @@ export type HintMeasurements = {|
 |};
 
 export default class ElementManager {
+  maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
+  stopped: boolean;
 
-  constructor() {
+  constructor({ maxTrackedElements }: {| maxTrackedElements: number |}) {
+    this.maxTrackedElements = maxTrackedElements;
+
     this.elements = new Map();
     this.visibleElements = new Set();
 
@@ -40,6 +44,7 @@ export default class ElementManager {
     );
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
+    this.stopped = true;
   }
 
   start() {
@@ -50,6 +55,7 @@ export default class ElementManager {
         childList: true,
         subtree: true,
       });
+      this.stopped = false;
     }
   }
 
@@ -58,6 +64,7 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
+    this.stopped = true;
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
@@ -75,6 +82,9 @@ export default class ElementManager {
       for (const node of record.addedNodes) {
         if (node instanceof HTMLElement) {
           this.addElements(node);
+          if (this.stopped) {
+            return;
+          }
         }
       }
 
@@ -87,12 +97,18 @@ export default class ElementManager {
   }
 
   addElements(parent: HTMLElement) {
+    let { size } = this.elements;
     const elements = [parent, ...parent.querySelectorAll("*")];
     for (const element of elements) {
-      const type = getElementType(element);
-      if (type != null) {
-        this.elements.set(element, { type });
+      const data = getElementData(element);
+      if (data != null) {
+        this.elements.set(element, data);
         this.intersectionObserver.observe(element);
+        size++;
+        if (size > this.maxTrackedElements) {
+          this.stop();
+          break;
+        }
       }
     }
   }
@@ -116,7 +132,10 @@ export default class ElementManager {
     data: ElementData,
     measurements: HintMeasurements,
   |}> {
-    // this.visibleElements = new Set(this.elements.keys());
+    if (this.stopped) {
+      return this.getVisibleElementsFallback(types, offsets, viewport);
+    }
+
     return Array.from(this.visibleElements, element => {
       const data = this.elements.get(element);
 
@@ -142,7 +161,51 @@ export default class ElementManager {
     }).filter(Boolean);
   }
 
+  getVisibleElementsFallback(
+    types: Set<ElementType>,
+    offsets: Offsets,
+    viewport: Viewport
+  ): Array<{|
+    element: HTMLElement,
+    data: ElementData,
+    measurements: HintMeasurements,
+  |}> {
+    const { documentElement } = document;
+
+    if (documentElement == null) {
+      return [];
+    }
+
+    const elements = documentElement.querySelectorAll("*");
+
+    // TODO: This duplicates a bit too much logic.
+    return Array.from(elements, element => {
+      const data = getElementData(element);
+
+      if (data == null) {
+        return undefined;
+      }
+
+      if (!types.has(data.type)) {
+        return undefined;
+      }
+
+      const measurements = getMeasurements(element, offsets, viewport);
+
+      if (measurements == null) {
+        return undefined;
+      }
+
+      return {
+        element,
+        data,
+        measurements,
+      };
+    }).filter(Boolean);
+  }
+
   getVisibleFrames(): Array<HTMLIFrameElement | HTMLFrameElement> {
+    // TODO: Handle the .stopped case.
     return Array.from(
       this.visibleElements,
       element =>
@@ -180,6 +243,11 @@ function getMeasurements(
         y: visibleRect.top + height / 2,
         area: width * height,
       };
+}
+
+function getElementData(element: HTMLElement): ?{| type: ElementType |} {
+  const type = getElementType(element);
+  return type == null ? undefined : { type };
 }
 
 function getElementType(element: HTMLElement): ?ElementType {
