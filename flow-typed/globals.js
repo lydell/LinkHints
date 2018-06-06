@@ -56,23 +56,23 @@ declare type TabStatus = "loading" | "complete";
 
 declare var browser: {|
   browserAction: {|
-    setBadgeText: ({|
+    setBadgeText({|
       text: string,
       tabId?: number,
-    |}) => void,
+    |}): void,
   |},
   runtime: {|
-    sendMessage: (message: any) => Promise<any>,
+    sendMessage(message: any): Promise<any>,
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
   |},
   tabs: {|
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
-    sendMessage: (
+    sendMessage(
       tabId: number,
       message: any,
       options?: {| frameId?: number |}
-    ) => Promise<any>,
-    query: (queryInfo: {|
+    ): Promise<any>,
+    query(queryInfo: {|
       active?: boolean,
       audible?: boolean,
       autoDiscardable?: boolean,
@@ -90,6 +90,6 @@ declare var browser: {|
       url?: string,
       windowId?: number,
       windowType?: number,
-    |}) => Promise<Array<Tab>>,
+    |}): Promise<Array<Tab>>,
   |},
 |};
