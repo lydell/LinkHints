@@ -132,55 +132,16 @@ export default class ElementManager {
     data: ElementData,
     measurements: HintMeasurements,
   |}> {
-    if (this.stopped) {
-      return this.getVisibleElementsFallback(types, offsets, viewport);
-    }
+    const candidates = this.stopped
+      ? document.documentElement == null
+        ? []
+        : document.documentElement.querySelectorAll("*")
+      : this.visibleElements;
 
-    return Array.from(this.visibleElements, element => {
-      const data = this.elements.get(element);
-
-      if (data == null) {
-        return undefined;
-      }
-
-      if (!types.has(data.type)) {
-        return undefined;
-      }
-
-      const measurements = getMeasurements(element, offsets, viewport);
-
-      if (measurements == null) {
-        return undefined;
-      }
-
-      return {
-        element,
-        data,
-        measurements,
-      };
-    }).filter(Boolean);
-  }
-
-  getVisibleElementsFallback(
-    types: Set<ElementType>,
-    offsets: Offsets,
-    viewport: Viewport
-  ): Array<{|
-    element: HTMLElement,
-    data: ElementData,
-    measurements: HintMeasurements,
-  |}> {
-    const { documentElement } = document;
-
-    if (documentElement == null) {
-      return [];
-    }
-
-    const elements = documentElement.querySelectorAll("*");
-
-    // TODO: This duplicates a bit too much logic.
-    return Array.from(elements, element => {
-      const data = getElementData(element);
+    return Array.from(candidates, element => {
+      const data = this.stopped
+        ? getElementData(element)
+        : this.elements.get(element);
 
       if (data == null) {
         return undefined;
