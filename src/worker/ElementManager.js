@@ -213,13 +213,24 @@ function getMeasurements(
   const height = visibleRect.bottom - visibleRect.top;
   const width = visibleRect.right - visibleRect.left;
 
-  return height <= 0 || width <= 0
-    ? undefined
-    : {
-        x: visibleRect.left,
-        y: visibleRect.top + height / 2,
-        area: width * height,
-      };
+  if (height <= 0 || width <= 0) {
+    return undefined;
+  }
+
+  const x = visibleRect.left;
+  const y = visibleRect.top + height / 2;
+
+  const elementAtPoint = document.elementFromPoint(x + 1, y);
+
+  if (!element.contains(elementAtPoint)) {
+    return undefined;
+  }
+
+  return {
+    x,
+    y,
+    area: width * height,
+  };
 }
 
 function getElementData(element: HTMLElement): ?{| type: ElementType |} {
