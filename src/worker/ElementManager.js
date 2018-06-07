@@ -1,6 +1,6 @@
 // @flow
 
-export type ElementType = "link" | "frame";
+export type ElementType = "link" | "clickable" | "frame";
 
 type ElementData = {|
   type: ElementType,
@@ -248,6 +248,14 @@ function getElementType(element: HTMLElement): ?ElementType {
   switch (element.nodeName) {
     case "A":
       return "link";
+    case "BUTTON":
+    case "LABEL":
+    case "SELECT":
+    case "SUMMARY":
+    case "TEXTAREA":
+      return "clickable";
+    case "INPUT":
+      return element.type === "hidden" ? undefined : "clickable";
     case "FRAME":
     case "IFRAME":
       return "frame";

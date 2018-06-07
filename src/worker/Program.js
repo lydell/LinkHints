@@ -168,7 +168,7 @@ export default class WorkerProgram {
 
   reportVisibleElements(viewports: Array<Viewport>) {
     const elements = this.elementManager.getVisibleElements(
-      new Set(["link"]),
+      new Set(["link", "clickable"]),
       viewports
     );
 
