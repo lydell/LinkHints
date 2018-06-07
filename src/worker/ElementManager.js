@@ -255,6 +255,7 @@ function getElementType(element: HTMLElement): ?ElementType {
     case "TEXTAREA":
       return "clickable";
     case "INPUT":
+      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
       return element.type === "hidden" ? undefined : "clickable";
     case "FRAME":
     case "IFRAME":
