@@ -152,6 +152,8 @@ export default class ElementManager {
         : document.documentElement.querySelectorAll("*")
       : this.visibleElements;
 
+    const range = document.createRange();
+
     return Array.from(candidates, element => {
       const data = this.bailed
         ? getElementData(element)
@@ -165,7 +167,7 @@ export default class ElementManager {
         return undefined;
       }
 
-      const measurements = getMeasurements(element, viewports);
+      const measurements = getMeasurements(element, viewports, range);
 
       if (measurements == null) {
         return undefined;
@@ -196,9 +198,13 @@ export default class ElementManager {
 
 function getMeasurements(
   element: HTMLElement,
-  viewports: Array<Viewport>
+  viewports: Array<Viewport>,
+  // The `range` is passed in since it is faster to re-use the same one than
+  // creating a new one for every element candidate.
+  range: Range
 ): ?HintMeasurements {
-  const elementRect = element.getBoundingClientRect();
+  range.selectNodeContents(element);
+  const elementRect = range.getBoundingClientRect();
 
   const visibleRect = viewports.reduceRight(
     (rect, viewport) => ({
