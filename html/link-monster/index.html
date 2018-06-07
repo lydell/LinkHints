@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>link monster</title>
+    <style>
+      html {
+        font: menu;
+        font-size: 12px;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      header {
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        background-color: white;
+        border-bottom: 1px solid #ccc;
+        font-size: 16px;
+      }
+
+      header > a, header > button {
+        margin: 0;
+        padding: 30px;
+        border: none;
+        border-radius: 0;
+        background: none;
+        font: inherit;
+        color: inherit;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      #dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        margin-top: 1px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid #ccc;
+        padding: 30px;
+        display: flex;
+      }
+
+      #dropdown:not(.visible) {
+        display: none;
+      }
+
+      #dropdown > * + * {
+        margin-left: 60px;
+      }
+
+      #dropdown a:not([class]) {
+        display: block;
+      }
+
+      .card {
+        align-self: flex-start;
+        display: flex;
+        border: 1px solid #ccc;
+        padding: 15px;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .card .img {
+        width: 120px;
+        height: 120px;
+        margin-right: 15px;
+        background-color: #ccc;
+      }
+
+      .card .img span {
+        display: inline-block;
+        padding: 10px;
+        background-color: orange;
+        color: white;
+        font-weight: bold;
+      }
+
+      .card p {
+        margin: 0;
+      }
+
+      .card p:first-child {
+        margin-bottom: 10px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .card p:last-child {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      .card del {
+        font-size: 0.8em;
+      }
+
+      footer {
+        position: fixed;
+        z-index: 1000;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 10px 30px;
+        border-top: 1px solid #ccc;
+        background-color: white;
+      }
+
+      main {
+        padding: 100px 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="#">Home</a>
+      <button type="button" onclick="dropdown.classList.toggle('visible')">
+        Products
+      </button>
+      <div id="dropdown">
+        <div>
+          <a href="#">Desktops</a>
+          <a href="#">Laptops</a>
+          <a href="#">Tablets</a>
+          <a href="#">Phablets</a>
+          <a href="#">Phones</a>
+          <a href="#">Smart watches</a>
+          <a href="#">Smart goggles</a>
+          <a href="#">Brain implants</a>
+        </div>
+        <div>
+          <a href="#">Dogs</a>
+          <a href="#">Puppies</a>
+          <a href="#">Cats</a>
+          <a href="#">Kittens</a>
+          <a href="#">Elephants</a>
+          <a href="#">Ants</a>
+          <a href="#">Crocodiles</a>
+          <a href="#">Elks</a>
+        </div>
+        <div>
+          <a href="#">Willow</a>
+          <a href="#">Birch</a>
+          <a href="#">Oak</a>
+          <a href="#">Pine</a>
+          <a href="#">Palm</a>
+        </div>
+        <div>
+          <a href="#">Red</a>
+          <a href="#">Orange</a>
+          <a href="#">Yellow</a>
+          <a href="#">Green</a>
+          <a href="#">Blue</a>
+          <a href="#">Indigo</a>
+          <a href="#">Violet</a>
+        </div>
+        <div>
+          <a href="#">Luke</a>
+          <a href="#">Leia</a>
+          <a href="#">Han Solo</a>
+          <a href="#">R2-D2</a>
+          <a href="#">C-3PO</a>
+          <a href="#">Darth Vader</a>
+        </div>
+        <a href="#" class="card">
+          <div class="img">
+            <span>50% off</span>
+          </div>
+          <div>
+            <p>Light saber</p>
+            <p>Fully functioning light saber cheese knife.</p>
+            <p>May the roquefort be with you.</p>
+            <p>$199 <del>$399</del></p>
+          </div>
+        </a>
+      </div>
+      <a href="#">Marketing</a>
+      <a href="#">Flammable goods</a>
+      <a href="#">Lost memories</a>
+      <a href="#">Security</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Contact</a>
+      <a href="#">About us</a>
+    </header>
+
+    <footer>
+      &copy; Awesome Company 2018. All rights reserved.
+    </footer>
+
+    <script>
+      // https://stackoverflow.com/a/424445/2010616
+      class RNG {
+        constructor(seed) {
+          this.m = 2 ** 31;
+          this.a = 1103515245;
+          this.c = 12345;
+          this.state = seed;
+        }
+
+        next() {
+          this.state = (this.a * this.state + this.c) % this.m;
+          return this.state;
+        }
+      }
+
+      const words = ["bacon", "whale", "grass", "tree", "window", "chair", "sea", "the", "you", "organization", "aggregation", "backwards", "splendid", "otherwise", "cow", "furhter", "increasingly", "valid", "spherical", "key", "at", "I", "number", "marketplace", "spinnach", "severity"];
+
+      const main = document.createElement("main");
+      const rng = new RNG(1337);
+
+      for (let i = 0; i < 3000; i++) {
+        const a = document.createElement("a");
+        a.href = "#";
+        a.textContent = Array.from(
+          { length: rng.next() % 3 + 1 },
+          () => words[rng.next() % words.length]
+        ).join(" ");
+
+        const t = document.createTextNode(rng.next() % 10 === 0 ? " and " : ", ");
+
+        main.append(a);
+        main.append(t);
+      }
+
+      document.body.append(main);
+    </script>
+  </body>
+</html>
