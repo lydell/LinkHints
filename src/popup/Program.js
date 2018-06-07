@@ -57,8 +57,28 @@ export default class PopupProgram {
   }
 
   render(perf: Array<number>) {
-    const container = document.createElement("pre");
-    container.textContent = JSON.stringify(perf, undefined, 2);
+    const container = document.createElement("div");
+    container.style.padding = `0 20px`;
+
+    const heading = document.createElement("h2");
+    heading.textContent = "Latest durations";
+    container.append(heading);
+
+    if (perf.length > 0) {
+      const average = document.createElement("p");
+      average.textContent = `Average: ${getAverage(perf).toFixed(2)} ms`;
+      container.append(average);
+    }
+
+    const list = document.createElement("ol");
+    list.style.paddingLeft = "1em";
+    for (const duration of perf) {
+      const li = document.createElement("li");
+      li.textContent = `${duration} ms`;
+      list.append(li);
+    }
+    container.append(list);
+
     if (document.body != null) {
       document.body.append(container);
     }
@@ -71,4 +91,8 @@ export default class PopupProgram {
       document.body.append(container);
     }
   }
+}
+
+function getAverage(numbers: Array<number>): number {
+  return numbers.reduce((a, b) => a + b, 0) / numbers.length;
 }
