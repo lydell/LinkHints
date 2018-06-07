@@ -73,10 +73,13 @@ export default class RendererProgram {
       element.append(text);
       element.className = "synth-hint";
       element.style.setProperty(
-        "transform",
-        `translate(calc(${Math.round(
-          hintMeasurements.x
-        )}px - 100%), calc(${Math.round(hintMeasurements.y)}px - 50%))`,
+        "left",
+        `${Math.round(hintMeasurements.x)}px`,
+        "important"
+      );
+      element.style.setProperty(
+        "top",
+        `${Math.round(hintMeasurements.y)}px`,
         "important"
       );
       container.append(element);
