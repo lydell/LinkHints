@@ -87,6 +87,46 @@ export default class RendererProgram {
 
     if (document.documentElement != null) {
       document.documentElement.append(container);
+
+      // Most hints are already correctly positioned, but some near the edges
+      // might need to be moved a tiny bit to avoid being partially off-screen.
+      // Do this in the next animation frame so that the hints appear on screen
+      // as quickly as possible. Adjusting positions is just a tweak – that can
+      // be delayed a little bit.
+      window.requestAnimationFrame(() => {
+        const { innerWidth, innerHeight } = window;
+        for (const child of container.children) {
+          const rect = child.getBoundingClientRect();
+          if (rect.left < 0) {
+            child.style.setProperty(
+              "margin-left",
+              `${-rect.left}px`,
+              "important"
+            );
+          }
+          if (rect.top < 0) {
+            child.style.setProperty(
+              "margin-top",
+              `${-rect.top}px`,
+              "important"
+            );
+          }
+          if (rect.right > innerWidth) {
+            child.style.setProperty(
+              "margin-left",
+              `${innerWidth - rect.right}px`,
+              "important"
+            );
+          }
+          if (rect.bottom > innerHeight) {
+            child.style.setProperty(
+              "margin-top",
+              `${innerHeight - rect.bottom}px`,
+              "important"
+            );
+          }
+        }
+      });
     }
 
     this.sendMessage({
