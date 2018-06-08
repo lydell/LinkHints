@@ -9,7 +9,7 @@ import type {
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Viewport } from "./ElementManager";
+import type { Box } from "./ElementManager";
 
 // The single-page HTML specification has over 70K links! If trying to track all
 // of those, Firefox warns that the extension is slowing the page down while
@@ -166,7 +166,7 @@ export default class WorkerProgram {
     }
   }
 
-  reportVisibleElements(viewports: Array<Viewport>) {
+  reportVisibleElements(viewports: Array<Box>) {
     const elements = this.elementManager.getVisibleElements(
       new Set(["link", "clickable"]),
       viewports
@@ -204,7 +204,7 @@ function suppressEvent(event: Event) {
   event.stopPropagation();
 }
 
-function parseViewports(rawViewports: mixed): Array<Viewport> {
+function parseViewports(rawViewports: mixed): Array<Box> {
   if (!Array.isArray(rawViewports)) {
     throw new Error(`Expected an array, but got: ${typeof rawViewports}`);
   }
@@ -234,9 +234,7 @@ function getNumber(arg: { [string]: mixed }, property: string): number {
   return value;
 }
 
-function getFrameViewport(
-  frame: HTMLIFrameElement | HTMLFrameElement
-): Viewport {
+function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {
   const rect = frame.getBoundingClientRect();
   const computedStyle = window.getComputedStyle(frame);
   const border = {
