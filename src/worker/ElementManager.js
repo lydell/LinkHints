@@ -204,7 +204,14 @@ function getMeasurements(
   range: Range
 ): ?HintMeasurements {
   range.selectNodeContents(element);
-  const elementRect = range.getBoundingClientRect();
+  let elementRect = undefined;
+  const firstTextNode = getFirstTextNode(element);
+  if (firstTextNode == null) {
+    elementRect = element.getBoundingClientRect();
+  } else {
+    range.selectNode(firstTextNode);
+    elementRect = range.getBoundingClientRect();
+  }
 
   const visibleRect = viewports.reduceRight(
     (rect, viewport) => ({
@@ -263,4 +270,20 @@ function getElementType(element: HTMLElement): ?ElementType {
     default:
       return undefined;
   }
+}
+
+function getFirstTextNode(element: HTMLElement): ?Text {
+  for (const node of element.childNodes) {
+    if (node instanceof Text) {
+      if (node.data.trim() !== "") {
+        return node;
+      }
+    } else if (node instanceof HTMLElement) {
+      const result = getFirstTextNode(node);
+      if (result != null) {
+        return result;
+      }
+    }
+  }
+  return undefined;
 }
