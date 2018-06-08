@@ -265,7 +265,7 @@ export default class BackgroundProgram {
         }
         const { startTime } = hintsState;
         const duration = message.timestamp - startTime;
-        tabState.perf = [duration, ...tabState.perf].slice(-10);
+        tabState.perf = [duration, ...tabState.perf].slice(0, 10);
         break;
       }
 
