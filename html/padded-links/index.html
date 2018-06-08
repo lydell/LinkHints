@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>padded links</title>
+    <style>
+      .container {
+        display: flex;
+      }
+
+      .container a {
+        padding: 30px;
+        border: 1px solid #ccc;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      .relative {
+        position: relative;
+      }
+
+      .absolute {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 30px;
+        white-space: nowrap;
+      }
+
+      .hidden {
+        opacity: 0;
+      }
+
+      .nopadding {
+        padding: 0 !important;
+      }
+
+      .padding {
+        padding: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="#">regular</a>
+      <a href="#" class="flex">flex</a>
+      <a href="#"><div class="flex">flex inner</div></a>
+      <a href="#" class="flex"><div class="flex">flex both</div></a>
+      <a href="#" class="relative">
+        <div class="hidden">absolute child</div>
+        <div class="absolute">absolute child</div>
+      </a>
+      <a href="#" class="nopadding flex"><span class="padding">padded child</span></a>
+    </div>
+  </body>
+</html>
