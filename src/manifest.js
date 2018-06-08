@@ -55,7 +55,6 @@ module.exports = () =>
         matches: ["<all_urls>"],
         run_at: "document_start",
         js: [config.renderer.output],
-        css: ["./renderer/main.css"],
       },
     ],
   });

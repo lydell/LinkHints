@@ -8,8 +8,45 @@ import type {
   ToBackground,
 } from "../data/Messages";
 
+const PREFIX = `synth-${String(Math.random()).slice(2)}`;
+const CONTAINER_ID = `${PREFIX}-container`;
+const HINT_CLASS = `${PREFIX}-hint`;
+
+const CONTAINER_STYLES = {
+  all: "unset",
+  position: "fixed",
+  "z-index": "2147483647",
+  left: "0",
+  top: "0",
+  width: "100%",
+  height: "100%",
+};
+
+const HINT_STYLES = {
+  all: "unset",
+  position: "absolute",
+  transform: "translate(-100%, -50%)",
+  padding: "0.2em",
+  border: "solid 1px rgba(0, 0, 0, 0.4)",
+  "background-color": "#ffd76e",
+  color: "black",
+  font: "menu",
+  "font-size": "12px",
+  "line-height": "1",
+  "font-weight": "bold",
+  "white-space": "nowrap",
+  "text-transform": "uppercase",
+};
+
 export default class RendererProgram {
+  css: string;
+
   constructor() {
+    this.css = [
+      rule(`#${CONTAINER_ID}`, CONTAINER_STYLES),
+      rule(`.${HINT_CLASS}`, HINT_STYLES),
+    ].join("");
+
     bind(this, ["onMessage"]);
   }
 
@@ -64,14 +101,23 @@ export default class RendererProgram {
   }
 
   render(elements: Array<ElementWithHint>) {
+    this.unrender();
+
     const container = document.createElement("div");
-    container.id = "synth-hints";
+    container.id = CONTAINER_ID;
+
+    // Inserting a `<style>` element is way faster than doing
+    // `element.style.setProperty()` on every element.
+    const style = document.createElement("style");
+    const styleText = document.createTextNode(this.css);
+    style.append(styleText);
+    container.append(style);
 
     for (const { hintMeasurements, hint } of elements) {
       const element = document.createElement("div");
+      element.className = HINT_CLASS;
       const text = document.createTextNode(hint);
       element.append(text);
-      element.className = "synth-hint";
       element.style.setProperty(
         "left",
         `${Math.round(hintMeasurements.x)}px`,
@@ -136,9 +182,16 @@ export default class RendererProgram {
   }
 
   unrender() {
-    const container = document.getElementById("synth-hints");
+    const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
       container.remove();
     }
   }
+}
+
+function rule(selector: string, styles: { [string]: string }): string {
+  const declarations = Object.entries(styles)
+    .map(([property, value]) => `${property}:${String(value)}!important;`)
+    .join("");
+  return `${selector}{${declarations}}`;
 }
