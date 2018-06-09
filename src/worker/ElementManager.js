@@ -214,7 +214,9 @@ function getMeasurements(
   // any. If the first letter is off-screen, don’t bother with any fancy
   // placement and just place the hint in the middle of `visibleBox`. The first
   // non-empty text node is assumed to come first. That’s not necessarily true
-  // due to CSS, but YAGNI until that’s found in the wild.
+  // due to CSS, but YAGNI until that’s found in the wild. One would think that
+  // `range.selectNodeContents(element)` would do essentially the same thing
+  // here, but it takes padding and such of child elements into account.
   let textRect = undefined;
   const firstTextNode = getFirstNonEmptyTextNode(element);
   if (firstTextNode != null) {
