@@ -8,46 +8,46 @@ import type {
   ToBackground,
 } from "../data/Messages";
 
-const PREFIX = `synth-${String(Math.random()).slice(2)}`;
-const CONTAINER_ID = `${PREFIX}-container`;
-const HINT_CLASS = `${PREFIX}-hint`;
+// It's tempting to put a random number or something in the ID, but in case
+// something goes wrong and a rogue container is left behind it's always
+// possible to find and remove it if the ID is known.
+const CONTAINER_ID = "SynthWebExt";
+const HINT_CLASS = "hint";
 
 const CONTAINER_STYLES = {
   all: "unset",
   position: "fixed",
-  "z-index": "2147483647",
+  "z-index": "2147483647", // Maximum z-index browsers support.
   left: "0",
   top: "0",
   width: "100%",
   height: "100%",
 };
 
-const HINT_STYLES = {
-  all: "unset",
-  position: "absolute",
-  transform: "translate(-100%, -50%)",
-  "box-sizing": "border-box",
-  padding: "2px",
-  border: "solid 1px rgba(0, 0, 0, 0.4)",
-  "background-color": "#ffd76e",
-  color: "black",
-  font: "menu",
-  "font-size": "12px",
-  "line-height": "1",
-  "font-weight": "bold",
-  "white-space": "nowrap",
-  "text-align": "center",
-  "text-transform": "uppercase",
-};
+const CSS = `
+.${HINT_CLASS} {
+  position: absolute;
+  transform: translate(-100%, -50%);
+  box-sizing: border-box;
+  padding: 2px;
+  border: solid 1px rgba(0, 0, 0, 0.4);
+  background-color: #ffd76e;
+  color: black;
+  font: menu;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: center;
+  text-transform: uppercase;
+}
+`.trim();
 
 export default class RendererProgram {
   css: string;
 
   constructor() {
-    this.css = [
-      rule(`#${CONTAINER_ID}`, CONTAINER_STYLES),
-      rule(`.${HINT_CLASS}`, HINT_STYLES),
-    ].join("");
+    this.css = CSS;
 
     bind(this, ["onMessage"]);
   }
@@ -105,32 +105,32 @@ export default class RendererProgram {
   render(elements: Array<ElementWithHint>) {
     this.unrender();
 
+    // I've tried creating the container in the constructor and re-using it for
+    // all renders, but that didn't turn out to be faster.
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
+    setStyles(container, CONTAINER_STYLES);
+
+    // Using `mode: "closed"` is tempting, but then Firefox does not seem to
+    // allow inspecting the elements inside in its devtools. That's important
+    // for people who want to customize the styling of the hints.
+    const root = container.attachShadow({ mode: "open" });
 
     // Inserting a `<style>` element is way faster than doing
     // `element.style.setProperty()` on every element.
     const style = document.createElement("style");
     const styleText = document.createTextNode(this.css);
     style.append(styleText);
-    container.append(style);
+    root.append(style);
 
     for (const { hintMeasurements, hint } of elements) {
       const element = document.createElement("div");
       element.className = HINT_CLASS;
+      element.style.left = `${Math.round(hintMeasurements.x)}px`;
+      element.style.top = `${Math.round(hintMeasurements.y)}px`;
       const text = document.createTextNode(hint);
       element.append(text);
-      element.style.setProperty(
-        "left",
-        `${Math.round(hintMeasurements.x)}px`,
-        "important"
-      );
-      element.style.setProperty(
-        "top",
-        `${Math.round(hintMeasurements.y)}px`,
-        "important"
-      );
-      container.append(element);
+      root.append(element);
     }
 
     if (document.documentElement != null) {
@@ -145,49 +145,27 @@ export default class RendererProgram {
       // be delayed a little bit.
       window.requestAnimationFrame(() => {
         const { innerWidth, innerHeight } = window;
-        for (const child of container.children) {
+        for (const child of root.children) {
           const rect = child.getBoundingClientRect();
           if (rect.width % 1 !== 0) {
-            child.style.setProperty(
-              "width",
-              `${Math.round(rect.width)}px`,
-              "important"
-            );
+            child.style.width = `${Math.round(rect.width)}px`;
           }
           if (rect.height % 1 !== 0) {
-            child.style.setProperty(
-              "height",
-              `${Math.round(rect.height)}px`,
-              "important"
-            );
+            child.style.height = `${Math.round(rect.height)}px`;
           }
           if (rect.left < 0) {
-            child.style.setProperty(
-              "margin-left",
-              `${Math.round(-rect.left)}px`,
-              "important"
-            );
+            child.style.marginLeft = `${Math.round(-rect.left)}px`;
           }
           if (rect.top < 0) {
-            child.style.setProperty(
-              "margin-top",
-              `${Math.round(-rect.top)}px`,
-              "important"
-            );
+            child.style.marginTop = `${Math.round(-rect.top)}px`;
           }
           if (rect.right > innerWidth) {
-            child.style.setProperty(
-              "margin-left",
-              `${Math.round(innerWidth - rect.right)}px`,
-              "important"
-            );
+            child.style.marginLeft = `${Math.round(innerWidth - rect.right)}px`;
           }
           if (rect.bottom > innerHeight) {
-            child.style.setProperty(
-              "margin-top",
-              `${Math.round(innerHeight - rect.bottom)}px`,
-              "important"
-            );
+            child.style.marginTop = `${Math.round(
+              innerHeight - rect.bottom
+            )}px`;
           }
         }
       });
@@ -207,9 +185,9 @@ export default class RendererProgram {
   }
 }
 
-function rule(selector: string, styles: { [string]: string }): string {
-  const declarations = Object.entries(styles)
-    .map(([property, value]) => `${property}:${String(value)}!important;`)
-    .join("");
-  return `${selector}{${declarations}}`;
+function setStyles(element: HTMLElement, styles: { [string]: string }) {
+  for (const [property, value] of Object.entries(styles)) {
+    // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
+    element.style.setProperty(property, value, "important");
+  }
 }
