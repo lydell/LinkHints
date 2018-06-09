@@ -332,6 +332,10 @@ export default class BackgroundProgram {
         this.sendRendererMessage({
           type: "Unrender",
         });
+        browser.browserAction.setBadgeText({
+          text: "",
+          tabId: info.tabId,
+        });
         break;
       }
 
