@@ -23,6 +23,7 @@ const CONTAINER_STYLES = {
   "z-index": "2147483647", // Maximum z-index browsers support.
   width: "100%",
   height: "100%",
+  "pointer-events": "none",
 };
 
 const CSS = `
