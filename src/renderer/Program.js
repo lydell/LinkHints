@@ -2,9 +2,10 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
-  ElementWithHint2,
+  ElementWithHint,
   FromBackground,
   FromRenderer,
+  HintUpdate,
   ToBackground,
 } from "../data/Messages";
 
@@ -13,6 +14,7 @@ import type {
 // possible to find and remove it if the ID is known.
 const CONTAINER_ID = "SynthWebExt";
 const HINT_CLASS = "hint";
+const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
 
 const CONTAINER_STYLES = {
@@ -45,6 +47,10 @@ const CSS = `
 
 .${MATCHED_CHARS_CLASS} {
   opacity: 0.3;
+}
+
+.${HIDDEN_HINT_CLASS} {
+  opacity: 0;
 }
 `.trim();
 
@@ -98,6 +104,10 @@ export default class RendererProgram {
         this.render(message.elements);
         break;
 
+      case "UpdateHints":
+        this.updateHints(message.updates);
+        break;
+
       case "Unrender":
         this.unrender();
         break;
@@ -107,7 +117,7 @@ export default class RendererProgram {
     }
   }
 
-  render(elements: Array<ElementWithHint2>) {
+  render(elements: Array<ElementWithHint>) {
     this.unrender();
 
     // I've tried creating the container in the constructor and re-using it for
@@ -124,11 +134,10 @@ export default class RendererProgram {
     // Inserting a `<style>` element is way faster than doing
     // `element.style.setProperty()` on every element.
     const style = document.createElement("style");
-    const styleText = document.createTextNode(this.css);
-    style.append(styleText);
+    style.append(document.createTextNode(this.css));
     root.append(style);
 
-    for (const { hintMeasurements, hintStart, hintEnd } of elements) {
+    for (const { hintMeasurements, hint } of elements) {
       const element = document.createElement("div");
       element.className = HINT_CLASS;
 
@@ -140,14 +149,7 @@ export default class RendererProgram {
       element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
 
-      const startElement = document.createElement("span");
-      startElement.className = MATCHED_CHARS_CLASS;
-      const start = document.createTextNode(hintStart);
-      startElement.append(start);
-      element.append(startElement);
-
-      const end = document.createTextNode(hintEnd);
-      element.append(end);
+      element.append(document.createTextNode(hint));
 
       root.append(element);
     }
@@ -194,6 +196,43 @@ export default class RendererProgram {
     });
   }
 
+  updateHints(updates: Array<HintUpdate>) {
+    const container = document.getElementById(CONTAINER_ID);
+    const root = container == null ? undefined : container.shadowRoot;
+    if (root == null) {
+      console.error("RendererProgram#updateHints: missing root", container);
+      return;
+    }
+
+    const hints = root.querySelectorAll(`.${HINT_CLASS}`);
+
+    for (const [index, update] of updates.entries()) {
+      const child = hints[index];
+
+      if (child == null) {
+        console.error(
+          "RendererProgram#updateHints: missing child",
+          index,
+          update
+        );
+        continue;
+      }
+
+      child.classList.toggle(HIDDEN_HINT_CLASS, update.type === "Hide");
+
+      if (update.type === "Update") {
+        emptyElement(child);
+        if (update.matched !== "") {
+          const matched = document.createElement("span");
+          matched.className = MATCHED_CHARS_CLASS;
+          matched.append(document.createTextNode(update.matched));
+          child.append(matched);
+        }
+        child.append(document.createTextNode(update.rest));
+      }
+    }
+  }
+
   unrender() {
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
@@ -206,5 +245,11 @@ function setStyles(element: HTMLElement, styles: { [string]: string }) {
   for (const [property, value] of Object.entries(styles)) {
     // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
+  }
+}
+
+function emptyElement(element: HTMLElement) {
+  while (element.firstChild != null) {
+    element.removeChild(element.firstChild);
   }
 }

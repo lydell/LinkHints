@@ -43,6 +43,7 @@ module.exports = {
         HTMLIFrameElement: false,
         IntersectionObserver: false,
         MutationObserver: false,
+        Text: false,
         browser: false,
         console: false,
         document: false,

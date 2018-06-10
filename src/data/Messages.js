@@ -80,7 +80,11 @@ export type FromRenderer =
 export type ToRenderer =
   | {|
       type: "Render",
-      elements: Array<ElementWithHint2>,
+      elements: Array<ElementWithHint>,
+    |}
+  | {|
+      type: "UpdateHints",
+      updates: Array<HintUpdate>,
     |}
   | {|
       type: "Unrender",
@@ -111,9 +115,12 @@ export type ElementWithHint = {|
   hint: string,
 |};
 
-export type ElementWithHint2 = {|
-  ...ExtendedElementReport,
-  weight: number,
-  hintStart: string,
-  hintEnd: string,
-|};
+export type HintUpdate =
+  | {|
+      type: "Hide",
+    |}
+  | {|
+      type: "Update",
+      matched: string,
+      rest: string,
+    |};

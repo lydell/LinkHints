@@ -195,40 +195,52 @@ export default class BackgroundProgram {
         }
 
         const { key } = message.shortcut;
+        const isBackspace = key === "Backspace";
 
-        if (key.length !== 1 || !this.hintChars.includes(key)) {
+        if (
+          !isBackspace &&
+          (key.length !== 1 || !this.hintChars.includes(key))
+        ) {
           return;
         }
 
-        const enteredHintChars = `${hintsState.enteredHintChars}${key}`;
+        const enteredHintChars = isBackspace
+          ? hintsState.enteredHintChars.slice(0, -1)
+          : `${hintsState.enteredHintChars}${key}`;
 
-        const matching = hintsState.elementsWithHints.filter(element =>
-          element.hint.startsWith(enteredHintChars)
+        const updates = hintsState.elementsWithHints.map(
+          element =>
+            element.hint.startsWith(enteredHintChars)
+              ? {
+                  type: "Update",
+                  matched: enteredHintChars,
+                  rest: element.hint.slice(enteredHintChars.length),
+                }
+              : { type: "Hide" }
         );
 
-        const elements = matching.map(element => ({
-          type: element.type,
-          hintMeasurements: element.hintMeasurements,
-          url: element.url,
-          frameId: element.frameId,
-          weight: element.hintMeasurements.area,
-          hintStart: enteredHintChars,
-          hintEnd: element.hint.slice(enteredHintChars.length),
-        }));
-
-        if (elements.length === 0) {
+        if (updates.length === 0) {
           return;
         }
 
-        const matchingHints = new Set(matching.map(element => element.hint));
+        const matchingHints = new Set(
+          updates
+            .map(
+              update =>
+                update.type === "Update" && update.rest === ""
+                  ? update.matched
+                  : undefined
+            )
+            .filter(Boolean)
+        );
         if (matchingHints.size === 1) {
           console.log("Matched hint!");
         }
 
         hintsState.enteredHintChars = enteredHintChars;
         this.sendRendererMessage({
-          type: "Render",
-          elements,
+          type: "UpdateHints",
+          updates,
         });
         break;
       }
@@ -288,15 +300,7 @@ export default class BackgroundProgram {
           );
           this.sendRendererMessage({
             type: "Render",
-            elements: elementsWithHints.map(element => ({
-              type: element.type,
-              hintMeasurements: element.hintMeasurements,
-              url: element.url,
-              frameId: element.frameId,
-              weight: element.hintMeasurements.area,
-              hintStart: "",
-              hintEnd: element.hint,
-            })),
+            elements: elementsWithHints,
           });
           browser.browserAction.setBadgeText({
             text: String(hintsState.pendingElements.elements.length),
