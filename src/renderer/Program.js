@@ -19,10 +19,8 @@ const MATCHED_CHARS_CLASS = "matchedChars";
 
 const CONTAINER_STYLES = {
   all: "unset",
-  position: "fixed",
+  position: "absolute",
   "z-index": "2147483647", // Maximum z-index browsers support.
-  left: "0",
-  top: "0",
   width: "100%",
   height: "100%",
 };
@@ -124,7 +122,11 @@ export default class RendererProgram {
     // all renders, but that didn't turn out to be faster.
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
-    setStyles(container, CONTAINER_STYLES);
+    setStyles(container, {
+      ...CONTAINER_STYLES,
+      left: `${window.scrollX}px`,
+      top: `${window.scrollY}px`,
+    });
 
     // Using `mode: "closed"` is tempting, but then Firefox does not seem to
     // allow inspecting the elements inside in its devtools. That's important
