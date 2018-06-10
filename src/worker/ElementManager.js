@@ -231,6 +231,12 @@ function getMeasurements(
   // The box used to choose the position of the hint.
   const pointBox = visibleTextBox == null ? visibleBox : visibleTextBox;
 
+  const [offsetX, offsetY] = viewports.reduceRight(
+    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
+    [0, 0]
+  );
+  console.log("masher", offsetX, offsetY);
+
   const { x } = pointBox;
   const y = pointBox.y + pointBox.height / 2;
 
@@ -239,8 +245,13 @@ function getMeasurements(
   // Even if some other part than `(x, y)` is visible, don’t bother if `(x, y)`
   // isn’t visible. Too much work for too little gain. Finally, add 1px to `x`.
   // It feels safer to test 1px into the element rather than at the very edge.
-  // `getVisibleBox` guarantees the box to be at least 1px wide.
-  const elementAtPoint = document.elementFromPoint(x + 1, y);
+  // `getVisibleBox` guarantees the box to be at least 1px wide. Remove
+  // `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate system
+  // of the current frame.
+  const elementAtPoint = document.elementFromPoint(
+    x - offsetX + 1,
+    y - offsetY
+  );
 
   // `.contains` also checks `element === elementAtPoint`.
   if (!element.contains(elementAtPoint)) {
