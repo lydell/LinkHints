@@ -221,9 +221,18 @@ export default class WorkerProgram {
   }
 }
 
-function parseTypes(rawTypes: mixed): Set<ElementType> {
-  if (!(rawTypes instanceof Set)) {
-    throw new Error(`Expected a Set, but got: ${typeof rawTypes}`);
+function parseTypes(rawTypes: any): Set<ElementType> {
+  try {
+    // `rawTypes instanceof Set` doesn’t work when the `Set` comes from a posted
+    // message. Instead, use duck typing.
+    const result = rawTypes.has("test");
+    if (typeof result !== "boolean") {
+      throw new Error(
+        `Expected .has() to return a boolean, but got: ${typeof result}`
+      );
+    }
+  } catch (error) {
+    throw new Error(`Expected a Set, but got: ${typeof rawTypes}. ${error}`);
   }
 
   // Don’t bother checking the contents of the Set. It doesn’t matter if there’s
