@@ -48,6 +48,7 @@ type HintsState =
       type: "Hinting",
       elementsWithHints: Array<ElementWithHint>,
       startTime: number,
+      enteredHintChars: string,
     |};
 
 export default class BackgroundProgram {
@@ -187,9 +188,50 @@ export default class BackgroundProgram {
         this.onKeyboardShortcut(message.action, info, message.timestamp);
         break;
 
-      case "NonKeyboardShortcutMatched":
-        console.log("NonKeyboardShortcutMatched", message.shortcut);
+      case "NonKeyboardShortcutMatched": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Hinting") {
+          return;
+        }
+
+        const { key } = message.shortcut;
+
+        if (key.length !== 1 || !this.hintChars.includes(key)) {
+          return;
+        }
+
+        const enteredHintChars = `${hintsState.enteredHintChars}${key}`;
+
+        const matching = hintsState.elementsWithHints.filter(element =>
+          element.hint.startsWith(enteredHintChars)
+        );
+
+        const elements = matching.map(element => ({
+          type: element.type,
+          hintMeasurements: element.hintMeasurements,
+          url: element.url,
+          frameId: element.frameId,
+          weight: element.hintMeasurements.area,
+          hintStart: enteredHintChars,
+          hintEnd: element.hint.slice(enteredHintChars.length),
+        }));
+
+        if (elements.length === 0) {
+          return;
+        }
+
+        const matchingHints = new Set(matching.map(element => element.hint));
+        if (matchingHints.size === 1) {
+          console.log("Matched hint!");
+        }
+
+        hintsState.enteredHintChars = enteredHintChars;
+        this.sendRendererMessage({
+          type: "Render",
+          elements,
+        });
         break;
+      }
 
       case "ReportVisibleElements": {
         const { hintsState } = tabState;
@@ -229,6 +271,7 @@ export default class BackgroundProgram {
             type: "Hinting",
             startTime: hintsState.pendingElements.startTime,
             elementsWithHints,
+            enteredHintChars: "",
           };
           this.sendWorkerMessage(
             {
@@ -245,7 +288,15 @@ export default class BackgroundProgram {
           );
           this.sendRendererMessage({
             type: "Render",
-            elements: elementsWithHints,
+            elements: elementsWithHints.map(element => ({
+              type: element.type,
+              hintMeasurements: element.hintMeasurements,
+              url: element.url,
+              frameId: element.frameId,
+              weight: element.hintMeasurements.area,
+              hintStart: "",
+              hintEnd: element.hint,
+            })),
           });
           browser.browserAction.setBadgeText({
             text: String(hintsState.pendingElements.elements.length),

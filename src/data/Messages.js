@@ -80,7 +80,7 @@ export type FromRenderer =
 export type ToRenderer =
   | {|
       type: "Render",
-      elements: Array<ElementWithHint>,
+      elements: Array<ElementWithHint2>,
     |}
   | {|
       type: "Unrender",
@@ -109,4 +109,11 @@ export type ElementWithHint = {|
   ...ExtendedElementReport,
   weight: number,
   hint: string,
+|};
+
+export type ElementWithHint2 = {|
+  ...ExtendedElementReport,
+  weight: number,
+  hintStart: string,
+  hintEnd: string,
 |};

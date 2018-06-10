@@ -2,7 +2,7 @@
 
 import { bind, unreachable } from "../utils/main";
 import type {
-  ElementWithHint,
+  ElementWithHint2,
   FromBackground,
   FromRenderer,
   ToBackground,
@@ -13,6 +13,7 @@ import type {
 // possible to find and remove it if the ID is known.
 const CONTAINER_ID = "SynthWebExt";
 const HINT_CLASS = "hint";
+const MATCHED_CHARS_CLASS = "matchedChars";
 
 const CONTAINER_STYLES = {
   all: "unset",
@@ -40,6 +41,10 @@ const CSS = `
   white-space: nowrap;
   text-align: center;
   text-transform: uppercase;
+}
+
+.${MATCHED_CHARS_CLASS} {
+  opacity: 0.3;
 }
 `.trim();
 
@@ -102,7 +107,7 @@ export default class RendererProgram {
     }
   }
 
-  render(elements: Array<ElementWithHint>) {
+  render(elements: Array<ElementWithHint2>) {
     this.unrender();
 
     // I've tried creating the container in the constructor and re-using it for
@@ -123,9 +128,10 @@ export default class RendererProgram {
     style.append(styleText);
     root.append(style);
 
-    for (const { hintMeasurements, hint } of elements) {
+    for (const { hintMeasurements, hintStart, hintEnd } of elements) {
       const element = document.createElement("div");
       element.className = HINT_CLASS;
+
       // Use `right` rather than `left` since the hints should be right-aligned
       // rather than left-aligned. This could also be done using `left` and
       // `transform: translateX(-100%)`, but that results in blurry hints in
@@ -133,8 +139,16 @@ export default class RendererProgram {
       // on the font. `calc()` does not affect performance.
       element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
-      const text = document.createTextNode(hint);
-      element.append(text);
+
+      const startElement = document.createElement("span");
+      startElement.className = MATCHED_CHARS_CLASS;
+      const start = document.createTextNode(hintStart);
+      startElement.append(start);
+      element.append(startElement);
+
+      const end = document.createTextNode(hintEnd);
+      element.append(end);
+
       root.append(element);
     }
 
