@@ -27,7 +27,7 @@ const CONTAINER_STYLES = {
 const CSS = `
 .${HINT_CLASS} {
   position: absolute;
-  transform: translate(-100%, -50%);
+  transform: translateY(-50%);
   box-sizing: border-box;
   padding: 2px;
   border: solid 1px rgba(0, 0, 0, 0.4);
@@ -126,7 +126,12 @@ export default class RendererProgram {
     for (const { hintMeasurements, hint } of elements) {
       const element = document.createElement("div");
       element.className = HINT_CLASS;
-      element.style.left = `${Math.round(hintMeasurements.x)}px`;
+      // Use `right` rather than `left` since the hints should be right-aligned
+      // rather than left-aligned. This could also be done using `left` and
+      // `transform: translateX(-100%)`, but that results in blurry hints in
+      // Chrome due to Chrome making the widths of the hints non-integer based
+      // on the font. `calc()` does not affect performance.
+      element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
       const text = document.createTextNode(hint);
       element.append(text);
@@ -138,36 +143,34 @@ export default class RendererProgram {
 
       // Most hints are already correctly positioned, but some near the edges
       // might need to be moved a tiny bit to avoid being partially off-screen.
-      // Also make sure that the width and height of the hints are integers so
-      // that they end up super crisp (this is especially important in Chrome).
-      // Do this in the next animation frame so that the hints appear on screen
-      // as quickly as possible. Adjusting positions is just a tweak – that can
-      // be delayed a little bit.
+      // Do this in a separate animation frame so that the hints appear on
+      // screen as quickly as possible. Adjusting positions is just a tweak –
+      // that can be delayed a little bit.
       window.requestAnimationFrame(() => {
-        const { innerWidth, innerHeight } = window;
-        for (const child of root.children) {
-          const rect = child.getBoundingClientRect();
-          if (rect.width % 1 !== 0) {
-            child.style.width = `${Math.round(rect.width)}px`;
+        // Using double `requestAnimationFrame` since they run before paint.
+        // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
+        window.requestAnimationFrame(() => {
+          const { innerWidth, innerHeight } = window;
+          for (const child of root.children) {
+            const rect = child.getBoundingClientRect();
+            if (rect.left < 0) {
+              child.style.marginRight = `${Math.round(rect.left)}px`;
+            }
+            if (rect.top < 0) {
+              child.style.marginTop = `${Math.round(-rect.top)}px`;
+            }
+            if (rect.right > innerWidth) {
+              child.style.marginRight = `${Math.round(
+                rect.right - innerWidth
+              )}px`;
+            }
+            if (rect.bottom > innerHeight) {
+              child.style.marginTop = `${Math.round(
+                innerHeight - rect.bottom
+              )}px`;
+            }
           }
-          if (rect.height % 1 !== 0) {
-            child.style.height = `${Math.round(rect.height)}px`;
-          }
-          if (rect.left < 0) {
-            child.style.marginLeft = `${Math.round(-rect.left)}px`;
-          }
-          if (rect.top < 0) {
-            child.style.marginTop = `${Math.round(-rect.top)}px`;
-          }
-          if (rect.right > innerWidth) {
-            child.style.marginLeft = `${Math.round(innerWidth - rect.right)}px`;
-          }
-          if (rect.bottom > innerHeight) {
-            child.style.marginTop = `${Math.round(
-              innerHeight - rect.bottom
-            )}px`;
-          }
-        }
+        });
       });
     }
 
