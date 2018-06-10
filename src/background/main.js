@@ -38,19 +38,7 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: { type: "ExitHintsMode" },
   },
-].concat(
-  ...hintChars.split("").map(char => ({
-    shortcut: {
-      key: char,
-      code: `Key${char.toUpperCase()}`,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-    },
-    action: { type: "PressHintChar", char },
-  }))
-);
+];
 
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,

@@ -172,7 +172,11 @@ export default class BackgroundProgram {
           {
             type: "StateSync",
             keyboardShortcuts: this.normalKeyboardShortcuts,
-            suppressByDefault: false,
+            keyboardOptions: {
+              capture: false,
+              suppressByDefault: false,
+              sendAll: false,
+            },
             oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
           },
           { tabId: info.tabId }
@@ -181,6 +185,10 @@ export default class BackgroundProgram {
 
       case "KeyboardShortcutMatched":
         this.onKeyboardShortcut(message.action, info, message.timestamp);
+        break;
+
+      case "NonKeyboardShortcutMatched":
+        console.log("NonKeyboardShortcutMatched", message.shortcut);
         break;
 
       case "ReportVisibleElements": {
@@ -226,7 +234,11 @@ export default class BackgroundProgram {
             {
               type: "StateSync",
               keyboardShortcuts: this.hintsKeyboardShortcuts,
-              suppressByDefault: true,
+              keyboardOptions: {
+                capture: true,
+                suppressByDefault: true,
+                sendAll: true,
+              },
               oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
             },
             { tabId: info.tabId }
@@ -326,7 +338,11 @@ export default class BackgroundProgram {
         this.sendWorkerMessage({
           type: "StateSync",
           keyboardShortcuts: this.normalKeyboardShortcuts,
-          suppressByDefault: false,
+          keyboardOptions: {
+            capture: false,
+            suppressByDefault: false,
+            sendAll: false,
+          },
           oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
         });
         this.sendRendererMessage({
@@ -338,10 +354,6 @@ export default class BackgroundProgram {
         });
         break;
       }
-
-      case "PressHintChar":
-        console.log("PressHintChar", action.char);
-        break;
 
       default:
         unreachable(action.type, action);

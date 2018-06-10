@@ -3,7 +3,12 @@
 // TODO: Move these types somewhere.
 import type { ElementType, HintMeasurements } from "../worker/ElementManager";
 
-import type { KeyboardAction, KeyboardMapping } from "./KeyboardShortcuts";
+import type {
+  KeyboardAction,
+  KeyboardMapping,
+  KeyboardOptions,
+  KeyboardShortcut,
+} from "./KeyboardShortcuts";
 
 export type FromBackground =
   | {|
@@ -43,6 +48,10 @@ export type FromWorker =
       timestamp: number,
     |}
   | {|
+      type: "NonKeyboardShortcutMatched",
+      shortcut: KeyboardShortcut,
+    |}
+  | {|
       type: "ReportVisibleElements",
       elements: Array<ElementReport>,
       pendingFrames: number,
@@ -52,7 +61,7 @@ export type ToWorker =
   | {|
       type: "StateSync",
       keyboardShortcuts: Array<KeyboardMapping>,
-      suppressByDefault: boolean,
+      keyboardOptions: KeyboardOptions,
       oneTimeWindowMessageToken: string,
     |}
   | {|

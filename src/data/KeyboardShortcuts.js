@@ -6,10 +6,6 @@ export type KeyboardAction =
     |}
   | {|
       type: "ExitHintsMode",
-    |}
-  | {|
-      type: "PressHintChar",
-      char: string,
     |};
 
 export type KeyboardShortcut = {|
@@ -24,4 +20,10 @@ export type KeyboardShortcut = {|
 export type KeyboardMapping = {|
   shortcut: KeyboardShortcut,
   action: KeyboardAction,
+|};
+
+export type KeyboardOptions = {|
+  capture: boolean,
+  suppressByDefault: boolean,
+  sendAll: boolean,
 |};

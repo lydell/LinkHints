@@ -6,7 +6,10 @@ import type {
   FromWorker,
   ToBackground,
 } from "../data/Messages";
-import type { KeyboardMapping } from "../data/KeyboardShortcuts";
+import type {
+  KeyboardMapping,
+  KeyboardOptions,
+} from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
 import type { Box } from "./ElementManager";
@@ -20,13 +23,17 @@ const MAX_TRACKED_ELEMENTS = 10e3;
 
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
-  suppressByDefault: boolean;
+  keyboardOptions: KeyboardOptions;
   elementManager: ElementManager;
   oneTimeWindowMessageToken: ?string;
 
   constructor() {
     this.keyboardShortcuts = [];
-    this.suppressByDefault = false;
+    this.keyboardOptions = {
+      capture: false,
+      suppressByDefault: false,
+      sendAll: false,
+    };
     this.elementManager = new ElementManager({
       maxTrackedElements: MAX_TRACKED_ELEMENTS,
     });
@@ -82,7 +89,7 @@ export default class WorkerProgram {
     switch (message.type) {
       case "StateSync":
         this.keyboardShortcuts = message.keyboardShortcuts;
-        this.suppressByDefault = message.suppressByDefault;
+        this.keyboardOptions = message.keyboardOptions;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
         break;
 
@@ -128,13 +135,13 @@ export default class WorkerProgram {
   }
 
   onKeydownCapture(event: KeyboardEvent) {
-    if (this.suppressByDefault) {
+    if (this.keyboardOptions.capture) {
       this.onKeydown(event);
     }
   }
 
   onKeydownBubble(event: KeyboardEvent) {
-    if (!this.suppressByDefault) {
+    if (!this.keyboardOptions.capture) {
       this.onKeydown(event);
     }
   }
@@ -154,15 +161,29 @@ export default class WorkerProgram {
         event.shiftKey === shortcut.shiftKey
     );
 
+    if (match != null || this.keyboardOptions.suppressByDefault) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (match != null) {
-      suppressEvent(event);
       this.sendMessage({
         type: "KeyboardShortcutMatched",
         action: match.action,
         timestamp: performance.now(),
       });
-    } else if (this.suppressByDefault) {
-      suppressEvent(event);
+    } else if (this.keyboardOptions.sendAll) {
+      this.sendMessage({
+        type: "NonKeyboardShortcutMatched",
+        shortcut: {
+          key: event.key,
+          code: event.code,
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        },
+      });
     }
   }
 
@@ -197,11 +218,6 @@ export default class WorkerProgram {
       pendingFrames: frames.length,
     });
   }
-}
-
-function suppressEvent(event: Event) {
-  event.preventDefault();
-  event.stopPropagation();
 }
 
 function parseViewports(rawViewports: mixed): Array<Box> {
