@@ -3,6 +3,8 @@
 import huffman from "n-ary-huffman";
 
 import { bind, unreachable } from "../utils/main";
+// TODO: Move this type somewhere.
+import type { ElementType } from "../worker/ElementManager";
 import type {
   ElementWithHint,
   ExtendedElementReport,
@@ -15,6 +17,7 @@ import type {
   ToWorker,
 } from "../data/Messages";
 import type {
+  HintsMode,
   KeyboardAction,
   KeyboardMapping,
 } from "../data/KeyboardShortcuts";
@@ -42,10 +45,12 @@ type HintsState =
     |}
   | {|
       type: "Collecting",
+      mode: HintsMode,
       pendingElements: PendingElements,
     |}
   | {|
       type: "Hinting",
+      mode: HintsMode,
       elementsWithHints: Array<ElementWithHint>,
       startTime: number,
       enteredHintChars: string,
@@ -234,7 +239,7 @@ export default class BackgroundProgram {
             .filter(Boolean)
         );
         if (matchingHints.size === 1) {
-          console.log("Matched hint!");
+          console.log("Matched hint!", hintsState.mode);
         }
 
         hintsState.enteredHintChars = enteredHintChars;
@@ -281,6 +286,7 @@ export default class BackgroundProgram {
           });
           tabState.hintsState = {
             type: "Hinting",
+            mode: hintsState.mode,
             startTime: hintsState.pendingElements.startTime,
             elementsWithHints,
             enteredHintChars: "",
@@ -367,7 +373,10 @@ export default class BackgroundProgram {
           return;
         }
         this.sendWorkerMessage(
-          { type: "StartFindElements" },
+          {
+            type: "StartFindElements",
+            types: getHintsTypes(action.mode),
+          },
           {
             tabId: info.tabId,
             frameId: tabState.rendererFrameId,
@@ -375,6 +384,7 @@ export default class BackgroundProgram {
         );
         tabState.hintsState = {
           type: "Collecting",
+          mode: action.mode,
           pendingElements: {
             elements: [],
             pendingFrames: 1,
@@ -435,4 +445,20 @@ function makeEmptyTabState(): TabState {
     perf: [],
     hintsState: { type: "Idle" },
   };
+}
+
+function getHintsTypes(mode: HintsMode): Set<ElementType> {
+  switch (mode) {
+    case "Click":
+      return new Set(["clickable", "link"]);
+
+    case "BackgroundTab":
+      return new Set(["link"]);
+
+    case "ForegroundTab":
+      return new Set(["link"]);
+
+    default:
+      return unreachable(mode);
+  }
 }

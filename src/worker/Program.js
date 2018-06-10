@@ -12,7 +12,7 @@ import type {
 } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Box } from "./ElementManager";
+import type { Box, ElementType } from "./ElementManager";
 
 // The single-page HTML specification has over 70K links! If trying to track all
 // of those, Firefox warns that the extension is slowing the page down while
@@ -100,7 +100,7 @@ export default class WorkerProgram {
           width: window.innerWidth,
           height: window.innerHeight,
         };
-        this.reportVisibleElements([viewport]);
+        this.reportVisibleElements(message.types, [viewport]);
         break;
       }
 
@@ -117,9 +117,12 @@ export default class WorkerProgram {
       !Array.isArray(event.data) &&
       event.data.token === this.oneTimeWindowMessageToken
     ) {
+      let types = undefined;
       let viewports = undefined;
+      const { types: rawTypes, viewports: rawViewports } = event.data;
       try {
-        viewports = parseViewports(event.data.viewports);
+        types = parseTypes(rawTypes);
+        viewports = parseViewports(rawViewports);
       } catch (error) {
         console.warn(
           "Ignoring bad window message",
@@ -129,7 +132,7 @@ export default class WorkerProgram {
         );
         return;
       }
-      this.reportVisibleElements(viewports);
+      this.reportVisibleElements(types, viewports);
       this.oneTimeWindowMessageToken = undefined;
     }
   }
@@ -187,11 +190,8 @@ export default class WorkerProgram {
     }
   }
 
-  reportVisibleElements(viewports: Array<Box>) {
-    const elements = this.elementManager.getVisibleElements(
-      new Set(["link", "clickable"]),
-      viewports
-    );
+  reportVisibleElements(types: Set<ElementType>, viewports: Array<Box>) {
+    const elements = this.elementManager.getVisibleElements(types, viewports);
 
     const frames = this.elementManager.getVisibleFrames();
 
@@ -202,6 +202,7 @@ export default class WorkerProgram {
       ) {
         const message = {
           token: this.oneTimeWindowMessageToken,
+          types,
           viewports: viewports.concat(getFrameViewport(frame)),
         };
         frame.contentWindow.postMessage(message, "*");
@@ -218,6 +219,17 @@ export default class WorkerProgram {
       pendingFrames: frames.length,
     });
   }
+}
+
+function parseTypes(rawTypes: mixed): Set<ElementType> {
+  if (!(rawTypes instanceof Set)) {
+    throw new Error(`Expected a Set, but got: ${typeof rawTypes}`);
+  }
+
+  // Don’t bother checking the contents of the Set. It doesn’t matter if there’s
+  // invalid stuff in there, because we only check if certain types exist in the
+  // Set or not (`types.has(type)`).
+  return rawTypes;
 }
 
 function parseViewports(rawViewports: mixed): Array<Box> {

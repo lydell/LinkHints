@@ -13,14 +13,45 @@ if (BROWSER === ("chrome": Browser)) {
 const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   {
     shortcut: {
-      key: "e",
-      code: "KeyE",
-      altKey: false,
-      ctrlKey: true,
+      key: "j",
+      code: "KeyJ",
+      altKey: true,
+      ctrlKey: false,
       metaKey: false,
       shiftKey: false,
     },
-    action: { type: "EnterHintsMode" },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Click",
+    },
+  },
+  {
+    shortcut: {
+      key: "k",
+      code: "KeyK",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "BackgroundTab",
+    },
+  },
+  {
+    shortcut: {
+      key: "l",
+      code: "KeyL",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "ForegroundTab",
+    },
   },
 ];
 

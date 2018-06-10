@@ -3,6 +3,7 @@
 export type KeyboardAction =
   | {|
       type: "EnterHintsMode",
+      mode: HintsMode,
     |}
   | {|
       type: "ExitHintsMode",
@@ -27,3 +28,5 @@ export type KeyboardOptions = {|
   suppressByDefault: boolean,
   sendAll: boolean,
 |};
+
+export type HintsMode = "Click" | "BackgroundTab" | "ForegroundTab";

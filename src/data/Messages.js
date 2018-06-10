@@ -66,6 +66,7 @@ export type ToWorker =
     |}
   | {|
       type: "StartFindElements",
+      types: Set<ElementType>,
     |};
 
 export type FromRenderer =
