@@ -28,7 +28,7 @@ module.exports = () =>
     commands: {
       _execute_browser_action: {
         suggested_key: {
-          default: "Ctrl+Shift+D",
+          default: "Ctrl+Shift+F",
         },
       },
     },
