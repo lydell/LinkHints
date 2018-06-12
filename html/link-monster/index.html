@@ -109,10 +109,24 @@
         z-index: 1000;
         bottom: 0;
         left: 0;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         width: 100%;
-        padding: 10px 30px;
+        height: 38px;
+        padding: 0 30px;
         border-top: 1px solid #ccc;
         background-color: white;
+      }
+
+      .footer-links {
+        align-self: flex-end;
+        display: flex;
+      }
+
+      .footer-links > * + * {
+        margin-left: 10px;
       }
 
       main {
@@ -194,6 +208,14 @@
 
     <footer>
       &copy; Awesome Company 2018. All rights reserved.
+      <div class="footer-links">
+        <a href="#">Legal</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+        <a href="#">Press</a>
+        <a href="#">Releases</a>
+      </div>
     </footer>
 
     <script>

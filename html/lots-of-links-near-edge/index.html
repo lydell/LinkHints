@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>lots of links near edge</title>
+    <style>
+      a {
+        position: fixed;
+        box-sizing: border-box;
+        border: 1px solid black;
+        font-size: 8px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const {innerWidth, innerHeight} = window;
+      const size = 10;
+
+      const hSteps = Math.floor(innerWidth / size);
+      const vSteps = Math.floor(innerHeight / size);
+
+      const fragment = document.createDocumentFragment();
+
+      for (let i = 0; i < hSteps; i++) {
+        const a1 = createLink();
+        const a2 = createLink();
+
+        const left = i * size;
+
+        a1.style.left = `${left}px`;
+        a2.style.left = `${left}px`;
+
+        a1.style.top = "0";
+        a2.style.bottom = "0";
+
+        fragment.append(a1);
+        fragment.append(a2);
+      }
+
+      for (let i = 0; i < vSteps; i++) {
+        const a1 = createLink();
+        const a2 = createLink();
+
+        const top = i * size;
+
+        a1.style.top = `${top}px`;
+        a2.style.top = `${top}px`;
+
+        a1.style.left = "0";
+        a2.style.right = "0";
+
+        fragment.append(a1);
+        fragment.append(a2);
+      }
+
+      document.body.append(fragment);
+
+      function createLink() {
+        const a = document.createElement("a");
+        a.href = "#";
+        a.textContent = "a";
+        a.style.width = `${size}px`;
+        a.style.height = `${size}px`;
+        return a;
+      }
+    </script>
+  </body>
+</html>

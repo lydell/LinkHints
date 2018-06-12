@@ -17,8 +17,7 @@ const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
 
-// TODO: Filter the ones closest to the edges and do them immediately?
-const MAX_IMMEDIATE_HINT_MOVEMENTS = 200;
+const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 
 const CONTAINER_STYLES = {
   all: "unset",
@@ -27,6 +26,7 @@ const CONTAINER_STYLES = {
   width: "100%",
   height: "100%",
   "pointer-events": "none",
+  overflow: "hidden",
 };
 
 const CSS = `
@@ -143,9 +143,31 @@ export default class RendererProgram {
     style.append(document.createTextNode(this.css));
     root.append(style);
 
+    if (document.documentElement != null) {
+      document.documentElement.append(container);
+    }
+
+    // "W" is usually (one of) the widest character(s). This is surprisingly
+    // cheap to calculate.
+    const probe1 = createHintElement("W");
+    const probe2 = createHintElement("WW");
+    root.append(probe1);
+    root.append(probe2);
+    const rect1 = probe1.getBoundingClientRect();
+    const rect2 = probe2.getBoundingClientRect();
+    const halfHeight = Math.ceil(rect1.height / 2);
+    const widthK = rect2.width - rect1.width;
+    const widthM = rect1.width - widthK;
+    probe1.remove();
+    probe2.remove();
+
+    const edgeElements = [];
+    const restElements = [];
+
+    const { innerHeight } = window;
+
     for (const { hintMeasurements, hint } of elements) {
-      const element = document.createElement("div");
-      element.className = HINT_CLASS;
+      const element = createHintElement(hint);
 
       // Use `right` rather than `left` since the hints should be right-aligned
       // rather than left-aligned. This could also be done using `left` and
@@ -155,31 +177,35 @@ export default class RendererProgram {
       element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
 
-      element.append(document.createTextNode(hint));
-
       root.append(element);
-    }
 
-    if (document.documentElement != null) {
-      document.documentElement.append(container);
-
-      // Most hints are already correctly positioned, but some near the edges
-      // might need to be moved a tiny bit to avoid being partially off-screen.
-      // Do this in a separate animation frame if there are a lot of hints so
-      // that the hints appear on screen as quickly as possible. Adjusting
-      // positions is just a tweak – that can be delayed a little bit.
-      if (elements.length <= MAX_IMMEDIATE_HINT_MOVEMENTS) {
-        moveInsideViewport(root.children);
+      if (
+        hintMeasurements.x <= Math.ceil(widthM + widthK * hint.length) ||
+        hintMeasurements.y <= halfHeight ||
+        innerHeight - hintMeasurements.y <= halfHeight
+      ) {
+        edgeElements.push(element);
       } else {
-        // Using double `requestAnimationFrame` since they run before paint.
-        // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
-        window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            moveInsideViewport(root.children);
-          });
-        });
+        restElements.push(element);
       }
     }
+
+    const allElements = edgeElements.concat(restElements);
+
+    // Most hints are already correctly positioned, but some near the edges
+    // might need to be moved a tiny bit to avoid being partially off-screen.
+    // Do this in a separate animation frame if there are a lot of hints so
+    // that the hints appear on screen as quickly as possible. Adjusting
+    // positions is just a tweak – that can be delayed a little bit.
+    moveInsideViewport(allElements.slice(0, MAX_IMMEDIATE_HINT_MOVEMENTS));
+
+    // Using double `requestAnimationFrame` since they run before paint.
+    // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        moveInsideViewport(allElements.slice(MAX_IMMEDIATE_HINT_MOVEMENTS));
+      });
+    });
 
     this.sendMessage({
       type: "Rendered",
@@ -245,7 +271,7 @@ function emptyElement(element: HTMLElement) {
   }
 }
 
-function moveInsideViewport(elements: HTMLCollection<HTMLElement>) {
+function moveInsideViewport(elements: Array<HTMLElement>) {
   const { innerWidth, innerHeight } = window;
   for (const element of elements) {
     const rect = element.getBoundingClientRect();
@@ -262,4 +288,11 @@ function moveInsideViewport(elements: HTMLCollection<HTMLElement>) {
       element.style.marginTop = `${Math.round(innerHeight - rect.bottom)}px`;
     }
   }
+}
+
+function createHintElement(hint: string): HTMLElement {
+  const element = document.createElement("div");
+  element.className = HINT_CLASS;
+  element.append(document.createTextNode(hint));
+  return element;
 }
