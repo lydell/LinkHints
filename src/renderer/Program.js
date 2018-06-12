@@ -17,6 +17,9 @@ const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
 
+// TODO: Filter the ones closest to the edges and do them immediately?
+const MAX_IMMEDIATE_HINT_MOVEMENTS = 200;
+
 const CONTAINER_STYLES = {
   all: "unset",
   position: "absolute",
@@ -162,35 +165,20 @@ export default class RendererProgram {
 
       // Most hints are already correctly positioned, but some near the edges
       // might need to be moved a tiny bit to avoid being partially off-screen.
-      // Do this in a separate animation frame so that the hints appear on
-      // screen as quickly as possible. Adjusting positions is just a tweak –
-      // that can be delayed a little bit.
-      window.requestAnimationFrame(() => {
+      // Do this in a separate animation frame if there are a lot of hints so
+      // that the hints appear on screen as quickly as possible. Adjusting
+      // positions is just a tweak – that can be delayed a little bit.
+      if (elements.length <= MAX_IMMEDIATE_HINT_MOVEMENTS) {
+        moveInsideViewport(root.children);
+      } else {
         // Using double `requestAnimationFrame` since they run before paint.
         // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
         window.requestAnimationFrame(() => {
-          const { innerWidth, innerHeight } = window;
-          for (const child of root.children) {
-            const rect = child.getBoundingClientRect();
-            if (rect.left < 0) {
-              child.style.marginRight = `${Math.round(rect.left)}px`;
-            }
-            if (rect.top < 0) {
-              child.style.marginTop = `${Math.round(-rect.top)}px`;
-            }
-            if (rect.right > innerWidth) {
-              child.style.marginRight = `${Math.round(
-                rect.right - innerWidth
-              )}px`;
-            }
-            if (rect.bottom > innerHeight) {
-              child.style.marginTop = `${Math.round(
-                innerHeight - rect.bottom
-              )}px`;
-            }
-          }
+          window.requestAnimationFrame(() => {
+            moveInsideViewport(root.children);
+          });
         });
-      });
+      }
     }
 
     this.sendMessage({
@@ -254,5 +242,24 @@ function setStyles(element: HTMLElement, styles: { [string]: string }) {
 function emptyElement(element: HTMLElement) {
   while (element.firstChild != null) {
     element.removeChild(element.firstChild);
+  }
+}
+
+function moveInsideViewport(elements: HTMLCollection<HTMLElement>) {
+  const { innerWidth, innerHeight } = window;
+  for (const element of elements) {
+    const rect = element.getBoundingClientRect();
+    if (rect.left < 0) {
+      element.style.marginRight = `${Math.round(rect.left)}px`;
+    }
+    if (rect.top < 0) {
+      element.style.marginTop = `${Math.round(-rect.top)}px`;
+    }
+    if (rect.right > innerWidth) {
+      element.style.marginRight = `${Math.round(rect.right - innerWidth)}px`;
+    }
+    if (rect.bottom > innerHeight) {
+      element.style.marginTop = `${Math.round(innerHeight - rect.bottom)}px`;
+    }
   }
 }

@@ -197,6 +197,9 @@
     </footer>
 
     <script>
+      const params = new URLSearchParams(location.search);
+      const numLinks = Number(params.get("num_links") || "3000");
+
       // https://stackoverflow.com/a/424445/2010616
       class RNG {
         constructor(seed) {
@@ -217,7 +220,7 @@
       const main = document.createElement("main");
       const rng = new RNG(1337);
 
-      for (let i = 0; i < 3000; i++) {
+      for (let i = 0; i < numLinks; i++) {
         const a = document.createElement("a");
         a.href = "#";
         a.textContent = Array.from(
