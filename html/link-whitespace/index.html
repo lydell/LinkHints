@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>link whitespace</title>
+    <style>
+      body {
+        margin: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <p><a href="#">no whitespace</a></p>
+    <p><a href="#"> regular space</a></p>
+    <p><a href="#">&nbsp;non-breaking space</a></p>
+    <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> svg icon</a></p>
+    <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> span</a></p>
+  </body>
+</html>

@@ -216,11 +216,13 @@ function getMeasurements(
   // non-empty text node is assumed to come first. That’s not necessarily true
   // due to CSS, but YAGNI until that’s found in the wild. One would think that
   // `range.selectNodeContents(element)` would do essentially the same thing
-  // here, but it takes padding and such of child elements into account.
+  // here, but it takes padding and such of child elements into account. Also,
+  // it would count leading visible whitespace as the first character.
   let textRect = undefined;
-  const firstTextNode = getFirstNonEmptyTextNode(element);
-  if (firstTextNode != null) {
-    range.selectNode(firstTextNode);
+  const first = getFirstNonEmptyTextNode(element);
+  if (first != null) {
+    range.setStart(first.node, first.index);
+    range.setEnd(first.node, first.index + 1);
     // Use `.getClientRects()` rather than `.getBoundingClientRect()` in case
     // the text is line-wrapped.
     textRect = range.getClientRects()[0];
@@ -235,7 +237,6 @@ function getMeasurements(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
     [0, 0]
   );
-  console.log("masher", offsetX, offsetY);
 
   const { x } = pointBox;
   const y = pointBox.y + pointBox.height / 2;
@@ -329,11 +330,14 @@ function getElementType(element: HTMLElement): ?ElementType {
   }
 }
 
-function getFirstNonEmptyTextNode(element: HTMLElement): ?Text {
+function getFirstNonEmptyTextNode(
+  element: HTMLElement
+): ?{| node: Text, index: number |} {
   for (const node of element.childNodes) {
     if (node instanceof Text) {
-      if (node.data.trim() !== "") {
-        return node;
+      const index = node.data.search(/\S/);
+      if (index >= 0) {
+        return { node, index };
       }
     } else if (node instanceof HTMLElement) {
       const result = getFirstNonEmptyTextNode(node);
