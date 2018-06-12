@@ -203,21 +203,23 @@ function getMeasurements(
   // creating a new one for every element candidate.
   range: Range
 ): ?HintMeasurements {
-  const rect = element.getBoundingClientRect();
-  const visibleBox = getVisibleBox(rect, viewports);
+  const rects = element.getClientRects();
+  const visibleBoxes = Array.from(rects, rect =>
+    getVisibleBox(rect, viewports)
+  ).filter(Boolean);
 
-  if (visibleBox == null) {
+  if (visibleBoxes.length === 0) {
     return undefined;
   }
 
   // Try to place the hint just before the first letter inside `element`, if
   // any. If the first letter is off-screen, don’t bother with any fancy
-  // placement and just place the hint in the middle of `visibleBox`. The first
-  // non-empty text node is assumed to come first. That’s not necessarily true
-  // due to CSS, but YAGNI until that’s found in the wild. One would think that
-  // `range.selectNodeContents(element)` would do essentially the same thing
-  // here, but it takes padding and such of child elements into account. Also,
-  // it would count leading visible whitespace as the first character.
+  // placement and just place the hint in the middle of `visibleBoxes`. The
+  // first non-empty text node is assumed to come first. That’s not necessarily
+  // true due to CSS, but YAGNI until that’s found in the wild. One would think
+  // that `range.selectNodeContents(element)` would do essentially the same
+  // thing here, but it takes padding and such of child elements into account.
+  // Also, it would count leading visible whitespace as the first character.
   let textRect = undefined;
   const first = getFirstNonEmptyTextNode(element);
   if (first != null) {
@@ -229,7 +231,7 @@ function getMeasurements(
     textRect == null ? undefined : getVisibleBox(textRect, viewports);
 
   // The box used to choose the position of the hint.
-  const pointBox = visibleTextBox == null ? visibleBox : visibleTextBox;
+  const pointBox = visibleTextBox == null ? visibleBoxes[0] : visibleTextBox;
 
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
@@ -262,11 +264,11 @@ function getMeasurements(
     x,
     y,
     // It’s easy to think that one could optimize by calculating the area from
-    // `pointBox` and potentially skip `element.getBoundingClientRect()` for
-    // most elements, but remember that `pointBox` most likely just refers to
-    // (part of) one text node of the element, not the entire visible area of
-    // the element (as `visibleBox` does).
-    area: getArea(element, visibleBox),
+    // `pointBox` and potentially skip `element.getClientRects()` for most
+    // elements, but remember that `pointBox` most likely just refers to (part
+    // of) one text node of the element, not the entire visible area of the
+    // element (as `visibleBoxes` does).
+    area: visibleBoxes.reduce((sum, box) => sum + box.width * box.height, 0),
   };
 }
 
@@ -345,19 +347,4 @@ function getFirstNonEmptyTextNode(
     }
   }
   return undefined;
-}
-
-function getArea(element: HTMLElement, visibleBox: Box): number {
-  const rects = element.getClientRects();
-  return Array.from(rects, rect => {
-    const visible = {
-      left: Math.max(rect.left, visibleBox.x),
-      right: Math.min(rect.right, visibleBox.x + visibleBox.width),
-      top: Math.max(rect.top, visibleBox.y),
-      bottom: Math.min(rect.bottom, visibleBox.y + visibleBox.height),
-    };
-    const width = visible.right - visible.left;
-    const height = visible.bottom - visible.top;
-    return width > 0 && height > 0 ? width * height : 0;
-  }).reduce((a, b) => a + b, 0);
 }
