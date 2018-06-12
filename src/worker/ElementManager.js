@@ -268,7 +268,7 @@ function getMeasurements(
     // most elements, but remember that `pointBox` most likely just refers to
     // (part of) one text node of the element, not the entire visible area of
     // the element (as `visibleBox` does).
-    area: visibleBox.width * visibleBox.height,
+    area: getArea(element, visibleBox),
   };
 }
 
@@ -347,4 +347,23 @@ function getFirstNonEmptyTextNode(
     }
   }
   return undefined;
+}
+
+function getArea(element: HTMLElement, visibleBox: Box): number {
+  const rects = element.getClientRects();
+  let area = 0;
+  for (const rect of rects) {
+    const visible = {
+      left: Math.max(rect.left, visibleBox.x),
+      right: Math.min(rect.right, visibleBox.x + visibleBox.width),
+      top: Math.max(rect.top, visibleBox.y),
+      bottom: Math.min(rect.bottom, visibleBox.y + visibleBox.height),
+    };
+    const width = visible.right - visible.left;
+    const height = visible.bottom - visible.top;
+    if (width > 0 && height > 0) {
+      area += width * height;
+    }
+  }
+  return area;
 }
