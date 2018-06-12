@@ -349,8 +349,7 @@ function getFirstNonEmptyTextNode(
 
 function getArea(element: HTMLElement, visibleBox: Box): number {
   const rects = element.getClientRects();
-  let area = 0;
-  for (const rect of rects) {
+  return Array.from(rects, rect => {
     const visible = {
       left: Math.max(rect.left, visibleBox.x),
       right: Math.min(rect.right, visibleBox.x + visibleBox.width),
@@ -359,9 +358,6 @@ function getArea(element: HTMLElement, visibleBox: Box): number {
     };
     const width = visible.right - visible.left;
     const height = visible.bottom - visible.top;
-    if (width > 0 && height > 0) {
-      area += width * height;
-    }
-  }
-  return area;
+    return width > 0 && height > 0 ? width * height : 0;
+  }).reduce((a, b) => a + b, 0);
 }
