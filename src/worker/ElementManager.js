@@ -223,9 +223,7 @@ function getMeasurements(
   if (first != null) {
     range.setStart(first.node, first.index);
     range.setEnd(first.node, first.index + 1);
-    // Use `.getClientRects()` rather than `.getBoundingClientRect()` in case
-    // the text is line-wrapped.
-    textRect = range.getClientRects()[0];
+    textRect = range.getBoundingClientRect();
   }
   const visibleTextBox =
     textRect == null ? undefined : getVisibleBox(textRect, viewports);
