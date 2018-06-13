@@ -12,7 +12,7 @@ import type {
 } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Box, ElementType } from "./ElementManager";
+import type { Box, ElementType, VisibleElement } from "./ElementManager";
 
 // The single-page HTML specification has over 70K links! If trying to track all
 // of those, Firefox warns that the extension is slowing the page down while
@@ -25,6 +25,7 @@ export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardOptions: KeyboardOptions;
   elementManager: ElementManager;
+  elements: ?Array<VisibleElement>;
   oneTimeWindowMessageToken: ?string;
 
   constructor() {
@@ -37,6 +38,7 @@ export default class WorkerProgram {
     this.elementManager = new ElementManager({
       maxTrackedElements: MAX_TRACKED_ELEMENTS,
     });
+    this.elements = undefined;
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [
@@ -91,6 +93,10 @@ export default class WorkerProgram {
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.keyboardOptions = message.keyboardOptions;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
+
+        if (message.clearElements) {
+          this.elements = undefined;
+        }
         break;
 
       case "StartFindElements": {
@@ -211,13 +217,18 @@ export default class WorkerProgram {
 
     this.sendMessage({
       type: "ReportVisibleElements",
-      elements: elements.map(({ element, data: { type }, measurements }) => ({
-        type,
-        url: element instanceof HTMLAnchorElement ? element.href : undefined,
-        hintMeasurements: measurements,
-      })),
+      elements: elements.map(
+        ({ element, data: { type }, measurements }, index) => ({
+          type,
+          index,
+          url: element instanceof HTMLAnchorElement ? element.href : undefined,
+          hintMeasurements: measurements,
+        })
+      ),
       pendingFrames: frames.length,
     });
+
+    this.elements = elements;
   }
 }
 

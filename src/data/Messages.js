@@ -60,6 +60,7 @@ export type FromWorker =
 export type ToWorker =
   | {|
       type: "StateSync",
+      clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
       keyboardOptions: KeyboardOptions,
       oneTimeWindowMessageToken: string,
@@ -86,6 +87,7 @@ export type ToRenderer =
   | {|
       type: "UpdateHints",
       updates: Array<HintUpdate>,
+      markMatched: boolean,
     |}
   | {|
       type: "Unrender",
@@ -101,6 +103,7 @@ export type ToPopup = {|
 
 export type ElementReport = {|
   type: ElementType,
+  index: number,
   hintMeasurements: HintMeasurements,
   url: ?string,
 |};

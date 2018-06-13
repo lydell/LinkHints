@@ -19,6 +19,12 @@ export type HintMeasurements = {|
   area: number,
 |};
 
+export type VisibleElement = {|
+  element: HTMLElement,
+  data: ElementData,
+  measurements: HintMeasurements,
+|};
+
 export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
@@ -141,11 +147,7 @@ export default class ElementManager {
   getVisibleElements(
     types: Set<ElementType>,
     viewports: Array<Box>
-  ): Array<{|
-    element: HTMLElement,
-    data: ElementData,
-    measurements: HintMeasurements,
-  |}> {
+  ): Array<VisibleElement> {
     const candidates = this.bailed
       ? document.documentElement == null
         ? []

@@ -177,6 +177,7 @@ export default class BackgroundProgram {
         this.sendWorkerMessage(
           {
             type: "StateSync",
+            clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
               capture: false,
@@ -238,14 +239,39 @@ export default class BackgroundProgram {
             )
             .filter(Boolean)
         );
-        if (matchingHints.size === 1) {
-          console.log("Matched hint!", hintsState.mode);
+
+        const done = matchingHints.size === 1;
+
+        if (done) {
+          const [hint] = Array.from(matchingHints);
+          const [match] = hintsState.elementsWithHints
+            .filter(element => element.hint === hint)
+            .sort((a, b) => b.weight - a.weight);
+          switch (hintsState.mode) {
+            case "Click":
+              console.log("send message", match);
+              break;
+
+            case "BackgroundTab":
+              console.log("open background tab", match);
+              break;
+
+            case "ForegroundTab":
+              console.log("open foreground tab", match);
+              break;
+
+            default:
+              unreachable(hintsState.mode);
+          }
+          // Also: Want to focus the element?
+          console.log("Exit hints mode but show matched for a little while");
         }
 
         hintsState.enteredHintChars = enteredHintChars;
         this.sendRendererMessage({
           type: "UpdateHints",
           updates,
+          markMatched: done,
         });
         break;
       }
@@ -257,8 +283,9 @@ export default class BackgroundProgram {
         }
 
         const elements = message.elements.map(
-          ({ type, hintMeasurements, url }) => ({
+          ({ type, index, hintMeasurements, url }) => ({
             type,
+            index,
             hintMeasurements,
             url,
             frameId: info.frameId,
@@ -270,6 +297,7 @@ export default class BackgroundProgram {
           const elementsWithHints = hintsState.pendingElements.elements.map(
             element => ({
               type: element.type,
+              index: element.index,
               hintMeasurements: element.hintMeasurements,
               url: element.url,
               frameId: element.frameId,
@@ -294,6 +322,7 @@ export default class BackgroundProgram {
           this.sendWorkerMessage(
             {
               type: "StateSync",
+              clearElements: false,
               keyboardShortcuts: this.hintsKeyboardShortcuts,
               keyboardOptions: {
                 capture: true,
@@ -402,6 +431,7 @@ export default class BackgroundProgram {
         tabState.hintsState = { type: "Idle" };
         this.sendWorkerMessage({
           type: "StateSync",
+          clearElements: true,
           keyboardShortcuts: this.normalKeyboardShortcuts,
           keyboardOptions: {
             capture: false,

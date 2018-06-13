@@ -15,6 +15,7 @@ import type {
 const CONTAINER_ID = "SynthWebExt";
 const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
+const MATCHED_HINT_CLASS = "matchedHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
@@ -47,12 +48,16 @@ const CSS = `
   text-transform: uppercase;
 }
 
-.${MATCHED_CHARS_CLASS} {
-  opacity: 0.3;
-}
-
 .${HIDDEN_HINT_CLASS} {
   opacity: 0;
+}
+
+.${MATCHED_HINT_CLASS} {
+  background-color: lime;
+}
+
+.${MATCHED_CHARS_CLASS} {
+  opacity: 0.3;
 }
 `.trim();
 
@@ -107,7 +112,7 @@ export default class RendererProgram {
         break;
 
       case "UpdateHints":
-        this.updateHints(message.updates);
+        this.updateHints(message.updates, { markMatched: message.markMatched });
         break;
 
       case "Unrender":
@@ -215,7 +220,10 @@ export default class RendererProgram {
     });
   }
 
-  updateHints(updates: Array<HintUpdate>) {
+  updateHints(
+    updates: Array<HintUpdate>,
+    { markMatched = false }: {| markMatched: boolean |} = {}
+  ) {
     const container = document.getElementById(CONTAINER_ID);
     const root = container == null ? undefined : container.shadowRoot;
     if (root == null) {
@@ -246,6 +254,9 @@ export default class RendererProgram {
           matched.className = MATCHED_CHARS_CLASS;
           matched.append(document.createTextNode(update.matched));
           child.append(matched);
+        }
+        if (markMatched) {
+          child.classList.add(MATCHED_HINT_CLASS);
         }
         child.append(document.createTextNode(update.rest));
       }
