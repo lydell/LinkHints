@@ -68,6 +68,14 @@ export type ToWorker =
   | {|
       type: "StartFindElements",
       types: Set<ElementType>,
+    |}
+  | {|
+      type: "FocusElement",
+      index: number,
+    |}
+  | {|
+      type: "ClickElement",
+      index: number,
     |};
 
 export type FromRenderer =

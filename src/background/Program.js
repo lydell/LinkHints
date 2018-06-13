@@ -251,7 +251,10 @@ export default class BackgroundProgram {
 
           switch (hintsState.mode) {
             case "Click":
-              console.log("send message", match);
+              this.sendWorkerMessage({
+                type: "ClickElement",
+                index: match.index,
+              });
               break;
 
             case "BackgroundTab":
@@ -262,6 +265,10 @@ export default class BackgroundProgram {
                 );
                 break;
               }
+              this.sendWorkerMessage({
+                type: "FocusElement",
+                index: match.index,
+              });
               openTab({ active: false, url, openerTabId: info.tabId });
               break;
 
@@ -273,6 +280,10 @@ export default class BackgroundProgram {
                 );
                 break;
               }
+              this.sendWorkerMessage({
+                type: "FocusElement",
+                index: match.index,
+              });
               openTab({ active: true, url, openerTabId: info.tabId });
               break;
 

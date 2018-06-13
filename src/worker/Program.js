@@ -110,6 +110,37 @@ export default class WorkerProgram {
         break;
       }
 
+      case "FocusElement": {
+        const element =
+          this.elements == null ? undefined : this.elements[message.index];
+        if (element == null) {
+          console.error(
+            "FocusElement: Missing element",
+            message,
+            this.elements
+          );
+          return;
+        }
+        element.element.focus();
+        break;
+      }
+
+      case "ClickElement": {
+        const element =
+          this.elements == null ? undefined : this.elements[message.index];
+        if (element == null) {
+          console.error(
+            "ClickElement: Missing element",
+            message,
+            this.elements
+          );
+          return;
+        }
+        element.element.focus();
+        element.element.click();
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
