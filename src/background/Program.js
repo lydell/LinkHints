@@ -247,17 +247,33 @@ export default class BackgroundProgram {
           const [match] = hintsState.elementsWithHints
             .filter(element => element.hint === hint)
             .sort((a, b) => b.weight - a.weight);
+          const { url } = match;
+
           switch (hintsState.mode) {
             case "Click":
               console.log("send message", match);
               break;
 
             case "BackgroundTab":
-              console.log("open background tab", match);
+              if (url == null) {
+                console.error(
+                  "Cannot open background tab due to missing URL",
+                  match
+                );
+                break;
+              }
+              openTab({ active: false, url, openerTabId: info.tabId });
               break;
 
             case "ForegroundTab":
-              console.log("open foreground tab", match);
+              if (url == null) {
+                console.error(
+                  "Cannot open foreground tab due to missing URL",
+                  match
+                );
+                break;
+              }
+              openTab({ active: true, url, openerTabId: info.tabId });
               break;
 
             default:
@@ -490,5 +506,21 @@ function getHintsTypes(mode: HintsMode): Set<ElementType> {
 
     default:
       return unreachable(mode);
+  }
+}
+
+async function openTab({
+  active,
+  url,
+  openerTabId,
+}: {|
+  active: boolean,
+  url: string,
+  openerTabId: number,
+|}): Promise<void> {
+  try {
+    browser.tabs.create({ active, url, openerTabId });
+  } catch (error) {
+    console.error("Failed to open tab", error);
   }
 }

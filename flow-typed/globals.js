@@ -66,6 +66,15 @@ declare var browser: {|
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
   |},
   tabs: {|
+    create(createProperties: {|
+      active?: boolean,
+      cookieStoreId?: string,
+      index?: number,
+      openerTabId?: number,
+      openInReaderMode?: boolean,
+      url?: string,
+      windowId?: number,
+    |}): Promise<Tab>,
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
     sendMessage(
       tabId: number,
