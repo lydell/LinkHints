@@ -163,6 +163,7 @@ export default class RendererProgram {
 
     const edgeElements = [];
     const restElements = [];
+    let numEdgeElements = 0;
 
     const { innerHeight } = window;
 
@@ -180,30 +181,31 @@ export default class RendererProgram {
       root.append(element);
 
       if (
-        hintMeasurements.x <= Math.ceil(widthM + widthK * hint.length) ||
-        hintMeasurements.y <= halfHeight ||
-        innerHeight - hintMeasurements.y <= halfHeight
+        numEdgeElements < MAX_IMMEDIATE_HINT_MOVEMENTS &&
+        (hintMeasurements.x <= Math.ceil(widthM + widthK * hint.length) ||
+          hintMeasurements.y <= halfHeight ||
+          innerHeight - hintMeasurements.y <= halfHeight)
       ) {
-        edgeElements.push(element);
+        numEdgeElements = edgeElements.push(element);
       } else {
         restElements.push(element);
       }
     }
-
-    const allElements = edgeElements.concat(restElements);
 
     // Most hints are already correctly positioned, but some near the edges
     // might need to be moved a tiny bit to avoid being partially off-screen.
     // Do this in a separate animation frame if there are a lot of hints so
     // that the hints appear on screen as quickly as possible. Adjusting
     // positions is just a tweak – that can be delayed a little bit.
-    moveInsideViewport(allElements.slice(0, MAX_IMMEDIATE_HINT_MOVEMENTS));
+    if (numEdgeElements > 0) {
+      moveInsideViewport(edgeElements);
+    }
 
     // Using double `requestAnimationFrame` since they run before paint.
     // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        moveInsideViewport(allElements.slice(MAX_IMMEDIATE_HINT_MOVEMENTS));
+        moveInsideViewport(restElements);
       });
     });
 
