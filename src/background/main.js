@@ -1,5 +1,7 @@
 // @flow
 
+import "webext-inject-on-install";
+
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import BackgroundProgram from "./Program";

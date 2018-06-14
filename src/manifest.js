@@ -19,6 +19,12 @@ module.exports = () =>
     description: "Click things on the web using the keyboard.",
     homepage_url: "https://github.com/lydell/synth",
     icons: getIcons(config.browser),
+    permissions: [
+      // Needed by webext-inject-on-install.
+      "<all_urls>",
+      // Needed by webext-inject-on-install.
+      "tabs",
+    ],
     browser_action: {
       browser_style: true,
       default_popup: config.popupHtml,
