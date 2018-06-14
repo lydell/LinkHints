@@ -25,6 +25,7 @@ module.exports = {
     input: "icons.js",
     output: "../icon.svg",
   },
+  needsPolyfill: needsPolyfill(currentBrowser),
   polyfill: {
     input: "../node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
     output: "compiled/browser-polyfill.js",
@@ -75,6 +76,16 @@ function browserSpecificIgnores(browser: ?Browser): Array<string> {
       return ["icons/**/*.png"];
     default:
       return [];
+  }
+}
+
+function needsPolyfill(browser: ?Browser): boolean {
+  switch (browser) {
+    case "firefox":
+      return false;
+
+    default:
+      return true;
   }
 }
 

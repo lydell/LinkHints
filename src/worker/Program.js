@@ -106,7 +106,7 @@ export default class WorkerProgram {
           width: window.innerWidth,
           height: window.innerHeight,
         };
-        this.reportVisibleElements(message.types, [viewport]);
+        this.reportVisibleElements(new Set(message.types), [viewport]);
         break;
       }
 

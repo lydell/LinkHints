@@ -40,7 +40,7 @@ module.exports = () =>
     },
     background: {
       scripts: [
-        getPolyfill(config.browser),
+        config.needsPolyfill ? config.polyfill.output : undefined,
         config.setup.output,
         config.background.output,
       ].filter(Boolean),
@@ -52,7 +52,7 @@ module.exports = () =>
         match_about_blank: true,
         run_at: "document_start",
         js: [
-          getPolyfill(config.browser),
+          config.needsPolyfill ? config.polyfill.output : undefined,
           config.setup.output,
           config.worker.output,
         ].filter(Boolean),
@@ -109,15 +109,5 @@ function getThemeIcons(browser: ?Browser): ?Array<ThemeIcon> {
         const [, dark] = config.icons.dark[index];
         return { light, dark, size };
       });
-  }
-}
-
-function getPolyfill(browser: ?Browser): ?string {
-  switch (browser) {
-    case "firefox":
-      return undefined;
-
-    default:
-      return config.polyfill.output;
   }
 }

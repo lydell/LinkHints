@@ -74,7 +74,7 @@ export default class PopupProgram {
     list.style.paddingLeft = "1em";
     for (const duration of perf) {
       const li = document.createElement("li");
-      li.textContent = `${duration} ms`;
+      li.textContent = `${duration.toFixed(2)} ms`;
       list.append(li);
     }
     container.append(list);

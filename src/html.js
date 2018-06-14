@@ -1,6 +1,6 @@
 // @flow
 
-module.exports = ({ js }: {| js: string |}) =>
+module.exports = ({ polyfill, js }: {| polyfill: ?string, js: string |}) =>
   `
 <!DOCTYPE html>
 <html lang="en">
@@ -9,6 +9,7 @@ module.exports = ({ js }: {| js: string |}) =>
     <title>Synth</title>
   </head>
   <body>
+    ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}
     <script src="${js}"></script>
   </body>
 </html>

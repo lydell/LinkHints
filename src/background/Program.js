@@ -504,16 +504,16 @@ function makeEmptyTabState(): TabState {
   };
 }
 
-function getHintsTypes(mode: HintsMode): Set<ElementType> {
+function getHintsTypes(mode: HintsMode): Array<ElementType> {
   switch (mode) {
     case "Click":
-      return new Set(["clickable", "link"]);
+      return ["clickable", "link"];
 
     case "BackgroundTab":
-      return new Set(["link"]);
+      return ["link"];
 
     case "ForegroundTab":
-      return new Set(["link"]);
+      return ["link"];
 
     default:
       return unreachable(mode);

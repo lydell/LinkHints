@@ -67,7 +67,7 @@ export type ToWorker =
     |}
   | {|
       type: "StartFindElements",
-      types: Set<ElementType>,
+      types: Array<ElementType>,
     |}
   | {|
       type: "FocusElement",

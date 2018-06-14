@@ -51,15 +51,17 @@ module.exports = [
   template(config.manifest),
   template(config.iconsCompilation),
   html({ html: config.popupHtml, js: config.popup.output }),
-  copy(config.polyfill),
-].map(entry => ({
-  ...entry,
-  input: `${config.src}/${entry.input}`,
-  output: {
-    ...entry.output,
-    file: `${config.src}/${entry.output.file}`,
-  },
-}));
+  config.needsPolyfill ? copy(config.polyfill) : undefined,
+]
+  .filter(Boolean)
+  .map(entry => ({
+    ...entry,
+    input: `${config.src}/${entry.input}`,
+    output: {
+      ...entry.output,
+      file: `${config.src}/${entry.output.file}`,
+    },
+  }));
 
 function setup() {
   if (PROD) {
@@ -103,10 +105,10 @@ function template(
     output,
     data,
   } /* : {|
-  input: string,
-  output: string,
-  data?: any,
-|} */
+    input: string,
+    output: string,
+    data?: any,
+  |} */
 ) {
   let content = "";
   return {
@@ -130,11 +132,16 @@ function template(
   };
 }
 
-function html(files /* : {|html:string,js:string|} */) {
+function html(files /* : {| html: string, js: string |} */) {
   return template({
     input: "html.js",
     output: files.html,
-    data: { js: path.relative(path.dirname(files.html), files.js) },
+    data: {
+      polyfill: config.needsPolyfill
+        ? path.relative(path.dirname(files.html), config.polyfill.output)
+        : undefined,
+      js: path.relative(path.dirname(files.html), files.js),
+    },
   });
 }
 
