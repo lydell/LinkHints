@@ -29,6 +29,20 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
+      key: "h",
+      code: "KeyH",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Click",
+    },
+  },
+  {
+    shortcut: {
       key: "k",
       code: "KeyK",
       altKey: true,
@@ -43,8 +57,36 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
+      key: "t",
+      code: "KeyT",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "BackgroundTab",
+    },
+  },
+  {
+    shortcut: {
       key: "l",
       code: "KeyL",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "ForegroundTab",
+    },
+  },
+  {
+    shortcut: {
+      key: "r",
+      code: "KeyR",
       altKey: true,
       ctrlKey: false,
       metaKey: false,
