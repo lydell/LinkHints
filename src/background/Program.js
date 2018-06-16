@@ -95,8 +95,14 @@ export default class BackgroundProgram {
     return this.sendMessage({ type: "ToWorker", message }, { tabId, frameId });
   }
 
-  async sendRendererMessage(message: ToRenderer): Promise<any> {
-    return this.sendMessage({ type: "ToRenderer", message });
+  async sendRendererMessage(
+    message: ToRenderer,
+    { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+  ): Promise<any> {
+    return this.sendMessage(
+      { type: "ToRenderer", message },
+      { tabId, frameId }
+    );
   }
 
   async sendMessage(
@@ -251,10 +257,13 @@ export default class BackgroundProgram {
 
           switch (hintsState.mode) {
             case "Click":
-              this.sendWorkerMessage({
-                type: "ClickElement",
-                index: match.index,
-              });
+              this.sendWorkerMessage(
+                {
+                  type: "ClickElement",
+                  index: match.index,
+                },
+                { tabId: info.tabId }
+              );
               break;
 
             case "BackgroundTab":
@@ -265,10 +274,13 @@ export default class BackgroundProgram {
                 );
                 break;
               }
-              this.sendWorkerMessage({
-                type: "FocusElement",
-                index: match.index,
-              });
+              this.sendWorkerMessage(
+                {
+                  type: "FocusElement",
+                  index: match.index,
+                },
+                { tabId: info.tabId }
+              );
               openTab({ active: false, url, openerTabId: info.tabId });
               break;
 
@@ -280,18 +292,45 @@ export default class BackgroundProgram {
                 );
                 break;
               }
-              this.sendWorkerMessage({
-                type: "FocusElement",
-                index: match.index,
-              });
+              this.sendWorkerMessage(
+                {
+                  type: "FocusElement",
+                  index: match.index,
+                },
+                { tabId: info.tabId }
+              );
               openTab({ active: true, url, openerTabId: info.tabId });
               break;
 
             default:
               unreachable(hintsState.mode);
           }
-          // Also: Want to focus the element?
-          console.log("Exit hints mode but show matched for a little while");
+          tabState.hintsState = { type: "Idle" };
+          this.sendWorkerMessage(
+            {
+              type: "StateSync",
+              clearElements: true,
+              keyboardShortcuts: this.normalKeyboardShortcuts,
+              keyboardOptions: {
+                capture: false,
+                suppressByDefault: false,
+                sendAll: false,
+              },
+              oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+            },
+            { tabId: info.tabId }
+          );
+          this.sendRendererMessage(
+            {
+              type: "Unrender",
+              delayed: true,
+            },
+            { tabId: info.tabId }
+          );
+          browser.browserAction.setBadgeText({
+            text: "",
+            tabId: info.tabId,
+          });
         }
 
         hintsState.enteredHintChars = enteredHintChars;
@@ -360,10 +399,13 @@ export default class BackgroundProgram {
             },
             { tabId: info.tabId }
           );
-          this.sendRendererMessage({
-            type: "Render",
-            elements: elementsWithHints,
-          });
+          this.sendRendererMessage(
+            {
+              type: "Render",
+              elements: elementsWithHints,
+            },
+            { tabId: info.tabId }
+          );
           browser.browserAction.setBadgeText({
             text: String(hintsState.pendingElements.elements.length),
             tabId: info.tabId,
@@ -456,20 +498,27 @@ export default class BackgroundProgram {
           return;
         }
         tabState.hintsState = { type: "Idle" };
-        this.sendWorkerMessage({
-          type: "StateSync",
-          clearElements: true,
-          keyboardShortcuts: this.normalKeyboardShortcuts,
-          keyboardOptions: {
-            capture: false,
-            suppressByDefault: false,
-            sendAll: false,
+        this.sendWorkerMessage(
+          {
+            type: "StateSync",
+            clearElements: true,
+            keyboardShortcuts: this.normalKeyboardShortcuts,
+            keyboardOptions: {
+              capture: false,
+              suppressByDefault: false,
+              sendAll: false,
+            },
+            oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
           },
-          oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-        });
-        this.sendRendererMessage({
-          type: "Unrender",
-        });
+          { tabId: info.tabId }
+        );
+        this.sendRendererMessage(
+          {
+            type: "Unrender",
+            delayed: false,
+          },
+          { tabId: info.tabId }
+        );
         browser.browserAction.setBadgeText({
           text: "",
           tabId: info.tabId,

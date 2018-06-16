@@ -99,6 +99,7 @@ export type ToRenderer =
     |}
   | {|
       type: "Unrender",
+      delayed: boolean,
     |};
 
 export type FromPopup = {|

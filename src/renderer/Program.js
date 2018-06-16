@@ -19,6 +19,7 @@ const MATCHED_HINT_CLASS = "matchedHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
+const UNRENDER_DELAY = 200; // ms
 
 const CONTAINER_STYLES = {
   all: "unset",
@@ -116,7 +117,7 @@ export default class RendererProgram {
         break;
 
       case "Unrender":
-        this.unrender();
+        this.unrender({ delayed: message.delayed });
         break;
 
       default:
@@ -268,10 +269,16 @@ export default class RendererProgram {
     }
   }
 
-  unrender() {
+  unrender({ delayed = false }: {| delayed: boolean |} = {}) {
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
-      container.remove();
+      if (delayed) {
+        window.setTimeout(() => {
+          container.remove();
+        }, UNRENDER_DELAY);
+      } else {
+        container.remove();
+      }
     }
   }
 }
