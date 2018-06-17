@@ -126,7 +126,7 @@ function template(
           content = require(id)(data);
           return "0";
         },
-        transformBundle: () => content,
+        transformChunk: () => ({ code: content, map: undefined }),
       },
     ],
   };
@@ -161,7 +161,7 @@ function copy({ input, output } /* : {| input: string, output: string, |} */) {
           content = fs.readFileSync(id, "utf8");
           return "0";
         },
-        transformBundle: () => content,
+        transformChunk: () => ({ code: content, map: undefined }),
       },
     ],
   };
