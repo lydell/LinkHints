@@ -18,12 +18,8 @@ module.exports = () =>
     author: "Simon Lydell",
     description: "Click things on the web using the keyboard.",
     homepage_url: "https://github.com/lydell/synth",
+    applications: getApplications(config.browser),
     icons: getIcons(config.browser),
-    applications: {
-      gecko: {
-        id: "synth@github.com",
-      },
-    },
     permissions: [
       // Needed by webext-inject-on-install.
       "<all_urls>",
@@ -72,6 +68,20 @@ module.exports = () =>
 
 function toJSON(obj: any): string {
   return JSON.stringify(obj, undefined, 2);
+}
+
+function getApplications(browser: ?Browser): mixed {
+  switch (browser) {
+    case "firefox":
+      return {
+        gecko: {
+          id: "synth@github.com",
+        },
+      };
+
+    default:
+      return undefined;
+  }
 }
 
 function makeSizes(icons: Array<[number, string]>): IconSizes {
