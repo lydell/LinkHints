@@ -99,14 +99,14 @@ export default class BackgroundProgram {
 
   async sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+    { tabId, frameId }: {| tabId: number, frameId?: number |} = {}
   ): Promise<any> {
     return this.sendMessage({ type: "ToWorker", message }, { tabId, frameId });
   }
 
   async sendRendererMessage(
     message: ToRenderer,
-    { tabId }: {| tabId?: number |} = {}
+    { tabId }: {| tabId: number |} = {}
   ): Promise<any> {
     return this.sendMessage(
       { type: "ToRenderer", message },
@@ -116,13 +116,9 @@ export default class BackgroundProgram {
 
   async sendMessage(
     message: FromBackground,
-    { tabId: passedTabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+    { tabId, frameId }: {| tabId: number, frameId?: number |} = {}
   ): Promise<any> {
     try {
-      const tabId =
-        passedTabId == null
-          ? (await browser.tabs.query({ active: true }))[0].id
-          : passedTabId;
       return frameId == null
         ? await browser.tabs.sendMessage(tabId, message)
         : await browser.tabs.sendMessage(tabId, message, { frameId });
