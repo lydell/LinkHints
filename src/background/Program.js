@@ -2,7 +2,7 @@
 
 import huffman from "n-ary-huffman";
 
-import { bind, unreachable } from "../utils/main";
+import { LOADED_KEY, bind, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -76,16 +76,20 @@ export default class BackgroundProgram {
     this.hintChars = hintChars;
     this.tabState = new Map();
 
-    bind(this, ["onMessage", "onTabRemoved"]);
+    bind(this, ["onConnect", "onMessage", "onTabRemoved"]);
   }
 
-  start() {
+  async start(): Promise<void> {
     browser.runtime.onMessage.addListener(this.onMessage);
+    browser.runtime.onConnect.addListener(this.onConnect);
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
+    await runContentScripts();
   }
 
   stop() {
     browser.runtime.onMessage.removeListener(this.onMessage);
+    browser.runtime.onConnect.removeListener(this.onConnect);
+    browser.tabs.onRemoved.removeListener(this.onTabRemoved);
   }
 
   async sendWorkerMessage(
@@ -173,6 +177,14 @@ export default class BackgroundProgram {
         unreachable(message.type, message);
     }
     return undefined;
+  }
+
+  onConnect(port: Port) {
+    port.onMessage.addListener((message: ToBackground) => {
+      if (port.sender != null) {
+        this.onMessage(message, port.sender);
+      }
+    });
   }
 
   async onWorkerMessage(
@@ -585,4 +597,48 @@ async function openTab({
   } catch (error) {
     console.error("Failed to open tab", error);
   }
+}
+
+async function runContentScripts(): Promise<Array<Array<any>>> {
+  const manifest = browser.runtime.getManifest();
+  const tabs = await browser.tabs.query({});
+
+  const detailsList = [].concat(
+    ...manifest.content_scripts
+      .filter(script => script.matches.includes("<all_urls>"))
+      .map(script =>
+        script.js.map(file => ({
+          file,
+          allFrames: script.all_frames,
+          matchAboutBlank: script.match_about_blank,
+          runAt: script.run_at,
+        }))
+      )
+  );
+
+  return Promise.all(
+    [].concat(
+      ...tabs.map(tab =>
+        detailsList.map(async details => {
+          try {
+            // This `window` property is set by `RendererProgram`. If it’s set
+            // to true, consider all `content_scripts` in manifest.json to be
+            // already automatically loaded.
+            const [loaded] = await browser.tabs.executeScript(tab.id, {
+              code: `window[${JSON.stringify(LOADED_KEY)}]`,
+              runAt: "document_start",
+            });
+            return loaded === true
+              ? []
+              : await browser.tabs.executeScript(tab.id, details);
+          } catch (_error) {
+            // If `executeScript` fails it means that the extension is not
+            // allowed to run content scripts in the tab. Example: `about:*`
+            // pages. We don’t need to do anything in that case.
+            return [];
+          }
+        })
+      )
+    )
+  );
 }

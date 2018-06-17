@@ -38,6 +38,7 @@ module.exports = {
       },
       globals: {
         BROWSER: false,
+        BUILD_TIME: false,
         HTMLAnchorElement: false,
         HTMLFrameElement: false,
         HTMLIFrameElement: false,

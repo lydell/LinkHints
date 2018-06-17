@@ -31,7 +31,7 @@ module.exports = {
     output: "compiled/browser-polyfill.js",
   },
   setup: {
-    input: "utils/setup.js",
+    input: "shared/setup.js",
     output: "compiled/setup.js",
   },
   background: {

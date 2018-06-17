@@ -79,16 +79,15 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
     },
     plugins: [
       flow({ pretty: true }),
+      replace({
+        BROWSER:
+          config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
+        BUILD_TIME: () =>
+          JSON.stringify(new Date().toISOString(), undefined, 2),
+      }),
+      PROD && terser(TERSER_OPTIONS),
       resolve(),
       commonjs(),
-      ...(config.browser == null
-        ? []
-        : [
-            replace({
-              BROWSER: JSON.stringify(config.browser),
-            }),
-            terser(TERSER_OPTIONS),
-          ]),
     ].filter(Boolean),
   };
 }

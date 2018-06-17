@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, unreachable } from "../utils/main";
+import { bind, unreachable } from "../shared/main";
 import type {
   FromBackground,
   FromWorker,
@@ -56,8 +56,16 @@ export default class WorkerProgram {
     window.addEventListener("message", this.onWindowMessage, true);
     this.elementManager.start();
 
-    this.sendMessage({
-      type: "WorkerScriptAdded",
+    // See `RendererProgram` about this port stuff.
+    const port = browser.runtime.connect();
+    port.postMessage(
+      ({
+        type: "FromWorker",
+        message: { type: "WorkerScriptAdded" },
+      }: ToBackground)
+    );
+    port.onDisconnect.addListener(() => {
+      this.stop();
     });
   }
 
@@ -65,6 +73,7 @@ export default class WorkerProgram {
     browser.runtime.onMessage.removeListener(this.onMessage);
     window.removeEventListener("keydown", this.onKeydownCapture, true);
     window.removeEventListener("keydown", this.onKeydownBubble, false);
+    window.removeEventListener("message", this.onWindowMessage, true);
     this.elementManager.stop();
   }
 

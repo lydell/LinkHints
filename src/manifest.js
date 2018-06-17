@@ -21,10 +21,8 @@ module.exports = () =>
     applications: getApplications(config.browser),
     icons: getIcons(config.browser),
     permissions: [
-      // Needed by webext-inject-on-install.
+      // Needed for injecting content scripts in already open tabs on install.
       "<all_urls>",
-      // Needed by webext-inject-on-install.
-      "tabs",
     ],
     browser_action: {
       browser_style: true,

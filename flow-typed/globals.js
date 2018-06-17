@@ -4,6 +4,22 @@ declare type Browser = "chrome" | "firefox";
 
 declare var BROWSER: Browser;
 
+declare var BUILD_TIME: string;
+
+declare type ConnectInfo = {|
+  name?: string,
+  includeTlsChannelId?: boolean,
+|};
+
+declare type ExecuteScriptDetails = {|
+  allFrames?: boolean,
+  code?: string,
+  file?: string,
+  frameId?: number,
+  matchAboutBlank?: boolean,
+  runAt?: string,
+|};
+
 declare type HTMLFrameElement = HTMLIFrameElement;
 
 declare type MessageSender = {|
@@ -18,6 +34,16 @@ declare type OnEvent<Listener> = {|
   addListener: Listener => void,
   removeListener: Listener => void,
   hasListener: Listener => boolean,
+|};
+
+declare type Port = {|
+  disconnect(): void,
+  error: ?Object,
+  name: string,
+  onDisconnect: OnEvent<(Port) => void>,
+  onMessage: OnEvent<(any) => void>,
+  postMessage(any): void,
+  sender: ?MessageSender,
 |};
 
 declare type Tab = {|
@@ -62,7 +88,12 @@ declare var browser: {|
     |}): void,
   |},
   runtime: {|
+    connect: (() => Port) &
+      (ConnectInfo => Port) &
+      ((extensionId: string, ConnectInfo) => Port),
+    getManifest(): any,
     sendMessage(message: any): Promise<any>,
+    onConnect: OnEvent<(Port) => void>,
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
   |},
   tabs: {|
@@ -75,6 +106,8 @@ declare var browser: {|
       url?: string,
       windowId?: number,
     |}): Promise<Tab>,
+    executeScript: (ExecuteScriptDetails => Promise<Array<any>>) &
+      ((tabId: number, ExecuteScriptDetails) => Promise<Array<any>>),
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
     sendMessage(
       tabId: number,

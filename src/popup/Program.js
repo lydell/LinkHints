@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, unreachable } from "../utils/main";
+import { bind, unreachable } from "../shared/main";
 import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 export default class PopupProgram {

@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, unreachable } from "../utils/main";
+import { LOADED_KEY, bind, unreachable } from "../shared/main";
 import type {
   ElementWithHint,
   FromBackground,
@@ -72,15 +72,43 @@ export default class RendererProgram {
   }
 
   start() {
+    // The background program checks for this global using `executeScript` (in
+    // the top frame only) to see if content scripts have been loaded
+    // automatically from `content_scripts` in manifest.json.
+    window[LOADED_KEY] = true;
+
     browser.runtime.onMessage.addListener(this.onMessage);
 
-    this.sendMessage({
-      type: "RendererScriptAdded",
+    // In Chrome, content scripts continue to live after the extension has been
+    // disabled, uninstalled or reloaded. A way to detect this is to make a
+    // `Port` and listen for `onDisconnect`.
+    // In Firefox, content scripts are nuked when uninstalling. `onDisconnect`
+    // never runs. However, when reloading the content scripts seems to be
+    // re-run (with the new code), but not connected to the background. Super
+    // weird. That causes any kind of messaging with the background to throw
+    // errors. And the port to immediately disconnect. So this port stuff for
+    // dealing with “orphaned” content scripts ends up working in Firefox as
+    // well, just in a slightly different way. Unfortunately, the
+    // `port.postMessage()` call below causes a fat `TypeError: extension is
+    // undefined` error to be logged to the Browser console for “orphaned”
+    // content scripts. (The error is only logged, not `throw`n.) This bloats
+    // the console a little, but doesn’t cause any other problems.
+    const port = browser.runtime.connect();
+    port.postMessage(
+      ({
+        type: "FromRenderer",
+        message: { type: "RendererScriptAdded" },
+      }: ToBackground)
+    );
+    port.onDisconnect.addListener(() => {
+      this.stop();
     });
   }
 
   stop() {
+    window[LOADED_KEY] = false;
     browser.runtime.onMessage.removeListener(this.onMessage);
+    this.unrender();
   }
 
   async sendMessage(message: FromRenderer): Promise<any> {
