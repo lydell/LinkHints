@@ -1,14 +1,9 @@
 // @flow
 
+import { DEFAULT_LOG_LEVEL } from "../shared/main";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import BackgroundProgram from "./Program";
-
-if (BROWSER === ("chrome": Browser)) {
-  console.log("chrome!", browser);
-} else if (BROWSER === ("firefox": Browser)) {
-  console.log("firefox!", browser);
-}
 
 const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   {
@@ -114,6 +109,7 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 ];
 
 const program = new BackgroundProgram({
+  logLevel: DEFAULT_LOG_LEVEL,
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
   hintChars,

@@ -1,6 +1,15 @@
 // @flow
 
-import { LOADED_KEY, bind, catchRejections, unreachable } from "../shared/main";
+import {
+  DEFAULT_LOG_LEVEL,
+  LOADED_KEY,
+  type LogLevel,
+  autoLog,
+  bind,
+  catchRejections,
+  log,
+  unreachable,
+} from "../shared/main";
 import type {
   ElementWithHint,
   FromBackground,
@@ -63,13 +72,20 @@ const CSS = `
 `.trim();
 
 export default class RendererProgram {
+  logLevel: LogLevel;
   css: string;
 
   constructor() {
+    this.logLevel = DEFAULT_LOG_LEVEL;
     this.css = CSS;
 
-    bind(this, [this.onMessage]);
-    catchRejections(this, [this.sendMessage, this.onMessage]);
+    bind(this, [this.log, this.onMessage]);
+    autoLog(this.log, this, [this.start, this.stop, this.sendMessage]);
+    catchRejections(this.log, this, [this.sendMessage, this.onMessage]);
+  }
+
+  log(level: LogLevel, ...args: Array<any>) {
+    log(level, this.logLevel, ...args);
   }
 
   start() {
@@ -127,7 +143,13 @@ export default class RendererProgram {
 
     const { message } = wrappedMessage;
 
+    this.log("log", "RendererProgram#onMessage", message.type, message);
+
     switch (message.type) {
+      case "StateSync":
+        this.logLevel = message.logLevel;
+        break;
+
       case "Render":
         this.render(message.elements);
         break;
@@ -253,7 +275,7 @@ export default class RendererProgram {
     const container = document.getElementById(CONTAINER_ID);
     const root = container == null ? undefined : container.shadowRoot;
     if (root == null) {
-      console.error("RendererProgram#updateHints: missing root", container);
+      this.log("error", "RendererProgram#updateHints: missing root", container);
       return;
     }
 
@@ -263,7 +285,8 @@ export default class RendererProgram {
       const child = hints[index];
 
       if (child == null) {
-        console.error(
+        this.log(
+          "error",
           "RendererProgram#updateHints: missing child",
           index,
           update

@@ -1,5 +1,7 @@
 // @flow
 
+import type { Logger } from "../shared/main";
+
 export type ElementType = "link" | "clickable" | "frame";
 
 type ElementData = {|
@@ -26,6 +28,7 @@ export type VisibleElement = {|
 |};
 
 export default class ElementManager {
+  log: Logger;
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
@@ -33,7 +36,14 @@ export default class ElementManager {
   mutationObserver: MutationObserver;
   bailed: boolean;
 
-  constructor({ maxTrackedElements }: {| maxTrackedElements: number |}) {
+  constructor({
+    log,
+    maxTrackedElements,
+  }: {|
+    log: Logger,
+    maxTrackedElements: number,
+  |}) {
+    this.log = log;
     this.maxTrackedElements = maxTrackedElements;
 
     this.elements = new Map();
@@ -72,6 +82,8 @@ export default class ElementManager {
       return;
     }
 
+    const { size } = this.elements;
+
     this.intersectionObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
@@ -85,7 +97,7 @@ export default class ElementManager {
       }
     }
 
-    console.log("bailed", this);
+    this.log("warn", "ElementManager#bail", size, this.maxTrackedElements);
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {

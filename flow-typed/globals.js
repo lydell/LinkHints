@@ -6,6 +6,8 @@ declare var BROWSER: Browser;
 
 declare var BUILD_TIME: string;
 
+declare var PROD: boolean;
+
 declare type ConnectInfo = {|
   name?: string,
   includeTlsChannelId?: boolean,

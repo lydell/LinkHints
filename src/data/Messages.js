@@ -2,6 +2,7 @@
 
 // TODO: Move these types somewhere.
 import type { ElementType, HintMeasurements } from "../worker/ElementManager";
+import type { LogLevel } from "../shared/main";
 
 import type {
   KeyboardAction,
@@ -60,6 +61,7 @@ export type FromWorker =
 export type ToWorker =
   | {|
       type: "StateSync",
+      logLevel: LogLevel,
       clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
       keyboardOptions: KeyboardOptions,
@@ -89,6 +91,10 @@ export type FromRenderer =
 
 export type ToRenderer =
   | {|
+      type: "StateSync",
+      logLevel: LogLevel,
+    |}
+  | {|
       type: "Render",
       elements: Array<ElementWithHint>,
     |}
@@ -108,6 +114,7 @@ export type FromPopup = {|
 
 export type ToPopup = {|
   type: "PopupData",
+  logLevel: LogLevel,
   data: ?{|
     perf: Array<number>,
   |},

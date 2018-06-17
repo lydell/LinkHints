@@ -84,6 +84,7 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
           config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
         BUILD_TIME: () =>
           JSON.stringify(new Date().toISOString(), undefined, 2),
+        PROD: JSON.stringify(PROD),
       }),
       PROD && terser(TERSER_OPTIONS),
       resolve(),

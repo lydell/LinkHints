@@ -2,7 +2,15 @@
 
 import huffman from "n-ary-huffman";
 
-import { LOADED_KEY, bind, catchRejections, unreachable } from "../shared/main";
+import {
+  LOADED_KEY,
+  type LogLevel,
+  autoLog,
+  bind,
+  catchRejections,
+  log,
+  unreachable,
+} from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -32,6 +40,8 @@ type PendingElements = {|
 type MessageInfo = {|
   tabId: number,
   frameId: number,
+  // Currently unused, but nice to have in logging.
+  url: ?string,
 |};
 
 type TabState = {|
@@ -63,27 +73,41 @@ type HintsState =
 const TOP_FRAME_ID = 0;
 
 export default class BackgroundProgram {
+  logLevel: LogLevel;
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
 
   constructor({
+    logLevel,
     normalKeyboardShortcuts,
     hintsKeyboardShortcuts,
     hintChars,
   }: {|
+    logLevel: LogLevel,
     normalKeyboardShortcuts: Array<KeyboardMapping>,
     hintsKeyboardShortcuts: Array<KeyboardMapping>,
     hintChars: string,
   |}) {
+    this.logLevel = logLevel;
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.hintChars = hintChars;
     this.tabState = new Map();
 
-    bind(this, [this.onConnect, this.onMessage, this.onTabRemoved]);
-    catchRejections(this, [
+    bind(this, [this.log, this.onConnect, this.onMessage, this.onTabRemoved]);
+
+    autoLog(this.log, this, [
+      this.sendWorkerMessage,
+      this.sendRendererMessage,
+      this.sendPopupMessage,
+      this.onWorkerMessage,
+      this.onRendererMessage,
+      this.onPopupMessage,
+    ]);
+
+    catchRejections(this.log, this, [
       this.start,
       this.sendWorkerMessage,
       this.sendRendererMessage,
@@ -98,7 +122,12 @@ export default class BackgroundProgram {
     ]);
   }
 
+  log(level: LogLevel, ...args: Array<any>) {
+    log(level, this.logLevel, ...args);
+  }
+
   async start(): Promise<void> {
+    this.log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
     browser.runtime.onMessage.addListener(this.onMessage);
     browser.runtime.onConnect.addListener(this.onConnect);
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
@@ -136,13 +165,7 @@ export default class BackgroundProgram {
   }
 
   async sendBackgroundMessage(message: FromBackground): Promise<void> {
-    await browser.runtime.sendMessage(message).catch(error => {
-      console.error(
-        "BackgroundProgram#sendBackgroundMessage failed",
-        message,
-        error
-      );
-    });
+    await browser.runtime.sendMessage(message);
   }
 
   async sendContentMessage(
@@ -160,7 +183,7 @@ export default class BackgroundProgram {
     // an `about:blank` frame somewhere when hovering the browserAction!
     const info =
       sender.tab != null && sender.frameId != null
-        ? { tabId: sender.tab.id, frameId: sender.frameId }
+        ? { tabId: sender.tab.id, frameId: sender.frameId, url: sender.url }
         : undefined;
 
     const tabStateRaw =
@@ -170,8 +193,6 @@ export default class BackgroundProgram {
     if (info != null && tabStateRaw == null) {
       this.tabState.set(info.tabId, tabState);
     }
-
-    console.log("BackgroundProgram#onMessage", message, info, tabState);
 
     switch (message.type) {
       case "FromWorker":
@@ -213,6 +234,7 @@ export default class BackgroundProgram {
         this.sendWorkerMessage(
           {
             type: "StateSync",
+            logLevel: this.logLevel,
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
@@ -298,7 +320,8 @@ export default class BackgroundProgram {
 
             case "BackgroundTab":
               if (url == null) {
-                console.error(
+                this.log(
+                  "error",
                   "Cannot open background tab due to missing URL",
                   match
                 );
@@ -320,8 +343,9 @@ export default class BackgroundProgram {
 
             case "ForegroundTab":
               if (url == null) {
-                console.error(
-                  "Cannot open foreground tab due to missing URL",
+                this.log(
+                  "error",
+                  "Cannot open background tab due to missing URL",
                   match
                 );
                 break;
@@ -347,6 +371,7 @@ export default class BackgroundProgram {
           this.sendWorkerMessage(
             {
               type: "StateSync",
+              logLevel: this.logLevel,
               clearElements: true,
               keyboardShortcuts: this.normalKeyboardShortcuts,
               keyboardOptions: {
@@ -429,6 +454,7 @@ export default class BackgroundProgram {
           this.sendWorkerMessage(
             {
               type: "StateSync",
+              logLevel: this.logLevel,
               clearElements: false,
               keyboardShortcuts: this.hintsKeyboardShortcuts,
               keyboardOptions: {
@@ -467,7 +493,13 @@ export default class BackgroundProgram {
   ) {
     switch (message.type) {
       case "RendererScriptAdded":
-        // Nothing to do.
+        this.sendRendererMessage(
+          {
+            type: "StateSync",
+            logLevel: this.logLevel,
+          },
+          { tabId: info.tabId }
+        );
         break;
 
       case "Rendered": {
@@ -493,6 +525,7 @@ export default class BackgroundProgram {
         const tabState = this.tabState.get(tab.id);
         this.sendPopupMessage({
           type: "PopupData",
+          logLevel: this.logLevel,
           data:
             tabState == null
               ? undefined
@@ -551,6 +584,7 @@ export default class BackgroundProgram {
         this.sendWorkerMessage(
           {
             type: "StateSync",
+            logLevel: this.logLevel,
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
