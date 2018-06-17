@@ -89,7 +89,7 @@ function rotate([x, y]: Point, angle: number): Point {
 }
 
 function toRadians(degrees: number): number {
-  return degrees / 180 * Math.PI;
+  return (degrees / 180) * Math.PI;
 }
 
 function render(size: number, colors: Colors): string {
