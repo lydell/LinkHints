@@ -2,7 +2,7 @@
 
 import huffman from "n-ary-huffman";
 
-import { LOADED_KEY, bind, unreachable } from "../shared/main";
+import { LOADED_KEY, bind, catchRejections, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -13,6 +13,7 @@ import type {
   FromRenderer,
   FromWorker,
   ToBackground,
+  ToPopup,
   ToRenderer,
   ToWorker,
 } from "../data/Messages";
@@ -81,7 +82,20 @@ export default class BackgroundProgram {
     this.hintChars = hintChars;
     this.tabState = new Map();
 
-    bind(this, ["onConnect", "onMessage", "onTabRemoved"]);
+    bind(this, [this.onConnect, this.onMessage, this.onTabRemoved]);
+    catchRejections(this, [
+      this.start,
+      this.sendWorkerMessage,
+      this.sendRendererMessage,
+      this.sendPopupMessage,
+      this.sendBackgroundMessage,
+      this.sendContentMessage,
+      this.onMessage,
+      this.onWorkerMessage,
+      this.onRendererMessage,
+      this.onPopupMessage,
+      this.onKeyboardShortcut,
+    ]);
   }
 
   async start(): Promise<void> {
@@ -99,36 +113,51 @@ export default class BackgroundProgram {
 
   async sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: {| tabId: number, frameId?: number |} = {}
-  ): Promise<any> {
-    return this.sendMessage({ type: "ToWorker", message }, { tabId, frameId });
+    { tabId, frameId }: {| tabId: number, frameId?: number |}
+  ): Promise<void> {
+    await this.sendContentMessage(
+      { type: "ToWorker", message },
+      { tabId, frameId }
+    );
   }
 
   async sendRendererMessage(
     message: ToRenderer,
-    { tabId }: {| tabId: number |} = {}
-  ): Promise<any> {
-    return this.sendMessage(
+    { tabId }: {| tabId: number |}
+  ): Promise<void> {
+    await this.sendContentMessage(
       { type: "ToRenderer", message },
       { tabId, frameId: TOP_FRAME_ID }
     );
   }
 
-  async sendMessage(
-    message: FromBackground,
-    { tabId, frameId }: {| tabId: number, frameId?: number |} = {}
-  ): Promise<any> {
-    try {
-      return frameId == null
-        ? await browser.tabs.sendMessage(tabId, message)
-        : await browser.tabs.sendMessage(tabId, message, { frameId });
-    } catch (error) {
-      console.error("BackgroundProgram#sendMessage failed", message, error);
-      throw error;
-    }
+  async sendPopupMessage(message: ToPopup): Promise<void> {
+    await this.sendBackgroundMessage({ type: "ToPopup", message });
   }
 
-  async onMessage(message: ToBackground, sender: MessageSender): Promise<any> {
+  async sendBackgroundMessage(message: FromBackground): Promise<void> {
+    await browser.runtime.sendMessage(message).catch(error => {
+      console.error(
+        "BackgroundProgram#sendBackgroundMessage failed",
+        message,
+        error
+      );
+    });
+  }
+
+  async sendContentMessage(
+    message: FromBackground,
+    { tabId, frameId }: {| tabId: number, frameId?: number |}
+  ): Promise<void> {
+    await (frameId == null
+      ? browser.tabs.sendMessage(tabId, message)
+      : browser.tabs.sendMessage(tabId, message, { frameId }));
+  }
+
+  onMessage(message: ToBackground, sender: MessageSender) {
+    // `info` can be missing when the message comes from for example the popup
+    // (which isn’t associated with a tab). The worker script can even load in
+    // an `about:blank` frame somewhere when hovering the browserAction!
     const info =
       sender.tab != null && sender.frameId != null
         ? { tabId: sender.tab.id, frameId: sender.frameId }
@@ -142,40 +171,28 @@ export default class BackgroundProgram {
       this.tabState.set(info.tabId, tabState);
     }
 
+    console.log("BackgroundProgram#onMessage", message, info, tabState);
+
     switch (message.type) {
       case "FromWorker":
         if (info != null) {
-          return this.onWorkerMessage(message.message, info, tabState);
+          this.onWorkerMessage(message.message, info, tabState);
         }
-        console.error(
-          "BackgroundProgram#onMessage: Missing info",
-          info,
-          message.type,
-          message,
-          sender
-        );
         break;
 
       case "FromRenderer":
         if (info != null) {
-          return this.onRendererMessage(message.message, info, tabState);
+          this.onRendererMessage(message.message, info, tabState);
         }
-        console.error(
-          "BackgroundProgram#onMessage: Missing info",
-          info,
-          message.type,
-          message,
-          sender
-        );
         break;
 
       case "FromPopup":
-        return this.onPopupMessage(message.message);
+        this.onPopupMessage(message.message);
+        break;
 
       default:
         unreachable(message.type, message);
     }
-    return undefined;
   }
 
   onConnect(port: Port) {
@@ -190,7 +207,7 @@ export default class BackgroundProgram {
     message: FromWorker,
     info: MessageInfo,
     tabState: TabState
-  ): Promise<any> {
+  ): Promise<void> {
     switch (message.type) {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(
@@ -294,7 +311,11 @@ export default class BackgroundProgram {
                 },
                 { tabId: info.tabId }
               );
-              openTab({ active: false, url, openerTabId: info.tabId });
+              await browser.tabs.create({
+                active: false,
+                url,
+                openerTabId: info.tabId,
+              });
               break;
 
             case "ForegroundTab":
@@ -312,7 +333,11 @@ export default class BackgroundProgram {
                 },
                 { tabId: info.tabId }
               );
-              openTab({ active: true, url, openerTabId: info.tabId });
+              await browser.tabs.create({
+                active: true,
+                url,
+                openerTabId: info.tabId,
+              });
               break;
 
             default:
@@ -347,11 +372,14 @@ export default class BackgroundProgram {
         }
 
         hintsState.enteredHintChars = enteredHintChars;
-        this.sendRendererMessage({
-          type: "UpdateHints",
-          updates,
-          markMatched: done,
-        });
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates,
+            markMatched: done,
+          },
+          { tabId: info.tabId }
+        );
         break;
       }
 
@@ -432,11 +460,11 @@ export default class BackgroundProgram {
     }
   }
 
-  async onRendererMessage(
+  onRendererMessage(
     message: FromRenderer,
     info: MessageInfo,
     tabState: TabState
-  ): Promise<any> {
+  ) {
     switch (message.type) {
       case "RendererScriptAdded":
         // Nothing to do.
@@ -458,12 +486,21 @@ export default class BackgroundProgram {
     }
   }
 
-  async onPopupMessage(message: FromPopup): Promise<any> {
+  async onPopupMessage(message: FromPopup): Promise<void> {
     switch (message.type) {
-      case "GetPerf": {
-        const tabId = (await browser.tabs.query({ active: true }))[0].id;
-        const tabState = this.tabState.get(tabId);
-        return tabState == null ? null : tabState.perf;
+      case "PopupScriptAdded": {
+        const tab = await getCurrentTab();
+        const tabState = this.tabState.get(tab.id);
+        this.sendPopupMessage({
+          type: "PopupData",
+          data:
+            tabState == null
+              ? undefined
+              : {
+                  perf: tabState.perf,
+                },
+        });
+        break;
       }
 
       default:
@@ -579,22 +616,6 @@ function getHintsTypes(mode: HintsMode): Array<ElementType> {
   }
 }
 
-async function openTab({
-  active,
-  url,
-  openerTabId,
-}: {|
-  active: boolean,
-  url: string,
-  openerTabId: number,
-|}): Promise<void> {
-  try {
-    browser.tabs.create({ active, url, openerTabId });
-  } catch (error) {
-    console.error("Failed to open tab", error);
-  }
-}
-
 async function runContentScripts(): Promise<Array<Array<any>>> {
   const manifest = browser.runtime.getManifest();
   const tabs = await browser.tabs.query({});
@@ -637,4 +658,14 @@ async function runContentScripts(): Promise<Array<Array<any>>> {
       )
     )
   );
+}
+
+async function getCurrentTab(): Promise<Tab> {
+  const tabs = await browser.tabs.query({ active: true });
+  if (tabs.length !== 1) {
+    throw new Error(
+      `getCurrentTab: Got an unexpected amount of tabs: ${tabs.length}`
+    );
+  }
+  return tabs[0];
 }

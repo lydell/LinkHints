@@ -103,11 +103,14 @@ export type ToRenderer =
     |};
 
 export type FromPopup = {|
-  type: "GetPerf",
+  type: "PopupScriptAdded",
 |};
 
 export type ToPopup = {|
-  type: "TODO",
+  type: "PopupData",
+  data: ?{|
+    perf: Array<number>,
+  |},
 |};
 
 export type ElementReport = {|

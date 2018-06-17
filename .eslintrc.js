@@ -19,6 +19,7 @@ module.exports = {
     "flowtype/array-style-simple-type": "error",
     "func-style": "off",
     "prettier/prettier": "error",
+    "require-await": "error",
     "sort-imports-es6-autofix/sort-imports-es6": "error",
   }),
   overrides: [

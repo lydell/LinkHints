@@ -119,8 +119,4 @@ const program = new BackgroundProgram({
   hintChars,
 });
 
-program
-  .start()
-  .catch(error =>
-    console.error(`new BackgroundProgram().start() error`, error)
-  );
+program.start();

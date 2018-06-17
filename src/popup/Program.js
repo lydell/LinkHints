@@ -1,42 +1,30 @@
 // @flow
 
-import { bind, unreachable } from "../shared/main";
+import { bind, catchRejections, unreachable } from "../shared/main";
 import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 export default class PopupProgram {
   constructor() {
-    bind(this, ["onMessage"]);
+    bind(this, [this.onMessage]);
+    catchRejections(this, [this.sendMessage, this.onMessage]);
   }
 
-  async start(): Promise<void> {
+  start() {
     browser.runtime.onMessage.addListener(this.onMessage);
 
-    const perf: ?Array<number> = await this.sendMessage({
-      type: "GetPerf",
-    });
-
-    if (perf == null) {
-      this.renderDisabled();
-    } else {
-      this.render(perf);
-    }
+    this.sendMessage({ type: "PopupScriptAdded" });
   }
 
   stop() {
     browser.runtime.onMessage.removeListener(this.onMessage);
   }
 
-  async sendMessage(message: FromPopup): Promise<any> {
+  async sendMessage(message: FromPopup): Promise<void> {
     const wrappedMessage: ToBackground = {
       type: "FromPopup",
       message,
     };
-    try {
-      return await browser.runtime.sendMessage((wrappedMessage: any));
-    } catch (error) {
-      console.error("PopupProgram#sendMessage failed", wrappedMessage, error);
-      throw error;
-    }
+    await browser.runtime.sendMessage((wrappedMessage: any));
   }
 
   onMessage(wrappedMessage: FromBackground) {
@@ -47,8 +35,12 @@ export default class PopupProgram {
     const { message } = wrappedMessage;
 
     switch (message.type) {
-      case "TODO":
-        console.log("ToPopup TODO message");
+      case "PopupData":
+        if (message.data == null) {
+          this.renderDisabled();
+        } else {
+          this.render(message.data.perf);
+        }
         break;
 
       default:

@@ -1,6 +1,6 @@
 // @flow
 
-import { LOADED_KEY, bind, unreachable } from "../shared/main";
+import { LOADED_KEY, bind, catchRejections, unreachable } from "../shared/main";
 import type {
   ElementWithHint,
   FromBackground,
@@ -68,7 +68,8 @@ export default class RendererProgram {
   constructor() {
     this.css = CSS;
 
-    bind(this, ["onMessage"]);
+    bind(this, [this.onMessage]);
+    catchRejections(this, [this.sendMessage, this.onMessage]);
   }
 
   start() {
@@ -111,21 +112,12 @@ export default class RendererProgram {
     this.unrender();
   }
 
-  async sendMessage(message: FromRenderer): Promise<any> {
+  async sendMessage(message: FromRenderer): Promise<void> {
     const wrappedMessage: ToBackground = {
       type: "FromRenderer",
       message,
     };
-    try {
-      return await browser.runtime.sendMessage((wrappedMessage: any));
-    } catch (error) {
-      console.error(
-        "RendererProgram#sendMessage failed",
-        wrappedMessage,
-        error
-      );
-      throw error;
-    }
+    await browser.runtime.sendMessage((wrappedMessage: any));
   }
 
   onMessage(wrappedMessage: FromBackground) {

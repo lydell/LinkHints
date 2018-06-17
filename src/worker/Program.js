@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, unreachable } from "../shared/main";
+import { bind, catchRejections, unreachable } from "../shared/main";
 import type {
   FromBackground,
   FromWorker,
@@ -42,10 +42,18 @@ export default class WorkerProgram {
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [
-      "onMessage",
-      "onKeydownCapture",
-      "onKeydownBubble",
-      "onWindowMessage",
+      this.onMessage,
+      this.onKeydownCapture,
+      this.onKeydownBubble,
+      this.onWindowMessage,
+    ]);
+    catchRejections(this, [
+      this.sendMessage,
+      this.onMessage,
+      this.onKeydownCapture,
+      this.onKeydownBubble,
+      this.onWindowMessage,
+      this.reportVisibleElements,
     ]);
   }
 
@@ -77,17 +85,12 @@ export default class WorkerProgram {
     this.elementManager.stop();
   }
 
-  async sendMessage(message: FromWorker): Promise<any> {
+  async sendMessage(message: FromWorker): Promise<void> {
     const wrappedMessage: ToBackground = {
       type: "FromWorker",
       message,
     };
-    try {
-      return await browser.runtime.sendMessage((wrappedMessage: any));
-    } catch (error) {
-      console.error("WorkerProgram#sendMessage failed", wrappedMessage, error);
-      throw error;
-    }
+    await browser.runtime.sendMessage((wrappedMessage: any));
   }
 
   onMessage(wrappedMessage: FromBackground) {
