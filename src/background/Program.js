@@ -97,8 +97,10 @@ export default class BackgroundProgram {
 
   async sendRendererMessage(
     message: ToRenderer,
-    { tabId, frameId }: {| tabId?: number, frameId?: number |} = {}
+    { tabId }: {| tabId?: number |} = {}
   ): Promise<any> {
+    const tabState = tabId == null ? undefined : this.tabState.get(tabId);
+    const frameId = tabState == null ? undefined : tabState.rendererFrameId;
     return this.sendMessage(
       { type: "ToRenderer", message },
       { tabId, frameId }
