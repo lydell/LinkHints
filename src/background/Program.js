@@ -34,7 +34,6 @@ type MessageInfo = {|
 |};
 
 type TabState = {|
-  rendererFrameId: number,
   perf: Array<number>,
   hintsState: HintsState,
 |};
@@ -55,6 +54,12 @@ type HintsState =
       startTime: number,
       enteredHintChars: string,
     |};
+
+// As far as I can tell, the top frameId is always 0. This is also mentioned here:
+// https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/Tabs/executeScript
+// “frameId: Optional integer. The frame where the code should be injected.
+// Defaults to 0 (the top-level frame).”
+const TOP_FRAME_ID = 0;
 
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
@@ -103,11 +108,9 @@ export default class BackgroundProgram {
     message: ToRenderer,
     { tabId }: {| tabId?: number |} = {}
   ): Promise<any> {
-    const tabState = tabId == null ? undefined : this.tabState.get(tabId);
-    const frameId = tabState == null ? undefined : tabState.rendererFrameId;
     return this.sendMessage(
       { type: "ToRenderer", message },
-      { tabId, frameId }
+      { tabId, frameId: TOP_FRAME_ID }
     );
   }
 
@@ -440,7 +443,7 @@ export default class BackgroundProgram {
   ): Promise<any> {
     switch (message.type) {
       case "RendererScriptAdded":
-        tabState.rendererFrameId = info.frameId;
+        // Nothing to do.
         break;
 
       case "Rendered": {
@@ -491,7 +494,7 @@ export default class BackgroundProgram {
           },
           {
             tabId: info.tabId,
-            frameId: tabState.rendererFrameId,
+            frameId: TOP_FRAME_ID,
           }
         );
         tabState.hintsState = {
@@ -559,9 +562,6 @@ function makeOneTimeWindowMessage(): string {
 // This is a function (not a constant), because of mutation.
 function makeEmptyTabState(): TabState {
   return {
-    // This is a bit ugly, I know. This ID will quickly be replaced with a real
-    // one.
-    rendererFrameId: 0,
     perf: [],
     hintsState: { type: "Idle" },
   };
