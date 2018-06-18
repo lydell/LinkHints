@@ -1,19 +1,16 @@
 // @flow
 
-import {
-  autoLog,
-  bind,
-  catchRejections,
-  log,
-  unreachable,
-} from "../shared/main";
+import { bind, log, unreachable } from "../shared/main";
 import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 export default class PopupProgram {
   constructor() {
-    bind(this, [this.onMessage]);
-    autoLog(this, [this.start, this.stop, this.sendMessage]);
-    catchRejections(this, [this.sendMessage, this.onMessage]);
+    bind(this, [
+      [this.onMessage, { catch: true }],
+      [this.sendMessage, { log: true, catch: true }],
+      [this.start, { log: true, catch: true }],
+      [this.stop, { log: true, catch: true }],
+    ]);
   }
 
   start() {

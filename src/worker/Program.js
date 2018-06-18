@@ -1,12 +1,6 @@
 // @flow
 
-import {
-  autoLog,
-  bind,
-  catchRejections,
-  log,
-  unreachable,
-} from "../shared/main";
+import { bind, log, unreachable } from "../shared/main";
 import type {
   FromBackground,
   FromWorker,
@@ -48,21 +42,14 @@ export default class WorkerProgram {
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [
-      this.onMessage,
-      this.onKeydownCapture,
-      this.onKeydownBubble,
-      this.onWindowMessage,
-    ]);
-
-    autoLog(this, [this.start, this.stop, this.sendMessage]);
-
-    catchRejections(this, [
-      this.sendMessage,
-      this.onMessage,
-      this.onKeydownCapture,
-      this.onKeydownBubble,
-      this.onWindowMessage,
-      this.reportVisibleElements,
+      [this.onKeydownBubble, { catch: true }],
+      [this.onKeydownCapture, { catch: true }],
+      [this.onMessage, { catch: true }],
+      [this.onWindowMessage, { catch: true }],
+      [this.reportVisibleElements, { catch: true }],
+      [this.sendMessage, { log: true, catch: true }],
+      [this.start, { log: true, catch: true }],
+      [this.stop, { log: true, catch: true }],
     ]);
   }
 

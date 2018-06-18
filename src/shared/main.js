@@ -56,59 +56,51 @@ function getLogMethod(level: LogLevel): Function {
 }
 /* eslint-enable no-console */
 
-export function autoLog(object: Object, methods: Array<Function>) {
-  for (const method of methods) {
-    Object.defineProperty(object, method.name, {
-      writable: true,
-      enumerable: false,
-      configurable: true,
-      value: Object.defineProperty(
-        function(...args: Array<any>): any {
-          log("log", `${object.constructor.name}#${method.name}`, ...args);
-          // eslint-disable-next-line no-invalid-this
-          return method.apply(this, args);
-        },
-        "name",
-        { value: method.name }
-      ),
-    });
-  }
-}
+type Method = (...args: Array<any>) => void | Promise<void>;
 
-export function bind(object: Object, methods: Array<Function>) {
-  for (const method of methods) {
-    Object.defineProperty(object, method.name, {
-      writable: true,
-      enumerable: false,
-      configurable: true,
-      value: Object.defineProperty(method.bind(object), "name", {
-        value: method.name,
-      }),
-    });
-  }
-}
+/*
+Binds class methods to the instance, so you can do `foo(this.method)` instead
+of `foo(this.method.bind(this))`.
 
-export function catchRejections(
+Optionally enable auto-logging and/or auto-catching plus logging of errors.
+Only works with methods returning `void` or `Promise<void>` for now.
+
+Example:
+
+    class Example {
+      constructor() {
+        bind(this, [this.method1, [this.method2, { log: true, catch: true }]]);
+      }
+      method1() {}
+      method2() {}
+    }
+*/
+export function bind(
   object: Object,
-  methods: Array<(...args: Array<any>) => Promise<void> | void>
+  methods: Array<Method | [Method, {| log?: boolean, catch?: boolean |}]>
 ) {
-  for (const method of methods) {
+  for (const item of methods) {
+    const [method, options] = Array.isArray(item) ? item : [item, {}];
+    const { log: shouldLog = false, catch: shouldCatch = false } = options;
+
     Object.defineProperty(object, method.name, {
       writable: true,
       enumerable: false,
       configurable: true,
       value: Object.defineProperty(
-        async function(...args: Array<any>): Promise<void> {
-          try {
-            // eslint-disable-next-line no-invalid-this
-            await method.apply(this, args);
-          } catch (error) {
-            log(
-              "error",
-              `${object.constructor.name}#${method.name}`,
-              error,
-              ...args
-            );
+        async (...args: Array<any>): Promise<void> => {
+          const prefix = `${object.constructor.name}#${method.name}`;
+          if (shouldLog) {
+            log("log", prefix, ...args);
+          }
+          if (shouldCatch) {
+            try {
+              await method.apply(object, args);
+            } catch (error) {
+              log("error", prefix, error, ...args);
+            }
+          } else {
+            method.apply(object, args);
           }
         },
         "name",

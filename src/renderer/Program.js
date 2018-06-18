@@ -1,13 +1,6 @@
 // @flow
 
-import {
-  LOADED_KEY,
-  autoLog,
-  bind,
-  catchRejections,
-  log,
-  unreachable,
-} from "../shared/main";
+import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
 import type {
   ElementWithHint,
   FromBackground,
@@ -75,9 +68,12 @@ export default class RendererProgram {
   constructor() {
     this.css = CSS;
 
-    bind(this, [this.onMessage]);
-    autoLog(this, [this.start, this.stop, this.sendMessage]);
-    catchRejections(this, [this.sendMessage, this.onMessage]);
+    bind(this, [
+      [this.onMessage, { catch: true }],
+      [this.sendMessage, { log: true, catch: true }],
+      [this.start, { log: true, catch: true }],
+      [this.stop, { log: true, catch: true }],
+    ]);
   }
 
   start() {

@@ -2,14 +2,7 @@
 
 import huffman from "n-ary-huffman";
 
-import {
-  LOADED_KEY,
-  autoLog,
-  bind,
-  catchRejections,
-  log,
-  unreachable,
-} from "../shared/main";
+import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -91,29 +84,21 @@ export default class BackgroundProgram {
     this.hintChars = hintChars;
     this.tabState = new Map();
 
-    bind(this, [this.onConnect, this.onMessage, this.onTabRemoved]);
-
-    autoLog(this, [
-      this.sendWorkerMessage,
-      this.sendRendererMessage,
-      this.sendPopupMessage,
-      this.onWorkerMessage,
-      this.onRendererMessage,
-      this.onPopupMessage,
-    ]);
-
-    catchRejections(this, [
-      this.start,
-      this.sendWorkerMessage,
-      this.sendRendererMessage,
-      this.sendPopupMessage,
-      this.sendBackgroundMessage,
-      this.sendContentMessage,
-      this.onMessage,
-      this.onWorkerMessage,
-      this.onRendererMessage,
-      this.onPopupMessage,
-      this.onKeyboardShortcut,
+    bind(this, [
+      [this.onKeyboardShortcut, { catch: true }],
+      [this.onMessage, { catch: true }],
+      [this.onPopupMessage, { log: true, catch: true }],
+      [this.onRendererMessage, { log: true, catch: true }],
+      [this.onWorkerMessage, { log: true, catch: true }],
+      [this.sendBackgroundMessage, { catch: true }],
+      [this.sendContentMessage, { catch: true }],
+      [this.sendPopupMessage, { log: true, catch: true }],
+      [this.sendRendererMessage, { log: true, catch: true }],
+      [this.sendWorkerMessage, { log: true, catch: true }],
+      [this.start, { catch: true }],
+      [this.stop, { log: true, catch: true }],
+      this.onConnect,
+      this.onTabRemoved,
     ]);
   }
 
