@@ -4,7 +4,6 @@ import huffman from "n-ary-huffman";
 
 import {
   LOADED_KEY,
-  type LogLevel,
   autoLog,
   bind,
   catchRejections,
@@ -73,32 +72,28 @@ type HintsState =
 const TOP_FRAME_ID = 0;
 
 export default class BackgroundProgram {
-  logLevel: LogLevel;
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
 
   constructor({
-    logLevel,
     normalKeyboardShortcuts,
     hintsKeyboardShortcuts,
     hintChars,
   }: {|
-    logLevel: LogLevel,
     normalKeyboardShortcuts: Array<KeyboardMapping>,
     hintsKeyboardShortcuts: Array<KeyboardMapping>,
     hintChars: string,
   |}) {
-    this.logLevel = logLevel;
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.hintChars = hintChars;
     this.tabState = new Map();
 
-    bind(this, [this.log, this.onConnect, this.onMessage, this.onTabRemoved]);
+    bind(this, [this.onConnect, this.onMessage, this.onTabRemoved]);
 
-    autoLog(this.log, this, [
+    autoLog(this, [
       this.sendWorkerMessage,
       this.sendRendererMessage,
       this.sendPopupMessage,
@@ -107,7 +102,7 @@ export default class BackgroundProgram {
       this.onPopupMessage,
     ]);
 
-    catchRejections(this.log, this, [
+    catchRejections(this, [
       this.start,
       this.sendWorkerMessage,
       this.sendRendererMessage,
@@ -122,12 +117,8 @@ export default class BackgroundProgram {
     ]);
   }
 
-  log(level: LogLevel, ...args: Array<any>) {
-    log(level, this.logLevel, ...args);
-  }
-
   async start(): Promise<void> {
-    this.log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
+    log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
     browser.runtime.onMessage.addListener(this.onMessage);
     browser.runtime.onConnect.addListener(this.onConnect);
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
@@ -234,7 +225,7 @@ export default class BackgroundProgram {
         this.sendWorkerMessage(
           {
             type: "StateSync",
-            logLevel: this.logLevel,
+            logLevel: log.level,
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
@@ -320,7 +311,7 @@ export default class BackgroundProgram {
 
             case "BackgroundTab":
               if (url == null) {
-                this.log(
+                log(
                   "error",
                   "Cannot open background tab due to missing URL",
                   match
@@ -343,7 +334,7 @@ export default class BackgroundProgram {
 
             case "ForegroundTab":
               if (url == null) {
-                this.log(
+                log(
                   "error",
                   "Cannot open background tab due to missing URL",
                   match
@@ -371,7 +362,7 @@ export default class BackgroundProgram {
           this.sendWorkerMessage(
             {
               type: "StateSync",
-              logLevel: this.logLevel,
+              logLevel: log.level,
               clearElements: true,
               keyboardShortcuts: this.normalKeyboardShortcuts,
               keyboardOptions: {
@@ -454,7 +445,7 @@ export default class BackgroundProgram {
           this.sendWorkerMessage(
             {
               type: "StateSync",
-              logLevel: this.logLevel,
+              logLevel: log.level,
               clearElements: false,
               keyboardShortcuts: this.hintsKeyboardShortcuts,
               keyboardOptions: {
@@ -496,7 +487,7 @@ export default class BackgroundProgram {
         this.sendRendererMessage(
           {
             type: "StateSync",
-            logLevel: this.logLevel,
+            logLevel: log.level,
           },
           { tabId: info.tabId }
         );
@@ -525,7 +516,7 @@ export default class BackgroundProgram {
         const tabState = this.tabState.get(tab.id);
         this.sendPopupMessage({
           type: "PopupData",
-          logLevel: this.logLevel,
+          logLevel: log.level,
           data:
             tabState == null
               ? undefined
@@ -584,7 +575,7 @@ export default class BackgroundProgram {
         this.sendWorkerMessage(
           {
             type: "StateSync",
-            logLevel: this.logLevel,
+            logLevel: log.level,
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {

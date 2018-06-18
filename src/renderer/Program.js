@@ -1,9 +1,7 @@
 // @flow
 
 import {
-  DEFAULT_LOG_LEVEL,
   LOADED_KEY,
-  type LogLevel,
   autoLog,
   bind,
   catchRejections,
@@ -72,20 +70,14 @@ const CSS = `
 `.trim();
 
 export default class RendererProgram {
-  logLevel: LogLevel;
   css: string;
 
   constructor() {
-    this.logLevel = DEFAULT_LOG_LEVEL;
     this.css = CSS;
 
-    bind(this, [this.log, this.onMessage]);
-    autoLog(this.log, this, [this.start, this.stop, this.sendMessage]);
-    catchRejections(this.log, this, [this.sendMessage, this.onMessage]);
-  }
-
-  log(level: LogLevel, ...args: Array<any>) {
-    log(level, this.logLevel, ...args);
+    bind(this, [this.onMessage]);
+    autoLog(this, [this.start, this.stop, this.sendMessage]);
+    catchRejections(this, [this.sendMessage, this.onMessage]);
   }
 
   start() {
@@ -143,11 +135,11 @@ export default class RendererProgram {
 
     const { message } = wrappedMessage;
 
-    this.log("log", "RendererProgram#onMessage", message.type, message);
+    log("log", "RendererProgram#onMessage", message.type, message);
 
     switch (message.type) {
       case "StateSync":
-        this.logLevel = message.logLevel;
+        log.level = message.logLevel;
         break;
 
       case "Render":
@@ -275,7 +267,7 @@ export default class RendererProgram {
     const container = document.getElementById(CONTAINER_ID);
     const root = container == null ? undefined : container.shadowRoot;
     if (root == null) {
-      this.log("error", "RendererProgram#updateHints: missing root", container);
+      log("error", "RendererProgram#updateHints: missing root", container);
       return;
     }
 
@@ -285,7 +277,7 @@ export default class RendererProgram {
       const child = hints[index];
 
       if (child == null) {
-        this.log(
+        log(
           "error",
           "RendererProgram#updateHints: missing child",
           index,

@@ -1,8 +1,6 @@
 // @flow
 
 import {
-  DEFAULT_LOG_LEVEL,
-  type LogLevel,
   autoLog,
   bind,
   catchRejections,
@@ -12,18 +10,10 @@ import {
 import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 export default class PopupProgram {
-  logLevel: LogLevel;
-
   constructor() {
-    this.logLevel = DEFAULT_LOG_LEVEL;
-
-    bind(this, [this.log, this.onMessage]);
-    autoLog(this.log, this, [this.start, this.stop, this.sendMessage]);
-    catchRejections(this.log, this, [this.sendMessage, this.onMessage]);
-  }
-
-  log(level: LogLevel, ...args: Array<any>) {
-    log(level, this.logLevel, ...args);
+    bind(this, [this.onMessage]);
+    autoLog(this, [this.start, this.stop, this.sendMessage]);
+    catchRejections(this, [this.sendMessage, this.onMessage]);
   }
 
   start() {
@@ -51,11 +41,11 @@ export default class PopupProgram {
 
     const { message } = wrappedMessage;
 
-    this.log("log", "PopupProgram#onMessage", message.type, message);
+    log("log", "PopupProgram#onMessage", message.type, message);
 
     switch (message.type) {
       case "PopupData":
-        this.logLevel = message.logLevel;
+        log.level = message.logLevel;
         if (message.data == null) {
           this.renderDisabled();
         } else {

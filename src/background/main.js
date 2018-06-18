@@ -1,6 +1,5 @@
 // @flow
 
-import { DEFAULT_LOG_LEVEL } from "../shared/main";
 import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import BackgroundProgram from "./Program";
@@ -109,7 +108,6 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 ];
 
 const program = new BackgroundProgram({
-  logLevel: DEFAULT_LOG_LEVEL,
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
   hintChars,

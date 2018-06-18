@@ -1,8 +1,6 @@
 // @flow
 
 import {
-  DEFAULT_LOG_LEVEL,
-  type LogLevel,
   autoLog,
   bind,
   catchRejections,
@@ -30,7 +28,6 @@ import type { Box, ElementType, VisibleElement } from "./ElementManager";
 const MAX_TRACKED_ELEMENTS = 10e3;
 
 export default class WorkerProgram {
-  logLevel: LogLevel;
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardOptions: KeyboardOptions;
   elementManager: ElementManager;
@@ -38,7 +35,6 @@ export default class WorkerProgram {
   oneTimeWindowMessageToken: ?string;
 
   constructor() {
-    this.logLevel = DEFAULT_LOG_LEVEL;
     this.keyboardShortcuts = [];
     this.keyboardOptions = {
       capture: false,
@@ -46,23 +42,21 @@ export default class WorkerProgram {
       sendAll: false,
     };
     this.elementManager = new ElementManager({
-      log: this.log,
       maxTrackedElements: MAX_TRACKED_ELEMENTS,
     });
     this.elements = undefined;
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [
-      this.log,
       this.onMessage,
       this.onKeydownCapture,
       this.onKeydownBubble,
       this.onWindowMessage,
     ]);
 
-    autoLog(this.log, this, [this.start, this.stop, this.sendMessage]);
+    autoLog(this, [this.start, this.stop, this.sendMessage]);
 
-    catchRejections(this.log, this, [
+    catchRejections(this, [
       this.sendMessage,
       this.onMessage,
       this.onKeydownCapture,
@@ -70,10 +64,6 @@ export default class WorkerProgram {
       this.onWindowMessage,
       this.reportVisibleElements,
     ]);
-  }
-
-  log(level: LogLevel, ...args: Array<any>) {
-    log(level, this.logLevel, ...args);
   }
 
   start() {
@@ -119,11 +109,11 @@ export default class WorkerProgram {
 
     const { message } = wrappedMessage;
 
-    this.log("log", "WorkerProgram#onMessage", message.type, message);
+    log("log", "WorkerProgram#onMessage", message.type, message);
 
     switch (message.type) {
       case "StateSync":
-        this.logLevel = message.logLevel;
+        log.level = message.logLevel;
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.keyboardOptions = message.keyboardOptions;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
@@ -148,12 +138,7 @@ export default class WorkerProgram {
         const element =
           this.elements == null ? undefined : this.elements[message.index];
         if (element == null) {
-          this.log(
-            "error",
-            "FocusElement: Missing element",
-            message,
-            this.elements
-          );
+          log("error", "FocusElement: Missing element", message, this.elements);
           return;
         }
         element.element.focus();
@@ -164,12 +149,7 @@ export default class WorkerProgram {
         const element =
           this.elements == null ? undefined : this.elements[message.index];
         if (element == null) {
-          this.log(
-            "error",
-            "ClickElement: Missing element",
-            message,
-            this.elements
-          );
+          log("error", "ClickElement: Missing element", message, this.elements);
           return;
         }
         element.element.focus();
@@ -197,7 +177,7 @@ export default class WorkerProgram {
         types = parseTypes(rawTypes);
         viewports = parseViewports(rawViewports);
       } catch (error) {
-        this.log(
+        log(
           "warn",
           "Ignoring bad window message",
           this.oneTimeWindowMessageToken,
@@ -206,7 +186,7 @@ export default class WorkerProgram {
         );
         return;
       }
-      this.log("log", "WorkerProgram#onWindowMessage", types, rawViewports);
+      log("log", "WorkerProgram#onWindowMessage", types, rawViewports);
       this.reportVisibleElements(types, viewports);
       this.oneTimeWindowMessageToken = undefined;
     }
