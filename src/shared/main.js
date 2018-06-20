@@ -88,14 +88,19 @@ export function bind(
       enumerable: false,
       configurable: true,
       value: Object.defineProperty(
-        async (...args: Array<any>): Promise<void> => {
+        (...args: Array<any>) => {
           const prefix = `${object.constructor.name}#${method.name}`;
           if (shouldLog) {
             log("log", prefix, ...args);
           }
           if (shouldCatch) {
             try {
-              await method.apply(object, args);
+              const result = method.apply(object, args);
+              if (result != null && typeof result.then === "function") {
+                result.catch(error => {
+                  log("error", prefix, error, ...args);
+                });
+              }
             } catch (error) {
               log("error", prefix, error, ...args);
             }

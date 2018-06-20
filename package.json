@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "n-ary-huffman": "3.1.0",
-    "webextension-polyfill": "0.2.1"
+    "webextension-polyfill": "github:lydell/webextension-polyfill#a6bdf631b52909e16d9a0f8438e13e9427f87297"
   },
   "devDependencies": {
     "babel-eslint": "8.2.3",
