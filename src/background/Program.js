@@ -196,11 +196,23 @@ export default class BackgroundProgram {
   }
 
   onConnect(port: Port) {
+    const { sender } = port;
+
+    if (sender == null) {
+      return;
+    }
+
     port.onMessage.addListener((message: ToBackground) => {
-      if (port.sender != null) {
-        this.onMessage(message, port.sender);
-      }
+      this.onMessage(message, sender);
     });
+
+    const { tab } = sender;
+
+    if (sender.frameId === TOP_FRAME_ID && tab != null) {
+      port.onDisconnect.addListener(() => {
+        this.tabState.delete(tab.id);
+      });
+    }
   }
 
   async onWorkerMessage(
