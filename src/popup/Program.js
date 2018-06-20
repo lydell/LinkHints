@@ -31,6 +31,14 @@ export default class PopupProgram {
     await browser.runtime.sendMessage((wrappedMessage: any));
   }
 
+  // Technically, `ToWorker` and `ToRenderer` messages (which are part of
+  // `FromBackground`) can never appear here, since they are sent using
+  // `browser.tabs.sendMessage` rather than `browser.runtime.sendMessage`.
+  // Instead, `FromWorker` and `FromRenderer` messages can appear (which are
+  // part of `ToBackground`)! That's because a popup counts as a background
+  // script, which can receive messages from content scripts. So the
+  // `FromBackground` type annotation isn't entirely true, but the
+  // `wrappedMessage.type` check narrows the messages down correctly anyway.
   onMessage(wrappedMessage: FromBackground) {
     if (wrappedMessage.type !== "ToPopup") {
       return;

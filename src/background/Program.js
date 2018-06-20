@@ -140,6 +140,9 @@ export default class BackgroundProgram {
     await this.sendBackgroundMessage({ type: "ToPopup", message });
   }
 
+  // This might seem like sending a message to oneself, but
+  // `browser.runtime.sendMessage` seems to only send messages to *other*
+  // background scripts, such as the popup script.
   async sendBackgroundMessage(message: FromBackground): Promise<void> {
     await browser.runtime.sendMessage(message);
   }
