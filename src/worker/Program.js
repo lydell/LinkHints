@@ -62,12 +62,7 @@ export default class WorkerProgram {
 
     // See `RendererProgram` about this port stuff.
     const port = browser.runtime.connect();
-    port.postMessage(
-      ({
-        type: "FromWorker",
-        message: { type: "WorkerScriptAdded" },
-      }: ToBackground)
-    );
+    port.postMessage(wrapMessage({ type: "WorkerScriptAdded" }));
     port.onDisconnect.addListener(() => {
       this.stop();
     });
@@ -82,11 +77,7 @@ export default class WorkerProgram {
   }
 
   async sendMessage(message: FromWorker): Promise<void> {
-    const wrappedMessage: ToBackground = {
-      type: "FromWorker",
-      message,
-    };
-    await browser.runtime.sendMessage((wrappedMessage: any));
+    await browser.runtime.sendMessage(wrapMessage(message));
   }
 
   onMessage(wrappedMessage: FromBackground) {
@@ -266,6 +257,13 @@ export default class WorkerProgram {
 
     this.elements = elements;
   }
+}
+
+function wrapMessage(message: FromWorker): ToBackground {
+  return {
+    type: "FromWorker",
+    message,
+  };
 }
 
 function parseTypes(rawTypes: any): Set<ElementType> {

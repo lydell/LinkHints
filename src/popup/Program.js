@@ -24,11 +24,7 @@ export default class PopupProgram {
   }
 
   async sendMessage(message: FromPopup): Promise<void> {
-    const wrappedMessage: ToBackground = {
-      type: "FromPopup",
-      message,
-    };
-    await browser.runtime.sendMessage((wrappedMessage: any));
+    await browser.runtime.sendMessage(wrapMessage(message));
   }
 
   // Technically, `ToWorker` and `ToRenderer` messages (which are part of
@@ -98,6 +94,13 @@ export default class PopupProgram {
       document.body.append(container);
     }
   }
+}
+
+function wrapMessage(message: FromPopup): ToBackground {
+  return {
+    type: "FromPopup",
+    message,
+  };
 }
 
 function getAverage(numbers: Array<number>): number {

@@ -99,12 +99,7 @@ export default class RendererProgram {
     // content scripts. (The error is only logged, not `throw`n.) This bloats
     // the console a little, but doesn’t cause any other problems.
     const port = browser.runtime.connect();
-    port.postMessage(
-      ({
-        type: "FromRenderer",
-        message: { type: "RendererScriptAdded" },
-      }: ToBackground)
-    );
+    port.postMessage(wrapMessage({ type: "RendererScriptAdded" }));
     port.onDisconnect.addListener(() => {
       this.stop();
     });
@@ -117,11 +112,7 @@ export default class RendererProgram {
   }
 
   async sendMessage(message: FromRenderer): Promise<void> {
-    const wrappedMessage: ToBackground = {
-      type: "FromRenderer",
-      message,
-    };
-    await browser.runtime.sendMessage((wrappedMessage: any));
+    await browser.runtime.sendMessage(wrapMessage(message));
   }
 
   onMessage(wrappedMessage: FromBackground) {
@@ -312,6 +303,13 @@ export default class RendererProgram {
       }
     }
   }
+}
+
+function wrapMessage(message: FromRenderer): ToBackground {
+  return {
+    type: "FromRenderer",
+    message,
+  };
 }
 
 function setStyles(element: HTMLElement, styles: { [string]: string }) {
