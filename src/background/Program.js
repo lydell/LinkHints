@@ -209,8 +209,11 @@ export default class BackgroundProgram {
     const { tab } = sender;
 
     if (sender.frameId === TOP_FRAME_ID && tab != null) {
+      setIcon("normal", tab.id);
+
       port.onDisconnect.addListener(() => {
         this.tabState.delete(tab.id);
+        setIcon("disabled", tab.id);
       });
     }
   }
@@ -693,4 +696,23 @@ async function getCurrentTab(): Promise<Tab> {
     );
   }
   return tabs[0];
+}
+
+type IconType = "normal" | "disabled";
+
+function setIcon(type: IconType, tabId: number) {
+  browser.browserAction.setIcon({ path: getIcons(type), tabId });
+}
+
+function getIcons(type: IconType): { [string]: string } {
+  const manifest = browser.runtime.getManifest();
+  return Object.entries(manifest.browser_action.default_icon).reduce(
+    (result, [key, value]) => {
+      if (typeof value === "string") {
+        result[key] = value.replace(/(\$)\w+/, `$1${type}`);
+      }
+      return result;
+    },
+    {}
+  );
 }

@@ -88,6 +88,10 @@ declare var browser: {|
       text: string,
       tabId?: number,
     |}): void,
+    setIcon({|
+      path: { [string]: string },
+      tabId?: number,
+    |}): void,
   |},
   runtime: {|
     connect: (() => Port) &

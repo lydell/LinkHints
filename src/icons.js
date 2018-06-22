@@ -13,16 +13,9 @@ type Colors = {|
 |};
 
 const COLORS = {
-  light: {
-    pointer: "#323234",
-    edges: "#bebebe",
-    surface: "#ddd",
-  },
-  dark: {
-    pointer: "#f5f6f7",
-    edges: "#5a5b5c",
-    surface: "#777",
-  },
+  pointer: "#323234",
+  edges: "#bebebe",
+  surface: "#ddd",
 };
 
 const BACKGROUND_COLORS = {
@@ -92,7 +85,11 @@ function toRadians(degrees: number): number {
   return (degrees / 180) * Math.PI;
 }
 
-function render(size: number, colors: Colors): string {
+function render(
+  size: number,
+  colors: Colors,
+  { opacity = 1 }: {| opacity: number |} = {}
+): string {
   const surfaceRect = {
     left: size * (1 / 8),
     top: size * (1 / 24),
@@ -168,41 +165,43 @@ function render(size: number, colors: Colors): string {
       height: String(size),
     },
     [
-      tag(
-        "rect",
-        {
-          x: "0",
-          y: "0",
-          width: integer(size),
-          height: integer(size),
-          rx: edgesRadius,
-          ry: edgesRadius,
-          fill: colors.edges,
-        },
-        []
-      ),
-      tag(
-        "rect",
-        {
-          x: integer(surfaceRect.left),
-          y: integer(surfaceRect.top),
-          width: integer(surfaceRect.width),
-          height: integer(surfaceRect.height),
-          rx: surfaceRadius,
-          ry: surfaceRadius,
-          fill: colors.surface,
-        },
-        []
-      ),
-      tag(
-        "polygon",
-        {
-          points: pointerPointsString,
-          fill: colors.pointer,
-        },
-        []
-      ),
-      ...sparks,
+      tag("g", { opacity: String(opacity) }, [
+        tag(
+          "rect",
+          {
+            x: "0",
+            y: "0",
+            width: integer(size),
+            height: integer(size),
+            rx: edgesRadius,
+            ry: edgesRadius,
+            fill: colors.edges,
+          },
+          []
+        ),
+        tag(
+          "rect",
+          {
+            x: integer(surfaceRect.left),
+            y: integer(surfaceRect.top),
+            width: integer(surfaceRect.width),
+            height: integer(surfaceRect.height),
+            rx: surfaceRadius,
+            ry: surfaceRadius,
+            fill: colors.surface,
+          },
+          []
+        ),
+        tag(
+          "polygon",
+          {
+            points: pointerPointsString,
+            fill: colors.pointer,
+          },
+          []
+        ),
+        ...sparks,
+      ]),
     ]
   );
 }
@@ -275,35 +274,48 @@ function renderTestPage() {
     </style>
   </head>
   <body>
-    ${testContainer(config.icons.light, BACKGROUND_COLORS.dark)}
-    ${testContainer(config.icons.dark, BACKGROUND_COLORS.light)}
-    ${testContainer(config.icons.png, BACKGROUND_COLORS.light)}
+    ${testContainer(config.icons, BACKGROUND_COLORS.light)}
+    ${testContainer(config.icons, BACKGROUND_COLORS.dark)}
+    ${testContainer(config.iconsDisabled, BACKGROUND_COLORS.light)}
+    ${testContainer(config.iconsDisabled, BACKGROUND_COLORS.dark)}
+    <script>
+      for (const img of document.querySelectorAll("img")) {
+        img.width /= window.devicePixelRatio;
+      }
+    </script>
   </body>
 </html>
   `.trim();
 }
 
-function testContainer(icons: Array<[number, string]>, color: string): string {
+type IconsList = Array<[number, string]>;
+
+export type Icons = {| svg: IconsList, png: IconsList |};
+
+function testContainer(icons: Icons, color: string): string {
   return `
 <div class="container" style="background-color: ${color};">
-  ${icons.map(([, path]) => `<img src="../${path}">`).join("\n  ")}
+  ${[]
+    .concat(...icons.svg.map((icon, index) => [icon, icons.png[index]]))
+    .map(([size, path]) => `<img src="../${path}" width="${size}">`)
+    .join("\n  ")}
 </div>
   `.trim();
 }
 
 module.exports = () => {
   const all = [
-    { icons: config.icons.light, colors: COLORS.light },
-    { icons: config.icons.dark, colors: COLORS.dark },
+    [config.icons.svg, { opacity: 1 }],
+    [config.iconsDisabled.svg, { opacity: 0.5 }],
   ];
 
-  for (const { icons, colors } of all) {
+  for (const [icons, options] of all) {
     for (const [size, path] of icons) {
-      writeFile.sync(`${config.src}/${path}`, render(size, colors));
+      writeFile.sync(`${config.src}/${path}`, render(size, COLORS, options));
     }
   }
 
-  writeFile.sync(`${config.src}/${config.icons.testPage}`, renderTestPage());
+  writeFile.sync(`${config.src}/${config.iconsTestPage}`, renderTestPage());
 
-  return render(96, COLORS.light);
+  return render(96, COLORS);
 };

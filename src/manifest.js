@@ -1,14 +1,10 @@
 // @flow
 
+import type { Icons } from "./icons";
+
 const config = require("../project.config");
 
 type IconSizes = { [size: string]: string };
-
-type ThemeIcon = {|
-  light: string,
-  dark: string,
-  size: number,
-|};
 
 module.exports = () =>
   toJSON({
@@ -19,7 +15,7 @@ module.exports = () =>
     description: "Click things on the web using the keyboard.",
     homepage_url: "https://github.com/lydell/synth",
     applications: getApplications(config.browser),
-    icons: getIcons(config.browser),
+    icons: getIcons(config.icons, config.browser),
     permissions: [
       // Needed for injecting content scripts in already open tabs on install.
       "<all_urls>",
@@ -27,8 +23,7 @@ module.exports = () =>
     browser_action: {
       browser_style: true,
       default_popup: config.popupHtml,
-      default_icon: getDefaultIcon(config.browser),
-      theme_icons: getThemeIcons(config.browser),
+      default_icon: getIcons(config.iconsDisabled, config.browser),
     },
     commands: {
       _execute_browser_action: {
@@ -92,35 +87,12 @@ function makeSizes(icons: Array<[number, string]>): IconSizes {
   );
 }
 
-function getIcons(browser: ?Browser): ?IconSizes {
+function getIcons(icons: Icons, browser: ?Browser): ?IconSizes {
   switch (browser) {
     case "firefox":
-      return makeSizes(config.icons.light);
+      return makeSizes(icons.svg);
 
     default:
-      return makeSizes(config.icons.png);
-  }
-}
-
-function getDefaultIcon(browser: ?Browser): ?IconSizes {
-  switch (browser) {
-    case "firefox":
-      return undefined;
-
-    default:
-      return makeSizes(config.icons.png);
-  }
-}
-
-function getThemeIcons(browser: ?Browser): ?Array<ThemeIcon> {
-  switch (browser) {
-    case "chrome":
-      return undefined;
-
-    default:
-      return config.icons.light.map(([size, light], index) => {
-        const [, dark] = config.icons.dark[index];
-        return { light, dark, size };
-      });
+      return makeSizes(icons.png);
   }
 }

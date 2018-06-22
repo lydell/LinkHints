@@ -8,7 +8,7 @@ module.exports = {
   browser: currentBrowser,
   src: "src",
   dist: "dist",
-  rimraf: "src/compiled",
+  rimraf: "{src/compiled,src/icons/!(png-*)}",
   webextIgnoreFiles: [
     `*.js`,
     `!(compiled)/**/*.js`,
@@ -16,11 +16,14 @@ module.exports = {
     ...browserSpecificIgnores(currentBrowser),
   ],
   icons: {
-    light: makeIcons("light", ".svg"),
-    dark: makeIcons("dark", ".svg"),
-    png: makeIcons("png", ".png"),
-    testPage: "icons/test.html",
+    svg: makeIcons("svg-$normal", ".svg"),
+    png: makeIcons("png-$normal", ".png"),
   },
+  iconsDisabled: {
+    svg: makeIcons("svg-$disabled", ".svg"),
+    png: makeIcons("png-$disabled", ".png"),
+  },
+  iconsTestPage: "icons/test.html",
   iconsCompilation: {
     input: "icons.js",
     output: "../icon.svg",
