@@ -98,21 +98,26 @@ export default class BackgroundProgram {
       [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
       this.onConnect,
+      this.onTabCreated,
       this.onTabRemoved,
     ]);
   }
 
   async start(): Promise<void> {
     log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
+    const tabs = await browser.tabs.query({});
     browser.runtime.onMessage.addListener(this.onMessage);
     browser.runtime.onConnect.addListener(this.onConnect);
+    browser.tabs.onCreated.addListener(this.onTabCreated);
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
-    await runContentScripts();
+    setInitialIcon(tabs);
+    await runContentScripts(tabs);
   }
 
   stop() {
     browser.runtime.onMessage.removeListener(this.onMessage);
     browser.runtime.onConnect.removeListener(this.onConnect);
+    browser.tabs.onCreated.removeListener(this.onTabCreated);
     browser.tabs.onRemoved.removeListener(this.onTabRemoved);
   }
 
@@ -609,6 +614,10 @@ export default class BackgroundProgram {
     }
   }
 
+  onTabCreated(tab: Tab) {
+    setInitialIcon([tab]);
+  }
+
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
   }
@@ -644,9 +653,14 @@ function getHintsTypes(mode: HintsMode): Array<ElementType> {
   }
 }
 
-async function runContentScripts(): Promise<Array<Array<any>>> {
+function setInitialIcon(tabs: Array<Tab>) {
+  for (const tab of tabs) {
+    setIcon("disabled", tab.id);
+  }
+}
+
+function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<any>>> {
   const manifest = browser.runtime.getManifest();
-  const tabs = await browser.tabs.query({});
 
   const detailsList = [].concat(
     ...manifest.content_scripts

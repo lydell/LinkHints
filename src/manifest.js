@@ -23,7 +23,7 @@ module.exports = () =>
     browser_action: {
       browser_style: true,
       default_popup: config.popupHtml,
-      default_icon: getIcons(config.iconsDisabled, config.browser),
+      default_icon: getIcons(config.icons, config.browser),
     },
     commands: {
       _execute_browser_action: {

@@ -114,6 +114,7 @@ declare var browser: {|
     |}): Promise<Tab>,
     executeScript: (ExecuteScriptDetails => Promise<Array<any>>) &
       ((tabId: number, ExecuteScriptDetails) => Promise<Array<any>>),
+    onCreated: OnEvent<(Tab) => void>,
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
     sendMessage(
       tabId: number,
