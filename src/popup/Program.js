@@ -62,6 +62,7 @@ export default class PopupProgram {
   render(perf: Array<number>) {
     const container = document.createElement("div");
     container.style.padding = `0 20px`;
+    container.style.minWidth = "200px";
 
     const heading = document.createElement("h2");
     heading.textContent = "Latest durations";
@@ -71,16 +72,21 @@ export default class PopupProgram {
       const average = document.createElement("p");
       average.textContent = `Average: ${getAverage(perf).toFixed(2)} ms`;
       container.append(average);
-    }
 
-    const list = document.createElement("ol");
-    list.style.paddingLeft = "1em";
-    for (const duration of perf) {
-      const li = document.createElement("li");
-      li.textContent = `${duration.toFixed(2)} ms`;
-      list.append(li);
+      const list = document.createElement("ol");
+      list.style.paddingLeft = "1em";
+      for (const duration of perf) {
+        const li = document.createElement("li");
+        li.textContent = `${duration.toFixed(2)} ms`;
+        list.append(li);
+      }
+      container.append(list);
+    } else {
+      const info = document.createElement("p");
+      info.textContent = "(none so far)";
+      info.style.fontStyle = "italic";
+      container.append(info);
     }
-    container.append(list);
 
     if (document.body != null) {
       document.body.append(container);
@@ -89,6 +95,8 @@ export default class PopupProgram {
 
   renderDisabled() {
     const container = document.createElement("p");
+    container.style.minWidth = "250px";
+    container.style.textAlign = "center";
     container.textContent = "Synth is not allowed to run on this page.";
     if (document.body != null) {
       document.body.append(container);
