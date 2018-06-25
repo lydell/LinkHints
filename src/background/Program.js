@@ -553,10 +553,28 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "ResetPerf": {
+        const tab = await getCurrentTab();
+        const tabState = this.tabState.get(tab.id);
+
+        if (tabState == null) {
+          return;
+        }
+
+        tabState.perf = [];
+        this.sendPopupMessage({
+          type: "PopupData",
+          logLevel: log.level,
+          data: {
+            perf: tabState.perf,
+          },
+        });
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
-    return undefined;
   }
 
   onKeyboardShortcut(

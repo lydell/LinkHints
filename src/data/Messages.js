@@ -108,9 +108,13 @@ export type ToRenderer =
       delayed: boolean,
     |};
 
-export type FromPopup = {|
-  type: "PopupScriptAdded",
-|};
+export type FromPopup =
+  | {|
+      type: "PopupScriptAdded",
+    |}
+  | {|
+      type: "ResetPerf",
+    |};
 
 export type ToPopup = {|
   type: "PopupData",

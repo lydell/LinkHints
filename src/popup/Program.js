@@ -3,6 +3,8 @@
 import { bind, log, unreachable } from "../shared/main";
 import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
+const CONTAINER_ID = "container";
+
 export default class PopupProgram {
   constructor() {
     bind(this, [
@@ -60,7 +62,14 @@ export default class PopupProgram {
   }
 
   render(perf: Array<number>) {
+    const previous = document.getElementById(CONTAINER_ID);
+
+    if (previous != null) {
+      previous.remove();
+    }
+
     const container = document.createElement("div");
+    container.id = CONTAINER_ID;
     container.style.padding = `0 20px`;
     container.style.minWidth = "200px";
 
@@ -81,6 +90,16 @@ export default class PopupProgram {
         list.append(li);
       }
       container.append(list);
+
+      const resetContainer = document.createElement("p");
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.textContent = "Reset";
+      reset.onclick = () => {
+        this.sendMessage({ type: "ResetPerf" });
+      };
+      resetContainer.append(reset);
+      container.append(resetContainer);
     } else {
       const info = document.createElement("p");
       info.textContent = "(none so far)";
