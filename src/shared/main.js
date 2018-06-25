@@ -115,28 +115,6 @@ export function bind(
   }
 }
 
-/**
- * Returns a new function that can be called any number of times, but only calls
- * `fn` after `timeout` milliseconds has passed since the last call.
- */
-export function throttle(
-  fn: Function,
-  timeout?: number = 250
-): <T>(...args: Array<T>) => void {
-  let timeoutId = null;
-
-  return (...args) => {
-    if (timeoutId != null) {
-      window.clearTimeout(timeoutId);
-    }
-
-    timeoutId = window.setTimeout(() => {
-      timeoutId = null;
-      fn(...args);
-    }, timeout);
-  };
-}
-
 export function unreachable(value: empty, ...args: Array<any>) {
   const message = `Unreachable: ${value}\n${JSON.stringify(
     args,

@@ -2,7 +2,7 @@
 
 import huffman from "n-ary-huffman";
 
-import { LOADED_KEY, bind, log, throttle, unreachable } from "../shared/main";
+import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -79,7 +79,7 @@ export default class BackgroundProgram {
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
-  updateIconThrottled: number => void;
+  updateIconTimeoutIds: Map<number, number>;
 
   constructor({
     normalKeyboardShortcuts,
@@ -94,6 +94,7 @@ export default class BackgroundProgram {
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.hintChars = hintChars;
     this.tabState = new Map();
+    this.updateIconTimeoutIds = new Map();
 
     bind(this, [
       [this.onKeyboardShortcut, { catch: true }],
@@ -113,8 +114,6 @@ export default class BackgroundProgram {
       this.onTabCreated,
       this.onTabRemoved,
     ]);
-
-    this.updateIconThrottled = throttle(this.updateIcon, ICON_TIMEOUT);
   }
 
   async start(): Promise<void> {
@@ -128,7 +127,7 @@ export default class BackgroundProgram {
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
 
     for (const tab of tabs) {
-      this.updateIconThrottled(tab.id);
+      this.updateIcon(tab.id);
     }
 
     await runContentScripts(tabs);
@@ -196,7 +195,7 @@ export default class BackgroundProgram {
 
     if (info != null && tabStateRaw == null) {
       this.tabState.set(info.tabId, tabState);
-      this.updateIconThrottled(info.tabId);
+      this.updateIcon(info.tabId);
     }
 
     switch (message.type) {
@@ -237,7 +236,7 @@ export default class BackgroundProgram {
     if (sender.frameId === TOP_FRAME_ID && tab != null) {
       port.onDisconnect.addListener(() => {
         this.tabState.delete(tab.id);
-        this.updateIconThrottled(tab.id);
+        this.updateIcon(tab.id);
       });
     }
   }
@@ -634,18 +633,33 @@ export default class BackgroundProgram {
   }
 
   onTabCreated(tab: Tab) {
-    this.updateIconThrottled(tab.id);
+    this.updateIcon(tab.id);
   }
 
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
   }
 
-  async updateIcon(tabId: number): Promise<void> {
-    const type: IconType = this.tabState.has(tabId) ? "normal" : "disabled";
-    const icons = getIcons(type);
-    log("log", "BackgroundProgram#updateIcon", tabId, type);
-    await browser.browserAction.setIcon({ path: icons, tabId });
+  updateIcon(tabId: number): Promise<void> {
+    const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
+
+    if (previousTimeoutId != null) {
+      window.clearTimeout(previousTimeoutId);
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        this.updateIconTimeoutIds.delete(tabId);
+        const type: IconType = this.tabState.has(tabId) ? "normal" : "disabled";
+        const icons = getIcons(type);
+        log("log", "BackgroundProgram#updateIcon", tabId, type);
+        browser.browserAction
+          .setIcon({ path: icons, tabId })
+          .then(resolve, reject);
+      }, ICON_TIMEOUT);
+
+      this.updateIconTimeoutIds.set(tabId, timeoutId);
+    });
   }
 }
 
