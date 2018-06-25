@@ -91,7 +91,7 @@ declare var browser: {|
     setIcon({|
       path: { [string]: string },
       tabId?: number,
-    |}): void,
+    |}): Promise<void>,
   |},
   runtime: {|
     connect: (() => Port) &

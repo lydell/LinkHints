@@ -2,7 +2,7 @@
 
 import huffman from "n-ary-huffman";
 
-import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
+import { LOADED_KEY, bind, log, throttle, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -64,11 +64,22 @@ type HintsState =
 // Defaults to 0 (the top-level frame).”
 const TOP_FRAME_ID = 0;
 
+// Both Firefox and Chrome don't seem to like setting the icon too often, or
+// during other events. This tiny timeout de-dupes `this.updateIcon` calls.
+// Without the timeout, Firefox would sometimes not show the disabled icon when
+// visiting `about:addons` in a tab which previously showed a web page. Chrome
+// wouldn't show the disabled icon for the first new tab opened after install.
+// The timeout is also nice to avoid flashing when clicking links, especially in
+// Chrome. The old content script's port disconnect a couple of milliseconds
+// before the new one connects.
+const ICON_TIMEOUT = 10; // ms
+
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
+  updateIconThrottled: number => void;
 
   constructor({
     normalKeyboardShortcuts,
@@ -97,20 +108,29 @@ export default class BackgroundProgram {
       [this.sendWorkerMessage, { log: true, catch: true }],
       [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
+      [this.updateIcon, { catch: true }],
       this.onConnect,
       this.onTabCreated,
       this.onTabRemoved,
     ]);
+
+    this.updateIconThrottled = throttle(this.updateIcon, ICON_TIMEOUT);
   }
 
   async start(): Promise<void> {
     log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
+
     const tabs = await browser.tabs.query({});
+
     browser.runtime.onMessage.addListener(this.onMessage);
     browser.runtime.onConnect.addListener(this.onConnect);
     browser.tabs.onCreated.addListener(this.onTabCreated);
     browser.tabs.onRemoved.addListener(this.onTabRemoved);
-    setInitialIcon(tabs);
+
+    for (const tab of tabs) {
+      this.updateIconThrottled(tab.id);
+    }
+
     await runContentScripts(tabs);
   }
 
@@ -176,6 +196,7 @@ export default class BackgroundProgram {
 
     if (info != null && tabStateRaw == null) {
       this.tabState.set(info.tabId, tabState);
+      this.updateIconThrottled(info.tabId);
     }
 
     switch (message.type) {
@@ -214,11 +235,9 @@ export default class BackgroundProgram {
     const { tab } = sender;
 
     if (sender.frameId === TOP_FRAME_ID && tab != null) {
-      setIcon("normal", tab.id);
-
       port.onDisconnect.addListener(() => {
         this.tabState.delete(tab.id);
-        setIcon("disabled", tab.id);
+        this.updateIconThrottled(tab.id);
       });
     }
   }
@@ -615,11 +634,18 @@ export default class BackgroundProgram {
   }
 
   onTabCreated(tab: Tab) {
-    setInitialIcon([tab]);
+    this.updateIconThrottled(tab.id);
   }
 
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
+  }
+
+  async updateIcon(tabId: number): Promise<void> {
+    const type: IconType = this.tabState.has(tabId) ? "normal" : "disabled";
+    const icons = getIcons(type);
+    log("log", "BackgroundProgram#updateIcon", tabId, type);
+    await browser.browserAction.setIcon({ path: icons, tabId });
   }
 }
 
@@ -650,12 +676,6 @@ function getHintsTypes(mode: HintsMode): Array<ElementType> {
 
     default:
       return unreachable(mode);
-  }
-}
-
-function setInitialIcon(tabs: Array<Tab>) {
-  for (const tab of tabs) {
-    setIcon("disabled", tab.id);
   }
 }
 
@@ -713,10 +733,6 @@ async function getCurrentTab(): Promise<Tab> {
 }
 
 type IconType = "normal" | "disabled";
-
-function setIcon(type: IconType, tabId: number) {
-  browser.browserAction.setIcon({ path: getIcons(type), tabId });
-}
 
 function getIcons(type: IconType): { [string]: string } {
   const manifest = browser.runtime.getManifest();
