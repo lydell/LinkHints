@@ -235,8 +235,12 @@ export default class BackgroundProgram {
 
     if (sender.frameId === TOP_FRAME_ID && tab != null) {
       port.onDisconnect.addListener(() => {
-        this.tabState.delete(tab.id);
-        this.updateIcon(tab.id);
+        // Trying to update the icon after the tab has been closed is an error.
+        // So only try to update the icon if the tab is still open.
+        if (this.tabState.has(tab.id)) {
+          this.tabState.delete(tab.id);
+          this.updateIcon(tab.id);
+        }
       });
     }
   }
@@ -656,6 +660,14 @@ export default class BackgroundProgram {
 
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
+
+    // Trying to update the icon after the tab has been closed is an error.
+    // Remove any scheduled updates.
+    const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
+    if (previousTimeoutId != null) {
+      window.clearTimeout(previousTimeoutId);
+      this.updateIconTimeoutIds.delete(tabId);
+    }
   }
 
   updateIcon(tabId: number): Promise<void> {
