@@ -753,7 +753,16 @@ function getIcons(type: IconType): { [string]: string } {
   return Object.entries(manifest.browser_action.default_icon).reduce(
     (result, [key, value]) => {
       if (typeof value === "string") {
-        result[key] = value.replace(/(\$)\w+/, `$1${type}`);
+        const newValue = value.replace(/(\$)\w+/, `$1${type}`);
+        // Default icons are always PNG in development to support Chrome. Switch
+        // to SVG in Firefox during development to make it easier to work on the
+        // SVG icon source (automatic reloading). This also requires a
+        // cache-bust.
+        const finalValue =
+          !PROD && BROWSER === "firefox"
+            ? `${newValue.replace(/png/g, "svg")}?${Date.now()}`
+            : newValue;
+        result[key] = finalValue;
       }
       return result;
     },
