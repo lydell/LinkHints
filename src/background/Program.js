@@ -230,7 +230,7 @@ export default class BackgroundProgram {
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
-              capture: false,
+              capture: true,
               suppressByDefault: false,
               sendAll: false,
             },
@@ -367,7 +367,7 @@ export default class BackgroundProgram {
               clearElements: true,
               keyboardShortcuts: this.normalKeyboardShortcuts,
               keyboardOptions: {
-                capture: false,
+                capture: true,
                 suppressByDefault: false,
                 sendAll: false,
               },
@@ -600,7 +600,7 @@ export default class BackgroundProgram {
             clearElements: true,
             keyboardShortcuts: this.normalKeyboardShortcuts,
             keyboardOptions: {
-              capture: false,
+              capture: true,
               suppressByDefault: false,
               sendAll: false,
             },
