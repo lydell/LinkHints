@@ -5,6 +5,7 @@ import type { ElementType, HintMeasurements } from "../worker/ElementManager";
 import type { LogLevel } from "../shared/main";
 
 import type {
+  HintsMode,
   KeyboardAction,
   KeyboardMapping,
   KeyboardOptions,
@@ -120,7 +121,8 @@ export type ToPopup = {|
   type: "PopupData",
   logLevel: LogLevel,
   data: ?{|
-    perf: Array<number>,
+    tabId: number,
+    tabState: TabState,
   |},
 |};
 
@@ -151,3 +153,31 @@ export type HintUpdate =
       matched: string,
       rest: string,
     |};
+
+export type TabState = {|
+  hintsState: HintsState,
+  perf: Array<number>,
+|};
+
+export type HintsState =
+  | {|
+      type: "Idle",
+    |}
+  | {|
+      type: "Collecting",
+      mode: HintsMode,
+      pendingElements: PendingElements,
+    |}
+  | {|
+      type: "Hinting",
+      mode: HintsMode,
+      startTime: number,
+      enteredHintChars: string,
+      elementsWithHints: Array<ElementWithHint>,
+    |};
+
+export type PendingElements = {|
+  pendingFrames: number,
+  startTime: number,
+  elements: Array<ExtendedElementReport>,
+|};

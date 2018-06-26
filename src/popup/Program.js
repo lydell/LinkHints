@@ -1,7 +1,12 @@
 // @flow
 
 import { bind, log, unreachable } from "../shared/main";
-import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
+import type {
+  FromBackground,
+  FromPopup,
+  TabState,
+  ToBackground,
+} from "../data/Messages";
 
 const CONTAINER_ID = "container";
 
@@ -52,7 +57,7 @@ export default class PopupProgram {
         if (message.data == null) {
           this.renderDisabled();
         } else {
-          this.render(message.data.perf);
+          this.render(message.data);
         }
         break;
 
@@ -61,7 +66,7 @@ export default class PopupProgram {
     }
   }
 
-  render(perf: Array<number>) {
+  render({ tabId, tabState }: {| tabId: number, tabState: TabState |}) {
     const previous = document.getElementById(CONTAINER_ID);
 
     if (previous != null) {
@@ -77,14 +82,16 @@ export default class PopupProgram {
     heading.textContent = "Latest durations";
     container.append(heading);
 
-    if (perf.length > 0) {
+    if (tabState.perf.length > 0) {
       const average = document.createElement("p");
-      average.textContent = `Average: ${getAverage(perf).toFixed(2)} ms`;
+      average.textContent = `Average: ${getAverage(tabState.perf).toFixed(
+        2
+      )} ms`;
       container.append(average);
 
       const list = document.createElement("ol");
       list.style.paddingLeft = "1em";
-      for (const duration of perf) {
+      for (const duration of tabState.perf) {
         const li = document.createElement("li");
         li.textContent = `${duration.toFixed(2)} ms`;
         list.append(li);
@@ -106,6 +113,11 @@ export default class PopupProgram {
       info.style.fontStyle = "italic";
       container.append(info);
     }
+
+    const pre = document.createElement("pre");
+    pre.style.overflowX = "auto";
+    pre.textContent = `${tabId} ${JSON.stringify(tabState, undefined, 2)}`;
+    container.append(pre);
 
     if (document.body != null) {
       document.body.append(container);

@@ -6,12 +6,11 @@ import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
-  ElementWithHint,
-  ExtendedElementReport,
   FromBackground,
   FromPopup,
   FromRenderer,
   FromWorker,
+  TabState,
   ToBackground,
   ToPopup,
   ToRenderer,
@@ -23,40 +22,12 @@ import type {
   KeyboardMapping,
 } from "../data/KeyboardShortcuts";
 
-type PendingElements = {|
-  elements: Array<ExtendedElementReport>,
-  pendingFrames: number,
-  startTime: number,
-|};
-
 type MessageInfo = {|
   tabId: number,
   frameId: number,
   // Currently unused, but nice to have in logging.
   url: ?string,
 |};
-
-type TabState = {|
-  perf: Array<number>,
-  hintsState: HintsState,
-|};
-
-type HintsState =
-  | {|
-      type: "Idle",
-    |}
-  | {|
-      type: "Collecting",
-      mode: HintsMode,
-      pendingElements: PendingElements,
-    |}
-  | {|
-      type: "Hinting",
-      mode: HintsMode,
-      elementsWithHints: Array<ElementWithHint>,
-      startTime: number,
-      enteredHintChars: string,
-    |};
 
 // As far as I can tell, the top frameId is always 0. This is also mentioned here:
 // https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/Tabs/executeScript
@@ -469,8 +440,8 @@ export default class BackgroundProgram {
             type: "Hinting",
             mode: hintsState.mode,
             startTime: hintsState.pendingElements.startTime,
-            elementsWithHints,
             enteredHintChars: "",
+            elementsWithHints,
           };
           this.sendWorkerMessage(
             {
@@ -551,7 +522,8 @@ export default class BackgroundProgram {
             tabState == null
               ? undefined
               : {
-                  perf: tabState.perf,
+                  tabId: tab.id,
+                  tabState,
                 },
         });
         break;
@@ -570,7 +542,8 @@ export default class BackgroundProgram {
           type: "PopupData",
           logLevel: log.level,
           data: {
-            perf: tabState.perf,
+            tabId: tab.id,
+            tabState,
           },
         });
         break;
@@ -606,9 +579,9 @@ export default class BackgroundProgram {
           type: "Collecting",
           mode: action.mode,
           pendingElements: {
-            elements: [],
             pendingFrames: 1,
             startTime: timestamp,
+            elements: [],
           },
         };
         break;
@@ -702,8 +675,8 @@ function makeOneTimeWindowMessage(): string {
 // This is a function (not a constant), because of mutation.
 function makeEmptyTabState(): TabState {
   return {
-    perf: [],
     hintsState: { type: "Idle" },
+    perf: [],
   };
 }
 
