@@ -306,7 +306,10 @@ export default class BackgroundProgram {
                   type: "ClickElement",
                   index: match.index,
                 },
-                { tabId: info.tabId }
+                {
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                }
               );
               break;
 
@@ -324,7 +327,10 @@ export default class BackgroundProgram {
                   type: "FocusElement",
                   index: match.index,
                 },
-                { tabId: info.tabId }
+                {
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                }
               );
               await browser.tabs.create({
                 active: false,
@@ -347,7 +353,10 @@ export default class BackgroundProgram {
                   type: "FocusElement",
                   index: match.index,
                 },
-                { tabId: info.tabId }
+                {
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                }
               );
               await browser.tabs.create({
                 active: true,
