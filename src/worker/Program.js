@@ -126,12 +126,33 @@ export default class WorkerProgram {
       case "ClickElement": {
         const element =
           this.elements == null ? undefined : this.elements[message.index];
+
         if (element == null) {
           log("error", "ClickElement: Missing element", message, this.elements);
           return;
         }
+
+        // Running `.click()` on an `<a href="..." target="_blank">` causes the
+        // popup blocker to block the new tab/window from opening. That's really
+        // annoying, so temporarily remove the `target`. The user can use the
+        // commands for opening links in new tabs instead if they want a new
+        // tab.
+        let target = undefined;
+        if (
+          element.element instanceof HTMLAnchorElement &&
+          element.element.target.toLowerCase() === "_blank"
+        ) {
+          ({ target } = element.element);
+          element.element.target = "";
+        }
+
         element.element.focus();
         element.element.click();
+
+        if (element.element instanceof HTMLAnchorElement && target != null) {
+          element.element.target = target;
+        }
+
         break;
       }
 
