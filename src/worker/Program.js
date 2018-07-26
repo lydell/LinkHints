@@ -31,7 +31,6 @@ export default class WorkerProgram {
   constructor() {
     this.keyboardShortcuts = [];
     this.keyboardOptions = {
-      capture: false,
       suppressByDefault: false,
       sendAll: false,
     };
@@ -42,8 +41,7 @@ export default class WorkerProgram {
     this.oneTimeWindowMessageToken = undefined;
 
     bind(this, [
-      [this.onKeydownBubble, { catch: true }],
-      [this.onKeydownCapture, { catch: true }],
+      [this.onKeydown, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
       [this.reportVisibleElements, { catch: true }],
@@ -55,8 +53,7 @@ export default class WorkerProgram {
 
   start() {
     browser.runtime.onMessage.addListener(this.onMessage);
-    window.addEventListener("keydown", this.onKeydownCapture, true);
-    window.addEventListener("keydown", this.onKeydownBubble, false);
+    window.addEventListener("keydown", this.onKeydown, true);
     window.addEventListener("message", this.onWindowMessage, true);
     this.elementManager.start();
 
@@ -70,8 +67,7 @@ export default class WorkerProgram {
 
   stop() {
     browser.runtime.onMessage.removeListener(this.onMessage);
-    window.removeEventListener("keydown", this.onKeydownCapture, true);
-    window.removeEventListener("keydown", this.onKeydownBubble, false);
+    window.removeEventListener("keydown", this.onKeydown, true);
     window.removeEventListener("message", this.onWindowMessage, true);
     this.elementManager.stop();
   }
@@ -191,18 +187,15 @@ export default class WorkerProgram {
     }
   }
 
-  onKeydownCapture(event: KeyboardEvent) {
-    if (this.keyboardOptions.capture) {
-      this.onKeydown(event);
-    }
-  }
-
-  onKeydownBubble(event: KeyboardEvent) {
-    if (!this.keyboardOptions.capture) {
-      this.onKeydown(event);
-    }
-  }
-
+  // This is run in the capture phase of the keydown event, overriding any site
+  // shortcuts. The initial idea was to run in the bubble phase (mostly) and let
+  // sites use `event.preventDefault()` to override Synth's shortcuts (just like
+  // any other browser shortcut). However, duckduckgo.com has "j/k" shortcuts
+  // for navigation, but don't check for the alt key and don't call
+  // `event.preventDefault()`, making it impossible to use alt-j as a Synth
+  // shortcut without causing side-effects. This feels like a common thing, so
+  // (at least for now) the Synth shortcuts always do their thing (making it
+  // impossible to trigger a site shortcut using the same keys).
   onKeydown(event: KeyboardEvent) {
     if (!event.isTrusted || event.defaultPrevented) {
       return;

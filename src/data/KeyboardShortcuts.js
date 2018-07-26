@@ -24,7 +24,6 @@ export type KeyboardMapping = {|
 |};
 
 export type KeyboardOptions = {|
-  capture: boolean,
   suppressByDefault: boolean,
   sendAll: boolean,
 |};
