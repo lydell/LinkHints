@@ -54,6 +54,9 @@ export type FromWorker =
       shortcut: KeyboardShortcut,
     |}
   | {|
+      type: "ReportVisibleFrame",
+    |}
+  | {|
       type: "ReportVisibleElements",
       elements: Array<ElementReport>,
       pendingFrames: number,
@@ -167,6 +170,7 @@ export type HintsState =
       type: "Collecting",
       mode: HintsMode,
       pendingElements: PendingElements,
+      timeoutId: ?TimeoutID,
     |}
   | {|
       type: "Hinting",

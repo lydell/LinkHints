@@ -45,7 +45,7 @@ export default class WorkerProgram {
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
       [this.reportVisibleElements, { catch: true }],
-      [this.sendMessage, { log: true, catch: true }],
+      [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
     ]);
@@ -73,6 +73,7 @@ export default class WorkerProgram {
   }
 
   async sendMessage(message: FromWorker): Promise<void> {
+    log("log", "WorkerProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -182,6 +183,7 @@ export default class WorkerProgram {
         return;
       }
       log("log", "WorkerProgram#onWindowMessage", types, rawViewports);
+      this.sendMessage({ type: "ReportVisibleFrame" });
       this.reportVisibleElements(types, viewports);
       this.oneTimeWindowMessageToken = undefined;
     }

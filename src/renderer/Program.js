@@ -70,7 +70,7 @@ export default class RendererProgram {
 
     bind(this, [
       [this.onMessage, { catch: true }],
-      [this.sendMessage, { log: true, catch: true }],
+      [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
     ]);
@@ -112,6 +112,7 @@ export default class RendererProgram {
   }
 
   async sendMessage(message: FromRenderer): Promise<void> {
+    log("log", "RendererProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -295,7 +296,7 @@ export default class RendererProgram {
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
       if (delayed) {
-        window.setTimeout(() => {
+        setTimeout(() => {
           container.remove();
         }, UNRENDER_DELAY);
       } else {

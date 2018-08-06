@@ -14,7 +14,7 @@ export default class PopupProgram {
   constructor() {
     bind(this, [
       [this.onMessage, { catch: true }],
-      [this.sendMessage, { log: true, catch: true }],
+      [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
     ]);
@@ -31,6 +31,7 @@ export default class PopupProgram {
   }
 
   async sendMessage(message: FromPopup): Promise<void> {
+    log("log", "PopupProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 

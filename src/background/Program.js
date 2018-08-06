@@ -45,12 +45,17 @@ const TOP_FRAME_ID = 0;
 // before the new one connects.
 const ICON_TIMEOUT = 10; // ms
 
+// Some onscreen frames may never respond (if the frame 404s or hasn't loaded
+// yet), but the parent can't now that. If a frame hasn't reported that it is
+// alive after this timeout, ignore it.
+const FRAME_REPORT_TIMEOUT = 100; // ms
+
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
-  updateIconTimeoutIds: Map<number, number>;
+  updateIconTimeoutIds: Map<number, TimeoutID>;
 
   constructor({
     normalKeyboardShortcuts,
@@ -407,6 +412,15 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "ReportVisibleFrame": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Collecting") {
+          return;
+        }
+        hintsState.pendingElements.pendingFrames += 1;
+        break;
+      }
+
       case "ReportVisibleElements": {
         const { hintsState } = tabState;
         if (hintsState.type !== "Collecting") {
@@ -423,58 +437,26 @@ export default class BackgroundProgram {
           })
         );
         hintsState.pendingElements.elements.push(...elements);
-        hintsState.pendingElements.pendingFrames += message.pendingFrames - 1;
-        if (hintsState.pendingElements.pendingFrames <= 0) {
-          const elementsWithHints = hintsState.pendingElements.elements.map(
-            element => ({
-              type: element.type,
-              index: element.index,
-              hintMeasurements: element.hintMeasurements,
-              url: element.url,
-              frameId: element.frameId,
-              weight: element.hintMeasurements.area,
-              hint: "",
-            })
-          );
-          const tree = huffman.createTree(
-            elementsWithHints,
-            this.hintChars.length
-          );
-          tree.assignCodeWords(this.hintChars, (item, codeWord) => {
-            item.hint = codeWord;
-          });
-          tabState.hintsState = {
-            type: "Hinting",
-            mode: hintsState.mode,
-            startTime: hintsState.pendingElements.startTime,
-            enteredHintChars: "",
-            elementsWithHints,
-          };
-          this.sendWorkerMessage(
-            {
-              type: "StateSync",
-              logLevel: log.level,
-              clearElements: false,
-              keyboardShortcuts: this.hintsKeyboardShortcuts,
-              keyboardOptions: {
-                suppressByDefault: true,
-                sendAll: true,
-              },
-              oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-            },
-            { tabId: info.tabId }
-          );
-          this.sendRendererMessage(
-            {
-              type: "Render",
-              elements: elementsWithHints,
-            },
-            { tabId: info.tabId }
-          );
-          browser.browserAction.setBadgeText({
-            text: String(hintsState.pendingElements.elements.length),
-            tabId: info.tabId,
-          });
+        hintsState.pendingElements.pendingFrames = Math.max(
+          0,
+          hintsState.pendingElements.pendingFrames - 1
+        );
+
+        if (message.pendingFrames === 0) {
+          // If there are no frames, start hinting immediately, unless we're
+          // waiting for frames in another frame.
+          if (hintsState.timeoutId == null) {
+            this.maybeStartHinting(tabState, info.tabId);
+          }
+        } else {
+          // If there are frames, wait for them.
+          if (hintsState.timeoutId != null) {
+            clearTimeout(hintsState.timeoutId);
+          }
+          hintsState.timeoutId = setTimeout(() => {
+            hintsState.timeoutId = undefined;
+            this.maybeStartHinting(tabState, info.tabId);
+          }, FRAME_REPORT_TIMEOUT);
         }
         break;
       }
@@ -482,6 +464,64 @@ export default class BackgroundProgram {
       default:
         unreachable(message.type, message);
     }
+  }
+
+  maybeStartHinting(tabState: TabState, tabId: number) {
+    const { hintsState } = tabState;
+    if (
+      hintsState.type !== "Collecting" ||
+      hintsState.pendingElements.pendingFrames > 0
+    ) {
+      return;
+    }
+
+    const elementsWithHints = hintsState.pendingElements.elements.map(
+      element => ({
+        type: element.type,
+        index: element.index,
+        hintMeasurements: element.hintMeasurements,
+        url: element.url,
+        frameId: element.frameId,
+        weight: element.hintMeasurements.area,
+        hint: "",
+      })
+    );
+    const tree = huffman.createTree(elementsWithHints, this.hintChars.length);
+    tree.assignCodeWords(this.hintChars, (item, codeWord) => {
+      item.hint = codeWord;
+    });
+    tabState.hintsState = {
+      type: "Hinting",
+      mode: hintsState.mode,
+      startTime: hintsState.pendingElements.startTime,
+      enteredHintChars: "",
+      elementsWithHints,
+    };
+    this.sendWorkerMessage(
+      {
+        type: "StateSync",
+        logLevel: log.level,
+        clearElements: false,
+        keyboardShortcuts: this.hintsKeyboardShortcuts,
+        keyboardOptions: {
+          suppressByDefault: true,
+          sendAll: true,
+        },
+        oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+      },
+      { tabId }
+    );
+    this.sendRendererMessage(
+      {
+        type: "Render",
+        elements: elementsWithHints,
+      },
+      { tabId }
+    );
+    browser.browserAction.setBadgeText({
+      text: String(hintsState.pendingElements.elements.length),
+      tabId,
+    });
   }
 
   onRendererMessage(
@@ -585,10 +625,11 @@ export default class BackgroundProgram {
           type: "Collecting",
           mode: action.mode,
           pendingElements: {
-            pendingFrames: 1,
+            pendingFrames: 0,
             startTime: timestamp,
             elements: [],
           },
+          timeoutId: undefined,
         };
         break;
       }
@@ -643,7 +684,7 @@ export default class BackgroundProgram {
     // Remove any scheduled updates.
     const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
     if (previousTimeoutId != null) {
-      window.clearTimeout(previousTimeoutId);
+      clearTimeout(previousTimeoutId);
       this.updateIconTimeoutIds.delete(tabId);
     }
   }
@@ -652,11 +693,11 @@ export default class BackgroundProgram {
     const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
 
     if (previousTimeoutId != null) {
-      window.clearTimeout(previousTimeoutId);
+      clearTimeout(previousTimeoutId);
     }
 
     return new Promise((resolve, reject) => {
-      const timeoutId = window.setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         this.updateIconTimeoutIds.delete(tabId);
         const type: IconType = this.tabState.has(tabId) ? "normal" : "disabled";
         const icons = getIcons(type);
