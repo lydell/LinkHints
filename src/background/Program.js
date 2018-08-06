@@ -119,7 +119,7 @@ export default class BackgroundProgram {
 
   async sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: {| tabId: number, frameId?: number |}
+    { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
   ): Promise<void> {
     await this.sendContentMessage(
       { type: "ToWorker", message },
@@ -150,9 +150,9 @@ export default class BackgroundProgram {
 
   async sendContentMessage(
     message: FromBackground,
-    { tabId, frameId }: {| tabId: number, frameId?: number |}
+    { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
   ): Promise<void> {
-    await (frameId == null
+    await (frameId === "all_frames"
       ? browser.tabs.sendMessage(tabId, message)
       : browser.tabs.sendMessage(tabId, message, { frameId }));
   }
@@ -231,6 +231,7 @@ export default class BackgroundProgram {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
           tabId: info.tabId,
+          frameId: info.frameId,
         });
         break;
 
@@ -365,6 +366,7 @@ export default class BackgroundProgram {
           tabState.hintsState = { type: "Idle" };
           this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
             tabId: info.tabId,
+            frameId: "all_frames",
           });
           this.sendRendererMessage(
             {
@@ -478,6 +480,7 @@ export default class BackgroundProgram {
     };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
       tabId,
+      frameId: "all_frames",
     });
     this.sendRendererMessage(
       {
@@ -610,6 +613,7 @@ export default class BackgroundProgram {
         tabState.hintsState = { type: "Idle" };
         this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
           tabId: info.tabId,
+          frameId: "all_frames",
         });
         this.sendRendererMessage(
           {
