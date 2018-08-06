@@ -10,6 +10,7 @@ import type {
   FromPopup,
   FromRenderer,
   FromWorker,
+  HintsState,
   TabState,
   ToBackground,
   ToPopup,
@@ -228,20 +229,9 @@ export default class BackgroundProgram {
   ): Promise<void> {
     switch (message.type) {
       case "WorkerScriptAdded":
-        this.sendWorkerMessage(
-          {
-            type: "StateSync",
-            logLevel: log.level,
-            clearElements: true,
-            keyboardShortcuts: this.normalKeyboardShortcuts,
-            keyboardOptions: {
-              suppressByDefault: false,
-              sendAll: false,
-            },
-            oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-          },
-          { tabId: info.tabId }
-        );
+        this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+          tabId: info.tabId,
+        });
         break;
 
       case "KeyboardShortcutMatched":
@@ -373,20 +363,9 @@ export default class BackgroundProgram {
               unreachable(hintsState.mode);
           }
           tabState.hintsState = { type: "Idle" };
-          this.sendWorkerMessage(
-            {
-              type: "StateSync",
-              logLevel: log.level,
-              clearElements: true,
-              keyboardShortcuts: this.normalKeyboardShortcuts,
-              keyboardOptions: {
-                suppressByDefault: false,
-                sendAll: false,
-              },
-              oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-            },
-            { tabId: info.tabId }
-          );
+          this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+            tabId: info.tabId,
+          });
           this.sendRendererMessage(
             {
               type: "Unrender",
@@ -497,20 +476,9 @@ export default class BackgroundProgram {
       enteredHintChars: "",
       elementsWithHints,
     };
-    this.sendWorkerMessage(
-      {
-        type: "StateSync",
-        logLevel: log.level,
-        clearElements: false,
-        keyboardShortcuts: this.hintsKeyboardShortcuts,
-        keyboardOptions: {
-          suppressByDefault: true,
-          sendAll: true,
-        },
-        oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-      },
-      { tabId }
-    );
+    this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+      tabId,
+    });
     this.sendRendererMessage(
       {
         type: "Render",
@@ -640,20 +608,9 @@ export default class BackgroundProgram {
           return;
         }
         tabState.hintsState = { type: "Idle" };
-        this.sendWorkerMessage(
-          {
-            type: "StateSync",
-            logLevel: log.level,
-            clearElements: true,
-            keyboardShortcuts: this.normalKeyboardShortcuts,
-            keyboardOptions: {
-              suppressByDefault: false,
-              sendAll: false,
-            },
-            oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
-          },
-          { tabId: info.tabId }
-        );
+        this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+          tabId: info.tabId,
+        });
         this.sendRendererMessage(
           {
             type: "Unrender",
@@ -709,6 +666,33 @@ export default class BackgroundProgram {
 
       this.updateIconTimeoutIds.set(tabId, timeoutId);
     });
+  }
+
+  makeWorkerState(hintsState: HintsState): ToWorker {
+    if (hintsState.type === "Hinting") {
+      return {
+        type: "StateSync",
+        logLevel: log.level,
+        clearElements: false,
+        keyboardShortcuts: this.hintsKeyboardShortcuts,
+        keyboardOptions: {
+          suppressByDefault: true,
+          sendAll: true,
+        },
+        oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+      };
+    }
+    return {
+      type: "StateSync",
+      logLevel: log.level,
+      clearElements: true,
+      keyboardShortcuts: this.normalKeyboardShortcuts,
+      keyboardOptions: {
+        suppressByDefault: false,
+        sendAll: false,
+      },
+      oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+    };
   }
 }
 
