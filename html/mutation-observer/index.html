@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>MutationObserver</title>
+  </head>
+  <body>
+    <script>
+      const observer = new MutationObserver(records => {
+        console.log(records);
+      });
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributeFilter: ["role", "data-action"],
+      });
+      const a = document.createElement("a");
+      a.setAttribute("role", "button");
+      document.body.append(a);
+      setTimeout(() => {
+        a.setAttribute("role", "link");
+        setTimeout(() => {
+          a.removeAttribute("role");
+          setTimeout(() => {
+            a.remove();
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    </script>
+  </body>
+</html>
