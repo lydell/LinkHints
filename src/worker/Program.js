@@ -129,11 +129,11 @@ export default class WorkerProgram {
           return;
         }
 
-        // Running `.click()` on an `<a href="..." target="_blank">` causes the
-        // popup blocker to block the new tab/window from opening. That's really
-        // annoying, so temporarily remove the `target`. The user can use the
-        // commands for opening links in new tabs instead if they want a new
-        // tab.
+        // Programmatically clicking on an `<a href="..." target="_blank">`
+        // causes the popup blocker to block the new tab/window from opening.
+        // That's really annoying, so temporarily remove the `target`. The user
+        // can use the commands for opening links in new tabs instead if they
+        // want a new tab.
         let target = undefined;
         if (
           element.element instanceof HTMLAnchorElement &&
@@ -143,8 +143,36 @@ export default class WorkerProgram {
           element.element.target = "";
         }
 
+        const rect = element.element.getBoundingClientRect();
+        const options = {
+          // Mimic real events as closely as possible.
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          detail: 1,
+          view: window,
+          // These seem to automatically set `x`, `y`, `pageX` and `pageY` as
+          // well. There’s also `screenX` and `screenY`, but we can’t know
+          // those.
+          clientX: Math.round(rect.left),
+          clientY: Math.round(rect.top + rect.height / 2),
+        };
+
+        // When clicking a link for real the focus happens between the mousedown
+        // and the mouseup, but moving this line between those two
+        // `.dispatchEvent` calls below causes dropdowns in gmail not to be
+        // triggered anymore.
         element.element.focus();
-        element.element.click();
+
+        // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
+        // requires the full mousedown+mouseup+click event sequence.
+        element.element.dispatchEvent(
+          new window.MouseEvent("mousedown", { ...options, buttons: 1 })
+        );
+        element.element.dispatchEvent(
+          new window.MouseEvent("mouseup", options)
+        );
+        element.element.dispatchEvent(new window.MouseEvent("click", options));
 
         if (element.element instanceof HTMLAnchorElement && target != null) {
           element.element.target = target;

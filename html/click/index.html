@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>click</title>
+    <style>
+      body {
+        /* padding-top: 100vh; */
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#test" id="a">link</a>
+    <button id="trigger">trigger</button>
+    <button id="compare">compare</button>
+    <script>
+      const events = [
+        "mousedown",
+        "mouseup",
+        "click",
+        "focus",
+      ];
+
+      const props = [
+        "altKey",
+        "bubbles",
+        "button",
+        "buttons",
+        "cancelBubble",
+        "cancelable",
+        "clientX",
+        "clientY",
+        "composed",
+        "ctrlKey",
+        "currentTarget",
+        "defaultPrevented",
+        "detail",
+        "eventPhase",
+        // "explicitOriginalTarget",
+        // "isTrusted",
+        "layerX",
+        "layerY",
+        "metaKey",
+        "movementX",
+        "movementY",
+        "offsetX",
+        "offsetY",
+        "originalTarget",
+        "pageX",
+        "pageY",
+        // "rangeOffset",
+        // "rangeParent",
+        "region",
+        "relatedTarget",
+        "screenX",
+        "screenY",
+        "shiftKey",
+        "srcElement",
+        "target",
+        // "timeStamp",
+        "type",
+        "view",
+        "which",
+        "x",
+        "y",
+      ];
+
+      const trusted = [];
+      const notTrusted = [];
+
+      function listener(type, event) {
+        console.log(event.type, type, event, Object.keys(event));
+        if (event.type !== "focus") {
+          if (event.isTrusted) {
+            trusted.push(event);
+          } else {
+            notTrusted.push(event);
+          }
+        }
+      }
+
+      for (const eventName of events) {
+        a.addEventListener(eventName, listener.bind(null, "capture"), true);
+        a.addEventListener(eventName, listener.bind(null, "bubble"), false);
+      }
+
+      a.onmouseover = () => {
+        trusted.length = 0;
+      };
+
+      trigger.onclick = () => {
+        notTrusted.length = 0;
+        const rect = a.getBoundingClientRect();
+        const opts = {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          detail: 1,
+          view: window,
+          clientX: rect.left,
+          clientY: rect.top,
+        };
+        a.dispatchEvent(new MouseEvent("mousedown", { ...opts, buttons: 1 }));
+        a.focus();
+        a.dispatchEvent(new MouseEvent("mouseup", opts));
+        a.dispatchEvent(new MouseEvent("click", opts));
+      };
+
+      compare.onclick = () => {
+        for (const [index, trustedEvent] of trusted.entries()) {
+          const notTrustedEvent = notTrusted[index];
+          if (notTrustedEvent == null) {
+            console.log(trustedEvent, notTrustedEvent);
+            continue;
+          }
+          for (const prop of props) {
+            if (trustedEvent[prop] !== notTrustedEvent[prop]) {
+              console.log(prop, trustedEvent[prop], notTrustedEvent[prop], trustedEvent, notTrustedEvent);
+            }
+          }
+        }
+      };
+    </script>
+  </body>
+</html>
