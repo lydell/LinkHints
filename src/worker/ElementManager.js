@@ -314,6 +314,16 @@ function getMeasurements(
   const { x } = pointBox;
   const y = pointBox.y + pointBox.height / 2;
 
+  // It’s easy to think that one could optimize by calculating the area from
+  // `pointBox` and potentially skip `element.getClientRects()` for most
+  // elements, but remember that `pointBox` most likely just refers to (part of)
+  // one text node of the element, not the entire visible area of the element
+  // (as `visibleBoxes` does).
+  const area = visibleBoxes.reduce(
+    (sum, box) => sum + box.width * box.height,
+    0
+  );
+
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes link hints in fixed menus so much easier find.
   // Even if some other part than `(x, y)` is visible, don’t bother if `(x, y)`
@@ -337,7 +347,14 @@ function getMeasurements(
       element.type === "file" &&
       element.parentNode instanceof HTMLElement
     ) {
-      return getMeasurements(element.parentNode, viewports, range);
+      const measurements = getMeasurements(
+        element.parentNode,
+        viewports,
+        range
+      );
+      return measurements != null && measurements.area < area
+        ? measurements
+        : undefined;
     }
 
     // CodeMirror editor uses a tiny hidden textarea positioned at the caret.
@@ -357,17 +374,8 @@ function getMeasurements(
     }
   }
 
-  return {
-    // The coordinates at which to place the hint.
-    x,
-    y,
-    // It’s easy to think that one could optimize by calculating the area from
-    // `pointBox` and potentially skip `element.getClientRects()` for most
-    // elements, but remember that `pointBox` most likely just refers to (part
-    // of) one text node of the element, not the entire visible area of the
-    // element (as `visibleBoxes` does).
-    area: visibleBoxes.reduce((sum, box) => sum + box.width * box.height, 0),
-  };
+  // The coordinates at which to place the hint and the area of the element.
+  return { x, y, area };
 }
 
 // Turn a `ClientRect` into a `Box` using the coordinates of the topmost
