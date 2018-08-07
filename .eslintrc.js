@@ -43,6 +43,8 @@ module.exports = {
         HTMLAnchorElement: false,
         HTMLFrameElement: false,
         HTMLIFrameElement: false,
+        HTMLInputElement: false,
+        HTMLTextAreaElement: false,
         IntersectionObserver: false,
         MutationObserver: false,
         PROD: false,

@@ -329,7 +329,32 @@ function getMeasurements(
 
   // `.contains` also checks `element === elementAtPoint`.
   if (!element.contains(elementAtPoint)) {
-    return undefined;
+    // Putting a large `<input type="file">` inside a smaller wrapper element
+    // with `overflow: hidden;` seems to be a common pattern, used both on
+    // addons.mozilla.org and <https://blueimp.github.io/jQuery-File-Upload/>.
+    if (
+      element instanceof HTMLInputElement &&
+      element.type === "file" &&
+      element.parentNode instanceof HTMLElement
+    ) {
+      return getMeasurements(element.parentNode, viewports, range);
+    }
+
+    // CodeMirror editor uses a tiny hidden textarea positioned at the caret.
+    // Targeting those are the only reliable way of focusing CodeMirror
+    // editors, and doing so without moving the caret.
+    // <https://codemirror.net/demo/complete.html>
+    if (
+      !(
+        element instanceof HTMLTextAreaElement &&
+        // Use `element.clientWidth` instead of `pointBox.width` because the
+        // latter includes the width of the borders of the textarea, which are
+        // unreliable.
+        element.clientWidth <= 1
+      )
+    ) {
+      return undefined;
+    }
   }
 
   return {
