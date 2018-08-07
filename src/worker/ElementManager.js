@@ -27,6 +27,33 @@ export type VisibleElement = {|
   measurements: HintMeasurements,
 |};
 
+const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
+
+// http://w3c.github.io/aria/#widget_roles
+const CLICKABLE_ROLES = new Set([
+  "button",
+  "checkbox",
+  "gridcell",
+  "link",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "radio",
+  "searchbox",
+  "separator",
+  "spinbutton",
+  "switch",
+  "tab",
+  "textbox",
+  "treeitem",
+  // Omitted since they don’t seem useful to click:
+  // "progressbar",
+  // "scrollbar",
+  // "slider",
+  // "tabpanel",
+]);
+
 export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
@@ -57,6 +84,7 @@ export default class ElementManager {
       this.mutationObserver.observe(documentElement, {
         childList: true,
         subtree: true,
+        attributeFilter: ["href", "role"],
       });
     }
   }
@@ -116,6 +144,25 @@ export default class ElementManager {
       for (const node of record.removedNodes) {
         if (node instanceof HTMLElement) {
           this.removeElements(node);
+        }
+      }
+
+      if (record.attributeName != null) {
+        const element = record.target;
+        if (element instanceof HTMLElement) {
+          const data = getElementData(element);
+          if (data == null) {
+            if (this.elements.has(element)) {
+              this.elements.delete(element);
+              this.intersectionObserver.unobserve(element);
+            }
+          } else if (!this.bailed) {
+            this.elements.set(element, data);
+            this.intersectionObserver.observe(element);
+            if (this.elements.size > this.maxTrackedElements) {
+              this.bail();
+            }
+          }
         }
       }
     }
@@ -317,8 +364,21 @@ function getElementData(element: HTMLElement): ?{| type: ElementType |} {
 
 function getElementType(element: HTMLElement): ?ElementType {
   switch (element.nodeName) {
-    case "A":
-      return "link";
+    case "A": {
+      const hrefAttr = element.getAttribute("href");
+      return (
+        // Exclude `<a>` tags used as buttons.
+        typeof hrefAttr === "string" &&
+          hrefAttr !== "" &&
+          hrefAttr !== "#" &&
+          // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
+          // don’t make sense to open in a new tab.
+          // $FlowIgnore: Flow can't know, but `.protocol` _does_ exist here.
+          LINK_PROTOCOLS.has(element.protocol)
+          ? "link"
+          : "clickable"
+      );
+    }
     case "BUTTON":
     case "LABEL":
     case "SELECT":
@@ -331,8 +391,10 @@ function getElementType(element: HTMLElement): ?ElementType {
     case "FRAME":
     case "IFRAME":
       return "frame";
-    default:
-      return undefined;
+    default: {
+      const roleAttr = element.getAttribute("role");
+      return CLICKABLE_ROLES.has(roleAttr) ? "clickable" : undefined;
+    }
   }
 }
 

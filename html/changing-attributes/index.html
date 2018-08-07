@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>changing attributes</title>
+  </head>
+  <body>
+    <a id="a">link/button</a>
+    <button onclick="a.removeAttribute('href')">no href</button>
+    <button onclick="a.setAttribute('href', '')">empty href</button>
+    <button onclick="a.setAttribute('href', '#')">empty hash href</button>
+    <button onclick="a.setAttribute('href', '#test')">hash link</button>
+    <button onclick="a.setAttribute('href', 'https://example.com')">external link</button>
+
+    <br>
+
+    <span id="span">role</span>
+    <button onclick="span.removeAttribute('role')">no role</button>
+    <button onclick="span.setAttribute('role', '')">empty role</button>
+    <button onclick="span.setAttribute('role', 'button')">button role</button>
+    <button onclick="span.setAttribute('role', 'other')">other role</button>
+  </body>
+</html>

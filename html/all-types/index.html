@@ -6,8 +6,20 @@
   </head>
   <body>
     <h2>a</h2>
-    <p><a href="#"></a></p>
-    <p><a href="#">link</a></p>
+    <p><a>no href button</a></p>
+    <p><a href="">empty href button</a></p>
+    <p><a href="#">empty hash button</a></p>
+    <p><a href="javascript:">empty javascript button</a></p>
+    <p><a href="javascript:void 0;">void 0 button</a></p>
+    <p><a href="JAVASCRIPT:void 0;">uppercase void 0 button</a></p>
+    <p><a href="javascript:window.location='https://example.com';">redirecting button</a></p>
+    <p><a href="..">internal link</a></p>
+    <p><a href="http://example.com">http external link</a></p>
+    <p><a href="https://example.com">https external link</a></p>
+    <p><a href="#hash">hash link</a></p>
+    <p><a href="tel:123">tel link</a></p>
+    <p><a href="mailto:me@example.com">email link</a></p>
+    <p><a href="ftp://speedtest.tele2.net/">ftp link</a></p>
 
     <h2>button</h2>
     <p><button type="button"></button> </p>
@@ -116,5 +128,24 @@
     <p><label for="input">label-for:</label> <input type="text" id="input"></p>
     <p><label for="missing-input">label-for-wrong:</label> <input type="text"></p>
     <p><label>label-lone</label></p>
+
+    <h2>role attribute</h2>
+    <p role="button" onclick="alert('button')">button</p>
+    <p role="checkbox" onclick="alert('checkbox')">checkbox</p>
+    <p role="gridcell" onclick="alert('gridcell')">gridcell</p>
+    <p role="link" onclick="alert('link')">link</p>
+    <p role="menuitem" onclick="alert('menuitem')">menuitem</p>
+    <p role="menuitemcheckbox" onclick="alert('menuitemcheckbox')">menuitemcheckbox</p>
+    <p role="menuitemradio" onclick="alert('menuitemradio')">menuitemradio</p>
+    <p role="option" onclick="alert('option')">option</p>
+    <p role="radio" onclick="alert('radio')">radio</p>
+    <p role="searchbox" onclick="alert('searchbox')">searchbox</p>
+    <p role="separator" onclick="alert('separator')">separator</p>
+    <p role="spinbutton" onclick="alert('spinbutton')">spinbutton</p>
+    <p role="switch" onclick="alert('switch')">switch</p>
+    <p role="tab" onclick="alert('tab')">tab</p>
+    <p role="textbox" onclick="alert('textbox')">textbox</p>
+    <p role="treeitem" onclick="alert('treeitem')">treeitem</p>
+    <p role="other" onclick="alert('other')">other</p>
   </body>
 </html>

@@ -17,6 +17,7 @@ module.exports = {
     "flowtype-errors/show-errors": "error",
     "func-style": "off",
     "no-console": "error",
+    "no-script-url": "off",
     "prettier/prettier": "error",
     "require-await": "error",
     "sort-imports-es6-autofix/sort-imports-es6": "error",
