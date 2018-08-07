@@ -11,7 +11,7 @@ module.exports = {
   rimraf: "{src/compiled,src/icons/!(png-*)}",
   webextIgnoreFiles: [
     `*.js`,
-    `!(compiled)/**/*.js`,
+    `./!(compiled)/**/*.js`,
     "icons/*.html",
     ...browserSpecificIgnores(currentBrowser),
   ],
