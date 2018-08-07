@@ -39,7 +39,6 @@
     "rollup-plugin-flow": "1.1.1",
     "rollup-plugin-node-resolve": "3.3.0",
     "rollup-plugin-replace": "2.0.0",
-    "rollup-plugin-terser": "1.0.1",
     "web-ext": "2.8.0",
     "write": "1.0.3"
   }

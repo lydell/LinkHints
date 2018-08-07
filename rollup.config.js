@@ -6,38 +6,12 @@ const path = require("path");
 const resolve = require("rollup-plugin-node-resolve");
 const commonjs = require("rollup-plugin-commonjs");
 const replace = require("rollup-plugin-replace");
-const { terser } = require("rollup-plugin-terser");
 const rimraf = require("rimraf");
 const flow = require("rollup-plugin-flow");
 
 const config = require("./project.config");
 
 const PROD = config.browser != null;
-
-const TERSER_OPTIONS = {
-  ecma: 8,
-  compress: {
-    booleans: false,
-    comparisons: false,
-    conditionals: false,
-    hoist_props: false,
-    keep_fnames: true,
-    keep_infinity: true,
-    loops: false,
-    reduce_funcs: false,
-    reduce_vars: false,
-    sequences: false,
-    toplevel: true,
-    typeofs: false,
-  },
-  mangle: false,
-  output: {
-    beautify: true,
-    braces: true,
-    comments: /\S/,
-    indent_level: 2,
-  },
-};
 
 setup();
 
@@ -60,6 +34,7 @@ module.exports = [
     output: {
       ...entry.output,
       file: `${config.src}/${entry.output.file}`,
+      indent: false,
     },
   }));
 
@@ -86,7 +61,6 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
           JSON.stringify(new Date().toISOString(), undefined, 2),
         PROD: JSON.stringify(PROD),
       }),
-      PROD && terser(TERSER_OPTIONS),
       resolve(),
       commonjs(),
     ].filter(Boolean),
