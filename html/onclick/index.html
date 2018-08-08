@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>onclick</title>
+  </head>
+  <body>
+    <p onclick="alert(1337)" id="p">test</p>
+    <script>
+      const observer = new MutationObserver(records => {
+        console.log(records);
+      });
+      observer.observe(p, { attributeFilter: ["onclick"] });
+
+      const desc1 = Object.getOwnPropertyDescriptor(EventTarget.prototype, "addEventListener");
+      Object.defineProperty(EventTarget.prototype, "addEventListener", {
+        ...desc1,
+        value: disguise(desc1.value, function addEventListener(eventName, callback, ...args) {
+          console.log("add event", this, eventName, callback, args);
+          return Reflect.apply(desc1.value, this, [eventName, callback].concat(args));
+        }),
+      });
+
+      const desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "onclick");
+      Object.defineProperty(HTMLElement.prototype, "onclick", {
+        ...desc,
+        set: disguise(desc.set, function onclick(value) {
+          // typeof value === "function" ? yep : nope
+          console.log("set onclick", value);
+          return Reflect.apply(desc.set, this, [value]);
+        }),
+      });
+
+      p.onclick = () => console.log("assignment");
+      p.addEventListener("click", () => console.log("addEventListener"));
+
+      function disguise(orig, fn) {
+        const desc1 = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
+        Object.defineProperty(fn, "toString", {
+          ...desc1,
+          value: function toString(...args) {
+            console.log("toString called");
+            return Reflect.apply(desc1.value, orig, args);
+          }
+        });
+
+        const desc2 = Object.getOwnPropertyDescriptor(Object.prototype, "toLocaleString");
+        Object.defineProperty(fn, "toLocaleString", {
+          ...desc2,
+          value: function toLocaleString(...args) {
+            console.log("toLocaleString called");
+            return Reflect.apply(desc2.value, orig, args);
+          }
+        });
+
+        const desc3 = Object.getOwnPropertyDescriptor(Function.prototype, "toSource");
+        if (desc3 != null) {
+          Object.defineProperty(fn, "toSource", {
+            ...desc3,
+            value: function toSource(...args) {
+              console.log("toSource called");
+              return Reflect.apply(desc3.value, orig, args);
+            }
+          });
+        }
+
+        return fn;
+      }
+    </script>
+  </body>
+</html>
