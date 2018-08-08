@@ -14,55 +14,55 @@
 
       const fnMap = new Map();
 
-      const aELDesc = Object.getOwnPropertyDescriptor(EventTarget.prototype, "addEventListener");
-      const aELFnOrig = aELDesc.value;
-      const aELFn = function addEventListener(eventName, callback, ...args) {
-        console.log("add event", this, eventName, callback, args);
-        return Reflect.apply(aELFnOrig, this, [eventName, callback, ...args]);
-      };
-      Object.defineProperty(EventTarget.prototype, "addEventListener", {
-        ...aELDesc,
-        value: aELFn,
-      });
-      fnMap.set(aELFn, aELFnOrig);
+      function hookInto(obj, name, hook = undefined) {
+        const desc = Object.getOwnPropertyDescriptor(obj, name);
 
-      const oCDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "onclick");
-      const oCFnOrig = oCDesc.set;
-      const oCFn = function onclick(value) {
-        console.log("set onclick", value, typeof value === "function");
-        return Reflect.apply(oCFnOrig, this, [value]);
-      };
-      Object.defineProperty(HTMLElement.prototype, "onclick", {
-        ...oCDesc,
-        set: oCFn,
-      });
-      fnMap.set(oCFn, oCFnOrig);
+        if (desc == null) {
+          return
+        }
 
-      const tSDesc = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
-      const tSFnOrig = tSDesc.value;
-      const tSFn = function toString(...args) {
-        const fn = fnMap.get(this) || this;
-        return Reflect.apply(tSFnOrig, fn, args);
-      };
-      Object.defineProperty(Function.prototype, "toString", {
-        ...tSDesc,
-        value: tSFn,
-      });
-      fnMap.set(tSFn, tSFnOrig);
+        const prop = "value" in desc ? "value" : "set";
+        const orig = desc[prop];
 
-      const tUDesc = Object.getOwnPropertyDescriptor(Function.prototype, "toSource");
-      if (tUDesc != null) {
-        const tUFnOrig = tUDesc.value;
-        const tUFn = function toSource(...args) {
-          const fn = fnMap.get(this) || this;
-          return Reflect.apply(tUFnOrig, fn, args);
-        };
-        Object.defineProperty(Function.prototype, "toSource", {
-          ...tUDesc,
-          value: tUFn,
+        const fn = {
+          [name]:
+            hook == null
+              ? function(...args) {
+                  return Reflect.apply(orig, fnMap.get(this) || this, args);
+                }
+              : function(...args) {
+                  hook(this, ...args);
+                  return Reflect.apply(orig, this, args);
+                }
+        }[name];
+
+        Object.defineProperty(fn, "length", {
+          ...Object.getOwnPropertyDescriptor(Function.prototype, "length"),
+          value: orig.length,
         });
-        fnMap.set(tUFn, tUFnOrig);
+
+        Object.defineProperty(obj, name, {
+          ...desc,
+          [prop]: fn,
+        });
+
+        fnMap.set(fn, orig);
       }
+
+      hookInto(EventTarget.prototype, "addEventListener", (that, eventName, callback, options) => {
+        console.log("add event", that, eventName, callback, options);
+      });
+
+      hookInto(EventTarget.prototype, "removeEventListener", (that, eventName, callback, options) => {
+        console.log("remove event", that, eventName, callback, options);
+      });
+
+      hookInto(HTMLElement.prototype, "onclick", (that, value) => {
+        console.log("set onclick", that, value, typeof value === "function");
+      });
+
+      hookInto(Function.prototype, "toString");
+      hookInto(Function.prototype, "toSource");
 
       p.onclick = () => console.log("assignment");
       p.addEventListener("click", () => console.log("addEventListener"));
