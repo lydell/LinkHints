@@ -24,17 +24,18 @@
         const prop = "value" in desc ? "value" : "set";
         const orig = desc[prop];
 
-        const fn = {
-          [name]:
-            hook == null
-              ? function(...args) {
-                  return Reflect.apply(orig, fnMap.get(this) || this, args);
-                }
-              : function(...args) {
-                  hook(this, ...args);
-                  return Reflect.apply(orig, this, args);
-                }
-        }[name];
+        const fn = hook == null
+          ? {
+              [orig.name]: function(...args) {
+                return Reflect.apply(orig, fnMap.get(this) || this, args);
+              },
+            }[orig.name]
+          : {
+              [orig.name]: function(...args) {
+                hook(this, ...args);
+                return Reflect.apply(orig, this, args);
+              },
+            }[orig.name];
 
         Object.defineProperty(fn, "length", {
           ...Object.getOwnPropertyDescriptor(Function.prototype, "length"),
