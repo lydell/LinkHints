@@ -12,60 +12,60 @@
       });
       observer.observe(p, { attributeFilter: ["onclick"] });
 
-      const desc1 = Object.getOwnPropertyDescriptor(EventTarget.prototype, "addEventListener");
-      Object.defineProperty(EventTarget.prototype, "addEventListener", {
-        ...desc1,
-        value: disguise(desc1.value, function addEventListener(eventName, callback, ...args) {
-          console.log("add event", this, eventName, callback, args);
-          return Reflect.apply(desc1.value, this, [eventName, callback].concat(args));
-        }),
-      });
+      const fnMap = new Map();
 
-      const desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "onclick");
-      Object.defineProperty(HTMLElement.prototype, "onclick", {
-        ...desc,
-        set: disguise(desc.set, function onclick(value) {
-          // typeof value === "function" ? yep : nope
-          console.log("set onclick", value);
-          return Reflect.apply(desc.set, this, [value]);
-        }),
+      const aELDesc = Object.getOwnPropertyDescriptor(EventTarget.prototype, "addEventListener");
+      const aELFnOrig = aELDesc.value;
+      const aELFn = function addEventListener(eventName, callback, ...args) {
+        console.log("add event", this, eventName, callback, args);
+        return Reflect.apply(aELFnOrig, this, [eventName, callback, ...args]);
+      };
+      Object.defineProperty(EventTarget.prototype, "addEventListener", {
+        ...aELDesc,
+        value: aELFn,
       });
+      fnMap.set(aELFn, aELFnOrig);
+
+      const oCDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "onclick");
+      const oCFnOrig = oCDesc.set;
+      const oCFn = function onclick(value) {
+        console.log("set onclick", value, typeof value === "function");
+        return Reflect.apply(oCFnOrig, this, [value]);
+      };
+      Object.defineProperty(HTMLElement.prototype, "onclick", {
+        ...oCDesc,
+        set: oCFn,
+      });
+      fnMap.set(oCFn, oCFnOrig);
+
+      const tSDesc = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
+      const tSFnOrig = tSDesc.value;
+      const tSFn = function toString(...args) {
+        const fn = fnMap.get(this) || this;
+        return Reflect.apply(tSFnOrig, fn, args);
+      };
+      Object.defineProperty(Function.prototype, "toString", {
+        ...tSDesc,
+        value: tSFn,
+      });
+      fnMap.set(tSFn, tSFnOrig);
+
+      const tUDesc = Object.getOwnPropertyDescriptor(Function.prototype, "toSource");
+      if (tUDesc != null) {
+        const tUFnOrig = tUDesc.value;
+        const tUFn = function toSource(...args) {
+          const fn = fnMap.get(this) || this;
+          return Reflect.apply(tUFnOrig, fn, args);
+        };
+        Object.defineProperty(Function.prototype, "toSource", {
+          ...tUDesc,
+          value: tUFn,
+        });
+        fnMap.set(tUFn, tUFnOrig);
+      }
 
       p.onclick = () => console.log("assignment");
       p.addEventListener("click", () => console.log("addEventListener"));
-
-      function disguise(orig, fn) {
-        const desc1 = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
-        Object.defineProperty(fn, "toString", {
-          ...desc1,
-          value: function toString(...args) {
-            console.log("toString called");
-            return Reflect.apply(desc1.value, orig, args);
-          }
-        });
-
-        const desc2 = Object.getOwnPropertyDescriptor(Object.prototype, "toLocaleString");
-        Object.defineProperty(fn, "toLocaleString", {
-          ...desc2,
-          value: function toLocaleString(...args) {
-            console.log("toLocaleString called");
-            return Reflect.apply(desc2.value, orig, args);
-          }
-        });
-
-        const desc3 = Object.getOwnPropertyDescriptor(Function.prototype, "toSource");
-        if (desc3 != null) {
-          Object.defineProperty(fn, "toSource", {
-            ...desc3,
-            value: function toSource(...args) {
-              console.log("toSource called");
-              return Reflect.apply(desc3.value, orig, args);
-            }
-          });
-        }
-
-        return fn;
-      }
     </script>
   </body>
 </html>
