@@ -57,6 +57,7 @@ module.exports = () =>
         js: [config.renderer.output],
       },
     ],
+    web_accessible_resources: [config.injected.output],
   });
 
 function toJSON(obj: any): string {

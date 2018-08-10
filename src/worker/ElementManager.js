@@ -1,6 +1,12 @@
 // @flow
 
-import { log } from "../shared/main";
+import { bind, log } from "../shared/main";
+
+import {
+  CLICKABLE_EVENT,
+  RESET_INJECTION,
+  UNCLICKABLE_EVENT,
+} from "./constants";
 
 export type ElementType = "link" | "clickable" | "frame";
 
@@ -58,6 +64,7 @@ export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
+  elementsWithClickListeners: WeakSet<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   bailed: boolean;
@@ -67,6 +74,7 @@ export default class ElementManager {
 
     this.elements = new Map();
     this.visibleElements = new Set();
+    this.elementsWithClickListeners = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
       this.onIntersection.bind(this),
@@ -75,6 +83,8 @@ export default class ElementManager {
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
     this.bailed = false;
+
+    bind(this, [this.onClickableElement, this.onUnclickableElement]);
   }
 
   start() {
@@ -84,8 +94,15 @@ export default class ElementManager {
       this.mutationObserver.observe(documentElement, {
         childList: true,
         subtree: true,
-        attributeFilter: ["href", "role"],
+        attributeFilter: ["href", "role", "onclick"],
       });
+      window.addEventListener(CLICKABLE_EVENT, this.onClickableElement, true);
+      window.addEventListener(
+        UNCLICKABLE_EVENT,
+        this.onUnclickableElement,
+        true
+      );
+      injectScript();
     }
   }
 
@@ -94,6 +111,15 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
+    // WeakSet cannot be cleared manually.
+    // this.elementsWithClickListeners.clear();
+    window.removeEventListener(CLICKABLE_EVENT, this.onClickableElement, true);
+    window.removeEventListener(
+      UNCLICKABLE_EVENT,
+      this.onUnclickableElement,
+      true
+    );
+    window.postMessage(RESET_INJECTION, "*");
   }
 
   // Stop tracking everything except frames (up to `maxTrackedElements` of them).
@@ -150,20 +176,40 @@ export default class ElementManager {
       if (record.attributeName != null) {
         const element = record.target;
         if (element instanceof HTMLElement) {
-          const data = getElementData(element);
-          if (data == null) {
-            if (this.elements.has(element)) {
-              this.elements.delete(element);
-              this.intersectionObserver.unobserve(element);
-            }
-          } else if (!this.bailed) {
-            this.elements.set(element, data);
-            this.intersectionObserver.observe(element);
-            if (this.elements.size > this.maxTrackedElements) {
-              this.bail();
-            }
-          }
+          this.checkElement(element);
         }
+      }
+    }
+  }
+
+  onClickableElement(event: Event) {
+    const element = event.target;
+    if (element instanceof HTMLElement) {
+      this.elementsWithClickListeners.add(element);
+      this.checkElement(element);
+    }
+  }
+
+  onUnclickableElement(event: Event) {
+    const element = event.target;
+    if (element instanceof HTMLElement) {
+      this.elementsWithClickListeners.delete(element);
+      this.checkElement(element);
+    }
+  }
+
+  checkElement(element: HTMLElement) {
+    const data = this.getElementData(element);
+    if (data == null) {
+      if (this.elements.has(element)) {
+        this.elements.delete(element);
+        this.intersectionObserver.unobserve(element);
+      }
+    } else if (!this.bailed) {
+      this.elements.set(element, data);
+      this.intersectionObserver.observe(element);
+      if (this.elements.size > this.maxTrackedElements) {
+        this.bail();
       }
     }
   }
@@ -172,7 +218,7 @@ export default class ElementManager {
     let { size } = this.elements;
     const elements = [parent, ...parent.querySelectorAll("*")];
     for (const element of elements) {
-      const data = getElementData(element);
+      const data = this.getElementData(element);
       if (data != null && (!this.bailed || data.type === "frame")) {
         this.elements.set(element, data);
         this.intersectionObserver.observe(element);
@@ -190,6 +236,7 @@ export default class ElementManager {
     for (const element of elements) {
       if (this.elements.has(element)) {
         this.elements.delete(element);
+        this.elementsWithClickListeners.delete(element);
         this.intersectionObserver.unobserve(element);
       }
     }
@@ -209,7 +256,7 @@ export default class ElementManager {
 
     return Array.from(candidates, element => {
       const data = this.bailed
-        ? getElementData(element)
+        ? this.getElementData(element)
         : this.elements.get(element);
 
       if (data == null) {
@@ -246,6 +293,63 @@ export default class ElementManager {
           ? element
           : undefined
     ).filter(Boolean);
+  }
+
+  getElementData(element: HTMLElement): ?{| type: ElementType |} {
+    const type = this.getElementType(element);
+    return type == null ? undefined : { type };
+  }
+
+  getElementType(element: HTMLElement): ?ElementType {
+    switch (element.nodeName) {
+      case "A": {
+        const hrefAttr = element.getAttribute("href");
+        return (
+          // Exclude `<a>` tags used as buttons.
+          typeof hrefAttr === "string" &&
+            hrefAttr !== "" &&
+            hrefAttr !== "#" &&
+            // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
+            // don’t make sense to open in a new tab.
+            // $FlowIgnore: Flow can't know, but `.protocol` _does_ exist here.
+            LINK_PROTOCOLS.has(element.protocol)
+            ? "link"
+            : "clickable"
+        );
+      }
+      case "BUTTON":
+      case "LABEL":
+      case "SELECT":
+      case "SUMMARY":
+      case "TEXTAREA":
+        return "clickable";
+      case "INPUT":
+        // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
+        return element.type === "hidden" ? undefined : "clickable";
+      case "FRAME":
+      case "IFRAME":
+        return "frame";
+      default: {
+        const document = element.ownerDocument;
+
+        // `<html>` and `<body>` might have click listeners or role attributes
+        // etc. but we never want hints for them.
+        if (element === document.documentElement || element === document.body) {
+          return undefined;
+        }
+
+        const roleAttr = element.getAttribute("role");
+        if (
+          CLICKABLE_ROLES.has(roleAttr) ||
+          typeof element.onclick === "function" ||
+          this.elementsWithClickListeners.has(element)
+        ) {
+          return "clickable";
+        }
+
+        return undefined;
+      }
+    }
   }
 }
 
@@ -410,47 +514,6 @@ function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
       };
 }
 
-function getElementData(element: HTMLElement): ?{| type: ElementType |} {
-  const type = getElementType(element);
-  return type == null ? undefined : { type };
-}
-
-function getElementType(element: HTMLElement): ?ElementType {
-  switch (element.nodeName) {
-    case "A": {
-      const hrefAttr = element.getAttribute("href");
-      return (
-        // Exclude `<a>` tags used as buttons.
-        typeof hrefAttr === "string" &&
-          hrefAttr !== "" &&
-          hrefAttr !== "#" &&
-          // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
-          // don’t make sense to open in a new tab.
-          // $FlowIgnore: Flow can't know, but `.protocol` _does_ exist here.
-          LINK_PROTOCOLS.has(element.protocol)
-          ? "link"
-          : "clickable"
-      );
-    }
-    case "BUTTON":
-    case "LABEL":
-    case "SELECT":
-    case "SUMMARY":
-    case "TEXTAREA":
-      return "clickable";
-    case "INPUT":
-      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-      return element.type === "hidden" ? undefined : "clickable";
-    case "FRAME":
-    case "IFRAME":
-      return "frame";
-    default: {
-      const roleAttr = element.getAttribute("role");
-      return CLICKABLE_ROLES.has(roleAttr) ? "clickable" : undefined;
-    }
-  }
-}
-
 function getFirstNonEmptyTextNode(
   element: HTMLElement
 ): ?{| node: Text, index: number |} {
@@ -468,4 +531,18 @@ function getFirstNonEmptyTextNode(
     }
   }
   return undefined;
+}
+
+function injectScript() {
+  const { documentElement } = document;
+
+  if (documentElement == null) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  // It seems like browser extension URLs never violate CSP, which is good.
+  script.src = browser.extension.getURL(INJECTED_JS_FILE);
+  documentElement.append(script);
+  script.remove();
 }

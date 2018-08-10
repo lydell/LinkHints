@@ -20,6 +20,7 @@ module.exports = [
   js(config.setup),
   js(config.background),
   js(config.worker),
+  js(config.injected),
   js(config.renderer),
   js(config.popup),
   template(config.manifest),
@@ -58,7 +59,15 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
         BROWSER:
           config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
         BUILD_TIME: () =>
-          JSON.stringify(new Date().toISOString(), undefined, 2),
+          JSON.stringify(
+            // Remove milliseconds because this runs several times a few times a
+            // few milliseconds apart and the value needs to stay the same.
+            // Seconds should be enough.
+            new Date().toISOString().replace(/\..+$/, ""),
+            undefined,
+            2
+          ),
+        INJECTED_JS_FILE: JSON.stringify(config.injected.output),
         PROD: JSON.stringify(PROD),
       }),
       resolve(),

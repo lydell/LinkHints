@@ -6,6 +6,8 @@ declare var BROWSER: Browser;
 
 declare var BUILD_TIME: string;
 
+declare var INJECTED_JS_FILE: string;
+
 declare var PROD: boolean;
 
 declare type ConnectInfo = {|
@@ -92,6 +94,9 @@ declare var browser: {|
       path: { [string]: string },
       tabId?: number,
     |}): Promise<void>,
+  |},
+  extension: {|
+    getURL(path: string): string,
   |},
   runtime: {|
     connect: (() => Port) &
