@@ -64,7 +64,7 @@ export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
-  elementsWithClickListeners: WeakSet<HTMLElement>;
+  elementsWithClickListeners: Set<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   bailed: boolean;
@@ -74,7 +74,7 @@ export default class ElementManager {
 
     this.elements = new Map();
     this.visibleElements = new Set();
-    this.elementsWithClickListeners = new WeakSet();
+    this.elementsWithClickListeners = new Set();
 
     this.intersectionObserver = new IntersectionObserver(
       this.onIntersection.bind(this),
@@ -111,8 +111,7 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
-    // WeakSet cannot be cleared manually.
-    // this.elementsWithClickListeners.clear();
+    this.elementsWithClickListeners.clear();
     window.removeEventListener(CLICKABLE_EVENT, this.onClickableElement, true);
     window.removeEventListener(
       UNCLICKABLE_EVENT,
