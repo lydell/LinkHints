@@ -14,15 +14,15 @@ const fnMap = new Map();
 const resetFns = [];
 
 // When this was written, <https://jsfiddle.net/> overrides `Event` with a buggy
-// implementation that throws an error. To work around that, make references to
-// original objects that are used in callbacks that are called at a later time,
-// so the page can't interfere.
+// implementation that throws an error. To work around that, make sure that the
+// page can't interfere with the crucial parts by saving copies of important
+// things. Remember that this runs _before_ any page scripts.
 const Event2 = Event;
 const HTMLElement2 = HTMLElement;
-const Object2 = Object;
-const Reflect2 = Reflect;
-const console2 = console;
+const { error: logError } = console;
 const { dispatchEvent } = EventTarget.prototype;
+const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
+const { get: mapGet } = Map.prototype;
 
 // Reset the overridden methods when the extension is shut down. This listener
 // is registered before we override in order not to trigger our hook.
@@ -41,7 +41,7 @@ window.addEventListener("message", reset, true);
 // 2. We don't want developers to see strange things in the console when they
 //    debug stuff.
 function hookInto(obj: Object, name: string, hook: ?Function = undefined) {
-  const desc = Object.getOwnPropertyDescriptor(obj, name);
+  const desc = getOwnPropertyDescriptor(obj, name);
 
   // Chrome doesn't support `toSource`.
   if (desc == null) {
@@ -65,7 +65,7 @@ function hookInto(obj: Object, name: string, hook: ?Function = undefined) {
             // In the cases where no hook is provided we just want to make sure
             // that the method (such as `toString`) is called with the
             // _original_ function, not the overriding function.
-            return Reflect2.apply(orig, fnMap.get(this) || this, args);
+            return apply(orig, apply(mapGet, fnMap, [this]) || this, args);
           },
         }[orig.name]
       : {
@@ -79,35 +79,35 @@ function hookInto(obj: Object, name: string, hook: ?Function = undefined) {
               hook(this, ...args);
             } catch (error) {
               // Don't use the usual `log` function here, too keep this file small.
-              console2.error(
+              logError(
                 `[synth]: Failed to run hook for ${name} on`,
                 obj,
                 error
               );
             }
-            return Reflect2.apply(orig, this, args);
+            return apply(orig, this, args);
           },
         }[orig.name];
 
-  // Save the overriding and original function so we can map overriding to
+  // Save the overriding and original functions so we can map overriding to
   // original in the case with no `hook` above.
   fnMap.set(fn, orig);
 
   // Make sure that `.length` is correct.
-  Object.defineProperty(fn, "length", {
-    ...Object.getOwnPropertyDescriptor(Function.prototype, "length"),
+  defineProperty(fn, "length", {
+    ...getOwnPropertyDescriptor(Function.prototype, "length"),
     value: orig.length,
   });
 
   // Finally override the method with the created function.
-  Object.defineProperty(obj, name, {
+  defineProperty(obj, name, {
     ...desc,
     [prop]: fn,
   });
 
   // Save a function that will reset the method back again.
   resetFns.push(() => {
-    Object2.defineProperty(obj, name, {
+    defineProperty(obj, name, {
       ...desc,
       [prop]: orig,
     });
