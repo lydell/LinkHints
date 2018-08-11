@@ -293,9 +293,9 @@ function stringifyOptions(options: mixed): string {
 }
 
 function reportClickable(element: HTMLElement) {
-  dispatchEvent.call(element, new Event2(CLICKABLE_EVENT));
+  apply(dispatchEvent, element, [new Event2(CLICKABLE_EVENT)]);
 }
 
 function reportUnclickable(element: HTMLElement) {
-  dispatchEvent.call(element, new Event2(UNCLICKABLE_EVENT));
+  apply(dispatchEvent, element, [new Event2(UNCLICKABLE_EVENT)]);
 }
