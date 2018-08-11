@@ -123,3 +123,45 @@ export function unreachable(value: empty, ...args: Array<any>) {
   )}`;
   throw new Error(message);
 }
+
+export function addEventListener(
+  target: EventTarget,
+  eventName: string,
+  listener: Function,
+  options: Object = {}
+): () => void {
+  const fullOptions = { capture: true, passive: true, ...options };
+  target.addEventListener(eventName, listener, fullOptions);
+  return () => {
+    target.removeEventListener(eventName, listener, fullOptions);
+  };
+}
+
+export function addListener(
+  target: { addListener: Function => void, removeListener: Function => void },
+  listener: Function
+): () => void {
+  target.addListener(listener);
+  return () => {
+    target.removeListener(listener);
+  };
+}
+
+export class Resets {
+  _callbacks: Array<() => any>;
+
+  constructor() {
+    this._callbacks = [];
+  }
+
+  add(...callbacks: Array<() => any>) {
+    this._callbacks.push(...callbacks);
+  }
+
+  reset() {
+    for (const callback of this._callbacks) {
+      callback();
+    }
+    this._callbacks = [];
+  }
+}

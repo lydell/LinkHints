@@ -1,6 +1,13 @@
 // @flow
 
-import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
+import {
+  LOADED_KEY,
+  Resets,
+  addListener,
+  bind,
+  log,
+  unreachable,
+} from "../shared/main";
 import type {
   ElementWithHint,
   FromBackground,
@@ -64,9 +71,11 @@ const CSS = `
 
 export default class RendererProgram {
   css: string;
+  resets: Resets;
 
   constructor() {
     this.css = CSS;
+    this.resets = new Resets();
 
     bind(this, [
       [this.onMessage, { catch: true }],
@@ -82,7 +91,7 @@ export default class RendererProgram {
     // automatically from `content_scripts` in manifest.json.
     window[LOADED_KEY] = true;
 
-    browser.runtime.onMessage.addListener(this.onMessage);
+    this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     // In Chrome, content scripts continue to live after the extension has been
     // disabled, uninstalled or reloaded. A way to detect this is to make a
@@ -107,7 +116,7 @@ export default class RendererProgram {
 
   stop() {
     window[LOADED_KEY] = false;
-    browser.runtime.onMessage.removeListener(this.onMessage);
+    this.resets.reset();
     this.unrender();
   }
 

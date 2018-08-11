@@ -1,6 +1,13 @@
 // @flow
 
-import { bind, log, unreachable } from "../shared/main";
+import {
+  Resets,
+  addEventListener,
+  addListener,
+  bind,
+  log,
+  unreachable,
+} from "../shared/main";
 import type {
   FromBackground,
   FromWorker,
@@ -27,6 +34,7 @@ export default class WorkerProgram {
   elementManager: ElementManager;
   elements: ?Array<VisibleElement>;
   oneTimeWindowMessageToken: ?string;
+  resets: Resets;
 
   constructor() {
     this.keyboardShortcuts = [];
@@ -39,6 +47,7 @@ export default class WorkerProgram {
     });
     this.elements = undefined;
     this.oneTimeWindowMessageToken = undefined;
+    this.resets = new Resets();
 
     bind(this, [
       [this.onKeydown, { catch: true }],
@@ -52,9 +61,11 @@ export default class WorkerProgram {
   }
 
   start() {
-    browser.runtime.onMessage.addListener(this.onMessage);
-    window.addEventListener("keydown", this.onKeydown, true);
-    window.addEventListener("message", this.onWindowMessage, true);
+    this.resets.add(
+      addListener(browser.runtime.onMessage, this.onMessage),
+      addEventListener(window, "keydown", this.onKeydown, { passive: false }),
+      addEventListener(window, "message", this.onWindowMessage)
+    );
     this.elementManager.start();
 
     // See `RendererProgram` about this port stuff.
@@ -66,9 +77,7 @@ export default class WorkerProgram {
   }
 
   stop() {
-    browser.runtime.onMessage.removeListener(this.onMessage);
-    window.removeEventListener("keydown", this.onKeydown, true);
-    window.removeEventListener("message", this.onWindowMessage, true);
+    this.resets.reset();
     this.elementManager.stop();
   }
 

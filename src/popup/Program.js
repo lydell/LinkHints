@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, log, unreachable } from "../shared/main";
+import { Resets, addListener, bind, log, unreachable } from "../shared/main";
 import type {
   FromBackground,
   FromPopup,
@@ -11,7 +11,11 @@ import type {
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
+  resets: Resets;
+
   constructor() {
+    this.resets = new Resets();
+
     bind(this, [
       [this.onMessage, { catch: true }],
       [this.sendMessage, { catch: true }],
@@ -21,13 +25,13 @@ export default class PopupProgram {
   }
 
   start() {
-    browser.runtime.onMessage.addListener(this.onMessage);
+    this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     this.sendMessage({ type: "PopupScriptAdded" });
   }
 
   stop() {
-    browser.runtime.onMessage.removeListener(this.onMessage);
+    this.resets.reset();
   }
 
   async sendMessage(message: FromPopup): Promise<void> {

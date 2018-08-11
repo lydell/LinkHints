@@ -1,6 +1,6 @@
 // @flow
 
-import { bind, log } from "../shared/main";
+import { Resets, addEventListener, bind, log } from "../shared/main";
 
 import {
   CLICKABLE_EVENT,
@@ -68,6 +68,7 @@ export default class ElementManager {
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   bailed: boolean;
+  resets: Resets;
 
   constructor({ maxTrackedElements }: {| maxTrackedElements: number |}) {
     this.maxTrackedElements = maxTrackedElements;
@@ -84,6 +85,8 @@ export default class ElementManager {
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
     this.bailed = false;
 
+    this.resets = new Resets();
+
     bind(this, [this.onClickableElement, this.onUnclickableElement]);
   }
 
@@ -96,11 +99,9 @@ export default class ElementManager {
         subtree: true,
         attributeFilter: ["href", "role", "onclick"],
       });
-      window.addEventListener(CLICKABLE_EVENT, this.onClickableElement, true);
-      window.addEventListener(
-        UNCLICKABLE_EVENT,
-        this.onUnclickableElement,
-        true
+      this.resets.add(
+        addEventListener(window, CLICKABLE_EVENT, this.onClickableElement),
+        addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElement)
       );
       injectScript();
     }
@@ -112,12 +113,7 @@ export default class ElementManager {
     this.elements.clear();
     this.visibleElements.clear();
     this.elementsWithClickListeners.clear();
-    window.removeEventListener(CLICKABLE_EVENT, this.onClickableElement, true);
-    window.removeEventListener(
-      UNCLICKABLE_EVENT,
-      this.onUnclickableElement,
-      true
-    );
+    this.resets.reset();
     window.postMessage(RESET_INJECTION, "*");
   }
 

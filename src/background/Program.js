@@ -2,7 +2,14 @@
 
 import huffman from "n-ary-huffman";
 
-import { LOADED_KEY, bind, log, unreachable } from "../shared/main";
+import {
+  LOADED_KEY,
+  Resets,
+  addListener,
+  bind,
+  log,
+  unreachable,
+} from "../shared/main";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -57,6 +64,7 @@ export default class BackgroundProgram {
   hintChars: string;
   tabState: Map<number, TabState>;
   updateIconTimeoutIds: Map<number, TimeoutID>;
+  resets: Resets;
 
   constructor({
     normalKeyboardShortcuts,
@@ -72,6 +80,7 @@ export default class BackgroundProgram {
     this.hintChars = hintChars;
     this.tabState = new Map();
     this.updateIconTimeoutIds = new Map();
+    this.resets = new Resets();
 
     bind(this, [
       [this.onKeyboardShortcut, { catch: true }],
@@ -98,10 +107,12 @@ export default class BackgroundProgram {
 
     const tabs = await browser.tabs.query({});
 
-    browser.runtime.onMessage.addListener(this.onMessage);
-    browser.runtime.onConnect.addListener(this.onConnect);
-    browser.tabs.onCreated.addListener(this.onTabCreated);
-    browser.tabs.onRemoved.addListener(this.onTabRemoved);
+    this.resets.add(
+      addListener(browser.runtime.onMessage, this.onMessage),
+      addListener(browser.runtime.onConnect, this.onConnect),
+      addListener(browser.tabs.onCreated, this.onTabCreated),
+      addListener(browser.tabs.onRemoved, this.onTabRemoved)
+    );
 
     for (const tab of tabs) {
       this.updateIcon(tab.id);
@@ -111,10 +122,7 @@ export default class BackgroundProgram {
   }
 
   stop() {
-    browser.runtime.onMessage.removeListener(this.onMessage);
-    browser.runtime.onConnect.removeListener(this.onConnect);
-    browser.tabs.onCreated.removeListener(this.onTabCreated);
-    browser.tabs.onRemoved.removeListener(this.onTabRemoved);
+    this.resets.reset();
   }
 
   async sendWorkerMessage(
