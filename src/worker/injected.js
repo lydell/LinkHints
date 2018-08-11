@@ -242,29 +242,39 @@ hookInto(
   }
 );
 
-hookInto(HTMLElement.prototype, "onclick", (element: mixed, value: mixed) => {
-  // If the element has click listeners added via `.addEventListener` changing
-  // `.onclick` can't affect whether the element has at least one click
-  // listener.
-  if (
-    !(element instanceof HTMLElement2) ||
-    clickListenersByElement.has(element)
-  ) {
-    return;
-  }
-
-  const hasListenerAlready = typeof element.onclick === "function";
-
-  if (typeof value === "function") {
-    if (!hasListenerAlready) {
-      // The element went from no click listeners to one.
-      reportClickable(element);
+hookInto(
+  HTMLElement.prototype,
+  "onclick",
+  async (element: mixed, value: mixed) => {
+    // If the element has click listeners added via `.addEventListener` changing
+    // `.onclick` can't affect whether the element has at least one click
+    // listener.
+    if (
+      !(element instanceof HTMLElement2) ||
+      clickListenersByElement.has(element)
+    ) {
+      return;
     }
-  } else if (hasListenerAlready) {
-    // The element went from one click listeners to none.
-    reportUnclickable(element);
+
+    const hasListenerAlready = typeof element.onclick === "function";
+
+    // Let the setter take effect. Then dispatch events (if any). The dispatched
+    // event would reach the ElementManager _before_ the new `.onclick` value is
+    // actually set otherwise, which could make it take the wrong decision on
+    // clickability.
+    await undefined;
+
+    if (typeof value === "function") {
+      if (!hasListenerAlready) {
+        // The element went from no click listeners to one.
+        reportClickable(element);
+      }
+    } else if (hasListenerAlready) {
+      // The element went from one click listeners to none.
+      reportUnclickable(element);
+    }
   }
-});
+);
 
 // Make sure that `Function.prototype.toString.call(element.addEventListener)`
 // returns "[native code]". This is used by lodash's `_.isNative`.
