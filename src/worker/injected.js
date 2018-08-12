@@ -74,14 +74,14 @@ export default () => {
                 // Remember that `hook` can be called with _anything,_ because the
                 // user can pass invalid arguments and use `.call`.
                 // $FlowIgnore: `hook` isn't undefined here.
-                hook(this, ...args);
+                const result = hook(this, ...args);
+                if (result != null && typeof result.then === "function") {
+                  result.catch(error => {
+                    logHookError(error, obj, name);
+                  });
+                }
               } catch (error) {
-                // Don't use the usual `log` function here, too keep this file small.
-                logError(
-                  `[synth]: Failed to run hook for ${name} on`,
-                  obj,
-                  error
-                );
+                logHookError(error, obj, name);
               }
               return apply(orig, this, args);
             },
@@ -110,6 +110,11 @@ export default () => {
         [prop]: orig,
       });
     });
+  }
+
+  function logHookError(error: Error, obj: Object, name: string) {
+    // Don't use the usual `log` function here, too keep this file small.
+    logError(`[synth]: Failed to run hook for ${name} on`, obj, error);
   }
 
   function reset(event: MessageEvent) {
