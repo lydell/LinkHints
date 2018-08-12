@@ -306,7 +306,7 @@ export default () => {
 
   function reportUnclickable(element: HTMLElement) {
     apply(dispatchEvent, window, [
-      new CustomEvent2(INJECTED_UNCLICKABLE_EVENT, { element }),
+      new CustomEvent2(INJECTED_UNCLICKABLE_EVENT, { detail: { element } }),
     ]);
   }
 };
