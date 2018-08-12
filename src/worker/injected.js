@@ -74,7 +74,7 @@ export default () => {
                 // Remember that `hook` can be called with _anything,_ because the
                 // user can pass invalid arguments and use `.call`.
                 // $FlowIgnore: `hook` isn't undefined here.
-                const result = hook(this, ...args);
+                const result = hook(orig, this, ...args);
                 if (result != null && typeof result.then === "function") {
                   result.catch(error => {
                     logHookError(error, obj, name);
@@ -138,7 +138,13 @@ export default () => {
   hookInto(
     EventTarget.prototype,
     "addEventListener",
-    (element: mixed, eventName: mixed, listener: mixed, options: mixed) => {
+    (
+      orig: Function,
+      element: mixed,
+      eventName: mixed,
+      listener: mixed,
+      options: mixed
+    ) => {
       if (
         !(
           eventName === "click" &&
@@ -150,6 +156,22 @@ export default () => {
         )
       ) {
         return;
+      }
+
+      // If `{ once: true }` is used, listen once ourselves so we can track the
+      // removal of the listener when it has triggered.
+      if (
+        typeof options === "object" &&
+        options != null &&
+        Boolean(options.once)
+      ) {
+        apply(orig, element, [
+          eventName,
+          () => {
+            onRemoveEventListener(element, eventName, listener, options);
+          },
+          options,
+        ]);
       }
 
       const optionsString = stringifyOptions(options);
@@ -190,65 +212,74 @@ export default () => {
   hookInto(
     EventTarget.prototype,
     "removeEventListener",
-    (element: mixed, eventName: mixed, listener: mixed, options: mixed) => {
-      if (
-        !(
-          eventName === "click" &&
-          element instanceof HTMLElement2 &&
-          (typeof listener === "function" ||
-            (typeof listener === "object" &&
-              listener != null &&
-              typeof listener.handleEvent === "function"))
-        )
-      ) {
-        return;
-      }
+    (orig: Function, ...args) => {
+      onRemoveEventListener(...args);
+    }
+  );
 
-      const optionsString = stringifyOptions(options);
-      const optionsByListener = clickListenersByElement.get(element);
+  function onRemoveEventListener(
+    element: mixed,
+    eventName: mixed,
+    listener: mixed,
+    options: mixed
+  ) {
+    if (
+      !(
+        eventName === "click" &&
+        element instanceof HTMLElement2 &&
+        (typeof listener === "function" ||
+          (typeof listener === "object" &&
+            listener != null &&
+            typeof listener.handleEvent === "function"))
+      )
+    ) {
+      return;
+    }
 
-      // The element has no click listeners.
-      if (optionsByListener == null) {
-        return;
-      }
+    const optionsString = stringifyOptions(options);
+    const optionsByListener = clickListenersByElement.get(element);
 
-      const optionsSet = optionsByListener.get(listener);
+    // The element has no click listeners.
+    if (optionsByListener == null) {
+      return;
+    }
 
-      // The element has click listeners, but not with `listener` as a callback.
-      if (optionsSet == null) {
-        return;
-      }
+    const optionsSet = optionsByListener.get(listener);
 
-      // The element has `listener` as a click callback, but with different
-      // options.
-      if (!optionsSet.has(optionsString)) {
-        return;
-      }
+    // The element has click listeners, but not with `listener` as a callback.
+    if (optionsSet == null) {
+      return;
+    }
 
-      // Match! Remove the current options.
-      optionsSet.delete(optionsString);
+    // The element has `listener` as a click callback, but with different
+    // options.
+    if (!optionsSet.has(optionsString)) {
+      return;
+    }
 
-      // If that was the last options for `listener`, remove `listener`.
-      if (optionsSet.size === 0) {
-        optionsByListener.delete(listener);
+    // Match! Remove the current options.
+    optionsSet.delete(optionsString);
 
-        // If that was the last `listener` for `element`, remove `element`.
-        if (optionsByListener.size === 0) {
-          clickListenersByElement.delete(element);
+    // If that was the last options for `listener`, remove `listener`.
+    if (optionsSet.size === 0) {
+      optionsByListener.delete(listener);
 
-          if (typeof element.onclick !== "function") {
-            // The element went from one listener to none.
-            reportUnclickable(element);
-          }
+      // If that was the last `listener` for `element`, remove `element`.
+      if (optionsByListener.size === 0) {
+        clickListenersByElement.delete(element);
+
+        if (typeof element.onclick !== "function") {
+          // The element went from one listener to none.
+          reportUnclickable(element);
         }
       }
     }
-  );
+  }
 
   hookInto(
     HTMLElement.prototype,
     "onclick",
-    async (element: mixed, value: mixed) => {
+    async (orig: Function, element: mixed, value: mixed) => {
       // If the element has click listeners added via `.addEventListener` changing
       // `.onclick` can't affect whether the element has at least one click
       // listener.
