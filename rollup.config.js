@@ -20,7 +20,6 @@ module.exports = [
   js(config.setup),
   js(config.background),
   js(config.worker),
-  js(config.injected),
   js(config.renderer),
   js(config.popup),
   template(config.manifest),
@@ -55,21 +54,7 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
     },
     plugins: [
       flow({ pretty: true }),
-      replace({
-        BROWSER:
-          config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
-        BUILD_TIME: () =>
-          JSON.stringify(
-            // Remove milliseconds because this runs several times a few times a
-            // few milliseconds apart and the value needs to stay the same.
-            // Seconds should be enough.
-            new Date().toISOString().replace(/\..+$/, ""),
-            undefined,
-            2
-          ),
-        INJECTED_JS_FILE: JSON.stringify(config.injected.output),
-        PROD: JSON.stringify(PROD),
-      }),
+      replace(makeGlobals()),
       resolve(),
       commonjs(),
     ].filter(Boolean),
@@ -148,4 +133,23 @@ function copy({ input, output } /* : {| input: string, output: string, |} */) {
       },
     ],
   };
+}
+
+function makeGlobals() {
+  return {
+    BROWSER:
+      config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
+    BUILD_TIME: () => JSON.stringify(makeBuildTime()),
+    // If a malicious site sends these events/messages it doesn't hurt much. All
+    // the page could do is cause false positives or disable detection of click
+    // events altogeher.
+    INJECTED_CLICKABLE_EVENT: JSON.stringify("__SynthWebExt_Clickable"),
+    INJECTED_UNCLICKABLE_EVENT: JSON.stringify("__SynthWebExt_Unclickable"),
+    INJECTED_RESET: JSON.stringify("__SynthWebExt_ResetInjection"),
+    PROD: JSON.stringify(PROD),
+  };
+}
+
+function makeBuildTime() {
+  return new Date().toISOString().replace(/\..+$/, "");
 }

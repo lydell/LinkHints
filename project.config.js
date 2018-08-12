@@ -45,10 +45,6 @@ module.exports = {
     input: "worker/main.js",
     output: "compiled/worker.js",
   },
-  injected: {
-    input: "worker/injected.js",
-    output: "compiled/injected.js",
-  },
   renderer: {
     input: "renderer/main.js",
     output: "compiled/renderer.js",

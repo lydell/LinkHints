@@ -7,8 +7,8 @@
   <body>
     <p id="p">hostile click</p>
     <script>
-      window.Event = function () {
-        throw new Error("buggy Event implementation");
+      window.CustomEvent = function () {
+        throw new Error("buggy CustomEvent implementation");
       };
       Reflect.apply = function () {
         throw new Error("buggy Reflect.apply implementation");

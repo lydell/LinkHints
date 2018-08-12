@@ -2,11 +2,7 @@
 
 import { Resets, addEventListener, bind, log } from "../shared/main";
 
-import {
-  CLICKABLE_EVENT,
-  RESET_INJECTION,
-  UNCLICKABLE_EVENT,
-} from "./constants";
+import injected from "./injected";
 
 export type ElementType = "link" | "clickable" | "frame";
 
@@ -100,8 +96,16 @@ export default class ElementManager {
         attributeFilter: ["href", "role", "onclick"],
       });
       this.resets.add(
-        addEventListener(window, CLICKABLE_EVENT, this.onClickableElement),
-        addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElement)
+        addEventListener(
+          window,
+          INJECTED_CLICKABLE_EVENT,
+          this.onClickableElement
+        ),
+        addEventListener(
+          window,
+          INJECTED_UNCLICKABLE_EVENT,
+          this.onUnclickableElement
+        )
       );
       injectScript();
     }
@@ -114,7 +118,7 @@ export default class ElementManager {
     this.visibleElements.clear();
     this.elementsWithClickListeners.clear();
     this.resets.reset();
-    window.postMessage(RESET_INJECTION, "*");
+    window.postMessage(INJECTED_RESET, "*");
   }
 
   // Stop tracking everything except frames (up to `maxTrackedElements` of them).
@@ -177,16 +181,16 @@ export default class ElementManager {
     }
   }
 
-  onClickableElement(event: Event) {
-    const element = event.target;
+  onClickableElement(event: CustomEvent) {
+    const { element } = event.detail;
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.add(element);
       this.checkElement(element);
     }
   }
 
-  onUnclickableElement(event: Event) {
-    const element = event.target;
+  onUnclickableElement(event: CustomEvent) {
+    const { element } = event.detail;
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.delete(element);
       this.checkElement(element);
@@ -535,9 +539,42 @@ function injectScript() {
     return;
   }
 
+  const code = `(${injected.toString()})()`;
+
+  // In Firefox, `eval !== window.eval`. `eval` executes in the content script
+  // context, while `window.eval` executes in the page context. So in Firefox we
+  // can use `window.eval` instead of a script tag.
+  let hasCSP = false;
+  if (BROWSER === "firefox") {
+    try {
+      window["ev".concat("al")](code);
+      return;
+    } catch (_error) {
+      // However, the `window.eval` can fail if the page has a Content Security
+      // Policy. In such a case we have to resort to injecting a `<script
+      // src="...">`. Script tags with URLs injected by a web extension seems to
+      // be allowed regardless of CSP. In theory an inline script _could_ be
+      // allowed by the CSP (which would be a better choice since inline scripts
+      // execute synchronously while scripts with URLs are always async – and we
+      // want to ideally execute as early as possible in case the page adds
+      // click listeners via an inline script), but there's no easy way of
+      // detecting if inline scrips are allowed. As a last note, if the
+      // `window.eval` fails a warning is unfortunately logged to the console. I
+      // wish there was a way to avoid that.
+      hasCSP = true;
+    }
+  }
+
   const script = document.createElement("script");
-  // It seems like browser extension URLs never violate CSP, which is good.
-  script.src = browser.extension.getURL(INJECTED_JS_FILE);
+
+  if (hasCSP) {
+    script.src = `data:application/javascript;utf8,${encodeURIComponent(code)}`;
+  } else {
+    // Chrome nicely allows inline scripts inserted by an extension regardless
+    // of CSP.
+    script.textContent = code;
+  }
+
   documentElement.append(script);
   script.remove();
 }

@@ -6,7 +6,9 @@ declare var BROWSER: Browser;
 
 declare var BUILD_TIME: string;
 
-declare var INJECTED_JS_FILE: string;
+declare var INJECTED_CLICKABLE_EVENT: string;
+declare var INJECTED_UNCLICKABLE_EVENT: string;
+declare var INJECTED_RESET: string;
 
 declare var PROD: boolean;
 
