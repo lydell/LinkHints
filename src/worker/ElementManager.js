@@ -571,7 +571,8 @@ function injectScript() {
     script.src = `data:application/javascript;utf8,${encodeURIComponent(code)}`;
   } else {
     // Chrome nicely allows inline scripts inserted by an extension regardless
-    // of CSP.
+    // of CSP. I look forward to the day Firefox works this way too. See
+    // <bugzil.la/1446231> and <bugzil.la/1267027>.
     script.textContent = code;
   }
 
