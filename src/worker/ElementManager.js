@@ -547,6 +547,10 @@ function injectScript() {
   let hasCSP = false;
   if (BROWSER === "firefox") {
     try {
+      // Hide the eval call from linters and Rollup since this is a legit and
+      // safe usage of eval: The input is static and known, and this is just a
+      // substitute for running the code as an inline script (see below). Also,
+      // it is run in the _page_ context.
       window["ev".concat("al")](code);
       return;
     } catch (_error) {
