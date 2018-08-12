@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" onclick="console.log('html click tracking...')">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <title>changing onclick</title>
   </head>
-  <body onclick="console.log('body click tracking...')">
+  <body>
     <p onclick="console.log('onclick=&quot;...&quot;')">onclick="..."</p>
     <script>
       {
@@ -25,7 +25,7 @@
 
     <hr>
 
-    <p id="p">click me (<button onclick="document.documentElement.onclick = null; document.body.onclick = null">remove tracking</button>)</p>
+    <p id="p">click me</p>
     <p>
       <button onclick="p.setAttribute('onclick', 'console.log(`onclick=&quot;...&quot;`)')">set onclick="..."</button>
       <button onclick="p.removeAttribute('onclick')">remove onclick="..."</button>
