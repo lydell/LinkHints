@@ -243,7 +243,8 @@ export default class WorkerProgram {
     const match = this.keyboardShortcuts.find(
       ({ shortcut }) =>
         event.key === shortcut.key &&
-        event.code === shortcut.code &&
+        // Disabled `.code` for now, waiting for an "Ignore keyboard layout" option.
+        // event.code === shortcut.code &&
         event.altKey === shortcut.altKey &&
         event.ctrlKey === shortcut.ctrlKey &&
         event.metaKey === shortcut.metaKey &&
