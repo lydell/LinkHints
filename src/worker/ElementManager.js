@@ -183,7 +183,7 @@ export default class ElementManager {
   }
 
   onClickableElement(event: CustomEvent) {
-    const { element } = event.detail;
+    const element = event.detail == null ? event.target : event.detail.element;
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.add(element);
       this.checkElement(element);
@@ -191,7 +191,7 @@ export default class ElementManager {
   }
 
   onUnclickableElement(event: CustomEvent) {
-    const { element } = event.detail;
+    const element = event.detail == null ? event.target : event.detail.element;
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.delete(element);
       this.checkElement(element);

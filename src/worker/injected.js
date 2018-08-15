@@ -1,4 +1,5 @@
 // @flow
+/* global chrome */
 
 // This file is injected as a regular script in all pages and overrides
 // `.addEventListener` (and friends) so we can detect click listeners.
@@ -9,6 +10,9 @@
 export default () => {
   const fnMap = new Map();
   const resetFns = [];
+
+  // $FlowIgnore: `chrome` exists only in Chrome.
+  const isChrome: boolean = typeof chrome !== "undefined";
 
   // When this was written, <https://jsfiddle.net/> overrides `Event` (which was
   // used before switching to `CustomEvent`) with a buggy implementation that
@@ -330,14 +334,42 @@ export default () => {
   // `element` might not be inserted into the DOM (yet/anymore), which causes
   // the event not to fire.
   function reportClickable(element: HTMLElement) {
-    apply(dispatchEvent, window, [
-      new CustomEvent2(INJECTED_CLICKABLE_EVENT, { detail: { element } }),
-    ]);
+    sendEvent(INJECTED_CLICKABLE_EVENT, element);
   }
 
   function reportUnclickable(element: HTMLElement) {
-    apply(dispatchEvent, window, [
-      new CustomEvent2(INJECTED_UNCLICKABLE_EVENT, { detail: { element } }),
-    ]);
+    sendEvent(INJECTED_UNCLICKABLE_EVENT, element);
+  }
+
+  function sendEvent(eventName: string, element: HTMLElement) {
+    // The events are dispatched on `window` rather than on `element`, since
+    // `element` might not be inserted into the DOM (yet/anymore), which causes
+    // the event not to fire. However, sending a DOM element as `detail` from a
+    // web page to an extension is not allowed in Chrome, so there we have to
+    // temporarily insert the element into the DOM if needed.
+    if (!isChrome) {
+      apply(dispatchEvent, window, [
+        new CustomEvent2(INJECTED_CLICKABLE_EVENT, { detail: { element } }),
+      ]);
+      return;
+    }
+
+    const { documentElement } = document;
+
+    if (documentElement == null) {
+      return;
+    }
+
+    const isDetached = !documentElement.contains(element);
+
+    if (isDetached) {
+      documentElement.append(element);
+    }
+
+    apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
+
+    if (isDetached) {
+      element.remove();
+    }
   }
 };
