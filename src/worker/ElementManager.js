@@ -60,7 +60,7 @@ export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
-  elementsWithClickListeners: Set<HTMLElement>;
+  elementsWithClickListeners: WeakSet<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   bailed: boolean;
@@ -71,7 +71,7 @@ export default class ElementManager {
 
     this.elements = new Map();
     this.visibleElements = new Set();
-    this.elementsWithClickListeners = new Set();
+    this.elementsWithClickListeners = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
       this.onIntersection.bind(this),
@@ -116,7 +116,8 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.elements.clear();
     this.visibleElements.clear();
-    this.elementsWithClickListeners.clear();
+    // `WeakSet`s don’t have a `.clear()` method.
+    // this.elementsWithClickListeners.clear();
     this.resets.reset();
     window.postMessage(INJECTED_RESET, "*");
   }
@@ -235,8 +236,16 @@ export default class ElementManager {
     for (const element of elements) {
       if (this.elements.has(element)) {
         this.elements.delete(element);
-        this.elementsWithClickListeners.delete(element);
         this.intersectionObserver.unobserve(element);
+        // The element must not be removed from `elementsWithClickListeners` at
+        // this point, even though it might seem logical at first. But the
+        // element (or one of its parents) could temporarily be removed from the
+        // paged and then re-inserted. Then it would still have its click
+        // listener, but we wouldn’t know. So instead of removing `element` here
+        // a `WeakSet` is used, to avoid memory leaks.
+        // An example of this is the sortable table headings on Wikipedia:
+        // <https://en.wikipedia.org/wiki/Help:Sorting>
+        // this.elementsWithClickListeners.delete(element);
       }
     }
   }
