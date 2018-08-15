@@ -405,8 +405,15 @@ function getMeasurements(
   // that `range.selectNodeContents(element)` would do essentially the same
   // thing here, but it takes padding and such of child elements into account.
   // Also, it would count leading visible whitespace as the first character.
+  // Finally, don’t try to look for text nodes in `<select>` elements. There
+  // _are_ text nodes inside the `<option>` elements and their rects _can_ be
+  // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
+  // will fail. An example is the signup form at <https://www.facebook.com/>.
   let textRect = undefined;
-  const first = getFirstNonEmptyTextNode(element);
+  const first =
+    element instanceof HTMLSelectElement
+      ? undefined
+      : getFirstNonEmptyTextNode(element);
   if (first != null) {
     range.setStart(first.node, first.index);
     range.setEnd(first.node, first.index + 1);

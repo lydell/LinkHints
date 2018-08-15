@@ -47,6 +47,7 @@ module.exports = {
         HTMLFrameElement: false,
         HTMLIFrameElement: false,
         HTMLInputElement: false,
+        HTMLSelectElement: false,
         HTMLTextAreaElement: false,
         INJECTED_CLICKABLE_EVENT: false,
         INJECTED_UNCLICKABLE_EVENT: false,
