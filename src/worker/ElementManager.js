@@ -349,7 +349,15 @@ export default class ElementManager {
         const roleAttr = element.getAttribute("role");
         if (
           CLICKABLE_ROLES.has(roleAttr) ||
-          typeof element.onclick === "function" ||
+          // Adding a `onclick="..."` attribute in HTML automatically sets
+          // `.onclick` of the element to a function. But in Chrome, `.onclick`
+          // is `undefined` when inspected from a content script, so we need to
+          // use `.hasAttribute` instead. That works, except in rare edge cases
+          // where `.onclick = null` is set afterwards (the attribute string
+          // will remain but the listener will be gone).
+          (BROWSER === "chrome"
+            ? element.hasAttribute("onclick")
+            : typeof element.onclick === "function") ||
           this.elementsWithClickListeners.has(element)
         ) {
           return "clickable";
