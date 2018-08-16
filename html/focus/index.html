@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>focus</title>
+    <style>
+      *:focus {
+        outline: 4px solid magenta;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Click to focus.</p>
+
+    <p>ctrl+click or shift+click to focus and change tabindex in 2 seconds.</p>
+
+    <div id="container">
+      <a href="#">link</a>
+      <div></div>
+      <div tabindex="0"></div>
+      <div tabindex="1"></div>
+      <div tabindex="-1"></div>
+      <div tabindex="-2"></div>
+      <div tabindex=""></div>
+      <div tabindex="invalid"></div>
+      <div tabindex=" 23 "></div>
+    </div>
+
+    <script>
+      const observer = new MutationObserver(records => {
+        for (const record of records) {
+          update(record.target);
+        }
+      });
+
+      let i = 0;
+      const values = [null, "text", "", -3, 3];
+
+      for (const element of container.children) {
+        update(element);
+        observer.observe(element, { attributeFilter: ["tabindex"] });
+        element.addEventListener("click", event => {
+          event.preventDefault();
+          focusElement(element);
+
+          setTimeout(() => {
+            const value = values[i % values.length];
+            if (event.ctrlKey) {
+              element.setAttribute("tabindex", value);
+              i++;
+            } else if (event.shiftKey) {
+              element.tabIndex = value;
+              i++;
+            }
+          }, 2000);
+        });
+      }
+
+      function update(element) {
+        element.textContent = JSON.stringify(element.getAttribute("tabindex"));
+      }
+
+      // Focus any element. Temporarily alter tabindex if needed, and properly
+      // restore it again when blurring.
+      function focusElement(element) {
+        if (element === document.activeElement) {
+          return;
+
+        }
+
+        const tabIndex = getTabIndex(element);
+        const tabIndexAttr = element.getAttribute("tabindex");
+
+        if (tabIndex == null) {
+          element.setAttribute("tabindex", "-1");
+        }
+
+        element.focus();
+
+        if (tabIndex == null) {
+          const onBlur = () => {
+            if (tabIndexAttr == null) {
+              element.removeAttribute("tabindex");
+            } else {
+              element.setAttribute("tabindex", tabIndexAttr);
+            }
+            obs.disconnect();
+          };
+
+          const options = {capture: true, once: true, passive: true};
+          element.addEventListener("blur", onBlur, options);
+
+          const obs = new MutationObserver(records => {
+            element.removeEventListener("blur", onBlur, options);
+            obs.disconnect();
+          });
+          obs.observe(element, {attributeFilter: ["tabindex"]});
+        }
+      }
+
+      // Returns a number or undefined. A number means that the element in
+      // focusable (using `.focus()`), while undefined means that it is not.
+      function getTabIndex(element) {
+        const propValue = element.tabIndex;
+
+        // `<a>`, `<button>`, etc. are natively focusable (`.tabIndex === 0`).
+        // `.tabIndex` can also be set if the HTML contains a valid `tabindex`
+        // attribute.
+        // `-1` means either that the element isn't focusable, or that
+        // `tabindex="-1"` was set, so we have to use `.getAttribute` to
+        // disambiguate.
+        if (propValue !== -1) {
+          return propValue;
+        }
+
+        const attrValue = element.getAttribute("tabindex");
+
+        if (attrValue == null) {
+          return undefined;
+        }
+
+        // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
+        const match = /^\s*([+-]\d+)\s*$/.exec(attrValue);
+
+        if (match == null) {
+          return undefined;
+        }
+
+        const number = Number(match[1]);
+
+        if (!Number.isFinite(number)) {
+          return undefined;
+        }
+
+        return number;
+      }
+    </script>
+  </body>
+</html>
