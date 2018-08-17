@@ -40,6 +40,7 @@ module.exports = {
       globals: {
         BROWSER: false,
         BUILD_TIME: false,
+        CLICKABLE_EVENT_NAMES: false,
         CustomEvent: false,
         EventTarget: false,
         HTMLAnchorElement: false,

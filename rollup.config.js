@@ -140,6 +140,11 @@ function makeGlobals() {
     BROWSER:
       config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
     BUILD_TIME: () => JSON.stringify(makeBuildTime()),
+    // All types of events that likely makes an element clickable. All code and
+    // comments that deal with this only refer to "click", though, to keep
+    // things simple. This is defined here so that the array can be shared
+    // between `worker/program.js` and `worker/injected.js`.
+    CLICKABLE_EVENT_NAMES: JSON.stringify(["click", "mousedown"]),
     // If a malicious site sends these events/messages it doesn't hurt much. All
     // the page could do is cause false positives or disable detection of click
     // events altogeher.

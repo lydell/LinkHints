@@ -11,6 +11,12 @@ export default () => {
   const fnMap = new Map();
   const resetFns = [];
 
+  // This value is replaced in by Rollup; only refer to it once.
+  const clickableEventNames = CLICKABLE_EVENT_NAMES;
+  const clickableEventProps = clickableEventNames.map(
+    eventName => `on${eventName}`
+  );
+
   // $FlowIgnore: `chrome` exists only in Chrome.
   const isChrome: boolean = typeof chrome !== "undefined";
 
@@ -151,7 +157,8 @@ export default () => {
     ) => {
       if (
         !(
-          eventName === "click" &&
+          typeof eventName === "string" &&
+          clickableEventNames.includes(eventName) &&
           element instanceof HTMLElement2 &&
           (typeof listener === "function" ||
             (typeof listener === "object" &&
@@ -178,7 +185,7 @@ export default () => {
         ]);
       }
 
-      const optionsString = stringifyOptions(options);
+      const optionsString = stringifyOptions(eventName, options);
       const optionsByListener = clickListenersByElement.get(element);
 
       // No previous click listeners.
@@ -188,7 +195,7 @@ export default () => {
           new Map([[listener, new Set([optionsString])]])
         );
 
-        if (typeof element.onclick !== "function") {
+        if (!hasClickListenerProp(element)) {
           // The element went from no click listeners to one.
           reportClickable(element);
         }
@@ -204,7 +211,7 @@ export default () => {
         return;
       }
 
-      // Already seen listener function, but new options.
+      // Already seen listener function, but new options and/or event type.
       if (!optionsSet.has(optionsString)) {
         optionsSet.add(optionsString);
       }
@@ -229,7 +236,8 @@ export default () => {
   ) {
     if (
       !(
-        eventName === "click" &&
+        typeof eventName === "string" &&
+        clickableEventNames.includes(eventName) &&
         element instanceof HTMLElement2 &&
         (typeof listener === "function" ||
           (typeof listener === "object" &&
@@ -240,7 +248,7 @@ export default () => {
       return;
     }
 
-    const optionsString = stringifyOptions(options);
+    const optionsString = stringifyOptions(eventName, options);
     const optionsByListener = clickListenersByElement.get(element);
 
     // The element has no click listeners.
@@ -256,7 +264,7 @@ export default () => {
     }
 
     // The element has `listener` as a click callback, but with different
-    // options.
+    // options and/or event type.
     if (!optionsSet.has(optionsString)) {
       return;
     }
@@ -272,47 +280,50 @@ export default () => {
       if (optionsByListener.size === 0) {
         clickListenersByElement.delete(element);
 
-        if (typeof element.onclick !== "function") {
-          // The element went from one listener to none.
+        if (!hasClickListenerProp(element)) {
+          // The element went from one click listener to none.
           reportUnclickable(element);
         }
       }
     }
   }
 
-  hookInto(
-    HTMLElement.prototype,
-    "onclick",
-    async (orig: Function, element: mixed, value: mixed) => {
-      // If the element has click listeners added via `.addEventListener` changing
-      // `.onclick` can't affect whether the element has at least one click
-      // listener.
-      if (
-        !(element instanceof HTMLElement2) ||
-        clickListenersByElement.has(element)
-      ) {
-        return;
-      }
+  // Hook into `.onclick` and similar.
+  for (const prop of clickableEventProps) {
+    hookInto(
+      HTMLElement.prototype,
+      prop,
+      async (orig: Function, element: mixed, value: mixed) => {
+        // If the element has click listeners added via `.addEventListener`
+        // changing `.onclick` can't affect whether the element has at least one
+        // click listener.
+        if (
+          !(element instanceof HTMLElement2) ||
+          clickListenersByElement.has(element)
+        ) {
+          return;
+        }
 
-      const hasListenerAlready = typeof element.onclick === "function";
+        const hadListener = hasClickListenerProp(element);
 
-      // Let the setter take effect. Then dispatch events (if any). The dispatched
-      // event would reach the ElementManager _before_ the new `.onclick` value is
-      // actually set otherwise, which could make it take the wrong decision on
-      // clickability.
-      await undefined;
+        // Let the setter take effect. Then dispatch events (if any). The
+        // dispatched event would reach the ElementManager _before_ the new
+        // `.onclick` value is actually set otherwise, which could make it take
+        // the wrong decision on clickability.
+        await undefined;
 
-      if (typeof value === "function") {
-        if (!hasListenerAlready) {
+        const hasListener = hasClickListenerProp(element);
+
+        if (!hadListener && hasListener) {
           // The element went from no click listeners to one.
           reportClickable(element);
+        } else if (hadListener && !hasListener) {
+          // The element went from one click listener to none.
+          reportUnclickable(element);
         }
-      } else if (hasListenerAlready) {
-        // The element went from one click listeners to none.
-        reportUnclickable(element);
       }
-    }
-  );
+    );
+  }
 
   // Make sure that `Function.prototype.toString.call(element.addEventListener)`
   // returns "[native code]". This is used by lodash's `_.isNative`.
@@ -322,12 +333,23 @@ export default () => {
 
   const optionNames: Array<string> = ["capture", "once", "passive"];
 
-  function stringifyOptions(options: mixed): string {
+  function stringifyOptions(eventName: string, options: mixed): string {
     const normalized =
       options == null || typeof options !== "object"
         ? { capture: Boolean(options) }
         : options;
-    return optionNames.map(name => String(Boolean(normalized[name]))).join(",");
+    const optionsString = optionNames
+      .map(name => String(Boolean(normalized[name])))
+      .join(",");
+    return `${eventName}:${optionsString}`;
+  }
+
+  function hasClickListenerProp(element: HTMLElement): boolean {
+    return clickableEventProps.some(
+      prop =>
+        // $FlowIgnore: I _do_ want to dynamically read properties here.
+        typeof element[prop] === "function"
+    );
   }
 
   // The events are dispatched on `window` rather than on `element`, since

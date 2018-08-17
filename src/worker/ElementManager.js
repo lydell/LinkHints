@@ -58,6 +58,12 @@ const CLICKABLE_ROLES = new Set([
 
 const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 
+// This value is replaced in by Rollup; only refer to it once.
+const clickableEventNames = CLICKABLE_EVENT_NAMES;
+const clickableEventProps = clickableEventNames.map(
+  eventName => `on${eventName}`
+);
+
 export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
@@ -101,7 +107,7 @@ export default class ElementManager {
       this.mutationObserver.observe(documentElement, {
         childList: true,
         subtree: true,
-        attributeFilter: ["href", "role", "onclick"],
+        attributeFilter: ["href", "role", ...clickableEventProps],
       });
       this.resets.add(
         addEventListener(
@@ -390,15 +396,7 @@ export default class ElementManager {
         const roleAttr = element.getAttribute("role");
         if (
           CLICKABLE_ROLES.has(roleAttr) ||
-          // Adding a `onclick="..."` attribute in HTML automatically sets
-          // `.onclick` of the element to a function. But in Chrome, `.onclick`
-          // is `undefined` when inspected from a content script, so we need to
-          // use `.hasAttribute` instead. That works, except in rare edge cases
-          // where `.onclick = null` is set afterwards (the attribute string
-          // will remain but the listener will be gone).
-          (BROWSER === "chrome"
-            ? element.hasAttribute("onclick")
-            : typeof element.onclick === "function") ||
+          hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element)
         ) {
           return "clickable";
@@ -670,5 +668,21 @@ function isScrollable(element: HTMLElement): boolean {
       SCROLLABLE_OVERFLOW_VALUES.has(
         computedStyle.getPropertyValue("overflow-y")
       ))
+  );
+}
+
+function hasClickListenerProp(element: HTMLElement): boolean {
+  // Adding a `onclick="..."` attribute in HTML automatically sets
+  // `.onclick` of the element to a function. But in Chrome, `.onclick`
+  // is `undefined` when inspected from a content script, so we need to
+  // use `.hasAttribute` instead. That works, except in rare edge cases
+  // where `.onclick = null` is set afterwards (the attribute string
+  // will remain but the listener will be gone).
+  return clickableEventProps.some(
+    prop =>
+      BROWSER === "chrome"
+        ? element.hasAttribute(prop)
+        : // $FlowIgnore: I _do_ want to dynamically read properties here.
+          typeof element[prop] === "function"
   );
 }

@@ -22,6 +22,14 @@
         document.currentScript.replaceWith(p);
       }
     </script>
+    <script>
+      {
+        const p = document.createElement("p");
+        p.textContent = `.addEventListener("mousedown", ...)`;
+        p.addEventListener("mousedown", () => console.log('.addEventListener("mousedown", ...)'));
+        document.currentScript.replaceWith(p);
+      }
+    </script>
 
     <hr>
 
@@ -31,9 +39,18 @@
       <button onclick="p.removeAttribute('onclick')">remove onclick="..."</button>
     </p>
     <p>
+      <button onmousedown="p.setAttribute('onmousedown', 'console.log(`onmousedown=&quot;...&quot;`)')">set onmousedown="..."</button>
+      <button onmousedown="p.removeAttribute('onmousedown')">remove onmousedown="..."</button>
+    </p>
+    <p>
       <button onclick="p.onclick = () => console.log(`.onclick = () => ...`)">.onclick = () => ...</button>
       <button onclick="p.onclick = null">.onclick = null</button>
       <button onclick="p.onclick = new Date">.onclick = new Date</button>
+    </p>
+    <p>
+      <button onmousedown="p.onmousedown = () => console.log(`.onmousedown = () => ...`)">.onmousedown = () => ...</button>
+      <button onmousedown="p.onmousedown = null">.onmousedown = null</button>
+      <button onmousedown="p.onmousedown = new Date">.onmousedown = new Date</button>
     </p>
     <script>
       function f() {
@@ -52,11 +69,13 @@
     </script>
     <p>
       <button onclick="p.addEventListener('click', f)">.addEventListener("click", f)</button>
+      <button onclick="p.addEventListener('mousedown', f)">.addEventListener("mousedown", f)</button>
       <button onclick="p.addEventListener('focus', () => console.log('focus'))">.addEventListener("focus", () => ...)</button>
       <button onclick="p.addEventListener('click', handleEvent)">.addEventListener("click", {handleEvent() {...}})</button>
     </p>
     <p>
       <button onclick="p.removeEventListener('click', f)">.removeEventListener("click", f)</button>
+      <button onclick="p.removeEventListener('mousedown', f)">.removeEventListener("mousedown", f)</button>
       <button onclick="p.removeEventListener('focus', () => console.log('focus'))">.removeEventListener("focus", () => ...)</button>
       <button onclick="p.removeEventListener('click', handleEvent)">.removeEventListener("click", {handleEvent() {...}})</button>
     </p>
