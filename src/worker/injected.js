@@ -349,7 +349,7 @@ export default () => {
     // temporarily insert the element into the DOM if needed.
     if (!isChrome) {
       apply(dispatchEvent, window, [
-        new CustomEvent2(INJECTED_CLICKABLE_EVENT, { detail: { element } }),
+        new CustomEvent2(eventName, { detail: { element } }),
       ]);
       return;
     }
