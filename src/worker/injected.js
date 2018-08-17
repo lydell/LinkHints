@@ -293,7 +293,7 @@ export default () => {
     hookInto(
       HTMLElement.prototype,
       prop,
-      async (orig: Function, element: mixed, value: mixed) => {
+      async (orig: Function, element: mixed) => {
         // If the element has click listeners added via `.addEventListener`
         // changing `.onclick` can't affect whether the element has at least one
         // click listener.
