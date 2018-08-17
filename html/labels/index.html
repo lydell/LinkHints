@@ -11,6 +11,30 @@
       body > div {
         margin-bottom: 30px;
       }
+
+      .checkbox input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: none;
+        white-space: nowrap;
+      }
+
+      .checkbox input + span {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 1px solid black;
+        vertical-align: -5px;
+      }
+
+      .checkbox input:checked + span {
+        background-color: grey;
+      }
     </style>
   </head>
   <body>
@@ -57,6 +81,14 @@
       </label>
       <br>
       <label for="several">second label</label>
+    </div>
+
+    <div>
+      <label class="checkbox">
+        <input type="checkbox">
+        <span></span>
+        Custom checkbox
+      </label>
     </div>
   </body>
 </html>
