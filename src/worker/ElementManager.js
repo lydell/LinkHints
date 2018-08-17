@@ -4,7 +4,7 @@ import { Resets, addEventListener, bind, log } from "../shared/main";
 
 import injected from "./injected";
 
-export type ElementType = "link" | "clickable" | "frame";
+export type ElementType = "link" | "clickable" | "scrollable" | "frame";
 
 type ElementData = {|
   type: ElementType,
@@ -310,7 +310,9 @@ export default class ElementManager {
         return undefined;
       }
 
-      const measurements = getMeasurements(element, viewports, range);
+      const measurements = getMeasurements(element, viewports, range, {
+        lookForText: data.type !== "scrollable",
+      });
 
       if (measurements == null) {
         return undefined;
@@ -381,6 +383,10 @@ export default class ElementManager {
           return undefined;
         }
 
+        if (this.elementsWithScrollbars.has(element)) {
+          return "scrollable";
+        }
+
         const roleAttr = element.getAttribute("role");
         if (
           CLICKABLE_ROLES.has(roleAttr) ||
@@ -393,8 +399,7 @@ export default class ElementManager {
           (BROWSER === "chrome"
             ? element.hasAttribute("onclick")
             : typeof element.onclick === "function") ||
-          this.elementsWithClickListeners.has(element) ||
-          this.elementsWithScrollbars.has(element)
+          this.elementsWithClickListeners.has(element)
         ) {
           return "clickable";
         }
@@ -410,7 +415,8 @@ function getMeasurements(
   viewports: Array<Box>,
   // The `range` is passed in since it is faster to re-use the same one than
   // creating a new one for every element candidate.
-  range: Range
+  range: Range,
+  { lookForText = true }: {| lookForText: boolean |} = {}
 ): ?HintMeasurements {
   const rects = element.getClientRects();
 
@@ -453,9 +459,11 @@ function getMeasurements(
   // _are_ text nodes inside the `<option>` elements and their rects _can_ be
   // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
   // will fail. An example is the signup form at <https://www.facebook.com/>.
+  // For scrollable elements it also doesn't make sense to look for text to
+  // place the hint at. That's what the `lookForText` option is for.
   let textRect = undefined;
   const first =
-    element instanceof HTMLSelectElement
+    !lookForText || element instanceof HTMLSelectElement
       ? undefined
       : getFirstNonEmptyTextNode(element);
   if (first != null) {

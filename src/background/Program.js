@@ -725,7 +725,7 @@ function makeEmptyTabState(): TabState {
 function getHintsTypes(mode: HintsMode): Array<ElementType> {
   switch (mode) {
     case "Click":
-      return ["clickable", "link"];
+      return ["clickable", "link", "scrollable"];
 
     case "BackgroundTab":
       return ["link"];
