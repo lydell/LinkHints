@@ -353,6 +353,9 @@ export default class ElementManager {
       })
         .filter(Boolean)
         // Exclude `<label>` elements whose associated control has a hint.
+        // One _could_ shuffle things around to avoid calculating `measurements`
+        // at all for such labels, but I don't think it's worth it. Pages
+        // usually don't have that many labels.
         .filter(result => !labels.has(result.element))
     );
   }
