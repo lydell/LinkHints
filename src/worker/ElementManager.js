@@ -4,7 +4,12 @@ import { Resets, addEventListener, bind, log } from "../shared/main";
 
 import injected from "./injected";
 
-export type ElementType = "link" | "clickable" | "scrollable" | "frame";
+export type ElementType =
+  | "link"
+  | "clickable"
+  | "scrollable"
+  | "label"
+  | "frame";
 
 type ElementData = {|
   type: ElementType,
@@ -319,6 +324,12 @@ export default class ElementManager {
           return undefined;
         }
 
+        // Ignore `<label>` elements with no control and no click listeners.
+        // $FlowIgnore: Flow can't know, but `element` _is_ a `<label>` here.
+        if (data.type === "label" && element.control == null) {
+          return undefined;
+        }
+
         const measurements = getMeasurements(element, viewports, range, {
           lookForText: data.type !== "scrollable",
         });
@@ -383,7 +394,6 @@ export default class ElementManager {
         );
       }
       case "BUTTON":
-      case "LABEL":
       case "SELECT":
       case "SUMMARY":
       case "TEXTAREA":
@@ -414,6 +424,12 @@ export default class ElementManager {
           this.elementsWithClickListeners.has(element)
         ) {
           return "clickable";
+        }
+
+        // Match `<label>` elements last so that labels without controls but
+        // with click listeners are matched as clickable.
+        if (element.nodeName === "LABEL") {
+          return "label";
         }
 
         return undefined;
