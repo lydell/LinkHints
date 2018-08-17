@@ -7,6 +7,9 @@ export type KeyboardAction =
     |}
   | {|
       type: "ExitHintsMode",
+    |}
+  | {|
+      type: "Escape",
     |};
 
 export type KeyboardShortcut = {|

@@ -190,6 +190,17 @@ export default class WorkerProgram {
         break;
       }
 
+      case "Escape": {
+        if (document.activeElement != null) {
+          document.activeElement.blur();
+        }
+        const selection: Selection | null = window.getSelection();
+        if (selection != null) {
+          selection.removeAllRanges();
+        }
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }

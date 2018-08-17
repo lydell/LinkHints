@@ -82,6 +82,9 @@ export type ToWorker =
   | {|
       type: "ClickElement",
       index: number,
+    |}
+  | {|
+      type: "Escape",
     |};
 
 export type FromRenderer =

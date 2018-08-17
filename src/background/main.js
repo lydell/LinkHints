@@ -4,7 +4,22 @@ import type { KeyboardMapping } from "../data/KeyboardShortcuts";
 
 import BackgroundProgram from "./Program";
 
+const globalKeyboardShortcuts: Array<KeyboardMapping> = [
+  {
+    shortcut: {
+      key: "Escape",
+      code: "Escape",
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: { type: "Escape" },
+  },
+];
+
 const normalKeyboardShortcuts: Array<KeyboardMapping> = [
+  ...globalKeyboardShortcuts,
   {
     shortcut: {
       key: "j",
@@ -91,9 +106,8 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
 ];
 
-const hintChars = "fjdkslaghrueiwoncmv";
-
 const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
+  ...globalKeyboardShortcuts,
   {
     shortcut: {
       key: "Escape",
@@ -110,7 +124,7 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
-  hintChars,
+  hintChars: "fjdkslaghrueiwoncmv",
 });
 
 program.start();

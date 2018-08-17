@@ -618,28 +618,45 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Hinting") {
           return;
         }
-        tabState.hintsState = { type: "Idle" };
-        this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
-          tabId: info.tabId,
-          frameId: "all_frames",
-        });
-        this.sendRendererMessage(
-          {
-            type: "Unrender",
-            delayed: false,
-          },
-          { tabId: info.tabId }
+        this.exitHintsMode(info.tabId);
+        break;
+      }
+
+      case "Escape": {
+        this.exitHintsMode(info.tabId);
+        this.sendWorkerMessage(
+          { type: "Escape" },
+          { tabId: info.tabId, frameId: "all_frames" }
         );
-        browser.browserAction.setBadgeText({
-          text: "",
-          tabId: info.tabId,
-        });
         break;
       }
 
       default:
         unreachable(action.type, action);
     }
+  }
+
+  exitHintsMode(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+    tabState.hintsState = { type: "Idle" };
+    this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+      tabId,
+      frameId: "all_frames",
+    });
+    this.sendRendererMessage(
+      {
+        type: "Unrender",
+        delayed: false,
+      },
+      { tabId }
+    );
+    browser.browserAction.setBadgeText({
+      text: "",
+      tabId,
+    });
   }
 
   onTabCreated(tab: Tab) {
