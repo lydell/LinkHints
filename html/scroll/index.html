@@ -9,6 +9,10 @@
         margin-bottom: 30px;
         resize: both;
       }
+
+      body > div > div {
+        box-shadow: inset 0 0 5px 2px magenta;
+      }
     </style>
 
     <script>
@@ -52,21 +56,35 @@
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow: hidden;" tabindex="0">
-      <div style="height: 500px; background-image: linear-gradient(to bottom, red, blue);">
+    <div style="width: 300px; height: 300px; overflow: hidden;">
+      <div style="height: 500px;">
         clipped scroll
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow: scroll;" tabindex="0">
+    <div style="width: 300px; height: 300px; overflow: scroll;">
       <div style="width: 250px; height: 250px;">
         no scroll but scrollbars
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow: visible;" tabindex="0">
-      <div style="height: 350px; background-image: linear-gradient(to bottom, red, blue);">
+    <div style="width: 300px; height: 300px; overflow: visible; margin-bottom: 100px;">
+      <div style="height: 350px;">
         overflow but no scrollbars
+      </div>
+    </div>
+
+    <div style="width: 300px; height: 300px; overflow-x: hidden; overflow-y: auto;">
+      <div style="width: 500px; height: 280px;">
+        hidden overflow-x<br>
+        auto overflow-y but no scrollbar
+      </div>
+    </div>
+
+    <div style="width: 300px; height: 300px; overflow-x: auto; overflow-y: hidden;">
+      <div style="width: 280px; height: 500px;">
+        auto overflow-x but no scrollbar<br>
+        hidden overflow-y
       </div>
     </div>
   </body>

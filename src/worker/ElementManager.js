@@ -56,11 +56,14 @@ const CLICKABLE_ROLES = new Set([
   // "tabpanel",
 ]);
 
+const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
+
 export default class ElementManager {
   maxTrackedElements: number;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
   elementsWithClickListeners: WeakSet<HTMLElement>;
+  elementsWithScrollbars: WeakSet<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   bailed: boolean;
@@ -72,6 +75,7 @@ export default class ElementManager {
     this.elements = new Map();
     this.visibleElements = new Set();
     this.elementsWithClickListeners = new WeakSet();
+    this.elementsWithScrollbars = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
       this.onIntersection.bind(this),
@@ -83,7 +87,11 @@ export default class ElementManager {
 
     this.resets = new Resets();
 
-    bind(this, [this.onClickableElement, this.onUnclickableElement]);
+    bind(this, [
+      this.onClickableElement,
+      this.onUnclickableElement,
+      this.onOverflowChange,
+    ]);
   }
 
   start() {
@@ -105,7 +113,9 @@ export default class ElementManager {
           window,
           INJECTED_UNCLICKABLE_EVENT,
           this.onUnclickableElement
-        )
+        ),
+        addEventListener(window, "overflow", this.onOverflowChange),
+        addEventListener(window, "underflow", this.onOverflowChange)
       );
       injectScript();
     }
@@ -118,6 +128,7 @@ export default class ElementManager {
     this.visibleElements.clear();
     // `WeakSet`s don’t have a `.clear()` method.
     // this.elementsWithClickListeners.clear();
+    // this.elementsWithScrollbars.clear();
     this.resets.reset();
     window.postMessage(INJECTED_RESET, "*");
   }
@@ -198,6 +209,28 @@ export default class ElementManager {
     }
   }
 
+  onOverflowChange(event: UIEvent) {
+    const element = event.target;
+
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    // An element might have `overflow-x: hidden; overflow-y: auto;`. The events
+    // don't tell which direction changed its overflow, so we must check that
+    // ourselves. We're only interested in elements with scrollbars, not with
+    // hidden overflow.
+    if (isScrollable(element)) {
+      if (!this.elementsWithScrollbars.has(element)) {
+        this.elementsWithScrollbars.add(element);
+        this.checkElement(element);
+      }
+    } else if (this.elementsWithScrollbars.has(element)) {
+      this.elementsWithScrollbars.delete(element);
+      this.checkElement(element);
+    }
+  }
+
   checkElement(element: HTMLElement) {
     const data = this.getElementData(element);
     if (data == null) {
@@ -237,15 +270,17 @@ export default class ElementManager {
       if (this.elements.has(element)) {
         this.elements.delete(element);
         this.intersectionObserver.unobserve(element);
-        // The element must not be removed from `elementsWithClickListeners` at
-        // this point, even though it might seem logical at first. But the
-        // element (or one of its parents) could temporarily be removed from the
-        // paged and then re-inserted. Then it would still have its click
-        // listener, but we wouldn’t know. So instead of removing `element` here
-        // a `WeakSet` is used, to avoid memory leaks.
-        // An example of this is the sortable table headings on Wikipedia:
+        // The element must not be removed from `elementsWithClickListeners` or
+        // `elementsWithScrollbars` at this point, even though it might seem
+        // logical at first. But the element (or one of its parents) could
+        // temporarily be removed from the paged and then re-inserted. Then it
+        // would still have its click listener, but we wouldn’t know. So instead
+        // of removing `element` here a `WeakSet` is used, to avoid memory
+        // leaks. An example of this is the sortable table headings on
+        // Wikipedia:
         // <https://en.wikipedia.org/wiki/Help:Sorting>
         // this.elementsWithClickListeners.delete(element);
+        // this.elementsWithScrollbars.delete(element);
       }
     }
   }
@@ -358,7 +393,8 @@ export default class ElementManager {
           (BROWSER === "chrome"
             ? element.hasAttribute("onclick")
             : typeof element.onclick === "function") ||
-          this.elementsWithClickListeners.has(element)
+          this.elementsWithClickListeners.has(element) ||
+          this.elementsWithScrollbars.has(element)
         ) {
           return "clickable";
         }
@@ -606,4 +642,25 @@ function injectScript() {
 
   documentElement.append(script);
   script.remove();
+}
+
+function isScrollable(element: HTMLElement): boolean {
+  const computedStyle = window.getComputedStyle(element);
+
+  // `.scrollLeftMax` and `.scrollTopMax` are Firefox-only, but this function is
+  // only called from the "overflow" and "underflow" event listeners, and those
+  // are Firefox-only as well. Those properties are the easiest way to check if
+  // an element overflows in either the X or Y direction.
+  return (
+    // $FlowIgnore: See above.
+    (element.scrollLeftMax > 0 &&
+      SCROLLABLE_OVERFLOW_VALUES.has(
+        computedStyle.getPropertyValue("overflow-x")
+      )) ||
+    // $FlowIgnore: See above.
+    (element.scrollTopMax > 0 &&
+      SCROLLABLE_OVERFLOW_VALUES.has(
+        computedStyle.getPropertyValue("overflow-y")
+      ))
+  );
 }
