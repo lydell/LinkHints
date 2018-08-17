@@ -303,33 +303,47 @@ export default class ElementManager {
 
     const range = document.createRange();
 
-    return Array.from(candidates, element => {
-      const data = this.bailed
-        ? this.getElementData(element)
-        : this.elements.get(element);
+    const labels = new Set();
 
-      if (data == null) {
-        return undefined;
-      }
+    return (
+      Array.from(candidates, element => {
+        const data = this.bailed
+          ? this.getElementData(element)
+          : this.elements.get(element);
 
-      if (!types.has(data.type)) {
-        return undefined;
-      }
+        if (data == null) {
+          return undefined;
+        }
 
-      const measurements = getMeasurements(element, viewports, range, {
-        lookForText: data.type !== "scrollable",
-      });
+        if (!types.has(data.type)) {
+          return undefined;
+        }
 
-      if (measurements == null) {
-        return undefined;
-      }
+        const measurements = getMeasurements(element, viewports, range, {
+          lookForText: data.type !== "scrollable",
+        });
 
-      return {
-        element,
-        data,
-        measurements,
-      };
-    }).filter(Boolean);
+        if (measurements == null) {
+          return undefined;
+        }
+
+        // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
+        if (element.labels instanceof NodeList) {
+          for (const label of element.labels) {
+            labels.add(label);
+          }
+        }
+
+        return {
+          element,
+          data,
+          measurements,
+        };
+      })
+        .filter(Boolean)
+        // Exclude `<label>` elements whose associated control has a hint.
+        .filter(result => !labels.has(result.element))
+    );
   }
 
   getVisibleFrames(): Array<HTMLIFrameElement | HTMLFrameElement> {

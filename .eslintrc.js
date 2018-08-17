@@ -55,6 +55,7 @@ module.exports = {
         INJECTED_RESET: false,
         IntersectionObserver: false,
         MutationObserver: false,
+        NodeList: false,
         PROD: false,
         Text: false,
         browser: false,

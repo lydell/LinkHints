@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>labels</title>
+    <style>
+      body {
+        padding: calc(100vh - 1em) 0;
+      }
+
+      body > div {
+        margin-bottom: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <label>
+        label with nested control<br>
+        <input>
+      </label>
+    </div>
+
+    <div>
+      <label for="input">
+        label with id
+      </label>
+      <br>
+      <input id="input">
+    </div>
+
+    <div>
+      <label>
+        label with textarea<br>
+        <textarea></textarea>
+      </label>
+    </div>
+
+    <div>
+      <label>
+        label with select<br>
+        <select><option>option</option></select>
+      </label>
+    </div>
+
+    <div>
+      <label>
+        label with button<br>
+        <button onclick="console.log('button!')">button</button>
+      </label>
+    </div>
+
+    <div>
+      <label>
+        input with several labels<br>
+        <input id="several">
+      </label>
+      <br>
+      <label for="several">second label</label>
+    </div>
+  </body>
+</html>
