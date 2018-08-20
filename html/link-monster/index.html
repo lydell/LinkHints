@@ -218,6 +218,13 @@
       </div>
     </footer>
 
+    <div class="container">
+      <div class="wrapper">
+        <div class="wrapper-inner" id="mainContainer">
+        </div>
+      </div>
+    </div>
+
     <script>
       const params = new URLSearchParams(location.search);
       const numLinks = Number(params.get("num_links") || "3000");
@@ -252,11 +259,14 @@
 
         const t = document.createTextNode(rng.next() % 10 === 0 ? " and " : ", ");
 
-        main.append(a);
+        const s = document.createElement("span");
+        s.append(a);
+
+        main.append(s);
         main.append(t);
       }
 
-      document.body.append(main);
+      mainContainer.append(main);
     </script>
   </body>
 </html>

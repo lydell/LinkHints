@@ -528,19 +528,15 @@ function getMeasurements(
 
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes link hints in fixed menus so much easier find.
-  // Even if some other part than `(x, y)` is visible, don’t bother if `(x, y)`
-  // isn’t visible. Too much work for too little gain. Finally, add 1px to `x`.
-  // It feels safer to test 1px into the element rather than at the very edge.
-  // `getVisibleBox` guarantees the box to be at least 1px wide. Remove
-  // `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate system
-  // of the current frame.
-  const elementAtPoint = document.elementFromPoint(
-    x - offsetX + 1,
-    y - offsetY
-  );
+  const nonCoveredPoint = getNonCoveredPoint(element, {
+    // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
+    // system of the current frame.
+    x: x - offsetX,
+    y: y - offsetY,
+    maxX: visibleBoxes[0].x - offsetX + visibleBoxes[0].width - 1,
+  });
 
-  // `.contains` also checks `element === elementAtPoint`.
-  if (!element.contains(elementAtPoint)) {
+  if (nonCoveredPoint == null) {
     // Putting a large `<input type="file">` inside a smaller wrapper element
     // with `overflow: hidden;` seems to be a common pattern, used both on
     // addons.mozilla.org and <https://blueimp.github.io/jQuery-File-Upload/>.
@@ -577,7 +573,50 @@ function getMeasurements(
   }
 
   // The coordinates at which to place the hint and the area of the element.
-  return { x, y, area };
+  return { x, y, area, ...nonCoveredPoint };
+}
+
+function getNonCoveredPoint(
+  element: HTMLElement,
+  { x, y, maxX }: {| x: number, y: number, maxX: number |}
+): ?{| x: number, y: number |} {
+  const elementAtPoint = document.elementFromPoint(x, y);
+
+  // `.contains` also checks `element === elementAtPoint`.
+  if (element.contains(elementAtPoint)) {
+    return { x, y };
+  }
+
+  const rect = elementAtPoint.getBoundingClientRect();
+
+  // `.getBoundingClientRect()` does not include pseudo-elements that are
+  // absolutely positioned so that they go outside of the element, but calling
+  // `.elementAtPoint()` on the pseudo-element _does_ return the element. For
+  // `/###\`-looking tabs, which overlap each other slightly, the slanted parts
+  // are often made using pseudo-elements. When trying to position a hint for
+  // tab 2, `.elementAtPoint()` might return tab 1. So if we get a non-sensical
+  // rect (one that does not cover (x, y)) for the "covering" element it's
+  // better to treat (x, y) as non-covered.
+  if (rect.left > x || rect.right <= x || rect.top > y || rect.bottom <= y) {
+    return { x, y };
+  }
+
+  const newX = Math.round(rect.right + 1);
+
+  // Try once to the right of the covering element (if it doesn't cover all the
+  // way to the right of `element`). For example, there could be an absolutely
+  // positioned search icon at the left of an `<input>`. Just trying once to the
+  // right seemed to be a good tradeoff between correctness and performance in
+  // the VimFx add-on.
+  if (newX > x && newX <= maxX) {
+    const elementAtPoint2 = document.elementFromPoint(newX, y);
+
+    if (element.contains(elementAtPoint2)) {
+      return { x: newX, y };
+    }
+  }
+
+  return undefined;
 }
 
 // Turn a `ClientRect` into a `Box` using the coordinates of the topmost
