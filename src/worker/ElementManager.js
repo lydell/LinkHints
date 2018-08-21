@@ -63,6 +63,8 @@ const CLICKABLE_ROLES = new Set([
 
 const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 
+const FRAME_MIN_SIZE = 6; // px
+
 // This value is replaced in by Rollup; only refer to it once.
 const clickableEventNames = CLICKABLE_EVENT_NAMES;
 const clickableEventProps = clickableEventNames.map(
@@ -360,18 +362,33 @@ export default class ElementManager {
     );
   }
 
-  getVisibleFrames(): Array<HTMLIFrameElement | HTMLFrameElement> {
-    return Array.from(
-      this.visibleElements,
-      element =>
-        (element instanceof HTMLIFrameElement ||
-          element instanceof HTMLFrameElement) &&
-        // Needed on reddit.com. There's a Google Ads iframe without `src` where
-        // `contentWindow` is null.
-        element.contentWindow != null
-          ? element
-          : undefined
-    ).filter(Boolean);
+  getVisibleFrames(
+    viewports: Array<Box>
+  ): Array<HTMLIFrameElement | HTMLFrameElement> {
+    return Array.from(this.visibleElements, element => {
+      if (
+        !(
+          (element instanceof HTMLIFrameElement ||
+            element instanceof HTMLFrameElement) &&
+          // Gmail has an iframe with no `src` attribute. Don’t waste time on it.
+          element.src !== "" &&
+          // Needed on reddit.com. There's a Google Ads iframe without `src` where
+          // `contentWindow` is null.
+          element.contentWindow != null
+        )
+      ) {
+        return undefined;
+      }
+      // Frames are slow to visit. Gmail has ~10 weird frames that are super
+      // small. Not sure what they do. But not visiting saves around ~80ms on my
+      // machine.
+      const box = getVisibleBox(element.getBoundingClientRect(), viewports);
+      return box != null &&
+        box.width > FRAME_MIN_SIZE &&
+        box.height > FRAME_MIN_SIZE
+        ? element
+        : undefined;
+    }).filter(Boolean);
   }
 
   getElementData(element: HTMLElement): ?{| type: ElementType |} {

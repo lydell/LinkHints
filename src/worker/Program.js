@@ -291,7 +291,7 @@ export default class WorkerProgram {
   reportVisibleElements(types: Set<ElementType>, viewports: Array<Box>) {
     const elements = this.elementManager.getVisibleElements(types, viewports);
 
-    const frames = this.elementManager.getVisibleFrames();
+    const frames = this.elementManager.getVisibleFrames(viewports);
 
     for (const frame of frames) {
       if (
