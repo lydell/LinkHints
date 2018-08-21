@@ -58,9 +58,9 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
       resolve(),
       commonjs(),
     ].filter(Boolean),
-    onwarn: (warning, warn) => {
+    onwarn: warning => {
       if (warning.code !== "EMPTY_BUNDLE") {
-        warn(warning);
+        throw warning;
       }
     },
   };
