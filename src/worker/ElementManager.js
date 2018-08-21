@@ -590,7 +590,9 @@ function getMeasurements(
   }
 
   // The coordinates at which to place the hint and the area of the element.
-  return { x, y, area, ...nonCoveredPoint };
+  return nonCoveredPoint == null
+    ? { x, y, area }
+    : { x: nonCoveredPoint.x + offsetX, y: nonCoveredPoint.y + offsetY, area };
 }
 
 function getNonCoveredPoint(
