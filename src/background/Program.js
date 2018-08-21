@@ -383,10 +383,6 @@ export default class BackgroundProgram {
             },
             { tabId: info.tabId }
           );
-          browser.browserAction.setBadgeText({
-            text: "",
-            tabId: info.tabId,
-          });
         }
 
         hintsState.enteredHintChars = enteredHintChars;
@@ -497,10 +493,6 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
-    browser.browserAction.setBadgeText({
-      text: String(hintsState.pendingElements.elements.length),
-      tabId,
-    });
   }
 
   onRendererMessage(
@@ -653,10 +645,6 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
-    browser.browserAction.setBadgeText({
-      text: "",
-      tabId,
-    });
   }
 
   onTabCreated(tab: Tab) {
