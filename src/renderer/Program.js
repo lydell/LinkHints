@@ -184,6 +184,15 @@ export default class RendererProgram {
       document.documentElement.append(container);
     }
 
+    if (elements.length === 0) {
+      const element = createHintElement("¯\\_(ツ)_/¯");
+      element.style.top = "50%";
+      element.style.left = "50%";
+      element.style.transform = "translate(-50%, -50%)";
+      root.append(element);
+      return;
+    }
+
     // "W" is usually (one of) the widest character(s). This is surprisingly
     // cheap to calculate.
     const probe1 = createHintElement("W");
