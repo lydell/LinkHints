@@ -710,6 +710,15 @@ function getFirstNonEmptyTextRect(
   element: HTMLElement,
   range: Range
 ): ?ClientRect {
+  const elementRect = element.getBoundingClientRect();
+  if (
+    // Exclude screen reader only text.
+    elementRect.width < TEXT_RECT_MIN_SIZE &&
+    elementRect.height < TEXT_RECT_MIN_SIZE
+  ) {
+    return undefined;
+  }
+
   for (const node of element.childNodes) {
     if (node instanceof Text) {
       const index = node.data.search(/\S/);

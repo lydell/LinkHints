@@ -21,6 +21,13 @@
         position: absolute !important;
         width: 1px !important;
       }
+
+      .visually-hidden2 {
+        position: absolute !important;
+        width: 1px;
+        height: 1px;
+        clip: rect(0 0 0 0);
+      }
     </style>
   </head>
   <body>
@@ -56,6 +63,14 @@
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
+        <img src="image.svg">
+        5
+      </button>
+    </p>
+
+    <p>
+      <button class="icon-button">
+        <span class="visually-hidden2">Vote</span>
         <img src="image.svg">
         5
       </button>
