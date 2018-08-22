@@ -10,6 +10,17 @@
         height: 40px;
         border: 1px solid black;
       }
+
+      .visually-hidden {
+        border: 0 !important;
+        clip: rect(1px,1px,1px,1px) !important;
+        font-size: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        position: absolute !important;
+        width: 1px !important;
+      }
     </style>
   </head>
   <body>
@@ -33,6 +44,21 @@
 
     <p>
       <input type="text" placeholder="placeholder" style="padding: 5px 20px; border: 4px solid grey;">
+    </p>
+
+    <p>
+      <button class="icon-button">
+        <span class="visually-hidden">Vote</span>
+        <img src="image.svg">
+      </button>
+    </p>
+
+    <p>
+      <button class="icon-button">
+        <span class="visually-hidden">Vote</span>
+        <img src="image.svg">
+        5
+      </button>
     </p>
 
     <div style="margin-left: calc(100vw - 50px);">

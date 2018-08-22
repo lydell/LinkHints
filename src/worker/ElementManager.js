@@ -64,6 +64,7 @@ const CLICKABLE_ROLES = new Set([
 const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 
 const FRAME_MIN_SIZE = 6; // px
+const TEXT_RECT_MIN_SIZE = 2; // px
 
 // This value is replaced in by Rollup; only refer to it once.
 const clickableEventNames = CLICKABLE_EVENT_NAMES;
@@ -509,16 +510,10 @@ function getMeasurements(
   // will fail. An example is the signup form at <https://www.facebook.com/>.
   // For scrollable elements it also doesn't make sense to look for text to
   // place the hint at. That's what the `lookForText` option is for.
-  let textRect = undefined;
-  const first =
+  const textRect =
     !lookForText || element instanceof HTMLSelectElement
       ? undefined
-      : getFirstNonEmptyTextNode(element);
-  if (first != null) {
-    range.setStart(first.node, first.index);
-    range.setEnd(first.node, first.index + 1);
-    textRect = range.getBoundingClientRect();
-  }
+      : getFirstNonEmptyTextRect(element, range);
   const visibleTextBox =
     textRect == null ? undefined : getVisibleBox(textRect, viewports);
 
@@ -711,17 +706,27 @@ function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
       };
 }
 
-function getFirstNonEmptyTextNode(
-  element: HTMLElement
-): ?{| node: Text, index: number |} {
+function getFirstNonEmptyTextRect(
+  element: HTMLElement,
+  range: Range
+): ?ClientRect {
   for (const node of element.childNodes) {
     if (node instanceof Text) {
       const index = node.data.search(/\S/);
       if (index >= 0) {
-        return { node, index };
+        range.setStart(node, index);
+        range.setEnd(node, index + 1);
+        const rect = range.getBoundingClientRect();
+        if (
+          // Exclude screen reader only text.
+          rect.width >= TEXT_RECT_MIN_SIZE &&
+          rect.height >= TEXT_RECT_MIN_SIZE
+        ) {
+          return rect;
+        }
       }
     } else if (node instanceof HTMLElement) {
-      const result = getFirstNonEmptyTextNode(node);
+      const result = getFirstNonEmptyTextRect(node, range);
       if (result != null) {
         return result;
       }
