@@ -64,6 +64,7 @@ export default class BackgroundProgram {
   hintChars: string;
   tabState: Map<number, TabState>;
   updateIconTimeoutIds: Map<number, TimeoutID>;
+  oneTimeWindowMessageToken: string;
   resets: Resets;
 
   constructor({
@@ -80,6 +81,7 @@ export default class BackgroundProgram {
     this.hintChars = hintChars;
     this.tabState = new Map();
     this.updateIconTimeoutIds = new Map();
+    this.oneTimeWindowMessageToken = makeOneTimeWindowMessageToken();
     this.resets = new Resets();
 
     bind(this, [
@@ -237,10 +239,16 @@ export default class BackgroundProgram {
   ): Promise<void> {
     switch (message.type) {
       case "WorkerScriptAdded":
-        this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
-          tabId: info.tabId,
-          frameId: info.frameId,
-        });
+        this.sendWorkerMessage(
+          // Make sure that the added worker script gets the same token as all
+          // other frames in the page. Otherwise the first hints mode won't
+          // reach into any frames.
+          this.makeWorkerState(tabState.hintsState, { refreshToken: false }),
+          {
+            tabId: info.tabId,
+            frameId: info.frameId,
+          }
+        );
         break;
 
       case "KeyboardShortcutMatched":
@@ -685,7 +693,13 @@ export default class BackgroundProgram {
     });
   }
 
-  makeWorkerState(hintsState: HintsState): ToWorker {
+  makeWorkerState(
+    hintsState: HintsState,
+    { refreshToken = true }: {| refreshToken: boolean |} = {}
+  ): ToWorker {
+    if (refreshToken) {
+      this.oneTimeWindowMessageToken = makeOneTimeWindowMessageToken();
+    }
     if (hintsState.type === "Hinting") {
       return {
         type: "StateSync",
@@ -696,7 +710,7 @@ export default class BackgroundProgram {
           suppressByDefault: true,
           sendAll: true,
         },
-        oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+        oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       };
     }
     return {
@@ -708,12 +722,12 @@ export default class BackgroundProgram {
         suppressByDefault: false,
         sendAll: false,
       },
-      oneTimeWindowMessageToken: makeOneTimeWindowMessage(),
+      oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
   }
 }
 
-function makeOneTimeWindowMessage(): string {
+function makeOneTimeWindowMessageToken(): string {
   const array = new Uint32Array(3);
   window.crypto.getRandomValues(array);
   return array.join("");
