@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>hint-position</title>
+    <style>
+      .icon-button {
+        padding: 0;
+        width: 80px;
+        height: 40px;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      <button class="icon-button">
+        <img src="image.svg">
+      </button>
+    </p>
+
+    <p>
+      <button class="icon-button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="24" height="24">
+          <circle cx="48" cy="48" r="36" stroke="#000" stroke-width="8" fill="none" />
+        </svg>
+      </button>
+    </p>
+
+    <p>
+      <input type="button" value="button" style="padding: 5px 20px;">
+    </p>
+
+    <p>
+      <input type="text" placeholder="placeholder" style="padding: 5px 20px; border: 4px solid grey;">
+    </p>
+
+    <div style="margin-left: calc(100vw - 50px);">
+      <p>
+        <button class="icon-button" style="width: 200px;">
+          <img src="image.svg">
+        </button>
+      </p>
+
+      <p>
+        <input type="button" value="button" style="padding: 5px 60px;">
+      </p>
+    </div>
+  </body>
+</html>

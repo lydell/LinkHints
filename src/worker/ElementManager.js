@@ -523,7 +523,10 @@ function getMeasurements(
     textRect == null ? undefined : getVisibleBox(textRect, viewports);
 
   // The box used to choose the position of the hint.
-  const pointBox = visibleTextBox == null ? visibleBoxes[0] : visibleTextBox;
+  const pointBox =
+    visibleTextBox == null
+      ? adjustTextlessBox(element, rects, visibleBoxes[0])
+      : visibleTextBox;
 
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
@@ -593,6 +596,44 @@ function getMeasurements(
   return nonCoveredPoint == null
     ? { x, y, area }
     : { x: nonCoveredPoint.x + offsetX, y: nonCoveredPoint.y + offsetY, area };
+}
+
+function adjustTextlessBox(
+  element: HTMLElement,
+  rects: Array<ClientRect>,
+  visibleBox: Box
+): Box {
+  // If the element has only one rect and no text we can try to position it
+  // somewhat better than at the edge of the element.
+  if (rects.length === 1) {
+    const image = element.querySelector("img, svg");
+
+    // First try to place it near and image. Many buttons have just an icon and
+    // no text.
+    if (image != null) {
+      const imageRect = image.getBoundingClientRect();
+      const x = imageRect.left;
+
+      if (x > visibleBox.x && x < visibleBox.x + visibleBox.width) {
+        return { ...visibleBox, x };
+      }
+    }
+
+    // Otherwise try to take border and padding into account. This places the
+    // hint nearer the placeholder in `<input>` elements and nearer the text in
+    // `<input type="button">`.
+    const computedStyle = window.getComputedStyle(element);
+    const left =
+      parseFloat(computedStyle.getPropertyValue("border-left-width")) +
+      parseFloat(computedStyle.getPropertyValue("padding-left"));
+    const x = rects[0].left + left;
+
+    if (x > visibleBox.x && x < visibleBox.x + visibleBox.width) {
+      return { ...visibleBox, x };
+    }
+  }
+
+  return visibleBox;
 }
 
 function getNonCoveredPoint(
