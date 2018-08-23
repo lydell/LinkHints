@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>css-data-uri</title>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      const css = `
+        p {
+          background-color: blue;
+        }
+      `;
+
+      const root = container.attachShadow({ mode: "open" });
+
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = `data:text/css;utf8,${encodeURIComponent(css)}`;
+      root.append(link);
+
+      const p = document.createElement("p");
+      p.textContent = "shadow";
+      root.append(p);
+    </script>
+  </body>
+</html>

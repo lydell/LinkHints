@@ -16,6 +16,8 @@ import type {
   ToBackground,
 } from "../data/Messages";
 
+import { type Rule, applyStyles, parseCSS } from "./css";
+
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known.
@@ -71,10 +73,12 @@ const CSS = `
 
 export default class RendererProgram {
   css: string;
+  parsedCSS: ?Array<Rule>;
   resets: Resets;
 
   constructor() {
     this.css = CSS;
+    this.parsedCSS = undefined;
     this.resets = new Resets();
 
     bind(this, [
@@ -174,11 +178,26 @@ export default class RendererProgram {
     // for people who want to customize the styling of the hints.
     const root = container.attachShadow({ mode: "open" });
 
-    // Inserting a `<style>` element is way faster than doing
-    // `element.style.setProperty()` on every element.
-    const style = document.createElement("style");
-    style.append(document.createTextNode(this.css));
-    root.append(style);
+    if (this.parsedCSS == null) {
+      // Inserting a `<style>` element is way faster than doing
+      // `element.style.setProperty()` on every element.
+      const style = document.createElement("style");
+      style.append(document.createTextNode(this.css));
+      root.append(style);
+
+      // Chrome nicely allows inline styles inserted by an extension regardless
+      // of CSP. I look forward to the day Firefox works this way too. See
+      // <bugzil.la/1267027>. If `style.sheet` is null in Firefox (it is always
+      // null in Chrome), it means that the style tag was blocked by CSP. Unlike
+      // the case with the script tag in ElementManager.js, a data URI (`<link
+      // rel="stylesheet" href="data:text/css;utf8,...">`) does not work here
+      // (it causes no CSP warning in the console, but no styles are applied).
+      // The only workaround I could find was manually parsing and applying the
+      // CSS.
+      if (BROWSER === "firefox" && style.sheet == null) {
+        this.parsedCSS = parseCSS(this.css);
+      }
+    }
 
     if (document.documentElement != null) {
       document.documentElement.append(container);
@@ -190,6 +209,7 @@ export default class RendererProgram {
       element.style.left = "50%";
       element.style.transform = "translate(-50%, -50%)";
       root.append(element);
+      this.maybeApplyStyles(element);
       return;
     }
 
@@ -199,6 +219,8 @@ export default class RendererProgram {
     const probe2 = createHintElement("WW");
     root.append(probe1);
     root.append(probe2);
+    this.maybeApplyStyles(probe1);
+    this.maybeApplyStyles(probe2);
     const rect1 = probe1.getBoundingClientRect();
     const rect2 = probe2.getBoundingClientRect();
     const halfHeight = Math.ceil(rect1.height / 2);
@@ -230,6 +252,8 @@ export default class RendererProgram {
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
 
       root.append(element);
+
+      this.maybeApplyStyles(element);
 
       if (
         numEdgeElements < MAX_IMMEDIATE_HINT_MOVEMENTS &&
@@ -301,12 +325,15 @@ export default class RendererProgram {
           matched.className = MATCHED_CHARS_CLASS;
           matched.append(document.createTextNode(update.matched));
           child.append(matched);
+          this.maybeApplyStyles(matched);
         }
         if (markMatched) {
           child.classList.add(MATCHED_HINT_CLASS);
         }
         child.append(document.createTextNode(update.rest));
       }
+
+      this.maybeApplyStyles(child);
     }
   }
 
@@ -320,6 +347,12 @@ export default class RendererProgram {
       } else {
         container.remove();
       }
+    }
+  }
+
+  maybeApplyStyles(element: HTMLElement) {
+    if (this.parsedCSS != null) {
+      applyStyles(element, this.parsedCSS);
     }
   }
 }

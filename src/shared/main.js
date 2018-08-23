@@ -165,3 +165,25 @@ export class Resets {
     this._callbacks = [];
   }
 }
+
+/**
+ * Divides `array` into two arrays, `left`, and `right`, using `fn`. If
+ * `fn(item)` returns `true`, `item` is placed in `left`, otherwise in `right`.
+ */
+export function partition<T>(
+  array: Array<T>,
+  fn: (T, number, Array<T>) => boolean
+): [Array<T>, Array<T>] {
+  const left = [];
+  const right = [];
+
+  array.forEach((item, index) => {
+    if (fn(item, index, array)) {
+      left.push(item);
+    } else {
+      right.push(item);
+    }
+  });
+
+  return [left, right];
+}
