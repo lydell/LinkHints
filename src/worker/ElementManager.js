@@ -520,7 +520,9 @@ function getMeasurements(
   // The box used to choose the position of the hint.
   const pointBox =
     visibleTextBox == null
-      ? adjustTextlessBox(element, rects, visibleBoxes[0])
+      ? lookForText
+        ? adjustTextlessBox(element, rects, visibleBoxes[0])
+        : visibleBoxes[0]
       : visibleTextBox;
 
   const [offsetX, offsetY] = viewports.reduceRight(
