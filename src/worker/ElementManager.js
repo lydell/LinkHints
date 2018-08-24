@@ -513,9 +513,8 @@ function getMeasurements(
   const textRect =
     !lookForText || element instanceof HTMLSelectElement
       ? undefined
-      : getFirstNonEmptyTextRect(element, range);
-  const visibleTextBox =
-    textRect == null ? undefined : getVisibleBox(textRect, viewports);
+      : getFirstNonEmptyTextRect(element, visibleBoxes, range);
+  const visibleTextBox = textRect == null ? undefined : rectToBox(textRect);
 
   // The box used to choose the position of the hint.
   const pointBox =
@@ -710,6 +709,7 @@ function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
 
 function getFirstNonEmptyTextRect(
   element: HTMLElement,
+  visibleBoxes: Array<Box>,
   range: Range
 ): ?ClientRect {
   const elementRect = element.getBoundingClientRect();
@@ -731,19 +731,31 @@ function getFirstNonEmptyTextRect(
         if (
           // Exclude screen reader only text.
           rect.width >= TEXT_RECT_MIN_SIZE &&
-          rect.height >= TEXT_RECT_MIN_SIZE
+          rect.height >= TEXT_RECT_MIN_SIZE &&
+          // Make sure that the text is inside the element.
+          // eslint-disable-next-line no-loop-func
+          visibleBoxes.some(visibleBox => isWithin(visibleBox, rect))
         ) {
           return rect;
         }
       }
     } else if (node instanceof HTMLElement) {
-      const result = getFirstNonEmptyTextRect(node, range);
+      const result = getFirstNonEmptyTextRect(node, visibleBoxes, range);
       if (result != null) {
         return result;
       }
     }
   }
   return undefined;
+}
+
+function isWithin(box: Box, rect: ClientRect): boolean {
+  return (
+    rect.left >= box.x &&
+    rect.right <= box.x + box.width &&
+    rect.top >= box.y &&
+    rect.bottom <= box.y + box.height
+  );
 }
 
 function injectScript() {
@@ -833,4 +845,13 @@ function hasClickListenerProp(element: HTMLElement): boolean {
         : // $FlowIgnore: I _do_ want to dynamically read properties here.
           typeof element[prop] === "function"
   );
+}
+
+function rectToBox(rect: ClientRect): Box {
+  return {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
 }

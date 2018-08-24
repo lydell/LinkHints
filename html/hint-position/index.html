@@ -28,6 +28,25 @@
         height: 1px;
         clip: rect(0 0 0 0);
       }
+
+      .close {
+        width: 0;
+        height: 48px;
+        border: none;
+        padding: 0 0 0 48px;
+        overflow: hidden;
+        background: grey;
+        position: relative;
+      }
+
+      .close::after {
+        content: "×";
+        position: absolute;
+        top: 0;
+        left: 8px;
+        font-size: 48px;
+        line-height: 1;
+      }
     </style>
   </head>
   <body>
@@ -74,6 +93,11 @@
         <img src="image.svg">
         5
       </button>
+    </p>
+
+
+    <p>
+      <button class="close">Close</button>
     </p>
 
     <div style="margin-left: calc(100vw - 50px);">
