@@ -15,6 +15,24 @@
       setTimeout(() => {
         iframe.contentWindow.document.body.append(a);
       }, 0);
+
+      const iframe2 = document.createElement("iframe");
+      const a2 = a.cloneNode(true);
+      document.body.append(iframe2);
+      setTimeout(() => {
+        iframe2.contentWindow.document.body.append(a2);
+      }, 100);
+
+      // Inserting a blank iframe after page load triggers this bug:
+      // <bugzil.la/1415539>
+      const iframe3 = document.createElement("iframe");
+      const a3 = a.cloneNode(true);
+      setTimeout(() => {
+        document.body.append(iframe3);
+        setTimeout(() => {
+          iframe3.contentWindow.document.body.append(a3);
+        }, 0);
+      }, 1000);
     </script>
   </body>
 </html>
