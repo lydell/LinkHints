@@ -138,6 +138,8 @@ export default class WorkerProgram {
           return;
         }
 
+        log("log", "WorkerProgram: ClickElement", element);
+
         // Programmatically clicking on an `<a href="..." target="_blank">`
         // causes the popup blocker to block the new tab/window from opening.
         // That's really annoying, so temporarily remove the `target`. The user
