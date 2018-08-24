@@ -351,7 +351,7 @@ export default class RendererProgram {
   }
 
   maybeApplyStyles(element: HTMLElement) {
-    if (this.parsedCSS != null) {
+    if (BROWSER === "firefox" && this.parsedCSS != null) {
       applyStyles(element, this.parsedCSS);
     }
   }
