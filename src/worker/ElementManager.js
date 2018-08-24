@@ -467,9 +467,17 @@ function getMeasurements(
 ): ?HintMeasurements {
   const rects = element.getClientRects();
 
-  const visibleBoxes = Array.from(rects, rect =>
-    getVisibleBox(rect, viewports)
-  ).filter(Boolean);
+  const [offsetX, offsetY] = viewports.reduceRight(
+    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
+    [0, 0]
+  );
+
+  const visibleBoxes = Array.from(rects, rect => getVisibleBox(rect, viewports))
+    .filter(Boolean)
+    // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
+    // system of the current frame. This is so we can easily make comparisons
+    // with other rects of the frame.
+    .map(box => ({ ...box, x: box.x - offsetX, y: box.y - offsetY }));
 
   if (visibleBoxes.length === 0) {
     // If there’s only one rect and that rect has a height but not a width it
@@ -522,11 +530,6 @@ function getMeasurements(
         : visibleBoxes[0]
       : visibleTextBox;
 
-  const [offsetX, offsetY] = viewports.reduceRight(
-    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
-    [0, 0]
-  );
-
   const { x } = pointBox;
   const y = pointBox.y + pointBox.height / 2;
 
@@ -543,11 +546,9 @@ function getMeasurements(
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes link hints in fixed menus so much easier find.
   const nonCoveredPoint = getNonCoveredPoint(element, {
-    // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
-    // system of the current frame.
-    x: x - offsetX,
-    y: y - offsetY,
-    maxX: visibleBoxes[0].x - offsetX + visibleBoxes[0].width - 1,
+    x,
+    y,
+    maxX: visibleBoxes[0].x + visibleBoxes[0].width - 1,
   });
 
   if (nonCoveredPoint == null) {
@@ -588,7 +589,7 @@ function getMeasurements(
 
   // The coordinates at which to place the hint and the area of the element.
   return nonCoveredPoint == null
-    ? { x, y, area }
+    ? { x: x + offsetX, y: y + offsetY, area }
     : { x: nonCoveredPoint.x + offsetX, y: nonCoveredPoint.y + offsetY, area };
 }
 
