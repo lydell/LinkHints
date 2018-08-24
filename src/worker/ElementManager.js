@@ -371,9 +371,7 @@ export default class ElementManager {
         !(
           (element instanceof HTMLIFrameElement ||
             element instanceof HTMLFrameElement) &&
-          // Gmail has an iframe with no `src` attribute. Don’t waste time on it.
-          element.src !== "" &&
-          // Needed on reddit.com. There's a Google Ads iframe without `src` where
+          // Needed on reddit.com. There's a Google Ads iframe where
           // `contentWindow` is null.
           element.contentWindow != null
         )

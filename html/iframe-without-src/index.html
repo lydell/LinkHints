@@ -5,6 +5,16 @@
     <title>iframe without src</title>
   </head>
   <body>
+    <p><a href="#">link</a></p>
     <iframe></iframe>
+    <iframe id="iframe"></iframe>
+    <script>
+      const a = document.createElement("a");
+      a.href = "#";
+      a.textContent = "link";
+      setTimeout(() => {
+        iframe.contentWindow.document.body.append(a);
+      }, 0);
+    </script>
   </body>
 </html>
