@@ -124,7 +124,8 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
-  hintChars: "fjdkslaghrueiwoncmv",
+  // hintChars: "fjdkslaghrueiwoncmv",
+  hintChars: "ehstirnoamupcwlfgdy",
 });
 
 program.start();
