@@ -108,11 +108,17 @@ export default class WorkerProgram {
         break;
 
       case "StartFindElements": {
+        const { scrollingElement } = document;
+        if (scrollingElement == null) {
+          break;
+        }
         const viewport = {
           x: 0,
           y: 0,
-          width: window.innerWidth,
-          height: window.innerHeight,
+          // As mentioned in renderer/Program.js, this is the correct way to
+          // measure viewport size. TODO: Move logic to common helper function.
+          width: scrollingElement.clientWidth,
+          height: scrollingElement.clientHeight,
         };
         this.reportVisibleElements(new Set(message.types), [viewport]);
         break;

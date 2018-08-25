@@ -18,6 +18,11 @@ import type {
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 
+type Viewport = {|
+  width: number,
+  height: number,
+|};
+
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known.
@@ -37,11 +42,6 @@ const CONTAINER_STYLES = {
   all: "unset",
   position: "absolute",
   "z-index": String(MAX_Z_INDEX),
-  // Use `vw` and `vh` rather than `%`. They are usually the same, but `%` is
-  // dependent on the size of the `<html>` element (it could have `width:
-  // 1000px;` for example).
-  width: "100vw",
-  height: "100vh",
   "pointer-events": "none",
   overflow: "hidden",
 };
@@ -169,11 +169,20 @@ export default class RendererProgram {
   render(elements: Array<ElementWithHint>) {
     this.unrender();
 
-    const { documentElement } = document;
+    const { documentElement, scrollingElement } = document;
 
-    if (documentElement == null) {
+    if (documentElement == null || scrollingElement == null) {
       return;
     }
+
+    // `scrollingElement.client{Width,Height}` is the size of the viewport
+    // without scrollbars (unlike `window.inner{Width,Height}` which include the
+    // scrollbars). This works in both Firefox and Chrome, quirks and non-quirks
+    // mode and with strange styling like setting a width on `<html>`.
+    const viewport: Viewport = {
+      width: scrollingElement.clientWidth,
+      height: scrollingElement.clientHeight,
+    };
 
     // I've tried creating the container in the constructor and re-using it for
     // all renders, but that didn't turn out to be faster.
@@ -187,19 +196,29 @@ export default class RendererProgram {
     // `window.scrollX` and `window.scrollY` into account anymore.
     const rect = documentElement.getBoundingClientRect();
 
-    // If the `<html>` element has a border it must also be accounted for.
-    // Padding, on the other hand, does not affect the positioning.
+    // If the `<html>` element has margins or borders they must also be
+    // accounted for. Padding, on the other hand, does not affect the
+    // positioning. Whether to account for margins or borders depends on
+    // `position`.
     const computedStyle = window.getComputedStyle(documentElement);
+    const isStatic = computedStyle.getPropertyValue("position") === "static";
     const left =
       rect.left +
-      parseFloat(computedStyle.getPropertyValue("border-left-width"));
+      (isStatic
+        ? -parseFloat(computedStyle.getPropertyValue("margin-left"))
+        : parseFloat(computedStyle.getPropertyValue("border-left-width")));
     const top =
-      rect.top + parseFloat(computedStyle.getPropertyValue("border-top-width"));
+      rect.top +
+      (isStatic
+        ? -parseFloat(computedStyle.getPropertyValue("margin-top"))
+        : parseFloat(computedStyle.getPropertyValue("border-top-width")));
 
     setStyles(container, {
       ...CONTAINER_STYLES,
       left: `${-left}px`,
       top: `${-top}px`,
+      width: `${viewport.width}px`,
+      height: `${viewport.height}px`,
     });
 
     // Using `mode: "closed"` is tempting, but then Firefox does not seem to
@@ -260,13 +279,6 @@ export default class RendererProgram {
     const restElements = [];
     let numEdgeElements = 0;
 
-    // Use the rect of the container to get viewport width and height rather
-    // than relying on `window.innerWidth` and `window.innerHeight`, to avoid
-    // rendering hints behind the page scrollbars (if any). We've already
-    // inserted the container into the DOM and made other DOM measurements
-    // anyway. This is fast.
-    const containerRect = container.getBoundingClientRect();
-
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
@@ -287,7 +299,7 @@ export default class RendererProgram {
         numEdgeElements < MAX_IMMEDIATE_HINT_MOVEMENTS &&
         (hintMeasurements.x <= Math.ceil(widthM + widthK * hint.length) ||
           hintMeasurements.y <= halfHeight ||
-          containerRect.height - hintMeasurements.y <= halfHeight)
+          viewport.height - hintMeasurements.y <= halfHeight)
       ) {
         numEdgeElements = edgeElements.push(element);
       } else {
@@ -301,14 +313,14 @@ export default class RendererProgram {
     // that the hints appear on screen as quickly as possible. Adjusting
     // positions is just a tweak – that can be delayed a little bit.
     if (numEdgeElements > 0) {
-      moveInsideViewport(edgeElements, containerRect);
+      moveInsideViewport(edgeElements, viewport);
     }
 
     // Using double `requestAnimationFrame` since they run before paint.
     // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        moveInsideViewport(restElements, containerRect);
+        moveInsideViewport(restElements, viewport);
       });
     });
 
@@ -405,10 +417,7 @@ function emptyElement(element: HTMLElement) {
   }
 }
 
-function moveInsideViewport(
-  elements: Array<HTMLElement>,
-  containerRect: ClientRect
-) {
+function moveInsideViewport(elements: Array<HTMLElement>, viewport: Viewport) {
   for (const element of elements) {
     const rect = element.getBoundingClientRect();
     if (rect.left < 0) {
@@ -417,14 +426,14 @@ function moveInsideViewport(
     if (rect.top < 0) {
       element.style.marginTop = `${Math.round(-rect.top)}px`;
     }
-    if (rect.right > containerRect.width) {
+    if (rect.right > viewport.width) {
       element.style.marginRight = `${Math.round(
-        rect.right - containerRect.width
+        rect.right - viewport.width
       )}px`;
     }
-    if (rect.bottom > containerRect.height) {
+    if (rect.bottom > viewport.height) {
       element.style.marginTop = `${Math.round(
-        containerRect.height - rect.bottom
+        viewport.height - rect.bottom
       )}px`;
     }
   }
