@@ -637,6 +637,11 @@ function getNonCoveredPoint(
 ): ?{| x: number, y: number |} {
   const elementAtPoint = document.elementFromPoint(x, y);
 
+  // (x, y) is off-screen.
+  if (elementAtPoint == null) {
+    return undefined;
+  }
+
   // `.contains` also checks `element === elementAtPoint`.
   if (element.contains(elementAtPoint)) {
     return { x, y };
@@ -666,7 +671,7 @@ function getNonCoveredPoint(
   if (newX > x && newX <= maxX) {
     const elementAtPoint2 = document.elementFromPoint(newX, y);
 
-    if (element.contains(elementAtPoint2)) {
+    if (elementAtPoint2 != null && element.contains(elementAtPoint2)) {
       return { x: newX, y };
     }
   }
