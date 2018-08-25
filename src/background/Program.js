@@ -876,10 +876,15 @@ const DOWN_PRIORITIZED_ELEMENT_TYPES: Set<ElementType> = new Set([
   "scrollable",
 ]);
 
+// The types of elements above get the area of a small-ish link (plus log2 of
+// their original area to distinguish the elements from each other somewhat).
+const DOWN_PRIORITIZED_ELEMENT_AREA = 1000; // px
+
 function hintWeight(element: ExtendedElementReport): number {
+  const { area } = element.hintMeasurements;
   return DOWN_PRIORITIZED_ELEMENT_TYPES.has(element.type)
-    ? 1
-    : element.hintMeasurements.area;
+    ? Math.min(area, DOWN_PRIORITIZED_ELEMENT_AREA + Math.log2(area))
+    : area;
 }
 
 // If there are a bunch boxes next to each other with seemingly the same area
