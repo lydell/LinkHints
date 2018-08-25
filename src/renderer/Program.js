@@ -34,8 +34,11 @@ const CONTAINER_STYLES = {
   all: "unset",
   position: "absolute",
   "z-index": "2147483647", // Maximum z-index browsers support.
-  width: "100%",
-  height: "100%",
+  // Use `vw` and `vh` rather than `%`. They are usually the same, but `%` is
+  // dependent on the size of the `<html>` element (it could have `width:
+  // 1000px;` for example).
+  width: "100vw",
+  height: "100vh",
   "pointer-events": "none",
   overflow: "hidden",
 };
@@ -163,14 +166,37 @@ export default class RendererProgram {
   render(elements: Array<ElementWithHint>) {
     this.unrender();
 
+    const { documentElement } = document;
+
+    if (documentElement == null) {
+      return;
+    }
+
     // I've tried creating the container in the constructor and re-using it for
     // all renders, but that didn't turn out to be faster.
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
+
+    // If the `<html>` element has `transform: translate(...);` (some sites push
+    // the entire page to the side when opening a sidebar menu using this
+    // technique) we need to take that into account. When checking the bounding
+    // client rect of the `<html>` element there’s no need to take
+    // `window.scrollX` and `window.scrollY` into account anymore.
+    const rect = documentElement.getBoundingClientRect();
+
+    // If the `<html>` element has a border it must also be accounted for.
+    // Padding, on the other hand, does not affect the positioning.
+    const computedStyle = window.getComputedStyle(documentElement);
+    const left =
+      rect.left +
+      parseFloat(computedStyle.getPropertyValue("border-left-width"));
+    const top =
+      rect.top + parseFloat(computedStyle.getPropertyValue("border-top-width"));
+
     setStyles(container, {
       ...CONTAINER_STYLES,
-      left: `${window.scrollX}px`,
-      top: `${window.scrollY}px`,
+      left: `${-left}px`,
+      top: `${-top}px`,
     });
 
     // Using `mode: "closed"` is tempting, but then Firefox does not seem to
@@ -199,9 +225,7 @@ export default class RendererProgram {
       }
     }
 
-    if (document.documentElement != null) {
-      document.documentElement.append(container);
-    }
+    documentElement.append(container);
 
     if (elements.length === 0) {
       const element = createHintElement("¯\\_(ツ)_/¯");

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>moved-root</title>
+    <style>
+      html {
+        transition: transform 200ms;
+      }
+
+      html.open {
+        transform: translateX(380px);
+        overflow-x: hidden;
+      }
+
+      nav {
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        right: 100vw;
+        height: 100vh;
+        box-sizing: border-box;
+        width: 380px;
+        padding: 30px;
+        background-color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="document.documentElement.classList.toggle('open')">Menu</button>
+    <nav>
+      <p><a href="#">link</a></p>
+      <p><a href="#">link</a></p>
+      <p><a href="#">link</a></p>
+    </nav>
+  </body>
+</html>
