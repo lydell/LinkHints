@@ -325,7 +325,7 @@ export default class WorkerProgram {
           hintMeasurements: measurements,
         })
       ),
-      pendingFrames: frames.length,
+      numFrames: frames.length,
     });
 
     this.elements = elements;

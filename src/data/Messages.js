@@ -59,7 +59,7 @@ export type FromWorker =
   | {|
       type: "ReportVisibleElements",
       elements: Array<ElementReport>,
-      pendingFrames: number,
+      numFrames: number,
     |};
 
 export type ToWorker =
@@ -184,7 +184,10 @@ export type HintsState =
     |};
 
 export type PendingElements = {|
-  pendingFrames: number,
+  pendingFrames: {|
+    answering: number,
+    collecting: number,
+  |},
   startTime: number,
   elements: Array<ExtendedElementReport>,
 |};

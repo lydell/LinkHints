@@ -412,10 +412,25 @@ export default class BackgroundProgram {
 
       case "ReportVisibleFrame": {
         const { hintsState } = tabState;
+
         if (hintsState.type !== "Collecting") {
           return;
         }
-        hintsState.pendingElements.pendingFrames += 1;
+
+        hintsState.pendingElements.pendingFrames.answering = Math.max(
+          0,
+          hintsState.pendingElements.pendingFrames.answering - 1
+        );
+
+        if (
+          hintsState.pendingElements.pendingFrames.answering === 0 &&
+          hintsState.timeoutId != null
+        ) {
+          clearTimeout(hintsState.timeoutId);
+          hintsState.timeoutId = undefined;
+        }
+
+        hintsState.pendingElements.pendingFrames.collecting += 1;
         break;
       }
 
@@ -434,13 +449,17 @@ export default class BackgroundProgram {
             frameId: info.frameId,
           })
         );
+
         hintsState.pendingElements.elements.push(...elements);
-        hintsState.pendingElements.pendingFrames = Math.max(
+
+        hintsState.pendingElements.pendingFrames.answering += message.numFrames;
+
+        hintsState.pendingElements.pendingFrames.collecting = Math.max(
           0,
-          hintsState.pendingElements.pendingFrames - 1
+          hintsState.pendingElements.pendingFrames.collecting - 1
         );
 
-        if (message.pendingFrames === 0) {
+        if (message.numFrames === 0) {
           // If there are no frames, start hinting immediately, unless we're
           // waiting for frames in another frame.
           if (hintsState.timeoutId == null) {
@@ -468,7 +487,7 @@ export default class BackgroundProgram {
     const { hintsState } = tabState;
     if (
       hintsState.type !== "Collecting" ||
-      hintsState.pendingElements.pendingFrames > 0
+      hintsState.pendingElements.pendingFrames.collecting > 0
     ) {
       return;
     }
@@ -613,7 +632,10 @@ export default class BackgroundProgram {
           type: "Collecting",
           mode: action.mode,
           pendingElements: {
-            pendingFrames: 0,
+            pendingFrames: {
+              answering: 0,
+              collecting: 0,
+            },
             startTime: timestamp,
             elements: [],
           },
