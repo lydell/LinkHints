@@ -58,7 +58,7 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
       resolve(),
       commonjs(),
     ].filter(Boolean),
-    onwarn: warning => {
+    onwarn: (warning /* : any*/) => {
       if (warning.code !== "EMPTY_BUNDLE") {
         throw warning;
       }
@@ -94,7 +94,7 @@ function template(
     plugins: [
       {
         name: "template",
-        load: id => {
+        load: (id /* : string*/) => {
           delete require.cache[id];
           content = require(id)(data);
           return "0";
@@ -130,7 +130,7 @@ function copy({ input, output } /* : {| input: string, output: string, |} */) {
     plugins: [
       {
         name: "copy",
-        load: id => {
+        load: (id /* : string*/) => {
           content = fs.readFileSync(id, "utf8");
           return "0";
         },
