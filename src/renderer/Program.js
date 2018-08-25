@@ -30,10 +30,13 @@ const MATCHED_CHARS_CLASS = "matchedChars";
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 const UNRENDER_DELAY = 200; // ms
 
+// The maximum z-index browsers support.
+const MAX_Z_INDEX = 2147483647;
+
 const CONTAINER_STYLES = {
   all: "unset",
   position: "absolute",
-  "z-index": "2147483647", // Maximum z-index browsers support.
+  "z-index": String(MAX_Z_INDEX),
   // Use `vw` and `vh` rather than `%`. They are usually the same, but `%` is
   // dependent on the size of the `<html>` element (it could have `width:
   // 1000px;` for example).
@@ -264,7 +267,7 @@ export default class RendererProgram {
     // anyway. This is fast.
     const containerRect = container.getBoundingClientRect();
 
-    for (const { hintMeasurements, hint } of elements) {
+    for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
       // Use `right` rather than `left` since the hints should be right-aligned
@@ -274,6 +277,7 @@ export default class RendererProgram {
       // on the font. `calc()` does not affect performance.
       element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
+      element.style.zIndex = String(MAX_Z_INDEX - index);
 
       root.append(element);
 

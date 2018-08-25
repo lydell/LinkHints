@@ -13,6 +13,7 @@ import {
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
+  ExtendedElementReport,
   FromBackground,
   FromPopup,
   FromRenderer,
@@ -468,18 +469,20 @@ export default class BackgroundProgram {
       return;
     }
 
-    const elementsWithHints = hintsState.pendingElements.elements.map(
-      element => ({
+    const elementsWithHints = hintsState.pendingElements.elements
+      .map(element => ({
         type: element.type,
         index: element.index,
         hintMeasurements: element.hintMeasurements,
         url: element.url,
         frameId: element.frameId,
-        weight: element.hintMeasurements.area,
+        weight: hintWeight(element),
         hint: "",
-      })
-    );
-    const tree = huffman.createTree(elementsWithHints, this.hintChars.length);
+      }))
+      .sort((a, b) => b.weight - a.weight);
+    const tree = huffman.createTree(elementsWithHints, this.hintChars.length, {
+      sorted: true,
+    });
     tree.assignCodeWords(this.hintChars, (item, codeWord) => {
       item.hint = codeWord;
     });
@@ -744,7 +747,7 @@ function makeEmptyTabState(): TabState {
 function getHintsTypes(mode: HintsMode): Array<ElementType> {
   switch (mode) {
     case "Click":
-      return ["clickable", "link", "scrollable", "label"];
+      return ["clickable", "clickable-event", "link", "scrollable", "label"];
 
     case "BackgroundTab":
       return ["link"];
@@ -832,4 +835,21 @@ function getIcons(type: IconType): { [string]: string } {
     },
     {}
   );
+}
+
+// These types of elements can be very large, making them get much shorter hints
+// than they deserve. There’s also the case of `<div
+// onclick="..."><input></div>` where the hint for the `<div>` and the hint for
+// the `<input>` end up on top of each other. Usually only clicking the
+// `<input>` actually focuses the `<input>`, so giving it a better weight makes
+// sure it stays on top.
+const DOWN_PRIORITIZED_ELEMENT_TYPES: Set<ElementType> = new Set([
+  "clickable-event",
+  "scrollable",
+]);
+
+function hintWeight(element: ExtendedElementReport): number {
+  return DOWN_PRIORITIZED_ELEMENT_TYPES.has(element.type)
+    ? 1
+    : element.hintMeasurements.area;
 }

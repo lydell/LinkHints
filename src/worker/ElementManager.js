@@ -7,6 +7,7 @@ import injected from "./injected";
 export type ElementType =
   | "link"
   | "clickable"
+  | "clickable-event"
   | "scrollable"
   | "label"
   | "frame";
@@ -437,12 +438,15 @@ export default class ElementManager {
         }
 
         const roleAttr = element.getAttribute("role");
+        if (CLICKABLE_ROLES.has(roleAttr)) {
+          return "clickable";
+        }
+
         if (
-          CLICKABLE_ROLES.has(roleAttr) ||
           hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element)
         ) {
-          return "clickable";
+          return "clickable-event";
         }
 
         // Match `<label>` elements last so that labels without controls but
