@@ -44,7 +44,7 @@ function setup() {
   }
 }
 
-function js({ input, output } /* : {| input: string, output: string |} */) {
+function js({ input, output } /*: {| input: string, output: string |} */) {
   return {
     input,
     output: {
@@ -58,7 +58,7 @@ function js({ input, output } /* : {| input: string, output: string |} */) {
       resolve(),
       commonjs(),
     ].filter(Boolean),
-    onwarn: (warning /* : any*/) => {
+    onwarn: (warning /*: any */) => {
       if (warning.code !== "EMPTY_BUNDLE") {
         throw warning;
       }
@@ -77,7 +77,7 @@ function template(
     input,
     output,
     data,
-  } /* : {|
+  } /*: {|
     input: string,
     output: string,
     data?: any,
@@ -94,7 +94,7 @@ function template(
     plugins: [
       {
         name: "template",
-        load: (id /* : string*/) => {
+        load: (id /*: string */) => {
           delete require.cache[id];
           content = require(id)(data);
           return "0";
@@ -105,7 +105,7 @@ function template(
   };
 }
 
-function html(files /* : {| html: string, js: string |} */) {
+function html(files /*: {| html: string, js: string |} */) {
   return template({
     input: "html.js",
     output: files.html,
@@ -118,7 +118,7 @@ function html(files /* : {| html: string, js: string |} */) {
   });
 }
 
-function copy({ input, output } /* : {| input: string, output: string, |} */) {
+function copy({ input, output } /*: {| input: string, output: string, |} */) {
   let content = "";
   return {
     input,
@@ -130,7 +130,7 @@ function copy({ input, output } /* : {| input: string, output: string, |} */) {
     plugins: [
       {
         name: "copy",
-        load: (id /* : string*/) => {
+        load: (id /*: string */) => {
           content = fs.readFileSync(id, "utf8");
           return "0";
         },
