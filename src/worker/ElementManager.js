@@ -35,6 +35,10 @@ export type VisibleElement = {|
   measurements: HintMeasurements,
 |};
 
+// Elements this many pixels high or taller always get their hint placed at the
+// very left edge.
+const BOX_MIN_HEIGHT = 110; // px
+
 const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
 
 // http://w3c.github.io/aria/#widget_roles
@@ -72,6 +76,20 @@ const clickableEventNames = CLICKABLE_EVENT_NAMES;
 const clickableEventProps = clickableEventNames.map(
   eventName => `on${eventName}`
 );
+
+const CLICKABLE_ATTRIBUTES = [
+  // Bootstrap.
+  "data-dismiss",
+  // Twitter
+  "data-permalink-path",
+];
+
+const MUTATION_ATTRIBUTES = [
+  "href",
+  "role",
+  ...clickableEventProps,
+  ...CLICKABLE_ATTRIBUTES,
+];
 
 export default class ElementManager {
   maxTrackedElements: number;
@@ -116,7 +134,7 @@ export default class ElementManager {
       this.mutationObserver.observe(documentElement, {
         childList: true,
         subtree: true,
-        attributeFilter: ["href", "role", ...clickableEventProps],
+        attributeFilter: MUTATION_ATTRIBUTES,
       });
       this.resets.add(
         addEventListener(
@@ -444,7 +462,8 @@ export default class ElementManager {
 
         if (
           hasClickListenerProp(element) ||
-          this.elementsWithClickListeners.has(element)
+          this.elementsWithClickListeners.has(element) ||
+          CLICKABLE_ATTRIBUTES.some(attr => element.hasAttribute(attr))
         ) {
           return "clickable-event";
         }
@@ -467,9 +486,12 @@ function getMeasurements(
   // The `range` is passed in since it is faster to re-use the same one than
   // creating a new one for every element candidate.
   range: Range,
-  { lookForText = true }: {| lookForText: boolean |} = {}
+  { lookForText: passedLookForText = true }: {| lookForText: boolean |} = {}
 ): ?HintMeasurements {
   const rects = element.getClientRects();
+
+  const isBox = rects.length === 1 && rects[0].height >= BOX_MIN_HEIGHT;
+  const lookForText = passedLookForText && !isBox;
 
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
