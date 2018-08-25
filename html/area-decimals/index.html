@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>area-decimals</title>
+    <style>
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      }
+
+      #grid > * {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: auto;
+        height: 112px;
+        background-color: #eee;
+      }
+
+      #grid > *:nth-child(even) {
+        background-color: #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <p>All boxes are supposed to have the same area but differ ever so slightly:</p>
+    <pre id="pre"></pre>
+    <div id="grid">
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+      <a href="#">link</a>
+    </div>
+    <script>
+      const areas = new Set(Array.from(grid.querySelectorAll("a"), a => area(a)));
+
+      pre.textContent = JSON.stringify(Array.from(areas), undefined, 2);
+
+      function area(element) {
+        const rect = element.getBoundingClientRect();
+        return rect.width * rect.height;
+      }
+    </script>
+  </body>
+</html>

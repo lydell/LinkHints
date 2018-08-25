@@ -8,6 +8,7 @@ import {
   addListener,
   bind,
   log,
+  stableSort,
   unreachable,
 } from "../shared/main";
 // TODO: Move this type somewhere.
@@ -306,9 +307,12 @@ export default class BackgroundProgram {
 
         if (done) {
           const [hint] = Array.from(matchingHints);
-          const [match] = hintsState.elementsWithHints
-            .filter(element => element.hint === hint)
-            .sort((a, b) => b.weight - a.weight);
+          const [match] = stableSort(
+            hintsState.elementsWithHints.filter(
+              element => element.hint === hint
+            ),
+            (a, b) => b.weight - a.weight
+          );
           const { url } = match;
 
           switch (hintsState.mode) {
@@ -469,8 +473,8 @@ export default class BackgroundProgram {
       return;
     }
 
-    const elementsWithHints = hintsState.pendingElements.elements
-      .map(element => ({
+    const elementsWithHints = stableSort(
+      hintsState.pendingElements.elements.map(element => ({
         type: element.type,
         index: element.index,
         hintMeasurements: element.hintMeasurements,
@@ -478,10 +482,12 @@ export default class BackgroundProgram {
         frameId: element.frameId,
         weight: hintWeight(element),
         hint: "",
-      }))
-      .sort((a, b) => b.weight - a.weight);
+      })),
+      (a, b) => compareWeights(b, a)
+    );
     const tree = huffman.createTree(elementsWithHints, this.hintChars.length, {
       sorted: true,
+      compare: compareWeights,
     });
     tree.assignCodeWords(this.hintChars, (item, codeWord) => {
       item.hint = codeWord;
@@ -852,4 +858,27 @@ function hintWeight(element: ExtendedElementReport): number {
   return DOWN_PRIORITIZED_ELEMENT_TYPES.has(element.type)
     ? 1
     : element.hintMeasurements.area;
+}
+
+// If there are a bunch boxes next to each other with seemingly the same area
+// (and no other clickable elements around) the first box should get the first
+// hint chars as a hint, the second should get the second hint char, and so on.
+// However, the areas of the boxes can differ ever so slightly (usually by less
+// than 1px). If two elements have too little difference in area for a human to
+// detect, consider their areas equal.
+const MIN_WEIGHT_DIFF = 10; // Pixels of area.
+
+function compareWeights<T: { weight: number }>(a: T, b: T): number {
+  const diff = a.weight - b.weight;
+  if (a instanceof huffman.BranchPoint || b instanceof huffman.BranchPoint) {
+    return diff;
+  }
+  if (diff <= -MIN_WEIGHT_DIFF) {
+    return -1;
+  }
+  if (diff >= MIN_WEIGHT_DIFF) {
+    return +1;
+  }
+
+  return 0;
 }

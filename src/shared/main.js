@@ -187,3 +187,15 @@ export function partition<T>(
 
   return [left, right];
 }
+
+export function stableSort<T>(array: Array<T>, fn: (T, T) => number): Array<T> {
+  if (BROWSER === "firefox") {
+    // Firefox’s `Array.prototype.sort` is already stable.
+    return array.slice().sort(fn);
+  }
+
+  return array
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => fn(a.item, b.item) || a.index - b.index)
+    .map(({ item }) => item);
+}
