@@ -111,6 +111,10 @@ export type ToRenderer =
       markMatched: boolean,
     |}
   | {|
+      type: "RotateHints",
+      forward: boolean,
+    |}
+  | {|
       type: "Unrender",
       delayed: boolean,
     |};

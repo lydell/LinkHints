@@ -6,6 +6,7 @@ import {
   addListener,
   bind,
   log,
+  partition,
   unreachable,
 } from "../shared/main";
 import type {
@@ -80,11 +81,13 @@ const CSS = `
 export default class RendererProgram {
   css: string;
   parsedCSS: ?Array<Rule>;
+  hints: Array<HTMLElement>;
   resets: Resets;
 
   constructor() {
     this.css = CSS;
     this.parsedCSS = undefined;
+    this.hints = [];
     this.resets = new Resets();
 
     bind(this, [
@@ -155,6 +158,10 @@ export default class RendererProgram {
 
       case "UpdateHints":
         this.updateHints(message.updates, { markMatched: message.markMatched });
+        break;
+
+      case "RotateHints":
+        this.rotateHints({ forward: message.forward });
         break;
 
       case "Unrender":
@@ -292,6 +299,7 @@ export default class RendererProgram {
       element.style.zIndex = String(MAX_Z_INDEX - index);
 
       root.append(element);
+      this.hints.push(element);
 
       this.maybeApplyStyles(element);
 
@@ -334,17 +342,8 @@ export default class RendererProgram {
     updates: Array<HintUpdate>,
     { markMatched = false }: {| markMatched: boolean |} = {}
   ) {
-    const container = document.getElementById(CONTAINER_ID);
-    const root = container == null ? undefined : container.shadowRoot;
-    if (root == null) {
-      log("error", "RendererProgram#updateHints: missing root", container);
-      return;
-    }
-
-    const hints = root.querySelectorAll(`.${HINT_CLASS}`);
-
     for (const [index, update] of updates.entries()) {
-      const child = hints[index];
+      const child = this.hints[index];
 
       if (child == null) {
         log(
@@ -377,7 +376,29 @@ export default class RendererProgram {
     }
   }
 
+  rotateHints({ forward }: {| forward: boolean |}) {
+    const sign = forward ? 1 : +1;
+    const stacks = getStacks(this.hints).map(stack =>
+      stack
+        .slice()
+        // All `z-index`:es are unique, so there’s no need for a stable sort.
+        .sort(
+          (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
+        )
+    );
+    for (const stack of stacks) {
+      if (stack.length >= 2) {
+        const [first, ...rest] = stack.map(element => element.style.zIndex);
+        const zIndexes = [...rest, first];
+        for (const [index, element] of stack.entries()) {
+          element.style.zIndex = zIndexes[index];
+        }
+      }
+    }
+  }
+
   unrender({ delayed = false }: {| delayed: boolean |} = {}) {
+    this.hints = [];
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
       if (delayed) {
@@ -444,4 +465,41 @@ function createHintElement(hint: string): HTMLElement {
   element.className = HINT_CLASS;
   element.append(document.createTextNode(hint));
   return element;
+}
+
+function getStacks(elements: Array<HTMLElement>): Array<Array<HTMLElement>> {
+  if (elements.length === 0) {
+    return [];
+  }
+
+  const [first, ...rest] = elements;
+  const { stack, remainder } = getStackFor(first, rest);
+
+  return [stack, ...getStacks(remainder)];
+}
+
+function getStackFor(
+  element: HTMLElement,
+  rest: Array<HTMLElement>
+): {| stack: Array<HTMLElement>, remainder: Array<HTMLElement> |} {
+  const [overlapping, notOverlapping] = partition(rest, element2 =>
+    overlaps(element.getBoundingClientRect(), element2.getBoundingClientRect())
+  );
+
+  return overlapping.reduce(
+    ({ stack, remainder }, element2) => {
+      const next = getStackFor(element2, remainder);
+      return { stack: [...stack, ...next.stack], remainder: next.remainder };
+    },
+    { stack: [element], remainder: notOverlapping }
+  );
+}
+
+function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
+  return (
+    rectA.right >= rectB.left &&
+    rectA.left <= rectB.right &&
+    rectA.bottom >= rectB.top &&
+    rectA.top <= rectB.bottom
+  );
 }

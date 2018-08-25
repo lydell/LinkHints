@@ -653,6 +653,21 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "RotateHints": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null || tabState.hintsState.type !== "Hinting") {
+          return;
+        }
+        this.sendRendererMessage(
+          {
+            type: "RotateHints",
+            forward: action.forward,
+          },
+          { tabId: info.tabId }
+        );
+        break;
+      }
+
       case "Escape": {
         this.exitHintsMode(info.tabId);
         this.sendWorkerMessage(

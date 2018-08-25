@@ -9,6 +9,10 @@ export type KeyboardAction =
       type: "ExitHintsMode",
     |}
   | {|
+      type: "RotateHints",
+      forward: boolean,
+    |}
+  | {|
       type: "Escape",
     |};
 

@@ -119,6 +119,28 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: { type: "ExitHintsMode" },
   },
+  {
+    shortcut: {
+      key: " ",
+      code: "Space",
+      altKey: false,
+      ctrlKey: true,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: { type: "RotateHints", forward: true },
+  },
+  {
+    shortcut: {
+      key: " ",
+      code: "Space",
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: { type: "RotateHints", forward: false },
+  },
 ];
 
 const program = new BackgroundProgram({
