@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>mutation-observer-detect</title>
+  </head>
+  <body>
+    <button onclick="addLi()">add li</button>
+    <button onclick="removeLi()">remove li</button>
+    <button onclick="addLi(true)">add and immediately remove li</button>
+    <ul id="ul">
+    </ul>
+    <script>
+      const obs = new MutationObserver(records => {
+        console.log("Muation!");
+        for (const record of records) {
+          console.log("added:", record.addedNodes);
+          console.log("removed:", record.removedNodes);
+        }
+      });
+      obs.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+
+      function addLi(remove = false) {
+        const li = document.createElement("li");
+        li.textContent = "li";
+        li.addEventListener("click", () => console.log("click!"));
+        ul.prepend(li);
+        if (remove) {
+          li.remove();
+        }
+      }
+
+      function removeLi() {
+        const li = ul.querySelector("li");
+        if (li != null) {
+          li.remove();
+        }
+      }
+    </script>
+  </body>
+</html>

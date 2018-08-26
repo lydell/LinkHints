@@ -368,7 +368,9 @@ export default () => {
     // `element` might not be inserted into the DOM (yet/anymore), which causes
     // the event not to fire. However, sending a DOM element as `detail` from a
     // web page to an extension is not allowed in Chrome, so there we have to
-    // temporarily insert the element into the DOM if needed.
+    // temporarily insert the element into the DOM if needed. That could
+    // potentially confuse MutationObservers on the page, but I don’t think it’s
+    // very likely.
     if (!isChrome) {
       apply(dispatchEvent, window, [
         new CustomEvent2(eventName, { detail: { element } }),
