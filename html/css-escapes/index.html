@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>css-escapes</title>
+    <style>
+      p:nth-child(1)[class="{"] {
+        background-color: green;
+      }
+      p:nth-child(2)[class="\7b "] {
+        background-color: green;
+      }
+      p:nth-child(3) {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect x="0" y="0" width="1" height="1" fill="green" /></svg>');
+      }
+      p:nth-child(4) {
+        background-image: url('data:image/svg+xml\3b utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect x="0" y="0" width="1" height="1" fill="green" /></svg>');
+      }
+      p:nth-child(5) {
+        background-image: url(data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=);
+        color: white;
+      }
+      p:nth-child(6) {
+        background-image: url(data:image/gif\3b base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=);
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="{">p</p>
+    <p class="{">p</p>
+    <p>p</p>
+    <p>p</p>
+    <p>p</p>
+    <p>p</p>
+  </body>
+</html>

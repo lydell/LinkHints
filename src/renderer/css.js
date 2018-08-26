@@ -17,8 +17,8 @@ export type Declaration = {|
   important: boolean,
 |};
 
-// Copied from <https://github.com/lydell/css-tokens>.
-const stringsAndCommentsRegex = /((['"])(?:(?!\2)[^\\\r\n\f]|\\(?:\r\n|[\s\S]))*(\2)?)|(\/\*(?:[^*]|\*(?!\/))*(\*\/)?)/g;
+// Mostly copied from <https://github.com/lydell/css-tokens>.
+const stringsAndCommentsAndUrlsRegex = /((['"])(?:(?!\2)[^\\]|\\[\s\S])*\2?)|(\/\*(?:[^*]|\*(?!\/))*(?:\*\/)?)|(url\(\s*[^"'()\s]+\s*\))/g;
 
 const annoyingCharsRegex = /[{};]/g;
 
@@ -28,12 +28,15 @@ const declRegex = /^\s*([^\s:]+)\s*:([^;]+?)(!\s*important\s*)?$/i;
 
 export function parseCSS(css: string): Array<Rule> {
   const normalized = css.replace(
-    stringsAndCommentsRegex,
-    (match, string, quote, comment) => {
-      // Remove characters inside strings that make other parsing harder.
-      // Hacky, but simple. And good enough.
-      if (string != null) {
-        return string.replace(annoyingCharsRegex, "");
+    stringsAndCommentsAndUrlsRegex,
+    (match, string, quote, comment, url) => {
+      // Escape characters inside strings and unquoted urls that make other
+      // parsing harder. Hacky, but simple. And good enough.
+      if (string != null || url != null) {
+        return match.replace(
+          annoyingCharsRegex,
+          char => `\\${char.charCodeAt(0).toString(16)} `
+        );
       }
 
       // Remove comments.
