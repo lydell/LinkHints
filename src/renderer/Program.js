@@ -82,12 +82,14 @@ export default class RendererProgram {
   css: string;
   parsedCSS: ?Array<Rule>;
   hints: Array<HTMLElement>;
+  unrenderTimeoutId: ?TimeoutID;
   resets: Resets;
 
   constructor() {
     this.css = CSS;
     this.parsedCSS = undefined;
     this.hints = [];
+    this.unrenderTimeoutId = undefined;
     this.resets = new Resets();
 
     bind(this, [
@@ -165,7 +167,11 @@ export default class RendererProgram {
         break;
 
       case "Unrender":
-        this.unrender({ delayed: message.delayed });
+        if (message.delayed) {
+          this.unrenderDelayed();
+        } else {
+          this.unrender();
+        }
         break;
 
       default:
@@ -397,18 +403,29 @@ export default class RendererProgram {
     }
   }
 
-  unrender({ delayed = false }: {| delayed: boolean |} = {}) {
+  unrender() {
+    if (this.unrenderTimeoutId != null) {
+      clearTimeout(this.unrenderTimeoutId);
+      this.unrenderTimeoutId = undefined;
+    }
+
     this.hints = [];
+
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
-      if (delayed) {
-        setTimeout(() => {
-          container.remove();
-        }, UNRENDER_DELAY);
-      } else {
-        container.remove();
-      }
+      container.remove();
     }
+  }
+
+  unrenderDelayed() {
+    if (this.unrenderTimeoutId != null) {
+      return;
+    }
+
+    this.unrenderTimeoutId = setTimeout(() => {
+      this.unrenderTimeoutId = undefined;
+      this.unrender();
+    }, UNRENDER_DELAY);
   }
 
   maybeApplyStyles(element: HTMLElement) {
