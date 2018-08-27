@@ -8,9 +8,6 @@
 // Everything in this file has to be inside this function, since `.toString()`
 // is called on it. This also means that `import`s cannot be used in this file.
 export default () => {
-  const fnMap = new Map();
-  const resetFns = [];
-
   // This value is replaced in by Rollup; only refer to it once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
   const clickableEventProps = clickableEventNames.map(
@@ -28,98 +25,128 @@ export default () => {
   const CustomEvent2 = CustomEvent;
   const HTMLElement2 = HTMLElement;
   const { error: logError } = console;
-  const { dispatchEvent } = EventTarget.prototype;
+  const {
+    dispatchEvent,
+    addEventListener,
+    removeEventListener,
+  } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
 
-  // Reset the overridden methods when the extension is shut down. This listener
-  // is registered before we override in order not to trigger our hook.
-  window.addEventListener("message", reset, true);
+  class HookManager {
+    fnMap: Map<Function, Function>;
+    resetFns: Array<Function>;
 
-  // Hook into whenever `obj[name]()` (such as
-  // `EventTarget.prototype["addEventListener"]`) is called, by calling `hook`.
-  // This is done by overriding the method, but in a way that makes it really
-  // difficult to detect that the method has been overridden. There are two
-  // reasons for covering our tracks:
-  //
-  // 1. We don't want to break websites. For example, naively overriding
-  //    `addEventListener` breaks CKEditor: <https://jsfiddle.net/tv5x6zuj/>
-  //    See also: <https://github.com/philc/vimium/issues/2900> (and its linked
-  //    issues and PRs).
-  // 2. We don't want developers to see strange things in the console when they
-  //    debug stuff.
-  function hookInto(obj: Object, name: string, hook: ?Function = undefined) {
-    const desc = getOwnPropertyDescriptor(obj, name);
-
-    // Chrome doesn't support `toSource`.
-    if (desc == null) {
-      return;
+    constructor() {
+      this.fnMap = new Map();
+      this.resetFns = [];
     }
 
-    const prop = "value" in desc ? "value" : "set";
-    const orig = desc[prop];
+    reset() {
+      // Reset all overridden methods.
+      for (const resetFn of this.resetFns) {
+        resetFn();
+      }
 
-    // To please Flow.
-    if (orig == null) {
-      return;
+      this.fnMap.clear();
+      this.resetFns = [];
     }
 
-    // `f = { [name]: function(){} }[name]` is a way of creating a dynamically
-    // named function (where `f.name === name`).
-    const fn =
-      hook == null
-        ? {
-            [orig.name](...args: Array<any>): any {
-              // In the cases where no hook is provided we just want to make sure
-              // that the method (such as `toString`) is called with the
-              // _original_ function, not the overriding function.
-              return apply(orig, apply(mapGet, fnMap, [this]) || this, args);
-            },
-          }[orig.name]
-        : {
-            [orig.name](...args: Array<any>): any {
-              // In case there's a mistake in `hook` it shouldn't cause the entire
-              // overridden method to fail and potentially break the whole page.
-              try {
-                // Remember that `hook` can be called with _anything,_ because the
-                // user can pass invalid arguments and use `.call`.
-                // $FlowIgnore: `hook` isn't undefined here.
-                const result = hook(orig, this, ...args);
-                if (result != null && typeof result.then === "function") {
-                  result.catch(error => {
-                    logHookError(error, obj, name);
-                  });
+    // Hook into whenever `obj[name]()` (such as
+    // `EventTarget.prototype["addEventListener"]`) is called, by calling
+    // `hook`. This is done by overriding the method, but in a way that makes it
+    // really difficult to detect that the method has been overridden. There are
+    // two reasons for covering our tracks:
+    //
+    // 1. We don't want to break websites. For example, naively overriding
+    //    `addEventListener` breaks CKEditor: <https://jsfiddle.net/tv5x6zuj/>
+    //    See also: <https://github.com/philc/vimium/issues/2900> (and its
+    //    linked issues and PRs).
+    // 2. We don't want developers to see strange things in the console when
+    //    they debug stuff.
+    hookInto(obj: Object, name: string, hook: ?Function = undefined) {
+      const desc = getOwnPropertyDescriptor(obj, name);
+
+      // Chrome doesn't support `toSource`.
+      if (desc == null) {
+        return;
+      }
+
+      const prop = "value" in desc ? "value" : "set";
+      const orig = desc[prop];
+
+      // To please Flow.
+      if (orig == null) {
+        return;
+      }
+
+      const { fnMap } = this;
+
+      // `f = { [name]: function(){} }[name]` is a way of creating a dynamically
+      // named function (where `f.name === name`).
+      const fn =
+        hook == null
+          ? {
+              [orig.name](...args: Array<any>): any {
+                // In the cases where no hook is provided we just want to make sure
+                // that the method (such as `toString`) is called with the
+                // _original_ function, not the overriding function.
+                return apply(orig, apply(mapGet, fnMap, [this]) || this, args);
+              },
+            }[orig.name]
+          : {
+              [orig.name](...args: Array<any>): any {
+                // In case there's a mistake in `hook` it shouldn't cause the entire
+                // overridden method to fail and potentially break the whole page.
+                try {
+                  // Remember that `hook` can be called with _anything,_ because the
+                  // user can pass invalid arguments and use `.call`.
+                  // $FlowIgnore: `hook` isn't undefined here.
+                  const result = hook(orig, this, ...args);
+                  if (result != null && typeof result.then === "function") {
+                    result.catch(error => {
+                      logHookError(error, obj, name);
+                    });
+                  }
+                } catch (error) {
+                  logHookError(error, obj, name);
                 }
-              } catch (error) {
-                logHookError(error, obj, name);
-              }
-              return apply(orig, this, args);
-            },
-          }[orig.name];
+                return apply(orig, this, args);
+              },
+            }[orig.name];
 
-    // Save the overriding and original functions so we can map overriding to
-    // original in the case with no `hook` above.
-    fnMap.set(fn, orig);
+      // Save the overriding and original functions so we can map overriding to
+      // original in the case with no `hook` above.
+      fnMap.set(fn, orig);
 
-    // Make sure that `.length` is correct.
-    defineProperty(fn, "length", {
-      ...getOwnPropertyDescriptor(Function.prototype, "length"),
-      value: orig.length,
-    });
+      // Make sure that `.length` is correct.
+      defineProperty(fn, "length", {
+        ...getOwnPropertyDescriptor(Function.prototype, "length"),
+        value: orig.length,
+      });
 
-    // Finally override the method with the created function.
-    defineProperty(obj, name, {
-      ...desc,
-      [prop]: fn,
-    });
-
-    // Save a function that will reset the method back again.
-    resetFns.push(() => {
+      // Finally override the method with the created function.
       defineProperty(obj, name, {
         ...desc,
-        [prop]: orig,
+        [prop]: fn,
       });
-    });
+
+      // Save a function that will reset the method back again.
+      this.resetFns.push(() => {
+        defineProperty(obj, name, {
+          ...desc,
+          [prop]: orig,
+        });
+      });
+    }
+
+    // Make sure that `Function.prototype.toString.call(element.addEventListener)`
+    // returns "[native code]". This is used by lodash's `_.isNative`.
+    // `.toLocaleString` is automatically taken care of when patching `.toString`.
+    conceal() {
+      this.hookInto(Function.prototype, "toString");
+      this.hookInto(Function.prototype, "toSource"); // Firefox specific.
+    }
   }
 
   function logHookError(error: Error, obj: Object, name: string) {
@@ -127,28 +154,21 @@ export default () => {
     logError(`[synth]: Failed to run hook for ${name} on`, obj, error);
   }
 
-  function reset(event: MessageEvent) {
-    if (event.data !== INJECTED_RESET) {
-      return;
-    }
-
-    // Reset all overridden methods.
-    for (const resetFn of resetFns) {
-      resetFn();
-    }
-
-    window.removeEventListener("message", reset, true);
-  }
-
   type ClickListenersByElement = Map<HTMLElement, OptionsByListener>;
   type OptionsByListener = Map<mixed, OptionsSet>;
   type OptionsSet = Set<string>;
 
+  // Changes to event listeners.
+  type QueueItem = QueueItemProp | QueueItemMethod;
+
+  // `.onclick` and similar.
   type QueueItemProp = {|
     type: "prop",
     hadListener: boolean,
     element: HTMLElement,
   |};
+
+  // `.addEventListener` and `.removeEventListener`.
   type QueueItemMethod = {|
     type: "method",
     added: boolean,
@@ -157,8 +177,8 @@ export default () => {
     listener: mixed,
     options: mixed,
   |};
-  type QueueItem = QueueItemProp | QueueItemMethod;
 
+  // Elements waiting to be sent to ElementManager.js (in Chrome only).
   type SendQueueItem = {|
     added: boolean,
     element: HTMLElement,
@@ -171,6 +191,17 @@ export default () => {
     idleCallbackId: ?IdleCallbackID;
 
     constructor() {
+      this.clickListenersByElement = new Map();
+      this.queue = [];
+      this.sendQueue = [];
+      this.idleCallbackId = undefined;
+    }
+
+    reset() {
+      if (this.idleCallbackId != null) {
+        cancelIdleCallback(this.idleCallbackId);
+      }
+
       this.clickListenersByElement = new Map();
       this.queue = [];
       this.sendQueue = [];
@@ -448,6 +479,21 @@ export default () => {
   }
 
   const clickListenerTracker = new ClickListenerTracker();
+  const hookManager = new HookManager();
+
+  function reset(event: MessageEvent) {
+    if (event.data !== INJECTED_RESET) {
+      return;
+    }
+
+    clickListenerTracker.reset();
+    hookManager.reset();
+    apply(removeEventListener, window, ["message", reset, true]);
+  }
+
+  // Reset the overridden methods when the extension is shut down. This listener
+  // is registered before we override in order not to trigger our hook.
+  apply(addEventListener, window, ["message", reset, true]);
 
   function onAddEventListener(
     orig: Function,
@@ -538,9 +584,13 @@ export default () => {
     });
   }
 
-  hookInto(EventTarget.prototype, "addEventListener", onAddEventListener);
+  hookManager.hookInto(
+    EventTarget.prototype,
+    "addEventListener",
+    onAddEventListener
+  );
 
-  hookInto(
+  hookManager.hookInto(
     EventTarget.prototype,
     "removeEventListener",
     (orig: Function, ...args) => {
@@ -550,12 +600,8 @@ export default () => {
 
   // Hook into `.onclick` and similar.
   for (const prop of clickableEventProps) {
-    hookInto(HTMLElement.prototype, prop, onPropChange);
+    hookManager.hookInto(HTMLElement.prototype, prop, onPropChange);
   }
 
-  // Make sure that `Function.prototype.toString.call(element.addEventListener)`
-  // returns "[native code]". This is used by lodash's `_.isNative`.
-  // `.toLocaleString` is automatically taken care of when patching `.toString`.
-  hookInto(Function.prototype, "toString");
-  hookInto(Function.prototype, "toSource"); // Firefox specific.
+  hookManager.conceal();
 };
