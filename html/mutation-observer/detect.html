@@ -7,9 +7,19 @@
   <body>
     <button onclick="addLi()">add li</button>
     <button onclick="removeLi()">remove li</button>
-    <button onclick="addLi(true)">add and immediately remove li</button>
+    <button onclick="addLi({ removeElement: true })">
+      add and immediately remove li
+    </button>
+    <button onclick="addLi({ removeListener: true })">
+      add and immediately remove listener
+    </button>
+    <button onclick="addLi({ removeElement: true, removeListener: true })">
+      add and immediately remove li and listener
+    </button>
+
     <ul id="ul">
     </ul>
+
     <script>
       const obs = new MutationObserver(records => {
         console.log("Muation!");
@@ -23,13 +33,22 @@
         subtree: true,
       });
 
-      function addLi(remove = false) {
+      function logClick() {
+        console.log("click!");
+      }
+
+      function addLi({ removeElement = false, removeListener = false } = {}) {
         const li = document.createElement("li");
         li.textContent = "li";
-        li.addEventListener("click", () => console.log("click!"));
+        li.addEventListener("click", logClick);
         ul.prepend(li);
-        if (remove) {
+
+        if (removeElement) {
           li.remove();
+        }
+
+        if (removeListener) {
+          li.removeEventListener("click", logClick);
         }
       }
 

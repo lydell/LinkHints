@@ -121,8 +121,8 @@ export default class ElementManager {
     this.resets = new Resets();
 
     bind(this, [
-      this.onClickableElement,
-      this.onUnclickableElement,
+      this.onClickableElements,
+      this.onUnclickableElements,
       this.onOverflowChange,
     ]);
   }
@@ -140,12 +140,12 @@ export default class ElementManager {
         addEventListener(
           window,
           INJECTED_CLICKABLE_EVENT,
-          this.onClickableElement
+          this.onClickableElements
         ),
         addEventListener(
           window,
           INJECTED_UNCLICKABLE_EVENT,
-          this.onUnclickableElement
+          this.onUnclickableElements
         ),
         addEventListener(window, "overflow", this.onOverflowChange),
         addEventListener(window, "underflow", this.onOverflowChange)
@@ -226,19 +226,25 @@ export default class ElementManager {
     }
   }
 
-  onClickableElement(event: CustomEvent) {
-    const element = event.detail == null ? event.target : event.detail.element;
-    if (element instanceof HTMLElement) {
-      this.elementsWithClickListeners.add(element);
-      this.checkElement(element);
+  onClickableElements(event: CustomEvent) {
+    const elements =
+      event.detail == null ? [event.target] : event.detail.elements;
+    for (const element of elements) {
+      if (element instanceof HTMLElement) {
+        this.elementsWithClickListeners.add(element);
+        this.checkElement(element);
+      }
     }
   }
 
-  onUnclickableElement(event: CustomEvent) {
-    const element = event.detail == null ? event.target : event.detail.element;
-    if (element instanceof HTMLElement) {
-      this.elementsWithClickListeners.delete(element);
-      this.checkElement(element);
+  onUnclickableElements(event: CustomEvent) {
+    const elements =
+      event.detail == null ? [event.target] : event.detail.elements;
+    for (const element of elements) {
+      if (element instanceof HTMLElement) {
+        this.elementsWithClickListeners.delete(element);
+        this.checkElement(element);
+      }
     }
   }
 

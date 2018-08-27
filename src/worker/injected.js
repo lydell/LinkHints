@@ -143,64 +143,162 @@ export default () => {
   type ClickListenersByElement = Map<HTMLElement, OptionsByListener>;
   type OptionsByListener = Map<mixed, OptionsSet>;
   type OptionsSet = Set<string>;
-  const clickListenersByElement: ClickListenersByElement = new Map();
 
-  hookInto(
-    EventTarget.prototype,
-    "addEventListener",
-    (
-      orig: Function,
-      element: mixed,
-      eventName: mixed,
-      listener: mixed,
-      options: mixed
-    ) => {
-      if (
-        !(
-          typeof eventName === "string" &&
-          clickableEventNames.includes(eventName) &&
-          element instanceof HTMLElement2 &&
-          (typeof listener === "function" ||
-            (typeof listener === "object" &&
-              listener != null &&
-              typeof listener.handleEvent === "function"))
-        )
-      ) {
+  type QueueItemProp = {|
+    type: "prop",
+    hadListener: boolean,
+    element: HTMLElement,
+  |};
+  type QueueItemMethod = {|
+    type: "method",
+    added: boolean,
+    element: HTMLElement,
+    eventName: string,
+    listener: mixed,
+    options: mixed,
+  |};
+  type QueueItem = QueueItemProp | QueueItemMethod;
+
+  type SendQueueItem = {|
+    added: boolean,
+    element: HTMLElement,
+  |};
+
+  class ClickListenerTracker {
+    clickListenersByElement: ClickListenersByElement;
+    queue: Array<QueueItem>;
+    sendQueue: Array<SendQueueItem>;
+    idleCallbackId: ?IdleCallbackID;
+
+    constructor() {
+      this.clickListenersByElement = new Map();
+      this.queue = [];
+      this.sendQueue = [];
+      this.idleCallbackId = undefined;
+    }
+
+    queueItem(item: QueueItem) {
+      this.queue.push(item);
+      this.requestIdleCallback();
+    }
+
+    requestIdleCallback() {
+      if (this.idleCallbackId == null) {
+        this.idleCallbackId = requestIdleCallback(deadline => {
+          this.idleCallbackId = undefined;
+          this.flushQueue(deadline);
+        });
+      }
+    }
+
+    flushQueue(deadline: { timeRemaining: () => number }) {
+      const done = this.flushSendQueue(deadline);
+
+      if (!done) {
         return;
       }
 
-      // If `{ once: true }` is used, listen once ourselves so we can track the
-      // removal of the listener when it has triggered.
-      if (
-        typeof options === "object" &&
-        options != null &&
-        Boolean(options.once)
-      ) {
-        apply(orig, element, [
-          eventName,
-          () => {
-            onRemoveEventListener(element, eventName, listener, options);
-          },
-          options,
-        ]);
+      // Track elements that got their first listener, or lost their last one.
+      // The data structure simplifies additions and removals: If first adding
+      // an element and then removing it, it’s the same as never having added or
+      // removed the element at all (and vice versa).
+      const addedRemoved = new AddedRemoved();
+
+      for (const [index, item] of this.queue.entries()) {
+        // `.onclick` or similar changed.
+        if (item.type === "prop") {
+          const { hadListener, element } = item;
+          // If the element has click listeners added via `.addEventListener`
+          // changing `.onclick` can't affect whether the element has at least
+          // one click listener.
+          if (!clickListenerTracker.clickListenersByElement.has(element)) {
+            const hasListener = hasClickListenerProp(element);
+            if (!hadListener && hasListener) {
+              addedRemoved.add(element);
+            } else if (hadListener && !hasListener) {
+              addedRemoved.remove(element);
+            }
+          }
+        }
+        // `.addEventListener`
+        else if (item.added) {
+          const gotFirst = this.add(item);
+          if (gotFirst) {
+            addedRemoved.add(item.element);
+          }
+        }
+        // `.removeEventListener`
+        else {
+          const lostLast = this.remove(item);
+          if (lostLast) {
+            addedRemoved.remove(item.element);
+          }
+        }
+
+        if (deadline.timeRemaining() <= 0) {
+          this.queue = this.queue.slice(index + 1);
+          this.requestIdleCallback();
+          break;
+        }
       }
 
+      this.queue = [];
+
+      const { added, removed } = addedRemoved;
+
+      if (!isChrome) {
+        sendEvents(INJECTED_CLICKABLE_EVENT, Array.from(added));
+        sendEvents(INJECTED_UNCLICKABLE_EVENT, Array.from(removed));
+        return;
+      }
+
+      for (const element of added) {
+        this.sendQueue.push({ added: true, element });
+      }
+
+      for (const element of removed) {
+        this.sendQueue.push({ added: false, element });
+      }
+
+      this.flushSendQueue(deadline);
+    }
+
+    flushSendQueue(deadline: { timeRemaining: () => number }): boolean {
+      for (const [index, item] of this.sendQueue.entries()) {
+        if (item.added) {
+          sendEvent(INJECTED_CLICKABLE_EVENT, item.element);
+        } else {
+          sendEvent(INJECTED_UNCLICKABLE_EVENT, item.element);
+        }
+
+        if (deadline.timeRemaining() <= 0) {
+          this.sendQueue = this.sendQueue.slice(index + 1);
+          this.requestIdleCallback();
+          return false;
+        }
+      }
+
+      this.sendQueue = [];
+      return true;
+    }
+
+    add({ element, eventName, listener, options }: QueueItemMethod): boolean {
       const optionsString = stringifyOptions(eventName, options);
-      const optionsByListener = clickListenersByElement.get(element);
+      const optionsByListener = this.clickListenersByElement.get(element);
 
       // No previous click listeners.
       if (optionsByListener == null) {
-        clickListenersByElement.set(
+        this.clickListenersByElement.set(
           element,
           new Map([[listener, new Set([optionsString])]])
         );
 
         if (!hasClickListenerProp(element)) {
           // The element went from no click listeners to one.
-          reportClickable(element);
+          return true;
         }
 
-        return;
+        return false;
       }
 
       const optionsSet = optionsByListener.get(listener);
@@ -208,128 +306,93 @@ export default () => {
       // New listener function.
       if (optionsSet == null) {
         optionsByListener.set(listener, new Set([optionsString]));
-        return;
+        return false;
       }
 
       // Already seen listener function, but new options and/or event type.
       if (!optionsSet.has(optionsString)) {
         optionsSet.add(optionsString);
+        return false;
       }
 
       // Duplicate listener. Nothing to do.
-    }
-  );
-
-  hookInto(
-    EventTarget.prototype,
-    "removeEventListener",
-    (orig: Function, ...args) => {
-      onRemoveEventListener(...args);
-    }
-  );
-
-  function onRemoveEventListener(
-    element: mixed,
-    eventName: mixed,
-    listener: mixed,
-    options: mixed
-  ) {
-    if (
-      !(
-        typeof eventName === "string" &&
-        clickableEventNames.includes(eventName) &&
-        element instanceof HTMLElement2 &&
-        (typeof listener === "function" ||
-          (typeof listener === "object" &&
-            listener != null &&
-            typeof listener.handleEvent === "function"))
-      )
-    ) {
-      return;
+      return false;
     }
 
-    const optionsString = stringifyOptions(eventName, options);
-    const optionsByListener = clickListenersByElement.get(element);
+    remove({
+      element,
+      eventName,
+      listener,
+      options,
+    }: QueueItemMethod): boolean {
+      const optionsString = stringifyOptions(eventName, options);
+      const optionsByListener = this.clickListenersByElement.get(element);
 
-    // The element has no click listeners.
-    if (optionsByListener == null) {
-      return;
-    }
+      // The element has no click listeners.
+      if (optionsByListener == null) {
+        return false;
+      }
 
-    const optionsSet = optionsByListener.get(listener);
+      const optionsSet = optionsByListener.get(listener);
 
-    // The element has click listeners, but not with `listener` as a callback.
-    if (optionsSet == null) {
-      return;
-    }
+      // The element has click listeners, but not with `listener` as a callback.
+      if (optionsSet == null) {
+        return false;
+      }
 
-    // The element has `listener` as a click callback, but with different
-    // options and/or event type.
-    if (!optionsSet.has(optionsString)) {
-      return;
-    }
+      // The element has `listener` as a click callback, but with different
+      // options and/or event type.
+      if (!optionsSet.has(optionsString)) {
+        return false;
+      }
 
-    // Match! Remove the current options.
-    optionsSet.delete(optionsString);
+      // Match! Remove the current options.
+      optionsSet.delete(optionsString);
 
-    // If that was the last options for `listener`, remove `listener`.
-    if (optionsSet.size === 0) {
-      optionsByListener.delete(listener);
+      // If that was the last options for `listener`, remove `listener`.
+      if (optionsSet.size === 0) {
+        optionsByListener.delete(listener);
 
-      // If that was the last `listener` for `element`, remove `element`.
-      if (optionsByListener.size === 0) {
-        clickListenersByElement.delete(element);
+        // If that was the last `listener` for `element`, remove `element`.
+        if (optionsByListener.size === 0) {
+          this.clickListenersByElement.delete(element);
 
-        if (!hasClickListenerProp(element)) {
-          // The element went from one click listener to none.
-          reportUnclickable(element);
+          if (!hasClickListenerProp(element)) {
+            // The element went from one click listener to none.
+            return true;
+          }
         }
       }
+
+      return false;
     }
   }
 
-  // Hook into `.onclick` and similar.
-  for (const prop of clickableEventProps) {
-    hookInto(
-      HTMLElement.prototype,
-      prop,
-      async (orig: Function, element: mixed) => {
-        // If the element has click listeners added via `.addEventListener`
-        // changing `.onclick` can't affect whether the element has at least one
-        // click listener.
-        if (
-          !(element instanceof HTMLElement2) ||
-          clickListenersByElement.has(element)
-        ) {
-          return;
-        }
+  class AddedRemoved<T> {
+    added: Set<T>;
+    removed: Set<T>;
 
-        const hadListener = hasClickListenerProp(element);
+    constructor() {
+      this.added = new Set();
+      this.removed = new Set();
+    }
 
-        // Let the setter take effect. Then dispatch events (if any). The
-        // dispatched event would reach the ElementManager _before_ the new
-        // `.onclick` value is actually set otherwise, which could make it take
-        // the wrong decision on clickability.
-        await undefined;
-
-        const hasListener = hasClickListenerProp(element);
-
-        if (!hadListener && hasListener) {
-          // The element went from no click listeners to one.
-          reportClickable(element);
-        } else if (hadListener && !hasListener) {
-          // The element went from one click listener to none.
-          reportUnclickable(element);
-        }
+    add(item: T) {
+      if (this.removed.has(item)) {
+        this.removed.delete(item);
+      } else {
+        this.added.add(item);
       }
-    );
-  }
+    }
 
-  // Make sure that `Function.prototype.toString.call(element.addEventListener)`
-  // returns "[native code]". This is used by lodash's `_.isNative`.
-  // `.toLocaleString` is automatically taken care of when patching `.toString`.
-  hookInto(Function.prototype, "toString");
-  hookInto(Function.prototype, "toSource"); // Firefox specific.
+    remove(item: T) {
+      if (this.added.has(item)) {
+        this.added.delete(item);
+      } else {
+        this.removed.add(item);
+      }
+    }
+  }
 
   const optionNames: Array<string> = ["capture", "once", "passive"];
 
@@ -352,64 +415,147 @@ export default () => {
     );
   }
 
-  // The events are dispatched on `window` rather than on `element`, since
-  // `element` might not be inserted into the DOM (yet/anymore), which causes
-  // the event not to fire.
-  function reportClickable(element: HTMLElement) {
-    sendEvent(INJECTED_CLICKABLE_EVENT, element);
-  }
-
-  function reportUnclickable(element: HTMLElement) {
-    sendEvent(INJECTED_UNCLICKABLE_EVENT, element);
-  }
-
-  function sendEvent(eventName: string, element: HTMLElement) {
+  function sendEvents(eventName: string, elements: Array<HTMLElement>) {
     // The events are dispatched on `window` rather than on `element`, since
     // `element` might not be inserted into the DOM (yet/anymore), which causes
     // the event not to fire. However, sending a DOM element as `detail` from a
     // web page to an extension is not allowed in Chrome, so there we have to
-    // temporarily insert the element into the DOM if needed. That could
-    // potentially confuse MutationObservers on the page, but I don’t think it’s
-    // very likely.
-    if (!isChrome) {
-      apply(dispatchEvent, window, [
-        new CustomEvent2(eventName, { detail: { element } }),
-      ]);
-      return;
-    }
+    // temporarily insert the element into the DOM if needed. In that case the
+    // `sendEvent` function is used instead.
+    apply(dispatchEvent, window, [
+      new CustomEvent2(eventName, { detail: { elements } }),
+    ]);
+  }
 
+  function sendEvent(eventName: string, element: HTMLElement) {
     const { documentElement } = document;
 
     if (documentElement == null) {
       return;
     }
 
-    function dispatch() {
-      apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
-    }
-
     const isDetached = !documentElement.contains(element);
 
     if (isDetached) {
-      // A common pattern is to create a node, attach a listener and then append
-      // it to the DOM. By waiting a little bit in this case we let the page
-      // itself get the chance to insert the element into the DOM so we don't
-      // have to.
-      setTimeout(() => {
-        const isDetached2 = !documentElement.contains(element);
-        if (isDetached2) {
-          documentElement.append(element);
-        }
+      documentElement.append(element);
+    }
 
-        dispatch();
+    apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
 
-        if (isDetached2) {
-          element.remove();
-        }
-      }, 0);
+    if (isDetached) {
+      element.remove();
+    }
+  }
+
+  const clickListenerTracker = new ClickListenerTracker();
+
+  function onAddEventListener(
+    orig: Function,
+    element: mixed,
+    eventName: mixed,
+    listener: mixed,
+    options: mixed
+  ) {
+    if (
+      !(
+        typeof eventName === "string" &&
+        clickableEventNames.includes(eventName) &&
+        element instanceof HTMLElement2 &&
+        (typeof listener === "function" ||
+          (typeof listener === "object" &&
+            listener != null &&
+            typeof listener.handleEvent === "function"))
+      )
+    ) {
       return;
     }
 
-    dispatch();
+    // If `{ once: true }` is used, listen once ourselves so we can track the
+    // removal of the listener when it has triggered.
+    if (
+      typeof options === "object" &&
+      options != null &&
+      Boolean(options.once)
+    ) {
+      apply(orig, element, [
+        eventName,
+        () => {
+          onRemoveEventListener(element, eventName, listener, options);
+        },
+        options,
+      ]);
+    }
+
+    clickListenerTracker.queueItem({
+      type: "method",
+      added: true,
+      element,
+      eventName,
+      listener,
+      options,
+    });
   }
+
+  function onRemoveEventListener(
+    element: mixed,
+    eventName: mixed,
+    listener: mixed,
+    options: mixed
+  ) {
+    if (
+      !(
+        typeof eventName === "string" &&
+        clickableEventNames.includes(eventName) &&
+        element instanceof HTMLElement2 &&
+        (typeof listener === "function" ||
+          (typeof listener === "object" &&
+            listener != null &&
+            typeof listener.handleEvent === "function"))
+      )
+    ) {
+      return;
+    }
+
+    clickListenerTracker.queueItem({
+      type: "method",
+      added: false,
+      element,
+      eventName,
+      listener,
+      options,
+    });
+  }
+
+  function onPropChange(orig: Function, element: mixed) {
+    if (!(element instanceof HTMLElement2)) {
+      return;
+    }
+
+    clickListenerTracker.queueItem({
+      type: "prop",
+      hadListener: hasClickListenerProp(element),
+      element,
+    });
+  }
+
+  hookInto(EventTarget.prototype, "addEventListener", onAddEventListener);
+
+  hookInto(
+    EventTarget.prototype,
+    "removeEventListener",
+    (orig: Function, ...args) => {
+      onRemoveEventListener(...args);
+    }
+  );
+
+  // Hook into `.onclick` and similar.
+  for (const prop of clickableEventProps) {
+    hookInto(HTMLElement.prototype, prop, onPropChange);
+  }
+
+  // Make sure that `Function.prototype.toString.call(element.addEventListener)`
+  // returns "[native code]". This is used by lodash's `_.isNative`.
+  // `.toLocaleString` is automatically taken care of when patching `.toString`.
+  hookInto(Function.prototype, "toString");
+  hookInto(Function.prototype, "toSource"); // Firefox specific.
 };
