@@ -35,6 +35,13 @@ export type VisibleElement = {|
   measurements: HintMeasurements,
 |};
 
+type QueueItem = {|
+  mutationType: MutationType,
+  element: HTMLElement,
+|};
+
+type MutationType = "added" | "removed" | "changed";
+
 // Elements this many pixels high or taller always get their hint placed at the
 // very left edge.
 const BOX_MIN_HEIGHT = 110; // px
@@ -92,19 +99,26 @@ const MUTATION_ATTRIBUTES = [
 ];
 
 export default class ElementManager {
-  maxTrackedElements: number;
+  maxIntersectionObservedElements: number;
+  queue: Array<QueueItem>;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
   elementsWithClickListeners: WeakSet<HTMLElement>;
   elementsWithScrollbars: WeakSet<HTMLElement>;
   intersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
+  idleCallbackId: ?IdleCallbackID;
   bailed: boolean;
   resets: Resets;
 
-  constructor({ maxTrackedElements }: {| maxTrackedElements: number |}) {
-    this.maxTrackedElements = maxTrackedElements;
+  constructor({
+    maxIntersectionObservedElements,
+  }: {|
+    maxIntersectionObservedElements: number,
+  |}) {
+    this.maxIntersectionObservedElements = maxIntersectionObservedElements;
 
+    this.queue = [];
     this.elements = new Map();
     this.visibleElements = new Set();
     this.elementsWithClickListeners = new WeakSet();
@@ -116,8 +130,9 @@ export default class ElementManager {
     );
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
-    this.bailed = false;
 
+    this.idleCallbackId = undefined;
+    this.bailed = false;
     this.resets = new Resets();
 
     bind(this, [
@@ -130,7 +145,10 @@ export default class ElementManager {
   start() {
     const { documentElement } = document;
     if (documentElement != null) {
-      this.addElements(documentElement);
+      this.queueItemAndChildren({
+        mutationType: "added",
+        element: documentElement,
+      });
       this.mutationObserver.observe(documentElement, {
         childList: true,
         subtree: true,
@@ -155,18 +173,29 @@ export default class ElementManager {
   }
 
   stop() {
+    if (this.idleCallbackId != null) {
+      cancelIdleCallback(this.idleCallbackId);
+    }
+
     this.intersectionObserver.disconnect();
     this.mutationObserver.disconnect();
+    this.queue = [];
     this.elements.clear();
     this.visibleElements.clear();
     // `WeakSet`s don’t have a `.clear()` method.
     // this.elementsWithClickListeners.clear();
     // this.elementsWithScrollbars.clear();
+    this.idleCallbackId = undefined;
     this.resets.reset();
     window.postMessage(INJECTED_RESET, "*");
   }
 
-  // Stop tracking everything except frames (up to `maxTrackedElements` of them).
+  // Stop using the intersection observer for everything except frames. The
+  // reason to still track frames is because it saves more than half a second
+  // when generating hints on the single-page HTML specification. In theory,
+  // this can lead to more elements `maxIntersectionObservedElements` being
+  // tracked by the intersection observer, but in practice there are never that
+  // many frames.
   bail() {
     if (this.bailed) {
       return;
@@ -175,7 +204,6 @@ export default class ElementManager {
     const { size } = this.elements;
 
     this.intersectionObserver.disconnect();
-    this.elements.clear();
     this.visibleElements.clear();
     this.bailed = true;
 
@@ -183,11 +211,37 @@ export default class ElementManager {
     if (documentElement != null) {
       const frames = document.querySelectorAll("iframe, frame");
       for (const frame of frames) {
-        this.addElements(frame);
+        this.queueItem({ mutationType: "changed", element: frame });
       }
     }
 
-    log("warn", "ElementManager#bail", size, this.maxTrackedElements);
+    log(
+      "warn",
+      "ElementManager#bail",
+      size,
+      this.maxIntersectionObservedElements
+    );
+  }
+
+  queueItem(item: QueueItem) {
+    this.queue.push(item);
+    this.requestIdleCallback();
+  }
+
+  queueItemAndChildren(item: QueueItem) {
+    const elements = [item.element, ...item.element.querySelectorAll("*")];
+    for (const element of elements) {
+      this.queueItem({ mutationType: item.mutationType, element });
+    }
+  }
+
+  requestIdleCallback() {
+    if (this.idleCallbackId == null) {
+      this.idleCallbackId = requestIdleCallback(deadline => {
+        this.idleCallbackId = undefined;
+        this.flushQueue(deadline);
+      });
+    }
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
@@ -204,23 +258,20 @@ export default class ElementManager {
     for (const record of records) {
       for (const node of record.addedNodes) {
         if (node instanceof HTMLElement) {
-          this.addElements(node);
-          if (this.bailed) {
-            return;
-          }
+          this.queueItemAndChildren({ mutationType: "added", element: node });
         }
       }
 
       for (const node of record.removedNodes) {
         if (node instanceof HTMLElement) {
-          this.removeElements(node);
+          this.queueItemAndChildren({ mutationType: "removed", element: node });
         }
       }
 
       if (record.attributeName != null) {
         const element = record.target;
         if (element instanceof HTMLElement) {
-          this.checkElement(element);
+          this.queueItem({ mutationType: "changed", element });
         }
       }
     }
@@ -232,7 +283,7 @@ export default class ElementManager {
     for (const element of elements) {
       if (element instanceof HTMLElement) {
         this.elementsWithClickListeners.add(element);
-        this.checkElement(element);
+        this.queueItem({ mutationType: "changed", element });
       }
     }
   }
@@ -243,7 +294,7 @@ export default class ElementManager {
     for (const element of elements) {
       if (element instanceof HTMLElement) {
         this.elementsWithClickListeners.delete(element);
-        this.checkElement(element);
+        this.queueItem({ mutationType: "changed", element });
       }
     }
   }
@@ -262,64 +313,51 @@ export default class ElementManager {
     if (isScrollable(element)) {
       if (!this.elementsWithScrollbars.has(element)) {
         this.elementsWithScrollbars.add(element);
-        this.checkElement(element);
+        this.queueItem({ mutationType: "changed", element });
       }
     } else if (this.elementsWithScrollbars.has(element)) {
       this.elementsWithScrollbars.delete(element);
-      this.checkElement(element);
+      this.queueItem({ mutationType: "changed", element });
     }
   }
 
-  checkElement(element: HTMLElement) {
-    const data = this.getElementData(element);
-    if (data == null) {
-      if (this.elements.has(element)) {
-        this.elements.delete(element);
-        this.intersectionObserver.unobserve(element);
-      }
-    } else if (!this.bailed) {
-      this.elements.set(element, data);
-      this.intersectionObserver.observe(element);
-      if (this.elements.size > this.maxTrackedElements) {
-        this.bail();
-      }
-    }
-  }
-
-  addElements(parent: HTMLElement) {
-    let { size } = this.elements;
-    const elements = [parent, ...parent.querySelectorAll("*")];
-    for (const element of elements) {
-      const data = this.getElementData(element);
-      if (data != null && (!this.bailed || data.type === "frame")) {
+  flushQueue(deadline: { timeRemaining: () => number }) {
+    for (const [index, { mutationType, element }] of this.queue.entries()) {
+      const data =
+        mutationType === "removed" ? undefined : this.getElementData(element);
+      if (data == null) {
+        if (mutationType !== "added") {
+          this.elements.delete(element);
+          this.intersectionObserver.unobserve(element);
+          // The element must not be removed from `elementsWithClickListeners`
+          // or `elementsWithScrollbars` (if `mutationType === "removed"`), even
+          // though it might seem logical at first. But the element (or one of
+          // its parents) could temporarily be removed from the paged and then
+          // re-inserted. Then it would still have its click listener, but we
+          // wouldn’t know. So instead of removing `element` here a `WeakSet` is
+          // used, to avoid memory leaks. An example of this is the sortable
+          // table headings on Wikipedia:
+          // <https://en.wikipedia.org/wiki/Help:Sorting>
+          // this.elementsWithClickListeners.delete(element);
+          // this.elementsWithScrollbars.delete(element);
+        }
+      } else {
         this.elements.set(element, data);
-        this.intersectionObserver.observe(element);
-        size++;
-        if (size > this.maxTrackedElements) {
+        if (!this.bailed || data.type === "frame") {
+          this.intersectionObserver.observe(element);
+        }
+        if (
+          !this.bailed &&
+          this.elements.size > this.maxIntersectionObservedElements
+        ) {
           this.bail();
-          break;
         }
       }
-    }
-  }
 
-  removeElements(parent: HTMLElement) {
-    const elements = [parent, ...parent.querySelectorAll("*")];
-    for (const element of elements) {
-      if (this.elements.has(element)) {
-        this.elements.delete(element);
-        this.intersectionObserver.unobserve(element);
-        // The element must not be removed from `elementsWithClickListeners` or
-        // `elementsWithScrollbars` at this point, even though it might seem
-        // logical at first. But the element (or one of its parents) could
-        // temporarily be removed from the paged and then re-inserted. Then it
-        // would still have its click listener, but we wouldn’t know. So instead
-        // of removing `element` here a `WeakSet` is used, to avoid memory
-        // leaks. An example of this is the sortable table headings on
-        // Wikipedia:
-        // <https://en.wikipedia.org/wiki/Help:Sorting>
-        // this.elementsWithClickListeners.delete(element);
-        // this.elementsWithScrollbars.delete(element);
+      if (deadline.timeRemaining() <= 0) {
+        this.queue = this.queue.slice(index + 1);
+        this.requestIdleCallback();
+        break;
       }
     }
   }
@@ -329,9 +367,7 @@ export default class ElementManager {
     viewports: Array<Box>
   ): Array<VisibleElement> {
     const candidates = this.bailed
-      ? document.documentElement == null
-        ? []
-        : document.documentElement.querySelectorAll("*")
+      ? this.elements.keys()
       : this.visibleElements;
 
     const range = document.createRange();
@@ -340,9 +376,7 @@ export default class ElementManager {
 
     return (
       Array.from(candidates, element => {
-        const data = this.bailed
-          ? this.getElementData(element)
-          : this.elements.get(element);
+        const data = this.elements.get(element);
 
         if (data == null) {
           return undefined;
