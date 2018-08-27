@@ -384,16 +384,32 @@ export default () => {
       return;
     }
 
+    function dispatch() {
+      apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
+    }
+
     const isDetached = !documentElement.contains(element);
 
     if (isDetached) {
-      documentElement.append(element);
+      // A common pattern is to create a node, attach a listener and then append
+      // it to the DOM. By waiting a little bit in this case we let the page
+      // itself get the chance to insert the element into the DOM so we don't
+      // have to.
+      setTimeout(() => {
+        const isDetached2 = !documentElement.contains(element);
+        if (isDetached2) {
+          documentElement.append(element);
+        }
+
+        dispatch();
+
+        if (isDetached2) {
+          element.remove();
+        }
+      }, 0);
+      return;
     }
 
-    apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
-
-    if (isDetached) {
-      element.remove();
-    }
+    dispatch();
   }
 };
