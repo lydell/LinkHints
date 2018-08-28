@@ -60,7 +60,6 @@ const CLICKABLE_ROLES = new Set([
   "option",
   "radio",
   "searchbox",
-  "separator",
   "spinbutton",
   "switch",
   "tab",
@@ -69,6 +68,7 @@ const CLICKABLE_ROLES = new Set([
   // Omitted since they don’t seem useful to click:
   // "progressbar",
   // "scrollbar",
+  // "separator",
   // "slider",
   // "tabpanel",
 ]);
