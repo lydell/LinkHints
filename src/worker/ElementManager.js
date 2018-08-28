@@ -9,8 +9,7 @@ export type ElementType =
   | "clickable"
   | "clickable-event"
   | "scrollable"
-  | "label"
-  | "frame";
+  | "label";
 
 type ElementData = {|
   type: ElementType,
@@ -103,9 +102,11 @@ export default class ElementManager {
   queue: Array<QueueItem>;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
+  visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement>;
   elementsWithClickListeners: WeakSet<HTMLElement>;
   elementsWithScrollbars: WeakSet<HTMLElement>;
   intersectionObserver: IntersectionObserver;
+  frameIntersectionObserver: IntersectionObserver;
   mutationObserver: MutationObserver;
   idleCallbackId: ?IdleCallbackID;
   bailed: boolean;
@@ -121,11 +122,17 @@ export default class ElementManager {
     this.queue = [];
     this.elements = new Map();
     this.visibleElements = new Set();
+    this.visibleFrames = new Set();
     this.elementsWithClickListeners = new WeakSet();
     this.elementsWithScrollbars = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
       this.onIntersection.bind(this),
+      {}
+    );
+
+    this.frameIntersectionObserver = new IntersectionObserver(
+      this.onFrameIntersection.bind(this),
       {}
     );
 
@@ -178,10 +185,12 @@ export default class ElementManager {
     }
 
     this.intersectionObserver.disconnect();
+    this.frameIntersectionObserver.disconnect();
     this.mutationObserver.disconnect();
     this.queue = [];
     this.elements.clear();
     this.visibleElements.clear();
+    this.visibleFrames.clear();
     // `WeakSet`s don’t have a `.clear()` method.
     // this.elementsWithClickListeners.clear();
     // this.elementsWithScrollbars.clear();
@@ -192,10 +201,7 @@ export default class ElementManager {
 
   // Stop using the intersection observer for everything except frames. The
   // reason to still track frames is because it saves more than half a second
-  // when generating hints on the single-page HTML specification. In theory,
-  // this can lead to more elements `maxIntersectionObservedElements` being
-  // tracked by the intersection observer, but in practice there are never that
-  // many frames.
+  // when generating hints on the single-page HTML specification.
   bail() {
     if (this.bailed) {
       return;
@@ -206,14 +212,6 @@ export default class ElementManager {
     this.intersectionObserver.disconnect();
     this.visibleElements.clear();
     this.bailed = true;
-
-    const { documentElement } = document;
-    if (documentElement != null) {
-      const frames = document.querySelectorAll("iframe, frame");
-      for (const frame of frames) {
-        this.queueItem({ mutationType: "changed", element: frame });
-      }
-    }
 
     log(
       "warn",
@@ -254,16 +252,46 @@ export default class ElementManager {
     }
   }
 
+  onFrameIntersection(entries: Array<IntersectionObserverEntry>) {
+    for (const entry of entries) {
+      const element = entry.target;
+      if (
+        element instanceof HTMLIFrameElement ||
+        element instanceof HTMLFrameElement
+      ) {
+        if (entry.isIntersecting) {
+          this.visibleFrames.add(element);
+        } else {
+          this.visibleFrames.delete(element);
+        }
+      }
+    }
+  }
+
   onMutation(records: Array<MutationRecord>) {
     for (const record of records) {
       for (const node of record.addedNodes) {
-        if (node instanceof HTMLElement) {
+        if (
+          node instanceof HTMLIFrameElement ||
+          node instanceof HTMLFrameElement
+        ) {
+          // In theory, this can lead to more than
+          // `maxIntersectionObservedElements` frames being tracked by the
+          // intersection observer, but in practice there are never that many
+          // frames. YAGNI.
+          this.frameIntersectionObserver.observe(node);
+        } else if (node instanceof HTMLElement) {
           this.queueItemAndChildren({ mutationType: "added", element: node });
         }
       }
 
       for (const node of record.removedNodes) {
-        if (node instanceof HTMLElement) {
+        if (
+          node instanceof HTMLIFrameElement ||
+          node instanceof HTMLFrameElement
+        ) {
+          this.frameIntersectionObserver.unobserve(node);
+        } else if (node instanceof HTMLElement) {
           this.queueItemAndChildren({ mutationType: "removed", element: node });
         }
       }
@@ -343,14 +371,11 @@ export default class ElementManager {
         }
       } else {
         this.elements.set(element, data);
-        if (!this.bailed || data.type === "frame") {
+        if (!this.bailed) {
           this.intersectionObserver.observe(element);
-        }
-        if (
-          !this.bailed &&
-          this.elements.size > this.maxIntersectionObservedElements
-        ) {
-          this.bail();
+          if (this.elements.size > this.maxIntersectionObservedElements) {
+            this.bail();
+          }
         }
       }
 
@@ -425,15 +450,11 @@ export default class ElementManager {
   getVisibleFrames(
     viewports: Array<Box>
   ): Array<HTMLIFrameElement | HTMLFrameElement> {
-    return Array.from(this.visibleElements, element => {
+    return Array.from(this.visibleFrames, element => {
       if (
-        !(
-          (element instanceof HTMLIFrameElement ||
-            element instanceof HTMLFrameElement) &&
-          // Needed on reddit.com. There's a Google Ads iframe where
-          // `contentWindow` is null.
-          element.contentWindow != null
-        )
+        // Needed on reddit.com. There's a Google Ads iframe where
+        // `contentWindow` is null.
+        element.contentWindow == null
       ) {
         return undefined;
       }
@@ -479,9 +500,6 @@ export default class ElementManager {
       case "INPUT":
         // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
         return element.type === "hidden" ? undefined : "clickable";
-      case "FRAME":
-      case "IFRAME":
-        return "frame";
       default: {
         const document = element.ownerDocument;
 

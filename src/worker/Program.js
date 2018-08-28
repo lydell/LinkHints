@@ -301,17 +301,12 @@ export default class WorkerProgram {
     const frames = this.elementManager.getVisibleFrames(viewports);
 
     for (const frame of frames) {
-      if (
-        frame instanceof HTMLIFrameElement ||
-        frame instanceof HTMLFrameElement
-      ) {
-        const message = {
-          token: this.oneTimeWindowMessageToken,
-          types,
-          viewports: viewports.concat(getFrameViewport(frame)),
-        };
-        frame.contentWindow.postMessage(message, "*");
-      }
+      const message = {
+        token: this.oneTimeWindowMessageToken,
+        types,
+        viewports: viewports.concat(getFrameViewport(frame)),
+      };
+      frame.contentWindow.postMessage(message, "*");
     }
 
     this.sendMessage({
