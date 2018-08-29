@@ -393,6 +393,8 @@ export default class ElementManager {
         break;
       }
     }
+
+    this.queue = [];
   }
 
   getVisibleElements(
