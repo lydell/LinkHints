@@ -292,6 +292,7 @@ export default class ElementManager {
           node instanceof HTMLFrameElement
         ) {
           this.frameIntersectionObserver.unobserve(node);
+          this.visibleFrames.delete(node); // Just to be sure.
         } else if (node instanceof HTMLElement) {
           this.queueItemAndChildren({ mutationType: "removed", element: node });
         }
@@ -357,6 +358,12 @@ export default class ElementManager {
       if (data == null) {
         if (mutationType !== "added") {
           this.elements.delete(element);
+          // Removing an element from the DOM also triggers the
+          // IntersectionObserver (removing it from `this.visibleElements`), but
+          // changing an attribute of an element so that it isn't considered
+          // clickable anymore requires a manual deletion from
+          // `this.visibleElements` since the element might still be on-screen.
+          this.visibleElements.delete(element);
           this.intersectionObserver.unobserve(element);
           // The element must not be removed from `elementsWithClickListeners`
           // or `elementsWithScrollbars` (if `mutationType === "removed"`), even
