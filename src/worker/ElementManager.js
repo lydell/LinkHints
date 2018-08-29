@@ -111,6 +111,7 @@ const infiniteDeadline = {
 export default class ElementManager {
   maxIntersectionObservedElements: number;
   queue: Array<QueueItem>;
+  injectedHasQueue: boolean;
   elements: Map<HTMLElement, ElementData>;
   visibleElements: Set<HTMLElement>;
   visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement>;
@@ -131,6 +132,7 @@ export default class ElementManager {
     this.maxIntersectionObservedElements = maxIntersectionObservedElements;
 
     this.queue = [];
+    this.injectedHasQueue = false;
     this.elements = new Map();
     this.visibleElements = new Set();
     this.visibleFrames = new Set();
@@ -156,6 +158,7 @@ export default class ElementManager {
     bind(this, [
       this.onClickableElements,
       this.onUnclickableElements,
+      this.onInjectedQueue,
       this.onOverflowChange,
     ]);
   }
@@ -183,6 +186,7 @@ export default class ElementManager {
           INJECTED_UNCLICKABLE_EVENT,
           this.onUnclickableElements
         ),
+        addEventListener(window, INJECTED_QUEUE_EVENT, this.onInjectedQueue),
         addEventListener(window, "overflow", this.onOverflowChange),
         addEventListener(window, "underflow", this.onOverflowChange)
       );
@@ -207,7 +211,7 @@ export default class ElementManager {
     // this.elementsWithScrollbars.clear();
     this.idleCallbackId = undefined;
     this.resets.reset();
-    window.postMessage(INJECTED_RESET, "*");
+    sendInjectedMessage("reset");
   }
 
   // Stop using the intersection observer for everything except frames. The
@@ -318,25 +322,33 @@ export default class ElementManager {
   }
 
   onClickableElements(event: CustomEvent) {
-    const elements =
-      event.detail == null ? [event.target] : event.detail.elements;
+    const elements = extractElements(event);
     for (const element of elements) {
-      if (element instanceof HTMLElement) {
-        this.elementsWithClickListeners.add(element);
-        this.queueItem({ mutationType: "changed", element });
-      }
+      this.elementsWithClickListeners.add(element);
+      this.queueItem({ mutationType: "changed", element });
     }
   }
 
   onUnclickableElements(event: CustomEvent) {
-    const elements =
-      event.detail == null ? [event.target] : event.detail.elements;
+    const elements = extractElements(event);
     for (const element of elements) {
-      if (element instanceof HTMLElement) {
-        this.elementsWithClickListeners.delete(element);
-        this.queueItem({ mutationType: "changed", element });
-      }
+      this.elementsWithClickListeners.delete(element);
+      this.queueItem({ mutationType: "changed", element });
     }
+  }
+
+  onInjectedQueue(event: CustomEvent) {
+    const { detail } = event;
+    if (detail == null) {
+      return;
+    }
+
+    const { hasQueue } = detail;
+    if (typeof hasQueue !== "boolean") {
+      return;
+    }
+
+    this.injectedHasQueue = hasQueue;
   }
 
   onOverflowChange(event: UIEvent) {
@@ -411,12 +423,18 @@ export default class ElementManager {
     types: Set<ElementType>,
     viewports: Array<Box>
   ): Promise<Array<VisibleElement>> {
+    const injectedNeedsFlush = this.injectedHasQueue;
     const needsFlush = this.queue.length > 0;
 
+    if (injectedNeedsFlush) {
+      sendInjectedMessage("flush");
+    }
+
     if (needsFlush) {
-      // This won't flush the queue in injected.js, but is better than nothing.
-      // Maybe we could send a message to injected.js, asking it to flush.
       this.flushQueue(infiniteDeadline);
+    }
+
+    if (injectedNeedsFlush || needsFlush) {
       // The IntersectionObserver triggers after paint.
       await waitForPaint();
     }
@@ -999,4 +1017,43 @@ function rectToBox(rect: ClientRect): Box {
     width: rect.width,
     height: rect.height,
   };
+}
+
+function sendInjectedMessage(message: string) {
+  try {
+    if (window.wrappedJSObject != null) {
+      window.wrappedJSObject[INJECTED_VAR](message);
+    } else {
+      const { documentElement } = document;
+      if (documentElement == null) {
+        return;
+      }
+      const script = document.createElement("script");
+      script.textContent = `window[${JSON.stringify(
+        INJECTED_VAR
+      )}](${JSON.stringify(message)});`;
+      documentElement.append(script);
+      script.remove();
+    }
+  } catch (error) {
+    log("error", "Failed to message injected.js", error);
+  }
+}
+
+function extractElements(event: CustomEvent): Array<HTMLElement> {
+  if (event.detail == null) {
+    return event.target instanceof HTMLElement ? [event.target] : [];
+  }
+
+  const { detail } = event;
+  if (detail == null) {
+    return [];
+  }
+
+  const { elements } = detail;
+  if (!Array.isArray(elements)) {
+    return [];
+  }
+
+  return elements.filter(element => element instanceof HTMLElement);
 }

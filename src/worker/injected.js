@@ -25,13 +25,13 @@ export default () => {
   const CustomEvent2 = CustomEvent;
   const HTMLElement2 = HTMLElement;
   const { error: logError } = console;
-  const {
-    dispatchEvent,
-    addEventListener,
-    removeEventListener,
-  } = EventTarget.prototype;
+  const { dispatchEvent } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
+
+  const infiniteDeadline = {
+    timeRemaining: () => Infinity,
+  };
 
   class HookManager {
     fnMap: Map<Function, Function>;
@@ -184,6 +184,8 @@ export default () => {
     element: HTMLElement,
   |};
 
+  type Deadline = { timeRemaining: () => number };
+
   class ClickListenerTracker {
     clickListenersByElement: ClickListenersByElement;
     queue: Array<QueueItem>;
@@ -209,8 +211,12 @@ export default () => {
     }
 
     queueItem(item: QueueItem) {
-      this.queue.push(item);
+      const numItems = this.queue.push(item);
       this.requestIdleCallback();
+
+      if (numItems === 1 && this.sendQueue.length === 0) {
+        sendWindowEvent(INJECTED_QUEUE_EVENT, { hasQueue: true });
+      }
     }
 
     requestIdleCallback() {
@@ -222,10 +228,19 @@ export default () => {
       }
     }
 
-    flushQueue(deadline: { timeRemaining: () => number }) {
+    flushQueue(deadline: Deadline) {
+      const hadQueue = this.queue.length > 0 || this.sendQueue.length > 0;
+      this._flushQueue(deadline);
+      const hasQueue = this.queue.length > 0 || this.sendQueue.length > 0;
+      if (hadQueue && !hasQueue) {
+        sendWindowEvent(INJECTED_QUEUE_EVENT, { hasQueue: false });
+      }
+    }
+
+    _flushQueue(deadline: Deadline) {
       const done = this.flushSendQueue(deadline);
 
-      if (!done) {
+      if (!done || this.queue.length === 0) {
         return;
       }
 
@@ -278,8 +293,12 @@ export default () => {
       const { added, removed } = addedRemoved;
 
       if (!isChrome) {
-        sendEvents(INJECTED_CLICKABLE_EVENT, Array.from(added));
-        sendEvents(INJECTED_UNCLICKABLE_EVENT, Array.from(removed));
+        sendWindowEvent(INJECTED_CLICKABLE_EVENT, {
+          elements: Array.from(added),
+        });
+        sendWindowEvent(INJECTED_UNCLICKABLE_EVENT, {
+          elements: Array.from(removed),
+        });
         return;
       }
 
@@ -294,12 +313,12 @@ export default () => {
       this.flushSendQueue(deadline);
     }
 
-    flushSendQueue(deadline: { timeRemaining: () => number }): boolean {
+    flushSendQueue(deadline: Deadline): boolean {
       for (const [index, item] of this.sendQueue.entries()) {
         if (item.added) {
-          sendEvent(INJECTED_CLICKABLE_EVENT, item.element);
+          sendElementEvent(INJECTED_CLICKABLE_EVENT, item.element);
         } else {
-          sendEvent(INJECTED_UNCLICKABLE_EVENT, item.element);
+          sendElementEvent(INJECTED_UNCLICKABLE_EVENT, item.element);
         }
 
         if (deadline.timeRemaining() <= 0) {
@@ -446,19 +465,17 @@ export default () => {
     );
   }
 
-  function sendEvents(eventName: string, elements: Array<HTMLElement>) {
+  function sendWindowEvent(eventName: string, detail: any) {
     // The events are dispatched on `window` rather than on `element`, since
     // `element` might not be inserted into the DOM (yet/anymore), which causes
     // the event not to fire. However, sending a DOM element as `detail` from a
     // web page to an extension is not allowed in Chrome, so there we have to
     // temporarily insert the element into the DOM if needed. In that case the
-    // `sendEvent` function is used instead.
-    apply(dispatchEvent, window, [
-      new CustomEvent2(eventName, { detail: { elements } }),
-    ]);
+    // `sendElementEvent` function is used instead.
+    apply(dispatchEvent, window, [new CustomEvent2(eventName, { detail })]);
   }
 
-  function sendEvent(eventName: string, element: HTMLElement) {
+  function sendElementEvent(eventName: string, element: HTMLElement) {
     const { documentElement } = document;
 
     if (documentElement == null) {
@@ -480,20 +497,6 @@ export default () => {
 
   const clickListenerTracker = new ClickListenerTracker();
   const hookManager = new HookManager();
-
-  function reset(event: MessageEvent) {
-    if (event.data !== INJECTED_RESET) {
-      return;
-    }
-
-    clickListenerTracker.reset();
-    hookManager.reset();
-    apply(removeEventListener, window, ["message", reset, true]);
-  }
-
-  // Reset the overridden methods when the extension is shut down. This listener
-  // is registered before we override in order not to trigger our hook.
-  apply(addEventListener, window, ["message", reset, true]);
 
   function onAddEventListener(
     orig: Function,
@@ -604,4 +607,28 @@ export default () => {
   }
 
   hookManager.conceal();
+
+  defineProperty(window, INJECTED_VAR, {
+    // Immediately call another function so that `.toString()` gives away as
+    // little as possible.
+    value: s => external(s),
+    // The rest of the options default to being neither enumerable nor changable.
+  });
+
+  function external(message: mixed) {
+    switch (message) {
+      case "flush":
+        clickListenerTracker.flushQueue(infiniteDeadline);
+        break;
+
+      // Reset the overridden methods when the extension is shut down.
+      case "reset":
+        clickListenerTracker.reset();
+        hookManager.reset();
+        break;
+
+      default:
+      // Silently ignore unknown messages.
+    }
+  }
 };
