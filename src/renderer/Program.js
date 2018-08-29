@@ -8,6 +8,7 @@ import {
   log,
   partition,
   unreachable,
+  waitForPaint,
 } from "../shared/main";
 import type {
   ElementWithHint,
@@ -97,6 +98,7 @@ export default class RendererProgram {
       [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
+      [this.render, { catch: true }],
     ]);
   }
 
@@ -179,7 +181,7 @@ export default class RendererProgram {
     }
   }
 
-  render(elements: Array<ElementWithHint>) {
+  async render(elements: Array<ElementWithHint>): Promise<void> {
     this.unrender();
 
     const { documentElement, scrollingElement } = document;
@@ -343,18 +345,13 @@ export default class RendererProgram {
       moveInsideViewport(edgeElements, viewport);
     }
 
-    // Using double `requestAnimationFrame` since they run before paint.
-    // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        moveInsideViewport(restElements, viewport);
-      });
-    });
-
     this.sendMessage({
       type: "Rendered",
       timestamp: performance.now(),
     });
+
+    await waitForPaint();
+    moveInsideViewport(restElements, viewport);
   }
 
   updateHints(

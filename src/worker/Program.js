@@ -295,8 +295,14 @@ export default class WorkerProgram {
     }
   }
 
-  reportVisibleElements(types: Set<ElementType>, viewports: Array<Box>) {
-    const elements = this.elementManager.getVisibleElements(types, viewports);
+  async reportVisibleElements(
+    types: Set<ElementType>,
+    viewports: Array<Box>
+  ): Promise<void> {
+    const elements = await this.elementManager.getVisibleElements(
+      types,
+      viewports
+    );
 
     const frames = this.elementManager.getVisibleFrames(viewports);
 

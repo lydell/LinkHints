@@ -1,6 +1,12 @@
 // @flow
 
-import { Resets, addEventListener, bind, log } from "../shared/main";
+import {
+  Resets,
+  addEventListener,
+  bind,
+  log,
+  waitForPaint,
+} from "../shared/main";
 
 import injected from "./injected";
 
@@ -401,23 +407,23 @@ export default class ElementManager {
     this.queue = [];
   }
 
-  getVisibleElements(
+  async getVisibleElements(
     types: Set<ElementType>,
     viewports: Array<Box>
-  ): Array<VisibleElement> {
+  ): Promise<Array<VisibleElement>> {
     const needsFlush = this.queue.length > 0;
-    console.log("NEEDS FLUSH?", needsFlush);
 
     if (needsFlush) {
       // This won't flush the queue in injected.js, but is better than nothing.
       // Maybe we could send a message to injected.js, asking it to flush.
       this.flushQueue(infiniteDeadline);
+      // The IntersectionObserver triggers after paint.
+      await waitForPaint();
     }
 
-    // Maybe we should wait for paint (two animation frames) so that
-    // `this.visibleElements` can be used even in the `needsFlush` case.
-    const candidates =
-      needsFlush || this.bailed ? this.elements.keys() : this.visibleElements;
+    const candidates = this.bailed
+      ? this.elements.keys()
+      : this.visibleElements;
 
     const range = document.createRange();
 

@@ -199,3 +199,15 @@ export function stableSort<T>(array: Array<T>, fn: (T, T) => number): Array<T> {
     .sort((a, b) => fn(a.item, b.item) || a.index - b.index)
     .map(({ item }) => item);
 }
+
+// Using double `requestAnimationFrame` since they run before paint.
+// See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
+export function waitForPaint(): Promise<void> {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve();
+      });
+    });
+  });
+}
