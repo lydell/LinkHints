@@ -26,6 +26,7 @@ export type HintMeasurements = {|
   x: number,
   y: number,
   area: number,
+  align: "left" | "right",
 |};
 
 export type VisibleElement = {|
@@ -671,10 +672,18 @@ function getMeasurements(
     }
   }
 
+  // TODO: Reference comparing to the first visibleBox is a hack.
+  const align = pointBox === visibleBoxes[0] ? "left" : "right";
+
   // The coordinates at which to place the hint and the area of the element.
   return nonCoveredPoint == null
-    ? { x: x + offsetX, y: y + offsetY, area }
-    : { x: nonCoveredPoint.x + offsetX, y: nonCoveredPoint.y + offsetY, area };
+    ? { x: x + offsetX, y: y + offsetY, area, align }
+    : {
+        x: nonCoveredPoint.x + offsetX,
+        y: nonCoveredPoint.y + offsetY,
+        area,
+        align,
+      };
 }
 
 function adjustTextlessBox(
@@ -685,7 +694,12 @@ function adjustTextlessBox(
   // If the element has only one rect and no text we can try to position it
   // somewhat better than at the edge of the element.
   if (rects.length === 1) {
-    const image = element.querySelector("img, svg");
+    const selector = "img, svg";
+    // Due to the float case in `getMeasurements` the element itself can be an
+    // image.
+    const image = element.matches(selector)
+      ? element
+      : element.querySelector(selector);
 
     // First try to place it near and image. Many buttons have just an icon and
     // no text.
@@ -693,22 +707,35 @@ function adjustTextlessBox(
       const imageRect = image.getBoundingClientRect();
       const x = imageRect.left;
 
-      if (x > visibleBox.x && x < visibleBox.x + visibleBox.width) {
+      if (x >= visibleBox.x && x < visibleBox.x + visibleBox.width) {
         return { ...visibleBox, x };
       }
     }
 
-    // Otherwise try to take border and padding into account. This places the
-    // hint nearer the placeholder in `<input>` elements and nearer the text in
-    // `<input type="button">`.
-    const computedStyle = window.getComputedStyle(element);
-    const left =
-      parseFloat(computedStyle.getPropertyValue("border-left-width")) +
-      parseFloat(computedStyle.getPropertyValue("padding-left"));
-    const x = rects[0].left + left;
+    if (
+      element instanceof HTMLInputElement &&
+      (element.type === "checkbox" || element.type === "radio")
+    ) {
+      // TODO: Super ugly reference checking hack...
+      return { ...visibleBox };
+    }
 
-    if (x > visibleBox.x && x < visibleBox.x + visibleBox.width) {
-      return { ...visibleBox, x };
+    // Try to place the hint nearer the placeholder in `<input>` elements and
+    // nearer the text in `<input type="button">` and `<select>` by taking
+    // border and padding into account.
+    if (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLSelectElement
+    ) {
+      const computedStyle = window.getComputedStyle(element);
+      const left =
+        parseFloat(computedStyle.getPropertyValue("border-left-width")) +
+        parseFloat(computedStyle.getPropertyValue("padding-left"));
+      const x = rects[0].left + left;
+
+      if (x >= visibleBox.x && x < visibleBox.x + visibleBox.width) {
+        return { ...visibleBox, x };
+      }
     }
   }
 
@@ -816,6 +843,7 @@ function getFirstNonEmptyTextRect(
         range.setStart(node, index);
         range.setEnd(node, index + 1);
         const rect = range.getBoundingClientRect();
+
         if (
           // Exclude screen reader only text.
           rect.width >= TEXT_RECT_MIN_SIZE &&
@@ -841,8 +869,8 @@ function isWithin(box: Box, rect: ClientRect): boolean {
   return (
     rect.left >= box.x &&
     rect.right <= box.x + box.width &&
-    rect.top >= box.y &&
-    rect.bottom <= box.y + box.height
+    rect.top + rect.height / 2 >= box.y &&
+    rect.top + rect.height / 2 <= box.y + box.height
   );
 }
 

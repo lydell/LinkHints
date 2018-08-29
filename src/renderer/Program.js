@@ -295,12 +295,17 @@ export default class RendererProgram {
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
-      // Use `right` rather than `left` since the hints should be right-aligned
-      // rather than left-aligned. This could also be done using `left` and
-      // `transform: translateX(-100%)`, but that results in blurry hints in
-      // Chrome due to Chrome making the widths of the hints non-integer based
-      // on the font. `calc()` does not affect performance.
-      element.style.right = `calc(100% - ${Math.round(hintMeasurements.x)}px)`;
+      if (hintMeasurements.align === "left") {
+        element.style.left = `${Math.round(hintMeasurements.x)}px`;
+      } else {
+        // This could also be done using `left` and
+        // `transform: translateX(-100%)`, but that results in blurry hints in
+        // Chrome due to Chrome making the widths of the hints non-integer based
+        // on the font.
+        element.style.right = `${Math.round(
+          viewport.width - hintMeasurements.x
+        )}px`;
+      }
       element.style.top = `${Math.round(hintMeasurements.y)}px`;
       element.style.zIndex = String(MAX_Z_INDEX - index);
 
@@ -309,11 +314,19 @@ export default class RendererProgram {
 
       this.maybeApplyStyles(element);
 
+      const width = Math.ceil(widthM + widthK * hint.length);
+      const outsideHorizontally =
+        hintMeasurements.align === "left"
+          ? viewport.width - hintMeasurements.x <= width
+          : hintMeasurements.x <= width;
+
+      const outsideVertically =
+        hintMeasurements.y <= halfHeight ||
+        viewport.height - hintMeasurements.y <= halfHeight;
+
       if (
         numEdgeElements < MAX_IMMEDIATE_HINT_MOVEMENTS &&
-        (hintMeasurements.x <= Math.ceil(widthM + widthK * hint.length) ||
-          hintMeasurements.y <= halfHeight ||
-          viewport.height - hintMeasurements.y <= halfHeight)
+        (outsideHorizontally || outsideVertically)
       ) {
         numEdgeElements = edgeElements.push(element);
       } else {
