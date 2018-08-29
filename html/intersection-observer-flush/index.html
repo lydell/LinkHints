@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>intersection-observer-flush</title>
+  </head>
+  <body>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><a href="#">link</a></p>
+    <p><button id="button">Log visibleElements</button></p>
+    <script>
+      const visibleElements = new Set();
+
+      function handleEntries(entries) {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visibleElements.add(entry.target);
+          } else {
+            visibleElements.delete(entry.target);
+          }
+        }
+      }
+
+      const obs = new IntersectionObserver(handleEntries);
+
+      const links = document.querySelectorAll("a");
+      for (const link of links) {
+        obs.observe(link);
+      }
+
+      console.log("visibleElements at start", Array.from(visibleElements));
+
+      const entriesStart = obs.takeRecords();
+      handleEntries(entriesStart);
+      console.log("takeRecords start", entriesStart.length, Array.from(visibleElements));
+
+      requestAnimationFrame(() => {
+        const entriesFrame = obs.takeRecords();
+        handleEntries(entriesFrame);
+        console.log("takeRecords frame", entriesFrame.length, Array.from(visibleElements));
+
+        requestAnimationFrame(() => {
+          const entriesFrame2 = obs.takeRecords();
+          handleEntries(entriesFrame2);
+          console.log("takeRecords frame2", entriesFrame2.length, Array.from(visibleElements));
+        });
+      });
+
+      button.onclick = () => {
+        console.log("visibleElements", Array.from(visibleElements));
+      };
+    </script>
+  </body>
+</html>
