@@ -394,7 +394,7 @@ export default class ElementManager {
       if (deadline.timeRemaining() <= 0) {
         this.queue = this.queue.slice(index + 1);
         this.requestIdleCallback();
-        break;
+        return;
       }
     }
 
