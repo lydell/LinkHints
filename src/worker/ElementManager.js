@@ -98,6 +98,10 @@ const MUTATION_ATTRIBUTES = [
   ...CLICKABLE_ATTRIBUTES,
 ];
 
+const infiniteDeadline = {
+  timeRemaining: () => Infinity,
+};
+
 export default class ElementManager {
   maxIntersectionObservedElements: number;
   queue: Array<QueueItem>;
@@ -401,9 +405,19 @@ export default class ElementManager {
     types: Set<ElementType>,
     viewports: Array<Box>
   ): Array<VisibleElement> {
-    const candidates = this.bailed
-      ? this.elements.keys()
-      : this.visibleElements;
+    const needsFlush = this.queue.length > 0;
+    console.log("NEEDS FLUSH?", needsFlush);
+
+    if (needsFlush) {
+      // This won't flush the queue in injected.js, but is better than nothing.
+      // Maybe we could send a message to injected.js, asking it to flush.
+      this.flushQueue(infiniteDeadline);
+    }
+
+    // Maybe we should wait for paint (two animation frames) so that
+    // `this.visibleElements` can be used even in the `needsFlush` case.
+    const candidates =
+      needsFlush || this.bailed ? this.elements.keys() : this.visibleElements;
 
     const range = document.createRange();
 
