@@ -9,9 +9,6 @@ module.exports = config => ({
     // This is a useful start page.
     startUrl: ["about:debugging"],
     pref: [
-      // Disable very noisy and mostly irrelevant warnings. Flow and ESLint
-      // catch this type of errors anyway.
-      "javascript.options.strict=false",
       // Allow accessing about:config without the warning screen.
       "general.warnOnAboutConfig=false",
       // Hide info/hint/intro bars/popups.
