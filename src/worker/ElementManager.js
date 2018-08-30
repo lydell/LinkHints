@@ -28,11 +28,20 @@ export type Box = {|
   height: number,
 |};
 
+type Align = "left" | "right";
+
 export type HintMeasurements = {|
   x: number,
   y: number,
   area: number,
   align: "left" | "right",
+  maxX: number,
+|};
+
+type Point = {|
+  x: number,
+  y: number,
+  align: Align,
 |};
 
 export type VisibleElement = {|
@@ -51,6 +60,14 @@ type MutationType = "added" | "removed" | "changed";
 // Elements this many pixels high or taller always get their hint placed at the
 // very left edge.
 const BOX_MIN_HEIGHT = 110; // px
+
+// Avoid placing hints too far to the right side. The first non-empty text node
+// of an element does not necessarily have to come first, due to CSS. For
+// example, it is not uncommon to see menu items with a label to the left and a
+// number to the right. That number is usually positioned using `float: right;`
+// and due to how floats work it then needs to come _before_ the label in DOM
+// order. This avoids targeting such text.
+const MAX_HINT_X_PERCENTAGE_OF_WIDTH = 0.75;
 
 const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
 
@@ -473,9 +490,12 @@ export default class ElementManager {
           return undefined;
         }
 
-        const measurements = getMeasurements(element, viewports, range, {
-          lookForText: data.type !== "scrollable",
-        });
+        const measurements = getMeasurements(
+          element,
+          data.type,
+          viewports,
+          range
+        );
 
         if (measurements == null) {
           return undefined;
@@ -596,16 +616,13 @@ export default class ElementManager {
 
 function getMeasurements(
   element: HTMLElement,
+  elementType: ElementType,
   viewports: Array<Box>,
   // The `range` is passed in since it is faster to re-use the same one than
   // creating a new one for every element candidate.
-  range: Range,
-  { lookForText: passedLookForText = true }: {| lookForText: boolean |} = {}
+  range: Range
 ): ?HintMeasurements {
   const rects = element.getClientRects();
-
-  const isBox = rects.length === 1 && rects[0].height >= BOX_MIN_HEIGHT;
-  const lookForText = passedLookForText && !isBox;
 
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
@@ -631,7 +648,12 @@ function getMeasurements(
       const rect = rects[0];
       if (rect.width === 0 && rect.height > 0) {
         for (const child of element.children) {
-          const measurements = getMeasurements(child, viewports, range);
+          const measurements = getMeasurements(
+            child,
+            elementType,
+            viewports,
+            range
+          );
           if (measurements != null) {
             return measurements;
           }
@@ -642,53 +664,31 @@ function getMeasurements(
     return undefined;
   }
 
-  // Try to place the hint just before the first letter inside `element`, if
-  // any. If the first letter is off-screen, don’t bother with any fancy
-  // placement and just place the hint in the middle of `visibleBoxes`. The
-  // first non-empty text node is assumed to come first. That’s not necessarily
-  // true due to CSS, but YAGNI until that’s found in the wild. One would think
-  // that `range.selectNodeContents(element)` would do essentially the same
-  // thing here, but it takes padding and such of child elements into account.
-  // Also, it would count leading visible whitespace as the first character.
-  // Finally, don’t try to look for text nodes in `<select>` elements. There
-  // _are_ text nodes inside the `<option>` elements and their rects _can_ be
-  // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
-  // will fail. An example is the signup form at <https://www.facebook.com/>.
-  // For scrollable elements it also doesn't make sense to look for text to
-  // place the hint at. That's what the `lookForText` option is for.
-  const textRect =
-    !lookForText || element instanceof HTMLSelectElement
-      ? undefined
-      : getFirstNonEmptyTextRect(element, visibleBoxes, range);
-  const visibleTextBox = textRect == null ? undefined : rectToBox(textRect);
+  const hintPoint =
+    rects.length === 1
+      ? getSingleRectPoint({
+          element,
+          elementType,
+          rect: rects[0],
+          visibleBox: visibleBoxes[0],
+          range,
+        })
+      : getMultiRectPoint({ element, visibleBoxes, range });
 
-  // The box used to choose the position of the hint.
-  const pointBox =
-    visibleTextBox == null
-      ? lookForText
-        ? adjustTextlessBox(element, rects, visibleBoxes[0])
-        : visibleBoxes[0]
-      : visibleTextBox;
-
-  const { x } = pointBox;
-  const y = pointBox.y + pointBox.height / 2;
-
-  // It’s easy to think that one could optimize by calculating the area from
-  // `pointBox` and potentially skip `element.getClientRects()` for most
-  // elements, but remember that `pointBox` most likely just refers to (part of)
-  // one text node of the element, not the entire visible area of the element
-  // (as `visibleBoxes` does).
+  // The entire visible area of the element.
   const area = visibleBoxes.reduce(
     (sum, box) => sum + box.width * box.height,
     0
   );
 
+  const maxX = Math.max(...visibleBoxes.map(box => box.x + box.width));
+
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes link hints in fixed menus so much easier find.
   const nonCoveredPoint = getNonCoveredPoint(element, {
-    x,
-    y,
-    maxX: visibleBoxes[0].x + visibleBoxes[0].width - 1,
+    x: hintPoint.x,
+    y: hintPoint.y,
+    maxX,
   });
 
   if (nonCoveredPoint == null) {
@@ -702,6 +702,7 @@ function getMeasurements(
     ) {
       const measurements = getMeasurements(
         element.parentNode,
+        elementType,
         viewports,
         range
       );
@@ -727,74 +728,173 @@ function getMeasurements(
     }
   }
 
-  // TODO: Reference comparing to the first visibleBox is a hack.
-  const align = pointBox === visibleBoxes[0] ? "left" : "right";
+  const { x, y } = nonCoveredPoint == null ? hintPoint : nonCoveredPoint;
 
   // The coordinates at which to place the hint and the area of the element.
-  return nonCoveredPoint == null
-    ? { x: x + offsetX, y: y + offsetY, area, align }
-    : {
-        x: nonCoveredPoint.x + offsetX,
-        y: nonCoveredPoint.y + offsetY,
-        area,
-        align,
-      };
+  return {
+    x: x + offsetX,
+    y: y + offsetY,
+    area,
+    align: hintPoint.align,
+    maxX,
+  };
 }
 
-function adjustTextlessBox(
+function getSingleRectPoint({
+  element,
+  elementType,
+  rect,
+  visibleBox,
+  range,
+}: {|
   element: HTMLElement,
-  rects: Array<ClientRect>,
-  visibleBox: Box
-): Box {
-  // If the element has only one rect and no text we can try to position it
-  // somewhat better than at the edge of the element.
-  if (rects.length === 1) {
-    const selector = "img, svg";
-    // Due to the float case in `getMeasurements` the element itself can be an
-    // image.
-    const image = element.matches(selector)
-      ? element
-      : element.querySelector(selector);
+  elementType: ElementType,
+  rect: ClientRect,
+  visibleBox: Box,
+  range: Range,
+|}): Point {
+  // Scrollable elements and very tall elements.
+  if (elementType === "scrollable" || rect.height >= BOX_MIN_HEIGHT) {
+    return {
+      ...getXY(visibleBox),
+      align: "left",
+    };
+  }
 
-    // First try to place it near and image. Many buttons have just an icon and
-    // no text.
-    if (image != null) {
-      const imageRect = image.getBoundingClientRect();
-      const x = imageRect.left;
+  function isAcceptable(point: Point): boolean {
+    return isWithin(point, visibleBox);
+  }
 
-      if (x >= visibleBox.x && x < visibleBox.x + visibleBox.width) {
-        return { ...visibleBox, x };
-      }
-    }
-
-    if (
-      element instanceof HTMLInputElement &&
-      (element.type === "checkbox" || element.type === "radio")
-    ) {
-      // TODO: Super ugly reference checking hack...
-      return { ...visibleBox };
-    }
-
-    // Try to place the hint nearer the placeholder in `<input>` elements and
-    // nearer the text in `<input type="button">` and `<select>` by taking
-    // border and padding into account.
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLSelectElement
-    ) {
-      const computedStyle = window.getComputedStyle(element);
-      const left =
-        parseFloat(computedStyle.getPropertyValue("border-left-width")) +
-        parseFloat(computedStyle.getPropertyValue("padding-left"));
-      const x = rects[0].left + left;
-
-      if (x >= visibleBox.x && x < visibleBox.x + visibleBox.width) {
-        return { ...visibleBox, x };
-      }
+  // Try to place the hint at the first character of the element.
+  // Don’t try to look for text nodes in `<select>` elements. There
+  // _are_ text nodes inside the `<option>` elements and their rects _can_ be
+  // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
+  // will fail. An example is the signup form at <https://www.facebook.com/>.
+  if (!(element instanceof HTMLSelectElement)) {
+    const textPoint = getFirstNonEmptyTextPoint(
+      element,
+      rect,
+      isAcceptable,
+      range
+    );
+    if (textPoint != null) {
+      return textPoint;
     }
   }
 
-  return visibleBox;
+  // Try to place the hint near an image. Many buttons have just an icon and no
+  // (visible) text.
+  const imagePoint = getFirstImagePoint(element);
+  if (imagePoint != null && isAcceptable(imagePoint)) {
+    return imagePoint;
+  }
+
+  // Checkboxes and radio buttons are typically small and we don't want to cover
+  // them with the hint.
+  if (
+    element instanceof HTMLInputElement &&
+    (element.type === "checkbox" || element.type === "radio")
+  ) {
+    return {
+      ...getXY(visibleBox),
+      align: "right",
+    };
+  }
+
+  // Take border and padding into account. This is nice since it places the hint
+  // nearer the placeholder in `<input>` elements and nearer the text in `<input
+  // type="button">` and `<select>`.
+  if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLSelectElement
+  ) {
+    const borderAndPaddingPoint = getBorderAndPaddingPoint(
+      element,
+      rect,
+      visibleBox
+    );
+    if (borderAndPaddingPoint != null && isAcceptable(borderAndPaddingPoint)) {
+      return borderAndPaddingPoint;
+    }
+  }
+
+  return {
+    ...getXY(visibleBox),
+    align: "left",
+  };
+}
+
+function getMultiRectPoint({
+  element,
+  visibleBoxes,
+  range,
+}: {|
+  element: HTMLElement,
+  visibleBoxes: Array<Box>,
+  range: Range,
+|}): Point {
+  function isAcceptable(point: Point): boolean {
+    return visibleBoxes.some(box => isWithin(point, box));
+  }
+
+  const textPoint = getFirstNonEmptyTextPoint(
+    element,
+    element.getBoundingClientRect(),
+    isAcceptable,
+    range
+  );
+  if (textPoint != null) {
+    return textPoint;
+  }
+
+  const xs = visibleBoxes.map(box => box.x);
+  const ys = visibleBoxes.map(box => box.y);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  return {
+    x: Math.min(...xs),
+    y: (minY + maxY) / 2,
+    align: "right",
+  };
+}
+
+function getFirstImagePoint(element: HTMLElement): ?Point {
+  const selector = "img, svg";
+  // Due to the float case in `getMeasurements` the element itself can be an
+  // image.
+  const image = element.matches(selector)
+    ? element
+    : element.querySelector(selector);
+
+  if (image == null) {
+    return undefined;
+  }
+
+  const rect = image.getBoundingClientRect();
+
+  return {
+    ...getXY(rect),
+    align: "right",
+  };
+}
+
+function getBorderAndPaddingPoint(
+  element: HTMLElement,
+  rect: ClientRect,
+  visibleBox: Box
+): ?Point {
+  const computedStyle = window.getComputedStyle(element);
+
+  const left =
+    parseFloat(computedStyle.getPropertyValue("border-left-width")) +
+    parseFloat(computedStyle.getPropertyValue("padding-left"));
+
+  return {
+    ...getXY(visibleBox),
+    x: rect.left + left,
+    align: "right",
+  };
 }
 
 function getNonCoveredPoint(
@@ -877,12 +977,17 @@ function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
       };
 }
 
-function getFirstNonEmptyTextRect(
+// Try to place the hint just before the first letter inside `element`, if any.
+// One would think that `range.selectNodeContents(element)` would do essentially
+// the same thing here, but it takes padding and such of child elements into
+// account. Also, it would count leading visible whitespace as the first
+// character.
+function getFirstNonEmptyTextPoint(
   element: HTMLElement,
-  visibleBoxes: Array<Box>,
+  elementRect: ClientRect,
+  isAcceptable: Point => boolean,
   range: Range
-): ?ClientRect {
-  const elementRect = element.getBoundingClientRect();
+): ?Point {
   if (
     // Exclude screen reader only text.
     elementRect.width < TEXT_RECT_MIN_SIZE &&
@@ -898,20 +1003,28 @@ function getFirstNonEmptyTextRect(
         range.setStart(node, index);
         range.setEnd(node, index + 1);
         const rect = range.getBoundingClientRect();
+        const point = {
+          ...getXY(rect),
+          align: "right",
+        };
 
         if (
           // Exclude screen reader only text.
           rect.width >= TEXT_RECT_MIN_SIZE &&
           rect.height >= TEXT_RECT_MIN_SIZE &&
           // Make sure that the text is inside the element.
-          // eslint-disable-next-line no-loop-func
-          visibleBoxes.some(visibleBox => isWithin(visibleBox, rect))
+          isAcceptable(point)
         ) {
-          return rect;
+          return point;
         }
       }
     } else if (node instanceof HTMLElement) {
-      const result = getFirstNonEmptyTextRect(node, visibleBoxes, range);
+      const result = getFirstNonEmptyTextPoint(
+        node,
+        node.getBoundingClientRect(),
+        isAcceptable,
+        range
+      );
       if (result != null) {
         return result;
       }
@@ -920,12 +1033,12 @@ function getFirstNonEmptyTextRect(
   return undefined;
 }
 
-function isWithin(box: Box, rect: ClientRect): boolean {
+function isWithin(point: Point, box: Box): boolean {
   return (
-    rect.left >= box.x &&
-    rect.right <= box.x + box.width &&
-    rect.top + rect.height / 2 >= box.y &&
-    rect.top + rect.height / 2 <= box.y + box.height
+    point.x >= box.x &&
+    point.x <= box.x + box.width * MAX_HINT_X_PERCENTAGE_OF_WIDTH &&
+    point.y >= box.y &&
+    point.y <= box.y + box.height
   );
 }
 
@@ -1018,15 +1131,6 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   );
 }
 
-function rectToBox(rect: ClientRect): Box {
-  return {
-    x: rect.left,
-    y: rect.top,
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
 function sendInjectedMessage(message: string) {
   try {
     if (window.wrappedJSObject != null) {
@@ -1064,4 +1168,13 @@ function extractElements(event: CustomEvent): Array<HTMLElement> {
   }
 
   return elements.filter(element => element instanceof HTMLElement);
+}
+
+function getXY(box: Box | ClientRect): {| x: number, y: number |} {
+  return {
+    // $FlowIgnore: Chrome and Firefox _do_ support `.x` and `.y` on ClientRects (aka DOMRects).
+    x: box.x,
+    // $FlowIgnore: See above.
+    y: box.y + box.height / 2,
+  };
 }

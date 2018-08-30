@@ -311,7 +311,15 @@ export default class RendererProgram {
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
-      if (hintMeasurements.align === "left") {
+      const width = Math.ceil(widthM + widthK * hint.length);
+
+      const alignLeft =
+        hintMeasurements.align === "left" &&
+        // If the hint would end up covering the element, align right instead.
+        // This is useful for the tiny voting arrows on hackernews.
+        hintMeasurements.x + width < hintMeasurements.maxX;
+
+      if (alignLeft) {
         element.style.left = `${Math.round(hintMeasurements.x)}px`;
       } else {
         // This could also be done using `left` and
@@ -330,7 +338,6 @@ export default class RendererProgram {
 
       this.maybeApplyStyles(element);
 
-      const width = Math.ceil(widthM + widthK * hint.length);
       const outsideHorizontally =
         hintMeasurements.align === "left"
           ? viewport.width - hintMeasurements.x <= width
