@@ -434,7 +434,15 @@ export default class ElementManager {
       this.flushQueue(infiniteDeadline);
     }
 
-    if (injectedNeedsFlush || needsFlush) {
+    if (
+      injectedNeedsFlush ||
+      needsFlush ||
+      // Firefox oddly does not report any elements as visible when entering
+      // hints mode for the first time on some pages. `this.elements` is
+      // populated, but `this.visisbleElements` isn't. Waiting for the next
+      // paint works around the problem.
+      (!this.bailed && this.visibleElements.size === 0)
+    ) {
       // The IntersectionObserver triggers after paint.
       await waitForPaint();
     }
