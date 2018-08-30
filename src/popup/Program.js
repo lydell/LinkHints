@@ -5,6 +5,7 @@ import type {
   FromBackground,
   FromPopup,
   TabState,
+  Timestamps,
   ToBackground,
 } from "../data/Messages";
 
@@ -89,16 +90,30 @@ export default class PopupProgram {
 
     if (tabState.perf.length > 0) {
       const average = document.createElement("p");
-      average.textContent = `Average: ${getAverage(tabState.perf).toFixed(
-        2
-      )} ms`;
+      const averageDuration = getAverage(
+        tabState.perf.map(({ startTime, timestamps }) =>
+          getMostImportantDuration(startTime, timestamps)
+        )
+      );
+      average.textContent = `Average: ${formatDuration(
+        averageDuration
+      )} ms (time to first paint)`;
       container.append(average);
 
       const list = document.createElement("ol");
       list.style.paddingLeft = "1em";
-      for (const duration of tabState.perf) {
+      for (const { startTime, timestamps } of tabState.perf) {
+        const mostImportantDuration = getMostImportantDuration(
+          startTime,
+          timestamps
+        );
         const li = document.createElement("li");
-        li.textContent = `${duration.toFixed(2)} ms`;
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.textContent = `${formatDuration(mostImportantDuration)} ms`;
+        details.append(summary);
+        details.append(makeTimestampsList(startTime, timestamps));
+        li.append(details);
         list.append(li);
       }
       container.append(list);
@@ -149,4 +164,53 @@ function wrapMessage(message: FromPopup): ToBackground {
 
 function getAverage(numbers: Array<number>): number {
   return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+}
+
+function formatDuration(duration: number): string {
+  return duration.toFixed(2);
+}
+
+function makeTimestampsList(
+  startTime: number,
+  timestamps: Timestamps
+): HTMLElement {
+  const table = document.createElement("table");
+  const headingsRow = document.createElement("tr");
+  const padding = "0 5px";
+
+  const headings = ["Phase", "Duration\xa0(ms)", "Total\xa0(ms)"];
+  for (const [index, heading] of headings.entries()) {
+    const th = document.createElement("th");
+    th.textContent = heading;
+    th.style.textAlign = index === 0 ? "left" : "right";
+    th.style.padding = padding;
+    headingsRow.append(th);
+  }
+  table.append(headingsRow);
+
+  let last = startTime;
+  for (const key of Object.keys(timestamps)) {
+    const timestamp = timestamps[key];
+    const duration = timestamp - last;
+    const total = timestamp - startTime;
+    const tr = document.createElement("tr");
+    const items = [key, formatDuration(duration), formatDuration(total)];
+    for (const [index, item] of items.entries()) {
+      const td = document.createElement("td");
+      td.textContent = item;
+      td.style.textAlign = index === 0 ? "left" : "right";
+      td.style.padding = padding;
+      tr.append(td);
+    }
+    table.append(tr);
+    last = timestamp;
+  }
+  return table;
+}
+
+function getMostImportantDuration(
+  startTime: number,
+  timestamps: Timestamps
+): number {
+  return timestamps.paint1 - startTime;
 }

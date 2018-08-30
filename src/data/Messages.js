@@ -93,7 +93,7 @@ export type FromRenderer =
     |}
   | {|
       type: "Rendered",
-      timestamp: number,
+      timestamps: Timestamps,
     |};
 
 export type ToRenderer =
@@ -166,7 +166,7 @@ export type HintUpdate =
 
 export type TabState = {|
   hintsState: HintsState,
-  perf: Array<number>,
+  perf: Array<{| startTime: number, timestamps: Timestamps |}>,
 |};
 
 export type HintsState =
@@ -194,4 +194,14 @@ export type PendingElements = {|
   |},
   startTime: number,
   elements: Array<ExtendedElementReport>,
+|};
+
+export type Timestamps = {|
+  collect: number,
+  prepare: number,
+  render: number,
+  moveInside1: number,
+  paint1: number,
+  moveInside2: number,
+  paint2: number,
 |};

@@ -182,6 +182,18 @@ export default class RendererProgram {
   }
 
   async render(elements: Array<ElementWithHint>): Promise<void> {
+    const timestamps = {
+      collect: -1,
+      prepare: -1,
+      render: -1,
+      moveInside1: -1,
+      paint1: -1,
+      moveInside2: -1,
+      paint2: -1,
+    };
+
+    timestamps.collect = performance.now();
+
     this.unrender();
 
     const { documentElement, scrollingElement } = document;
@@ -290,6 +302,8 @@ export default class RendererProgram {
     probe1.remove();
     probe2.remove();
 
+    timestamps.prepare = performance.now();
+
     const edgeElements = [];
     const restElements = [];
     let numEdgeElements = 0;
@@ -336,6 +350,8 @@ export default class RendererProgram {
       }
     }
 
+    timestamps.render = performance.now();
+
     // Most hints are already correctly positioned, but some near the edges
     // might need to be moved a tiny bit to avoid being partially off-screen.
     // Do this in a separate animation frame if there are a lot of hints so
@@ -345,13 +361,24 @@ export default class RendererProgram {
       moveInsideViewport(edgeElements, viewport);
     }
 
-    this.sendMessage({
-      type: "Rendered",
-      timestamp: performance.now(),
-    });
+    timestamps.moveInside1 = performance.now();
 
     await waitForPaint();
+
+    timestamps.paint1 = performance.now();
+
     moveInsideViewport(restElements, viewport);
+
+    timestamps.moveInside2 = performance.now();
+
+    await waitForPaint();
+
+    timestamps.paint2 = performance.now();
+
+    this.sendMessage({
+      type: "Rendered",
+      timestamps,
+    });
   }
 
   updateHints(
