@@ -54,12 +54,12 @@ export default class WorkerProgram {
       [this.onWindowMessage, { catch: true }],
       [this.reportVisibleElements, { catch: true }],
       [this.sendMessage, { catch: true }],
-      [this.start, { log: true, catch: true }],
+      [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
     ]);
   }
 
-  start() {
+  async start(): Promise<void> {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
@@ -67,10 +67,15 @@ export default class WorkerProgram {
     );
     this.elementManager.start();
 
-    // See `RendererProgram` about this port stuff.
-    const port = browser.runtime.connect();
-    port.postMessage(wrapMessage({ type: "WorkerScriptAdded" }));
-    port.onDisconnect.addListener(() => {
+    // See `RendererProgram#start`.
+    try {
+      await browser.runtime.sendMessage(
+        wrapMessage({ type: "WorkerScriptAdded" })
+      );
+    } catch (_error) {
+      return;
+    }
+    browser.runtime.connect().onDisconnect.addListener(() => {
       this.stop();
     });
   }
@@ -86,6 +91,12 @@ export default class WorkerProgram {
   }
 
   onMessage(wrappedMessage: FromBackground) {
+    // See `RendererProgram#onMessage`.
+    if (wrappedMessage.type === "FirefoxWorkaround") {
+      this.sendMessage({ type: "WorkerScriptAdded" });
+      return;
+    }
+
     if (wrappedMessage.type !== "ToWorker") {
       return;
     }

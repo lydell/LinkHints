@@ -24,8 +24,8 @@ declare type MessageSender = {|
   tlsChannelId?: string,
 |};
 
-declare type OnEvent<Listener> = {|
-  addListener: Listener => void,
+declare type OnEvent<Listener, Options = void> = {|
+  addListener: (Listener, options?: Options) => void,
   removeListener: Listener => void,
   hasListener: Listener => boolean,
 |};
@@ -65,6 +65,19 @@ declare type Tab = {|
   url?: string,
   width?: number,
   windowId: number,
+|};
+
+declare type TabChangeInfo = {|
+  audible?: boolean,
+  discarded?: boolean,
+  favIconUrl?: string,
+  hidden?: boolean,
+  isArticle?: boolean,
+  // mutedInfo?: MutedInfo,
+  pinned?: boolean,
+  status?: TabStatus,
+  title?: string,
+  url?: string,
 |};
 
 declare type TabRemoveInfo = {|
@@ -111,6 +124,26 @@ declare var browser: {|
       ((tabId: number, ExecuteScriptDetails) => Promise<Array<any>>),
     onCreated: OnEvent<(Tab) => void>,
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
+    onUpdated: OnEvent<
+      (number, TabChangeInfo, Tab) => void,
+      {|
+        urls?: Array<string>,
+        properties?: Array<
+          | "audible"
+          | "discarded"
+          | "favIconUrl"
+          | "hidden"
+          | "isarticle"
+          | "mutedInfo"
+          | "pinned"
+          | "sharingState"
+          | "status"
+          | "title"
+        >,
+        tabId?: number,
+        windowId?: number,
+      |}
+    >,
     sendMessage(
       tabId: number,
       message: any,

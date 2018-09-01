@@ -3,7 +3,6 @@
 import huffman from "n-ary-huffman";
 
 import {
-  LOADED_KEY,
   Resets,
   addListener,
   bind,
@@ -102,12 +101,13 @@ export default class BackgroundProgram {
       [this.updateIcon, { catch: true }],
       this.onConnect,
       this.onTabCreated,
+      this.onTabUpdated,
       this.onTabRemoved,
     ]);
   }
 
   async start(): Promise<void> {
-    log("log", "BackgroundProgram#start", BROWSER, BUILD_TIME, PROD);
+    log("log", "BackgroundProgram#start", BROWSER, PROD);
 
     const tabs = await browser.tabs.query({});
 
@@ -115,6 +115,12 @@ export default class BackgroundProgram {
       addListener(browser.runtime.onMessage, this.onMessage),
       addListener(browser.runtime.onConnect, this.onConnect),
       addListener(browser.tabs.onCreated, this.onTabCreated),
+      addListener(
+        browser.tabs.onUpdated,
+        this.onTabUpdated,
+        // Chrome doesn’t support filters.
+        BROWSER === "firefox" ? { properties: ["status"] } : undefined
+      ),
       addListener(browser.tabs.onRemoved, this.onTabRemoved)
     );
 
@@ -122,7 +128,15 @@ export default class BackgroundProgram {
       this.updateIcon(tab.id);
     }
 
-    await runContentScripts(tabs);
+    // Firefox automatically loads content scripts into existing tabs, while
+    // Chrome only automatically loads content scripts into _new_ tabs.
+    // Firefox requires a workaround (see renderer/Program.js), while we
+    // manually load the content scripts into existing tabs in Chrome.
+    if (BROWSER === "firefox") {
+      firefoxWorkaround(tabs);
+    } else {
+      await runContentScripts(tabs);
+    }
   }
 
   stop() {
@@ -184,7 +198,6 @@ export default class BackgroundProgram {
 
     if (info != null && tabStateRaw == null) {
       this.tabState.set(info.tabId, tabState);
-      this.updateIcon(info.tabId);
     }
 
     switch (message.type) {
@@ -209,29 +222,12 @@ export default class BackgroundProgram {
     }
   }
 
-  onConnect(port: Port) {
-    const { sender } = port;
-
-    if (sender == null) {
-      return;
-    }
-
-    port.onMessage.addListener((message: ToBackground) => {
-      this.onMessage(message, sender);
-    });
-
-    const { tab } = sender;
-
-    if (sender.frameId === TOP_FRAME_ID && tab != null) {
-      port.onDisconnect.addListener(() => {
-        // Trying to update the icon after the tab has been closed is an error.
-        // So only try to update the icon if the tab is still open.
-        if (this.tabState.has(tab.id)) {
-          this.tabState.delete(tab.id);
-          this.updateIcon(tab.id);
-        }
-      });
-    }
+  // Let the content scripts create a `Port` that will disconnect when the
+  // extension is disabled so that they can perform cleanups. In order for a
+  // port to connect, somebody must be listening on the other side, so use a
+  // dummy function as a listener.
+  onConnect() {
+    // Do nothing.
   }
 
   async onWorkerMessage(
@@ -708,6 +704,12 @@ export default class BackgroundProgram {
     this.updateIcon(tab.id);
   }
 
+  onTabUpdated(tabId: number, changeInfo: TabChangeInfo) {
+    if (changeInfo.status != null) {
+      this.updateIcon(tabId);
+    }
+  }
+
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
 
@@ -730,11 +732,19 @@ export default class BackgroundProgram {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.updateIconTimeoutIds.delete(tabId);
-        const type: IconType = this.tabState.has(tabId) ? "normal" : "disabled";
-        const icons = getIcons(type);
-        log("log", "BackgroundProgram#updateIcon", tabId, type);
-        browser.browserAction
-          .setIcon({ path: icons, tabId })
+        // Check if we’re allowed to execute content scripts on this page.
+        browser.tabs
+          .executeScript(tabId, {
+            code: "",
+            runAt: "document_start",
+          })
+          .then(() => true, () => false)
+          .then(enabled => {
+            const type: IconType = enabled ? "normal" : "disabled";
+            const icons = getIcons(type);
+            log("log", "BackgroundProgram#updateIcon", tabId, type);
+            return browser.browserAction.setIcon({ path: icons, tabId });
+          })
           .then(resolve, reject);
       }, ICON_TIMEOUT);
 
@@ -827,26 +837,29 @@ function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<any>>> {
       ...tabs.map(tab =>
         detailsList.map(async details => {
           try {
-            // This `window` property is set by `RendererProgram`. If it’s set
-            // to true, consider all `content_scripts` in manifest.json to be
-            // already automatically loaded.
-            const [loaded] = await browser.tabs.executeScript(tab.id, {
-              code: `window[${JSON.stringify(LOADED_KEY)}]`,
-              runAt: "document_start",
-            });
-            return loaded === true
-              ? []
-              : await browser.tabs.executeScript(tab.id, details);
+            return await browser.tabs.executeScript(tab.id, details);
           } catch (_error) {
             // If `executeScript` fails it means that the extension is not
-            // allowed to run content scripts in the tab. Example: `about:*`
-            // pages. We don’t need to do anything in that case.
+            // allowed to run content scripts in the tab. Example: most
+            // `chrome://*` pages. We don’t need to do anything in that case.
             return [];
           }
         })
       )
     )
   );
+}
+
+function firefoxWorkaround(tabs: Array<Tab>) {
+  for (const tab of tabs) {
+    const message: FromBackground = { type: "FirefoxWorkaround" };
+    browser.tabs.sendMessage(tab.id, message).catch(() => {
+      // If `sendMessage` fails it means that there’s no content script
+      // listening in that tab. Example:  `about:` pages (where extensions
+      // are not allowed to run content scripts). We don’t need to do
+      // anything in that case.
+    });
+  }
 }
 
 async function getCurrentTab(): Promise<Tab> {

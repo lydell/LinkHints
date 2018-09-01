@@ -24,6 +24,9 @@ export type FromBackground =
   | {|
       type: "ToPopup",
       message: ToPopup,
+    |}
+  | {|
+      type: "FirefoxWorkaround",
     |};
 
 export type ToBackground =

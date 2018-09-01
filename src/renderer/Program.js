@@ -1,7 +1,6 @@
 // @flow
 
 import {
-  LOADED_KEY,
   Resets,
   addListener,
   bind,
@@ -96,43 +95,53 @@ export default class RendererProgram {
     bind(this, [
       [this.onMessage, { catch: true }],
       [this.sendMessage, { catch: true }],
-      [this.start, { log: true, catch: true }],
+      [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
     ]);
   }
 
-  start() {
-    // The background program checks for this global using `executeScript` (in
-    // the top frame only) to see if content scripts have been loaded
-    // automatically from `content_scripts` in manifest.json.
-    window[LOADED_KEY] = true;
-
+  async start(): Promise<void> {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+
+    try {
+      // Don’t use `this.sendMessage` since it automatically catches and logs
+      // errors.
+      await browser.runtime.sendMessage(
+        wrapMessage({ type: "RendererScriptAdded" })
+      );
+    } catch (_error) {
+      // In Firefox, content scripts are loaded automatically in already
+      // existing tabs. (Chrome only automatically loads content scripts into
+      // _new_ tabs.) The content scripts run before the background scripts, so
+      // this message can fail since there’s nobody listening on the other end.
+      // Instead, the background script will send the "FirefoxWorkaround"
+      // message to all existing tabs when it starts, allowing us to retry
+      // sending "RendererScriptAdded" at that point. See: <bugzil.la/1369841>
+
+      // Don’t set up the port below, since it will just immediately disconnect
+      // (since the background script isn’t ready to connect yet). That would
+      // cause `this.stop()` to be called, but we actually want to continue
+      // running. As mentioned below, WebExtensions can’t really run any cleanup
+      // logic in Firefox anyway.
+      return;
+    }
 
     // In Chrome, content scripts continue to live after the extension has been
     // disabled, uninstalled or reloaded. A way to detect this is to make a
-    // `Port` and listen for `onDisconnect`.
+    // `Port` and listen for `onDisconnect`. Then one can run some cleanup to
+    // make the effectively disable the script.
     // In Firefox, content scripts are nuked when uninstalling. `onDisconnect`
-    // never runs. However, when reloading the content scripts seems to be
-    // re-run (with the new code), but not connected to the background. Super
-    // weird. That causes any kind of messaging with the background to throw
-    // errors. And the port to immediately disconnect. So this port stuff for
-    // dealing with “orphaned” content scripts ends up working in Firefox as
-    // well, just in a slightly different way. Unfortunately, the
-    // `port.postMessage()` call below causes a fat `TypeError: extension is
-    // undefined` error to be logged to the Browser console for “orphaned”
-    // content scripts. (The error is only logged, not `throw`n.) This bloats
-    // the console a little, but doesn’t cause any other problems.
-    const port = browser.runtime.connect();
-    port.postMessage(wrapMessage({ type: "RendererScriptAdded" }));
-    port.onDisconnect.addListener(() => {
+    // never runs. Hopefully this changes some day, since we’d ideally want to
+    // clean up injected.js. There does not seem to be any good way of running
+    // cleanups when a WebExtension is disabled in Firefox. See:
+    // <bugzil.la/1223425>
+    browser.runtime.connect().onDisconnect.addListener(() => {
       this.stop();
     });
   }
 
   stop() {
-    window[LOADED_KEY] = false;
     this.resets.reset();
     this.unrender();
   }
@@ -143,6 +152,13 @@ export default class RendererProgram {
   }
 
   onMessage(wrappedMessage: FromBackground) {
+    // As mentioned in `this.start`, re-send the "RendererScriptAdded" message
+    // in Firefox as a workaround for its content script loading quirks.
+    if (wrappedMessage.type === "FirefoxWorkaround") {
+      this.sendMessage({ type: "RendererScriptAdded" });
+      return;
+    }
+
     if (wrappedMessage.type !== "ToRenderer") {
       return;
     }

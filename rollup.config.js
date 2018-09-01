@@ -144,7 +144,6 @@ function makeGlobals() {
   return {
     BROWSER:
       config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
-    BUILD_TIME: () => JSON.stringify(makeBuildTime()),
     // All types of events that likely makes an element clickable. All code and
     // comments that deal with this only refer to "click", though, to keep
     // things simple. This is defined here so that the array can be shared
@@ -164,8 +163,4 @@ function makeGlobals() {
     INJECTED_VAR: JSON.stringify("__SynthWebExt\0"),
     PROD: JSON.stringify(PROD),
   };
-}
-
-function makeBuildTime() {
-  return new Date().toISOString().replace(/\..+$/, "");
 }

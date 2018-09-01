@@ -1,9 +1,5 @@
 // @flow
 
-// Example: `window.__loaded__2018-06-17T12:19:03.657Z`.
-// Used to detect if content scripts have been loaded or not.
-export const LOADED_KEY = `__loaded__${BUILD_TIME}`;
-
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
 const LOG_LEVELS = {
@@ -137,11 +133,19 @@ export function addEventListener(
   };
 }
 
-export function addListener(
-  target: { addListener: Function => void, removeListener: Function => void },
-  listener: Function
+export function addListener<Listener, Options>(
+  target: {
+    addListener: (Listener, options?: Options) => void,
+    removeListener: Listener => void,
+  },
+  listener: Listener,
+  options?: Options
 ): () => void {
-  target.addListener(listener);
+  if (options == null) {
+    target.addListener(listener);
+  } else {
+    target.addListener(listener, options);
+  }
   return () => {
     target.removeListener(listener);
   };
