@@ -45,16 +45,6 @@ type MessageInfo = {|
 // Defaults to 0 (the top-level frame).”
 const TOP_FRAME_ID = 0;
 
-// Both Firefox and Chrome don't seem to like setting the icon too often, or
-// during other events. This tiny timeout de-dupes `this.updateIcon` calls.
-// Without the timeout, Firefox would sometimes not show the disabled icon when
-// visiting `about:addons` in a tab which previously showed a web page. Chrome
-// wouldn't show the disabled icon for the first new tab opened after install.
-// The timeout is also nice to avoid flashing when clicking links, especially in
-// Chrome. The old content script's port disconnect a couple of milliseconds
-// before the new one connects.
-const ICON_TIMEOUT = 10; // ms
-
 // Some onscreen frames may never respond (if the frame 404s or hasn't loaded
 // yet), but the parent can't now that. If a frame hasn't reported that it is
 // alive after this timeout, ignore it.
@@ -65,7 +55,6 @@ export default class BackgroundProgram {
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
   hintChars: string;
   tabState: Map<number, TabState>;
-  updateIconTimeoutIds: Map<number, TimeoutID>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
 
@@ -82,7 +71,6 @@ export default class BackgroundProgram {
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.hintChars = hintChars;
     this.tabState = new Map();
-    this.updateIconTimeoutIds = new Map();
     this.oneTimeWindowMessageToken = makeOneTimeWindowMessageToken();
     this.resets = new Resets();
 
@@ -713,44 +701,25 @@ export default class BackgroundProgram {
 
   onTabRemoved(tabId: number) {
     this.tabState.delete(tabId);
-
-    // Trying to update the icon after the tab has been closed is an error.
-    // Remove any scheduled updates.
-    const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
-    if (previousTimeoutId != null) {
-      clearTimeout(previousTimeoutId);
-      this.updateIconTimeoutIds.delete(tabId);
-    }
   }
 
-  updateIcon(tabId: number): Promise<void> {
-    const previousTimeoutId = this.updateIconTimeoutIds.get(tabId);
+  async updateIcon(tabId: number): Promise<void> {
+    let enabled = true;
 
-    if (previousTimeoutId != null) {
-      clearTimeout(previousTimeoutId);
+    // Check if we’re allowed to execute content scripts on this page.
+    try {
+      await browser.tabs.executeScript(tabId, {
+        code: "",
+        runAt: "document_start",
+      });
+    } catch (_error) {
+      enabled = false;
     }
 
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        this.updateIconTimeoutIds.delete(tabId);
-        // Check if we’re allowed to execute content scripts on this page.
-        browser.tabs
-          .executeScript(tabId, {
-            code: "",
-            runAt: "document_start",
-          })
-          .then(() => true, () => false)
-          .then(enabled => {
-            const type: IconType = enabled ? "normal" : "disabled";
-            const icons = getIcons(type);
-            log("log", "BackgroundProgram#updateIcon", tabId, type);
-            return browser.browserAction.setIcon({ path: icons, tabId });
-          })
-          .then(resolve, reject);
-      }, ICON_TIMEOUT);
-
-      this.updateIconTimeoutIds.set(tabId, timeoutId);
-    });
+    const type: IconType = enabled ? "normal" : "disabled";
+    const icons = getIcons(type);
+    log("log", "BackgroundProgram#updateIcon", tabId, type);
+    await browser.browserAction.setIcon({ path: icons, tabId });
   }
 
   makeWorkerState(
