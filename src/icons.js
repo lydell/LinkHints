@@ -271,7 +271,7 @@ function renderTestPage() {
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 15px;
+        padding: 10px;
       }
 
       .container > * + * {
