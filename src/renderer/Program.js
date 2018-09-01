@@ -27,7 +27,7 @@ type Viewport = {|
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known.
-const CONTAINER_ID = "SynthWebExt";
+const CONTAINER_ID = "__SynthWebExt";
 const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_HINT_CLASS = "matchedHint";
