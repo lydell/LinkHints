@@ -10,6 +10,7 @@ import {
   stableSort,
   unreachable,
 } from "../shared/main";
+import iconsChecksum from "../icons/checksum";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
@@ -886,7 +887,7 @@ function getIcons(type: IconType): { [string]: string } {
         // cache-bust.
         const finalValue =
           !PROD && BROWSER === "firefox"
-            ? `${newValue.replace(/png/g, "svg")}?${Date.now()}`
+            ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
             : newValue;
         result[key] = finalValue;
       }

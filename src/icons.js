@@ -1,5 +1,11 @@
 // @flow
 
+// NOTE: If you make changes in this file you need to save twice for the changes
+// to appear in Firefox when running `npm start` due to a hacky cache busting
+// technique.
+
+const crypto = require("crypto");
+
 const writeFile = require("write");
 
 const config = require("../project.config");
@@ -303,6 +309,19 @@ function testContainer(icons: Icons, color: string): string {
   `.trim();
 }
 
+function checksum(string: string): string {
+  return crypto
+    .createHash("md5")
+    .update(string, "utf8")
+    .digest("hex");
+}
+
+function makeChecksumFile(hash: string): string {
+  return `// @flow
+export default ${JSON.stringify(hash)};
+`;
+}
+
 module.exports = () => {
   const all = [
     [config.icons.svg, { opacity: 1 }],
@@ -315,7 +334,13 @@ module.exports = () => {
     }
   }
 
-  writeFile.sync(`${config.src}/${config.iconsTestPage}`, renderTestPage());
+  const mainIcon = render(96, COLORS);
 
-  return render(96, COLORS);
+  writeFile.sync(`${config.src}/${config.iconsTestPage}`, renderTestPage());
+  writeFile.sync(
+    `${config.src}/${config.iconsChecksum}`,
+    makeChecksumFile(checksum(mainIcon))
+  );
+
+  return mainIcon;
 };
