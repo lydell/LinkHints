@@ -17,7 +17,9 @@ module.exports = () =>
     applications: getApplications(config.browser),
     icons: getIcons(config.icons, config.browser),
     permissions: [
-      // Needed for injecting content scripts in already open tabs on install.
+      // Needed for injecting content scripts in already open tabs on install,
+      // and for checking if tabs are allowed to run content scripts at all (so
+      // that the toolbar button can update).
       "<all_urls>",
     ],
     browser_action: {
