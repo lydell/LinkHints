@@ -21,6 +21,12 @@ import type {
 import ElementManager from "./ElementManager";
 import type { Box, ElementType, VisibleElement } from "./ElementManager";
 
+type FrameMessage = {|
+  token: string,
+  types: Set<ElementType>,
+  viewports: Array<Box>,
+|};
+
 // The single-page HTML specification has over 70K links! If trying to track all
 // of those with `IntersectionObserver`, scrolling is noticeably laggy. On my
 // computer, the lag starts somewhere between 10K and 20K tracked links.
@@ -119,7 +125,8 @@ export default class WorkerProgram {
 
       case "StartFindElements": {
         const { scrollingElement } = document;
-        if (scrollingElement == null) {
+        const { oneTimeWindowMessageToken } = this;
+        if (scrollingElement == null || oneTimeWindowMessageToken == null) {
           break;
         }
         const viewport = {
@@ -130,7 +137,11 @@ export default class WorkerProgram {
           width: scrollingElement.clientWidth,
           height: scrollingElement.clientHeight,
         };
-        this.reportVisibleElements(new Set(message.types), [viewport]);
+        this.reportVisibleElements(
+          new Set(message.types),
+          [viewport],
+          oneTimeWindowMessageToken
+        );
         break;
       }
 
@@ -225,12 +236,13 @@ export default class WorkerProgram {
   }
 
   onWindowMessage(event: MessageEvent) {
+    const { oneTimeWindowMessageToken } = this;
     if (
-      this.oneTimeWindowMessageToken != null &&
+      oneTimeWindowMessageToken != null &&
       event.data != null &&
       typeof event.data === "object" &&
       !Array.isArray(event.data) &&
-      event.data.token === this.oneTimeWindowMessageToken
+      event.data.token === oneTimeWindowMessageToken
     ) {
       let types = undefined;
       let viewports = undefined;
@@ -242,16 +254,16 @@ export default class WorkerProgram {
         log(
           "warn",
           "Ignoring bad window message",
-          this.oneTimeWindowMessageToken,
+          oneTimeWindowMessageToken,
           event,
           error
         );
         return;
       }
+      this.oneTimeWindowMessageToken = undefined;
       log("log", "WorkerProgram#onWindowMessage", types, rawViewports);
       this.sendMessage({ type: "ReportVisibleFrame" });
-      this.reportVisibleElements(types, viewports);
-      this.oneTimeWindowMessageToken = undefined;
+      this.reportVisibleElements(types, viewports, oneTimeWindowMessageToken);
     }
   }
 
@@ -308,7 +320,8 @@ export default class WorkerProgram {
 
   async reportVisibleElements(
     types: Set<ElementType>,
-    viewports: Array<Box>
+    viewports: Array<Box>,
+    oneTimeWindowMessageToken: string
   ): Promise<void> {
     const elements = await this.elementManager.getVisibleElements(
       types,
@@ -318,8 +331,8 @@ export default class WorkerProgram {
     const frames = this.elementManager.getVisibleFrames(viewports);
 
     for (const frame of frames) {
-      const message = {
-        token: this.oneTimeWindowMessageToken,
+      const message: FrameMessage = {
+        token: oneTimeWindowMessageToken,
         types,
         viewports: viewports.concat(getFrameViewport(frame)),
       };

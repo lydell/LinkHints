@@ -208,25 +208,35 @@ export default class ElementManager {
 
   start() {
     const { documentElement } = document;
-    if (documentElement != null) {
-      this.queueItemAndChildren({
-        mutationType: "added",
-        element: documentElement,
-      });
-      this.mutationObserver.observe(documentElement, {
-        childList: true,
-        subtree: true,
-        attributeFilter: MUTATION_ATTRIBUTES,
-      });
-      this.resets.add(
-        addEventListener(window, CLICKABLE_EVENT, this.onClickableElements),
-        addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElements),
-        addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
-        addEventListener(window, "overflow", this.onOverflowChange),
-        addEventListener(window, "underflow", this.onOverflowChange)
-      );
-      injectScript();
+
+    if (documentElement == null) {
+      return;
     }
+
+    this.queueItemAndChildren({
+      mutationType: "added",
+      element: documentElement,
+    });
+
+    this.mutationObserver.observe(documentElement, {
+      childList: true,
+      subtree: true,
+      attributeFilter: MUTATION_ATTRIBUTES,
+    });
+
+    for (const frame of document.querySelectorAll("iframe, frame")) {
+      this.frameIntersectionObserver.observe(frame);
+    }
+
+    this.resets.add(
+      addEventListener(window, CLICKABLE_EVENT, this.onClickableElements),
+      addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElements),
+      addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
+      addEventListener(window, "overflow", this.onOverflowChange),
+      addEventListener(window, "underflow", this.onOverflowChange)
+    );
+
+    injectScript();
   }
 
   stop() {
