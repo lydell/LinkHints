@@ -23,7 +23,7 @@
     "cross-env": "5.2.0",
     "cross-spawn": "6.0.5",
     "eslint": "5.5.0",
-    "eslint-config-lydell": "9.0.1",
+    "eslint-config-lydell": "10.0.0",
     "eslint-plugin-flowtype": "2.50.0",
     "eslint-plugin-flowtype-errors": "3.6.0",
     "eslint-plugin-import": "2.14.0",
