@@ -97,6 +97,10 @@ const BOX_MIN_HEIGHT = 110; // px
 // order. This avoids targeting such text.
 const MAX_HINT_X_PERCENTAGE_OF_WIDTH = 0.75;
 
+// Maximum area for elements with only click listeners. Elements larger than
+// this are most likely not clickable, and only used for event delegation.
+const MAX_CLICKABLE_EVENT_AREA = 1e6; // px
+
 const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
 
 // http://w3c.github.io/aria/#widget_roles
@@ -637,6 +641,16 @@ function getMeasurements(
   range: Range
 ): ?HintMeasurements {
   const rects = element.getClientRects();
+
+  // Ignore elements with only click listeners that are really large. These are
+  // most likely not clickable, and only used for event delegation.
+  if (elementType === "clickable-event" && rects.length === 1) {
+    const rect = rects[0];
+    const area = rect.width * rect.height;
+    if (area > MAX_CLICKABLE_EVENT_AREA) {
+      return undefined;
+    }
+  }
 
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
