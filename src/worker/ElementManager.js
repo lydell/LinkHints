@@ -861,13 +861,11 @@ function getMultiRectPoint({
     return textPoint;
   }
 
-  const xs = visibleBoxes.map(box => box.x);
-  const ys = visibleBoxes.map(box => box.y);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
+  const minY = Math.min(...visibleBoxes.map(box => box.y));
+  const maxY = Math.max(...visibleBoxes.map(box => box.y + box.height));
 
   return {
-    x: Math.min(...xs),
+    x: Math.min(...visibleBoxes.map(box => box.x)),
     y: (minY + maxY) / 2,
     align: "right",
   };
