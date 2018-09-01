@@ -48,7 +48,7 @@ module.exports = {
         node: false,
       },
       globals: Object.assign({}, baseRules.browserEnv(), {
-        BROWSER: false,
+        BROWSER: true,
         BUILD_TIME: false,
         CLICKABLE_EVENT_NAMES: false,
         INJECTED_CLICKABLE_EVENT: false,

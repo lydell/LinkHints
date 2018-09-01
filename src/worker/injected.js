@@ -1,5 +1,4 @@
 // @flow
-/* global chrome */
 
 // This file is injected as a regular script in all pages and overrides
 // `.addEventListener` (and friends) so we can detect click listeners.
@@ -8,14 +7,17 @@
 // Everything in this file has to be inside this function, since `.toString()`
 // is called on it. This also means that `import`s cannot be used in this file.
 export default () => {
+  if (typeof BROWSER === "undefined") {
+    // Prevent rollup-plugin-replace from replacing BROWSER here.
+    // prettier-ignore
+    \u0042ROWSER = window.sidebar ? "firefox" : "chrome";
+  }
+
   // This value is replaced in by Rollup; only refer to it once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
   const clickableEventProps = clickableEventNames.map(
     eventName => `on${eventName}`
   );
-
-  // $FlowIgnore: `chrome` exists only in Chrome.
-  const isChrome: boolean = typeof chrome !== "undefined";
 
   // When this was written, <https://jsfiddle.net/> overrides `Event` (which was
   // used before switching to `CustomEvent`) with a buggy implementation that
@@ -292,7 +294,7 @@ export default () => {
 
       const { added, removed } = addedRemoved;
 
-      if (!isChrome) {
+      if (BROWSER === "firefox") {
         sendWindowEvent(INJECTED_CLICKABLE_EVENT, {
           elements: Array.from(added),
         });
