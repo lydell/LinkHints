@@ -33,10 +33,6 @@ module.exports = {
     input: "../node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
     output: "compiled/browser-polyfill.js",
   },
-  setup: {
-    input: "shared/setup.js",
-    output: "compiled/setup.js",
-  },
   background: {
     input: "background/main.js",
     output: "compiled/background.js",

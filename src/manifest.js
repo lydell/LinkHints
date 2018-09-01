@@ -35,7 +35,6 @@ module.exports = () =>
     background: {
       scripts: [
         config.needsPolyfill ? config.polyfill.output : undefined,
-        config.setup.output,
         config.background.output,
       ].filter(Boolean),
     },
@@ -47,7 +46,6 @@ module.exports = () =>
         run_at: "document_start",
         js: [
           config.needsPolyfill ? config.polyfill.output : undefined,
-          config.setup.output,
           config.worker.output,
         ].filter(Boolean),
       },

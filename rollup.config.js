@@ -17,7 +17,6 @@ setup();
 
 // $FlowIgnore: Flow wants a type annotation here, but that’s just annoying.
 module.exports = [
-  js(config.setup),
   js(config.background),
   js(config.worker),
   js(config.renderer),
@@ -59,9 +58,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
       commonjs(),
     ].filter(Boolean),
     onwarn: (warning /*: any */) => {
-      if (warning.code !== "EMPTY_BUNDLE") {
-        throw warning;
-      }
+      throw warning;
     },
   };
 }
