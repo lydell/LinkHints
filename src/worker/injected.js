@@ -23,14 +23,11 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
   eventName => `on${eventName}`
 );
 
-// Common prefix for events and the injected variable. It’s important to create
-// a name unique from previous versions of Synth, in case this script hangs
-// around after an update (it’s not possible to do cleanups before disabling an
-// extension in Firefox). We don’t want the old version to interfere with the
-// new one. Also, since we make the injected variable both non-writable and
-// non-configurable, so it is impossible to overwrite it. Then we _have_ to use
-// a new name when installing an update.
-const prefix = `__SynthWebExt_${Date.now()}_`;
+// Common prefix for events. It’s important to create a name unique from
+// previous versions of Synth, in case this script hangs around after an update
+// (it’s not possible to do cleanups before disabling an extension in Firefox).
+// We don’t want the old version to interfere with the new one.
+const prefix = `__SynthWebExt_${makeRandomToken()}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
@@ -42,9 +39,12 @@ export const QUEUE_EVENT = `${prefix}Queue`;
 // Name of the global variable created by the injected script. The `\0` prevents
 // it from turning up in autocomplete when typing `window.` in the Chrome
 // console. Firefox still shows it, but accepting the autocomplete causes a
-// syntax error. Again, a malicious site can't do much with this, except
-// disabling detection of click events.
-export const INJECTED_VAR = `${prefix}\0`;
+// syntax error. Since we make the injected variable both non-writable and
+// non-configurable it is impossible to overwrite it so we _have_ to use
+// a new name when installing an update. (This uses a different random token
+// than the events in order not to give away then event names. I don’t think you
+// could do anything interesting by listening to those events, but whay not.)
+export const INJECTED_VAR = `__SynthWebExt_${makeRandomToken()}\0`;
 export const INJECTED_VAR_PATTERN = RegExp(
   `^${INJECTED_VAR.replace(/\d+/, "\\d+").replace(/\0/, "\\0")}$`
 );
