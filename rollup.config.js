@@ -141,23 +141,6 @@ function makeGlobals() {
   return {
     BROWSER:
       config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
-    // All types of events that likely makes an element clickable. All code and
-    // comments that deal with this only refer to "click", though, to keep
-    // things simple. This is defined here so that the array can be shared
-    // between `worker/program.js` and `worker/injected.js`.
-    CLICKABLE_EVENT_NAMES: JSON.stringify(["click", "mousedown"]),
-    // If a malicious site sends these events it doesn't hurt much. All the page
-    // could do is cause false positives or disable detection of click events
-    // altogeher.
-    INJECTED_CLICKABLE_EVENT: JSON.stringify("__SynthWebExt_Clickable"),
-    INJECTED_UNCLICKABLE_EVENT: JSON.stringify("__SynthWebExt_Unclickable"),
-    INJECTED_QUEUE_EVENT: JSON.stringify("__SynthWebExt_Queue"),
-    // Name of the global variable created by the injected script. The `\0`
-    // prevents it from turning up in autocomplete when typing `window.` in the
-    // Chrome console. Firefox still shows it, but accepting the autocomplete
-    // causes a syntax error. Again, a malicious site can't do much with this,
-    // except disabling detection of click events.
-    INJECTED_VAR: JSON.stringify("__SynthWebExt\0"),
     PROD: JSON.stringify(PROD),
   };
 }

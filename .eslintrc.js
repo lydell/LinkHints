@@ -49,11 +49,6 @@ module.exports = {
       },
       globals: Object.assign({}, baseRules.browserEnv(), {
         BROWSER: true,
-        CLICKABLE_EVENT_NAMES: false,
-        INJECTED_CLICKABLE_EVENT: false,
-        INJECTED_UNCLICKABLE_EVENT: false,
-        INJECTED_QUEUE_EVENT: false,
-        INJECTED_VAR: false,
         PROD: false,
         browser: false,
       }),

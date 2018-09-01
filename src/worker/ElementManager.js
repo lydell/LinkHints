@@ -8,7 +8,35 @@ import {
   waitForPaint,
 } from "../shared/main";
 
-import injected from "./injected";
+import injected, {
+  CLICKABLE_EVENT,
+  CLICKABLE_EVENT_NAMES,
+  CLICKABLE_EVENT_PROPS,
+  INJECTED_VAR,
+  INJECTED_VAR_PATTERN,
+  MESSAGE_FLUSH,
+  MESSAGE_RESET,
+  QUEUE_EVENT,
+  SECRET,
+  UNCLICKABLE_EVENT,
+} from "./injected";
+
+// Keep the above imports and this object in sync. See injected.js.
+const constants = {
+  CLICKABLE_EVENT: JSON.stringify(CLICKABLE_EVENT),
+  CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
+  CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
+  INJECTED_VAR: JSON.stringify(INJECTED_VAR),
+  INJECTED_VAR_PATTERN: INJECTED_VAR_PATTERN.toString(),
+  MESSAGE_FLUSH: JSON.stringify(MESSAGE_FLUSH),
+  MESSAGE_RESET: JSON.stringify(MESSAGE_RESET),
+  QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
+  SECRET: JSON.stringify(SECRET),
+  UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
+
+  // Prevent rollup-plugin-replace from replacing BROWSER here.
+  [`${"B"}ROWSER`]: JSON.stringify(BROWSER),
+};
 
 export type ElementType =
   | "link"
@@ -101,12 +129,6 @@ const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 const FRAME_MIN_SIZE = 6; // px
 const TEXT_RECT_MIN_SIZE = 2; // px
 
-// This value is replaced in by Rollup; only refer to it once.
-const clickableEventNames = CLICKABLE_EVENT_NAMES;
-const clickableEventProps = clickableEventNames.map(
-  eventName => `on${eventName}`
-);
-
 const CLICKABLE_ATTRIBUTES = [
   // Bootstrap.
   "data-dismiss",
@@ -117,7 +139,7 @@ const CLICKABLE_ATTRIBUTES = [
 const MUTATION_ATTRIBUTES = [
   "href",
   "role",
-  ...clickableEventProps,
+  ...CLICKABLE_EVENT_PROPS,
   ...CLICKABLE_ATTRIBUTES,
 ];
 
@@ -193,17 +215,9 @@ export default class ElementManager {
         attributeFilter: MUTATION_ATTRIBUTES,
       });
       this.resets.add(
-        addEventListener(
-          window,
-          INJECTED_CLICKABLE_EVENT,
-          this.onClickableElements
-        ),
-        addEventListener(
-          window,
-          INJECTED_UNCLICKABLE_EVENT,
-          this.onUnclickableElements
-        ),
-        addEventListener(window, INJECTED_QUEUE_EVENT, this.onInjectedQueue),
+        addEventListener(window, CLICKABLE_EVENT, this.onClickableElements),
+        addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElements),
+        addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
         addEventListener(window, "overflow", this.onOverflowChange),
         addEventListener(window, "underflow", this.onOverflowChange)
       );
@@ -228,7 +242,7 @@ export default class ElementManager {
     // this.elementsWithScrollbars.clear();
     this.idleCallbackId = undefined;
     this.resets.reset();
-    sendInjectedMessage("reset");
+    sendInjectedMessage(MESSAGE_RESET);
   }
 
   // Stop using the intersection observer for everything except frames. The
@@ -444,7 +458,7 @@ export default class ElementManager {
     const needsFlush = this.queue.length > 0;
 
     if (injectedNeedsFlush) {
-      sendInjectedMessage("flush");
+      sendInjectedMessage(MESSAGE_FLUSH);
     }
 
     if (needsFlush) {
@@ -1049,7 +1063,8 @@ function injectScript() {
     return;
   }
 
-  const code = `(${injected.toString()})()`;
+  const rawCode = replaceConstants(injected.toString());
+  const code = `(${rawCode})()`;
 
   // In Firefox, `eval !== window.eval`. `eval` executes in the content script
   // context, while `window.eval` executes in the page context. So in Firefox we
@@ -1094,6 +1109,11 @@ function injectScript() {
   script.remove();
 }
 
+function replaceConstants(code: string): string {
+  const regex = RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g");
+  return code.replace(regex, name => constants[name]);
+}
+
 function isScrollable(element: HTMLElement): boolean {
   const computedStyle = window.getComputedStyle(element);
 
@@ -1122,7 +1142,7 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   // use `.hasAttribute` instead. That works, except in rare edge cases
   // where `.onclick = null` is set afterwards (the attribute string
   // will remain but the listener will be gone).
-  return clickableEventProps.some(
+  return CLICKABLE_EVENT_PROPS.some(
     prop =>
       BROWSER === "chrome"
         ? element.hasAttribute(prop)
@@ -1134,16 +1154,21 @@ function hasClickListenerProp(element: HTMLElement): boolean {
 function sendInjectedMessage(message: string) {
   try {
     if (window.wrappedJSObject != null) {
-      window.wrappedJSObject[INJECTED_VAR](message);
+      window.wrappedJSObject[INJECTED_VAR](message, SECRET);
     } else {
       const { documentElement } = document;
       if (documentElement == null) {
         return;
       }
+      // I guess the page can read the secret via a MutationObserver, but at
+      // least in the Firefox case the page shouldn't be able to read it. The
+      // page can't do much with the secret anyway. However, this probably runs
+      // so early that the page never has a chance to set up a MutationObserver
+      // in time.
       const script = document.createElement("script");
       script.textContent = `window[${JSON.stringify(
         INJECTED_VAR
-      )}](${JSON.stringify(message)});`;
+      )}](${JSON.stringify(message)}, ${JSON.stringify(SECRET)});`;
       documentElement.append(script);
       script.remove();
     }

@@ -7,6 +7,7 @@ import {
   addListener,
   bind,
   log,
+  makeRandomToken,
   stableSort,
   unreachable,
 } from "../shared/main";
@@ -71,7 +72,7 @@ export default class BackgroundProgram {
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
     this.hintChars = hintChars;
     this.tabState = new Map();
-    this.oneTimeWindowMessageToken = makeOneTimeWindowMessageToken();
+    this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
 
     bind(this, [
@@ -727,7 +728,7 @@ export default class BackgroundProgram {
     { refreshToken = true }: {| refreshToken: boolean |} = {}
   ): ToWorker {
     if (refreshToken) {
-      this.oneTimeWindowMessageToken = makeOneTimeWindowMessageToken();
+      this.oneTimeWindowMessageToken = makeRandomToken();
     }
     if (hintsState.type === "Hinting") {
       return {
@@ -754,12 +755,6 @@ export default class BackgroundProgram {
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
   }
-}
-
-function makeOneTimeWindowMessageToken(): string {
-  const array = new Uint32Array(3);
-  window.crypto.getRandomValues(array);
-  return array.join("");
 }
 
 // This is a function (not a constant), because of mutation.

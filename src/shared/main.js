@@ -215,3 +215,9 @@ export function waitForPaint(): Promise<void> {
     });
   });
 }
+
+export function makeRandomToken(): string {
+  const array = new Uint32Array(3);
+  window.crypto.getRandomValues(array);
+  return array.join("");
+}

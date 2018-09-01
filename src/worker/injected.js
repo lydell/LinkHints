@@ -1,23 +1,67 @@
 // @flow
 
+import { makeRandomToken } from "../shared/main";
+
 // This file is injected as a regular script in all pages and overrides
 // `.addEventListener` (and friends) so we can detect click listeners.
 // This is a bit fiddly because we try to cover our tracks as good as possible.
 
-// Everything in this file has to be inside this function, since `.toString()`
-// is called on it. This also means that `import`s cannot be used in this file.
+// Basically everything in this file has to be inside the `export default`
+// function, since `.toString()` is called on it in ElementManager. This also
+// means that `import`s generally cannot be used in this file. All of the below
+// constants are `.replace()`:ed in by ElementManager, but they are defined in
+// this file so that ESLint and Flow know about them.
+
+// NOTE: If you add a new constant, you have to update the `constants` object in
+// ElementManager.js as well!
+
+// All types of events that likely makes an element clickable. All code and
+// comments that deal with this only refer to "click", though, to keep things
+// simple.
+export const CLICKABLE_EVENT_NAMES = ["click", "mousedown"];
+export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
+  eventName => `on${eventName}`
+);
+
+// Common prefix for events and the injected variable. It’s important to create
+// a name unique from previous versions of Synth, in case this script hangs
+// around after an update (it’s not possible to do cleanups before disabling an
+// extension in Firefox). We don’t want the old version to interfere with the
+// new one. Also, since we make the injected variable both non-writable and
+// non-configurable, so it is impossible to overwrite it. Then we _have_ to use
+// a new name when installing an update.
+const prefix = `__SynthWebExt_${Date.now()}_`;
+
+// If a malicious site sends these events it doesn't hurt much. All the page
+// could do is cause false positives or disable detection of click events
+// altogeher.
+export const CLICKABLE_EVENT = `${prefix}Clickable`;
+export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
+export const QUEUE_EVENT = `${prefix}Queue`;
+
+// Name of the global variable created by the injected script. The `\0` prevents
+// it from turning up in autocomplete when typing `window.` in the Chrome
+// console. Firefox still shows it, but accepting the autocomplete causes a
+// syntax error. Again, a malicious site can't do much with this, except
+// disabling detection of click events.
+export const INJECTED_VAR = `${prefix}\0`;
+export const INJECTED_VAR_PATTERN = RegExp(
+  `^${INJECTED_VAR.replace(/\d+/, "\\d+").replace(/\0/, "\\0")}$`
+);
+
+export const MESSAGE_FLUSH = "flush";
+export const MESSAGE_RESET = "reset";
+
+export const SECRET = makeRandomToken();
+
 export default () => {
-  if (typeof BROWSER === "undefined") {
-    // Prevent rollup-plugin-replace from replacing BROWSER here.
-    // prettier-ignore
-    \u0042ROWSER = window.sidebar ? "firefox" : "chrome";
+  if (!PROD && BROWSER === "firefox") {
+    cleanupOldScripts();
   }
 
-  // This value is replaced in by Rollup; only refer to it once.
+  // These arrays are replaced in by ElementManager; only refer to them once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
-  const clickableEventProps = clickableEventNames.map(
-    eventName => `on${eventName}`
-  );
+  const clickableEventProps = CLICKABLE_EVENT_PROPS;
 
   // When this was written, <https://jsfiddle.net/> overrides `Event` (which was
   // used before switching to `CustomEvent`) with a buggy implementation that
@@ -26,6 +70,7 @@ export default () => {
   // Remember that this runs _before_ any page scripts.
   const CustomEvent2 = CustomEvent;
   const HTMLElement2 = HTMLElement;
+  // Don't use the usual `log` function here, too keep this file small.
   const { error: logError } = console;
   const { dispatchEvent } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
@@ -152,7 +197,6 @@ export default () => {
   }
 
   function logHookError(error: Error, obj: Object, name: string) {
-    // Don't use the usual `log` function here, too keep this file small.
     logError(`[synth]: Failed to run hook for ${name} on`, obj, error);
   }
 
@@ -217,7 +261,7 @@ export default () => {
       this.requestIdleCallback();
 
       if (numItems === 1 && this.sendQueue.length === 0) {
-        sendWindowEvent(INJECTED_QUEUE_EVENT, { hasQueue: true });
+        sendWindowEvent(QUEUE_EVENT, { hasQueue: true });
       }
     }
 
@@ -235,7 +279,7 @@ export default () => {
       this._flushQueue(deadline);
       const hasQueue = this.queue.length > 0 || this.sendQueue.length > 0;
       if (hadQueue && !hasQueue) {
-        sendWindowEvent(INJECTED_QUEUE_EVENT, { hasQueue: false });
+        sendWindowEvent(QUEUE_EVENT, { hasQueue: false });
       }
     }
 
@@ -259,7 +303,7 @@ export default () => {
           // If the element has click listeners added via `.addEventListener`
           // changing `.onclick` can't affect whether the element has at least
           // one click listener.
-          if (!clickListenerTracker.clickListenersByElement.has(element)) {
+          if (!this.clickListenersByElement.has(element)) {
             const hasListener = hasClickListenerProp(element);
             if (!hadListener && hasListener) {
               addedRemoved.add(element);
@@ -295,10 +339,10 @@ export default () => {
       const { added, removed } = addedRemoved;
 
       if (BROWSER === "firefox") {
-        sendWindowEvent(INJECTED_CLICKABLE_EVENT, {
+        sendWindowEvent(CLICKABLE_EVENT, {
           elements: Array.from(added),
         });
-        sendWindowEvent(INJECTED_UNCLICKABLE_EVENT, {
+        sendWindowEvent(UNCLICKABLE_EVENT, {
           elements: Array.from(removed),
         });
         return;
@@ -318,9 +362,9 @@ export default () => {
     flushSendQueue(deadline: Deadline): boolean {
       for (const [index, item] of this.sendQueue.entries()) {
         if (item.added) {
-          sendElementEvent(INJECTED_CLICKABLE_EVENT, item.element);
+          sendElementEvent(CLICKABLE_EVENT, item.element);
         } else {
-          sendElementEvent(INJECTED_UNCLICKABLE_EVENT, item.element);
+          sendElementEvent(UNCLICKABLE_EVENT, item.element);
         }
 
         if (deadline.timeRemaining() <= 0) {
@@ -612,25 +656,72 @@ export default () => {
 
   defineProperty(window, INJECTED_VAR, {
     // Immediately call another function so that `.toString()` gives away as
-    // little as possible.
-    value: s => external(s),
+    // little as possible (especially the secret).
+    // $FlowIgnore: It’s OK to call `noop` with as many params as you like.
+    value: (m, s) => external(m, s),
     // The rest of the options default to being neither enumerable nor changable.
   });
 
-  function external(message: mixed) {
+  function external(message: mixed, secret: mixed) {
+    if (
+      secret !== SECRET &&
+      // Allow reseting old versions of this script when developing in Firefox.
+      // It is unfortunately not possible to run cleanup logic when an extension
+      // is disabled in Firefox (like it is in Chrome – see renderer/Program.js
+      // for more information) so injected.js from the old version will hang
+      // around. That can be very annoying when developing, but doesn’t matter
+      // match in production.
+      !(!PROD && BROWSER === "firefox" && message === MESSAGE_RESET)
+    ) {
+      // Silently ignore wrong secrets in production.
+      if (!PROD) {
+        logError("[synth]: Secret mismatch", {
+          actual: secret,
+          expected: SECRET,
+          message,
+        });
+      }
+
+      return;
+    }
+
     switch (message) {
-      case "flush":
+      case MESSAGE_FLUSH:
         clickListenerTracker.flushQueue(infiniteDeadline);
         break;
 
       // Reset the overridden methods when the extension is shut down.
-      case "reset":
+      case MESSAGE_RESET:
         clickListenerTracker.reset();
         hookManager.reset();
+        // eslint-disable-next-line no-func-assign
+        external = noop;
         break;
 
       default:
-      // Silently ignore unknown messages.
+        // Silently ignore unknown messages in production.
+        if (!PROD) {
+          logError("[synth]: Unknown message", message);
+        }
+    }
+  }
+
+  function noop() {
+    // Do nothing.
+  }
+
+  function cleanupOldScripts() {
+    const candidates = Object.getOwnPropertyNames(window).filter(name =>
+      INJECTED_VAR_PATTERN.test(name)
+    );
+
+    for (const name of candidates) {
+      try {
+        // No need to pass in a secret here (see the `external` function).
+        window[name](MESSAGE_RESET);
+      } catch (error) {
+        logError(`[synth]: Failed to reset "${name}"`, error);
+      }
     }
   }
 };
