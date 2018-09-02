@@ -1,9 +1,11 @@
 {
   "private": true,
   "scripts": {
-    "start": "run-p --race watch \"web-ext -- run\"",
-    "watch": "npm run rollup -- --config --watch",
-    "build": "run-s \"rollup -- --config\" \"web-ext -- build\" \"web-ext -- lint\"",
+    "start": "run-p --race watch run",
+    "run": "npm run web-ext -- run",
+    "compile": "npm run rollup -- --config",
+    "watch": "npm run compile -- --watch",
+    "build": "run-s compile \"web-ext -- build\" \"web-ext -- lint\"",
     "build:chrome": "cross-env BROWSER=chrome npm run build",
     "build:firefox": "cross-env BROWSER=firefox npm run build",
     "png-icons": "flow-node scripts/png-icons.js",
@@ -12,7 +14,7 @@
     "flow": "flow",
     "eslint": "eslint .",
     "eslint:fix": "npm run eslint -- --fix",
-    "test": "run-s \"eslint\" \"build:chrome\" \"build:firefox\""
+    "test": "run-s eslint build:chrome build:firefox"
   },
   "dependencies": {
     "n-ary-huffman": "3.1.0",
