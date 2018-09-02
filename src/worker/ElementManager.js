@@ -1027,7 +1027,8 @@ function getFirstNonEmptyTextPoint(
   element: HTMLElement,
   elementRect: ClientRect,
   isAcceptable: Point => boolean,
-  range: Range
+  range: Range,
+  passedSingle: boolean = true
 ): ?Point {
   if (
     // Exclude screen reader only text.
@@ -1037,10 +1038,15 @@ function getFirstNonEmptyTextPoint(
     return undefined;
   }
 
+  // If a text node is the _only_ text node of an element, skip the “badge”
+  // check to improve hint positioning for a link with the text “10h” for
+  // example.
+  const single = passedSingle && element.childNodes.length === 1;
+
   for (const node of element.childNodes) {
     if (node instanceof Text) {
       const index = node.data.search(NON_WHITESPACE);
-      if (index >= 0 && !BADGE_TEXT.test(node.data)) {
+      if (index >= 0 && (single || !BADGE_TEXT.test(node.data))) {
         range.setStart(node, index);
         range.setEnd(node, index + 1);
         const rect = range.getBoundingClientRect();
@@ -1064,7 +1070,8 @@ function getFirstNonEmptyTextPoint(
         node,
         node.getBoundingClientRect(),
         isAcceptable,
-        range
+        range,
+        single
       );
       if (result != null) {
         return result;
