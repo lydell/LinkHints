@@ -150,6 +150,12 @@ const MUTATION_ATTRIBUTES = [
   ...CLICKABLE_ATTRIBUTES,
 ];
 
+const IMAGE_SELECTOR = "img, svg";
+
+// Find actual images as well as icon font images. Matches for example “Icon”,
+// “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
+const ICON_FONT_SELECTOR = "[class*='icon' i], [class|='fa']";
+
 const infiniteDeadline = {
   timeRemaining: () => Infinity,
 };
@@ -899,14 +905,13 @@ function getMultiRectPoint({
 }
 
 function getFirstImagePoint(element: HTMLElement): ?Point {
-  // Find actual images as well as icon font images. Matches for example “Icon”,
-  // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
-  const selector = "img, svg, [class*='icon' i], [class|='fa']";
   // Due to the float case in `getMeasurements` the element itself can be an
-  // image.
-  const image = element.matches(selector)
+  // image. (Don’t check for icon fonts in that case, to avoid `<button
+  // class="icon-button"><img></button>` getting the hint at the edge of the
+  // button instead of at the edge of the image).
+  const image = element.matches(IMAGE_SELECTOR)
     ? element
-    : element.querySelector(selector);
+    : element.querySelector(`${IMAGE_SELECTOR}, ${ICON_FONT_SELECTOR}`);
 
   if (image == null) {
     return undefined;
