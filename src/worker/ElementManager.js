@@ -33,9 +33,6 @@ const constants = {
   QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
   SECRET: JSON.stringify(SECRET),
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
-
-  // Prevent rollup-plugin-replace from replacing BROWSER here.
-  [`${"B"}ROWSER`]: JSON.stringify(BROWSER),
 };
 
 export type ElementType =

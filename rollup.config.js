@@ -140,7 +140,9 @@ function copy({ input, output } /*: {| input: string, output: string, |} */) {
 function makeGlobals() {
   return {
     BROWSER:
-      config.browser == null ? "BROWSER" : JSON.stringify(config.browser),
+      config.browser == null
+        ? `(window.sidebar ? "firefox" : "chrome")`
+        : JSON.stringify(config.browser),
     PROD: JSON.stringify(PROD),
   };
 }
