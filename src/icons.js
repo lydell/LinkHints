@@ -4,6 +4,7 @@
 // to appear in Firefox when running `npm start` due to a hacky cache busting
 // technique.
 
+const fs = require("fs");
 const crypto = require("crypto");
 
 const writeFile = require("write");
@@ -322,6 +323,19 @@ export default ${JSON.stringify(hash)};
 `;
 }
 
+function writeFileIfNeeded(filepath: string, content: string) {
+  let needed = undefined;
+  try {
+    const previous = fs.readFileSync(filepath, "utf8");
+    needed = previous !== content;
+  } catch (_error) {
+    needed = true;
+  }
+  if (needed) {
+    writeFile.sync(filepath, content);
+  }
+}
+
 module.exports = () => {
   const all = [
     [config.icons.svg, { opacity: 1 }],
@@ -330,14 +344,14 @@ module.exports = () => {
 
   for (const [icons, options] of all) {
     for (const [size, path] of icons) {
-      writeFile.sync(`${config.src}/${path}`, render(size, COLORS, options));
+      writeFileIfNeeded(`${config.src}/${path}`, render(size, COLORS, options));
     }
   }
 
   const mainIcon = render(96, COLORS);
 
-  writeFile.sync(`${config.src}/${config.iconsTestPage}`, renderTestPage());
-  writeFile.sync(
+  writeFileIfNeeded(`${config.src}/${config.iconsTestPage}`, renderTestPage());
+  writeFileIfNeeded(
     `${config.src}/${config.iconsChecksum}`,
     makeChecksumFile(checksum(mainIcon))
   );
