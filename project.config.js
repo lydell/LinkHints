@@ -11,8 +11,8 @@ module.exports = {
   rimraf: "{src/compiled,src/icons/!(png-*|*.js)}",
   webextIgnoreFiles: [
     `*.js`,
-    `./!(compiled)/**/*.js`,
-    "icons/*.html",
+    `./!(compiled|icons|manifest.json)`,
+    "icons/*.*",
     ...browserSpecificIgnores(currentBrowser),
   ],
   icons: {
@@ -71,9 +71,9 @@ function getBrowser(): ?Browser {
 function browserSpecificIgnores(browser: ?Browser): Array<string> {
   switch (browser) {
     case "chrome":
-      return ["icons/**/*.svg"];
+      return ["icons/svg-*"];
     case "firefox":
-      return ["icons/**/*.png"];
+      return ["icons/png-*"];
     default:
       return [];
   }
