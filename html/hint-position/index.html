@@ -51,6 +51,53 @@
         font-size: 48px;
         line-height: 1;
       }
+
+      .badges {
+        display: flex;
+      }
+
+      .badges > a {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        width: 100px;
+        height: 100px;
+        margin-right: 10px;
+        position: relative;
+        font-size: 14px;
+        font-family: sans-serif;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .badges > a::before {
+        content: attr(data-icon);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background-color: #eee;
+        font-size: 32px;
+      }
+
+      .badges > a > span {
+        position: absolute;
+        top: 0;
+        left: 25%;
+        transform: translateX(-50%);
+        padding: 2px 5px;
+        border-radius: 10px;
+        background-color: blue;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -135,6 +182,36 @@
         Notifications
       </a>
     </p>
+
+    <div class="badges">
+      <a href="#" data-icon="🏠">
+        Home
+      </a>
+      <a href="#" data-icon="📢">
+        <span>5</span>
+        Notifications
+      </a>
+      <a href="#" data-icon="📥">
+        <span>100+</span>
+        Inbox
+      </a>
+      <a href="#" data-icon="📺">
+        <span>12:56</span>
+        Today’s video
+      </a>
+      <a href="#" data-icon="🛒">
+        <span>50 %</span>
+        Today’s offer
+      </a>
+      <a href="#" data-icon="👍">
+        <span>1.3K</span>
+        Likes
+      </a>
+      <a href="#" data-icon="👎">
+        <span>1,300</span>
+        Dislikes
+      </a>
+    </div>
 
     <div style="margin-left: calc(100vw - 50px);">
       <p>

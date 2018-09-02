@@ -98,6 +98,12 @@ const MAX_HINT_X_PERCENTAGE_OF_WIDTH = 0.75;
 // this are most likely not clickable, and only used for event delegation.
 const MAX_CLICKABLE_EVENT_AREA = 1e6; // px
 
+const NON_WHITESPACE = /\S/;
+
+// Matches common “badge” text, such as “5“, “100+”, “12:56”, “50 %”, “1.3K” and
+// “1,300”.
+const BADGE_TEXT = /^\s*[\d+%:.,\s]+[a-z]?\s*$/i;
+
 const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
 
 // http://w3c.github.io/aria/#widget_roles
@@ -1010,11 +1016,11 @@ function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
       };
 }
 
-// Try to place the hint just before the first letter inside `element`, if any.
-// One would think that `range.selectNodeContents(element)` would do essentially
-// the same thing here, but it takes padding and such of child elements into
-// account. Also, it would count leading visible whitespace as the first
-// character.
+// Try to place the hint just before the first relevant letter inside `element`,
+// if any. One would think that `range.selectNodeContents(element)` would do
+// essentially the same thing here, but it takes padding and such of child
+// elements into account. Also, it would count leading visible whitespace as the
+// first character.
 function getFirstNonEmptyTextPoint(
   element: HTMLElement,
   elementRect: ClientRect,
@@ -1031,8 +1037,8 @@ function getFirstNonEmptyTextPoint(
 
   for (const node of element.childNodes) {
     if (node instanceof Text) {
-      const index = node.data.search(/\S/);
-      if (index >= 0) {
+      const index = node.data.search(NON_WHITESPACE);
+      if (index >= 0 && !BADGE_TEXT.test(node.data)) {
         range.setStart(node, index);
         range.setEnd(node, index + 1);
         const rect = range.getBoundingClientRect();
