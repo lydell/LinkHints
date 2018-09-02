@@ -899,7 +899,9 @@ function getMultiRectPoint({
 }
 
 function getFirstImagePoint(element: HTMLElement): ?Point {
-  const selector = "img, svg";
+  // Find actual images as well as icon font images. Matches for example “Icon”,
+  // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
+  const selector = "img, svg, [class*='icon' i], [class|='fa']";
   // Due to the float case in `getMeasurements` the element itself can be an
   // image.
   const image = element.matches(selector)

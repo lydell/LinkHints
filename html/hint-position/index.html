@@ -8,6 +8,10 @@
         margin: 30px;
       }
 
+      body > * {
+        margin: 20px 0;
+      }
+
       .icon-button {
         padding: 0;
         width: 80px;
@@ -97,6 +101,23 @@
         color: white;
         font-size: 10px;
         font-weight: bold;
+      }
+
+      .stats {
+        display: flex;
+      }
+
+      .stats > a {
+        font-size: 14px;
+        font-family: sans-serif;
+        color: inherit;
+        text-decoration: none;
+        margin-right: 30px;
+      }
+
+      .stats > a > span::before {
+        content: attr(data-icon);
+        margin-right: 5px;
       }
     </style>
   </head>
@@ -210,6 +231,21 @@
       <a href="#" data-icon="👎">
         <span>1,300</span>
         Dislikes
+      </a>
+    </div>
+
+    <div class="stats">
+      <a href="#">
+        <span class="Icon" data-icon="💬">8</span>
+      </a>
+      <a href="#">
+        <span class="glyphicon" data-icon="🔁">24</span>
+      </a>
+      <a href="#">
+        <span class="fa" data-icon="❤️">140</span>
+      </a>
+      <a href="#">
+        <span class="fa-thumbs-up" data-icon="👍">1.4K</span>
       </a>
     </div>
 
