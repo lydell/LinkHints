@@ -117,7 +117,7 @@ export default class RendererProgram {
       // this message can fail since there’s nobody listening on the other end.
       // Instead, the background script will send the "FirefoxWorkaround"
       // message to all existing tabs when it starts, allowing us to retry
-      // sending "RendererScriptAdded" at that point. See: <bugzil.la/1369841>
+      // sending "RendererScriptAdded" at that point. See: <bugzil.la/1474727>
 
       // Don’t set up the port below, since it will just immediately disconnect
       // (since the background script isn’t ready to connect yet). That would
