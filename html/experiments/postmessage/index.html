@@ -8,7 +8,7 @@
     <iframe src="iframe.html" id="iframe"></iframe>
     <script>
       // Messaging is fast once the browser is done rendering the page and stuff.
-      const timeout = 100 // ms
+      const timeout = 100; // ms
       window.setTimeout(() =>  {
         console.time("pingpong");
         iframe.contentWindow.postMessage("ping", "*");
