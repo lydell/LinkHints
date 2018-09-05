@@ -19,6 +19,66 @@
         border: 1px solid black;
       }
 
+      .button {
+        padding: 5px 20px;
+      }
+
+      .input {
+        padding: 5px 20px;
+        border: 4px solid grey;
+      }
+
+      .search {
+        display: inline-block;
+        position: relative;
+      }
+
+      .search > input {
+        padding-right: 50px;
+      }
+
+      .search-icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        padding-right: 5px;
+      }
+
+      .search-icon > button {
+        border: none;
+        padding: 5px;
+        margin-top: 4px;
+        background: none;
+      }
+
+      .search-icon .Icon::before {
+        content: "🔍";
+      }
+
+      .search2 {
+        --height: 40px;
+        position: relative;
+      }
+
+      .search2 > span {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: var(--height);
+        height: 100%;
+        line-height: var(--height);
+        text-align: center;
+      }
+
+      .search2 > input {
+        height: var(--height);
+        padding: 0 10px;
+        padding-left: calc(var(--height));
+        border: 1px solid black;
+        border-radius: 4px;
+      }
+
       .visually-hidden {
         border: 0 !important;
         clip: rect(1px,1px,1px,1px) !important;
@@ -35,6 +95,31 @@
         width: 1px;
         height: 1px;
         clip: rect(0 0 0 0);
+      }
+
+      .upload {
+        --height: 40px;
+        display: inline-block;
+        height: var(--height);
+        line-height: var(--height);
+        padding: 0 15px;
+        border: 1px solid black;
+        border-radius: 4px;
+        background-color: lime;
+        color: white;
+        font-weight: bold;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .upload > input {
+        position: absolute;
+        top: 0;
+        right: 0;
+        min-width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
       }
 
       .close {
@@ -54,6 +139,84 @@
         left: 8px;
         font-size: 48px;
         line-height: 1;
+      }
+
+      .tabs {
+        --color: rgb(255, 165, 0);
+        --height: 40px;
+        --margin: 20px;
+        --angle: 21deg;
+        --border: 1px solid black;
+        display: flex;
+        padding: 0;
+      }
+
+      .tabs > li {
+        height: var(--height);
+        line-height: var(--height);
+        padding: 5px 10px;
+        margin: 0;
+        background-color: var(--color);
+        list-style: none;
+        cursor: pointer;
+        position: relative;
+        border-top: var(--border);
+        border-bottom: var(--border);
+      }
+
+      .tabs > li:hover {
+        --color: rgb(255, 185, 0);
+      }
+
+      .tabs > li + li {
+        margin-left: 5px;
+      }
+
+      .tabs > li::before,
+      .tabs > li::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: calc(var(--margin) / -2);
+        width: var(--margin);
+        height: 100%;
+        background-color: var(--color);
+        transform: skewX(calc(var(--angle) * -1));
+        border-left: var(--border);
+        border-bottom: var(--border);
+      }
+
+      .tabs > li::after {
+        left: auto;
+        right: calc(var(--margin) / -2);
+        transform: skewX(var(--angle));
+        border-left: none;
+        border-right: var(--border);
+      }
+
+      .padded-links {
+        display: flex;
+      }
+
+      .padded-links a {
+        padding: 30px;
+        border: 1px solid #ccc;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      .absolute {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 30px;
+        white-space: nowrap;
       }
 
       .badges {
@@ -119,9 +282,169 @@
         content: attr(data-icon);
         margin-right: 5px;
       }
+
+      .card {
+        display: flex;
+        width: 500px;
+        border: 1px solid #ccc;
+        padding: 15px;
+        text-decoration: none;
+        color: inherit;
+        font-family: sans-serif;
+      }
+
+      .card .img {
+        width: 120px;
+        height: 120px;
+        margin-right: 15px;
+        background-color: #ccc;
+      }
+
+      .card .img span {
+        display: inline-block;
+        padding: 10px;
+        background-color: orange;
+        color: white;
+        font-weight: bold;
+      }
+
+      .card p {
+        margin: 0;
+      }
+
+      .card p:first-child {
+        margin-bottom: 10px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .card p:last-child {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      .card del {
+        font-size: 0.8em;
+      }
+
+      .small-card {
+        display: flex;
+        align-items: center;
+        width: 500px;
+        border: 1px solid #ccc;
+        padding: 15px;
+        text-decoration: none;
+        color: inherit;
+        font-family: sans-serif;
+      }
+
+      .small-card .img {
+        width: 70px;
+        height: 70px;
+        margin-right: 15px;
+        background-color: #ccc;
+      }
+
+      .small-card p {
+        margin: 0;
+      }
+
+      .small-card p:first-child {
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .small-card p:last-child {
+        font-size: 12px;
+        color: #ccc;
+      }
+
+      .floats > * {
+        clear: both;
+        margin: 0;
+        padding-bottom: 50px;
+      }
+
+      .scroll {
+        border: 1px solid black;
+        overflow: auto;
+        height: 100px;
+        width: 200px;
+      }
+
+      .scroll > p {
+        margin-bottom: 200px;
+      }
     </style>
   </head>
   <body>
+    <p>
+      <a href="#">link</a>
+    </p>
+
+    <p style="width: 200px;">
+      some text <a href="#">wrapped link text text text text text text text</a>
+    </p>
+
+    <p><a href="#">no whitespace</a></p>
+    <p><a href="#"> regular space</a></p>
+    <p><a href="#">&nbsp;non-breaking space</a></p>
+    <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> svg icon</a></p>
+    <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> span</a></p>
+
+    <p>
+      <input type="button" value="button" class="button">
+    </p>
+
+    <p>
+      <input type="button" value="button" class="button" style="width: 300px;">
+    </p>
+
+    <p>
+      <input type="button" value="button" class="button" style="width: 300px; text-align: left;">
+    </p>
+
+    <p>
+      <input type="text" class="input">
+    </p>
+
+    <p>
+      <input type="text" placeholder="placeholder" class="input">
+    </p>
+
+    <p>
+      <input type="text" value="value" class="input">
+    </p>
+
+    <p>
+      <input type="text" value="value" class="input" style="text-align: center;">
+    </p>
+
+    <p>
+      <span class="input">
+        <input type="text" value="value" style="padding: 0; border: none;">
+      </span>
+    </p>
+
+    <form class="search" onclick="console.log('track clicks on form')">
+      <input type="search" placeholder="placeholder" class="input">
+      <span class="search-icon" onclick="console.log('unnecessary click handler on span')">
+        <button type="submit" class="Icon">
+          <span class="visually-hidden">Search</span>
+        </button>
+      </span>
+    </form>
+
+    <p class="search2">
+      <span>🔍</span>
+      <input type="text" placeholder="Search">
+    </p>
+
+    <details onclick="console.log('unnecessary click handler on details')">
+      <summary>Click to expand</summary>
+      <p>Expanded content.</p>
+    </details>
+
     <p>
       <button class="icon-button">
         <img src="image.svg">
@@ -134,40 +457,6 @@
           <circle cx="48" cy="48" r="36" stroke="#000" stroke-width="8" fill="none" />
         </svg>
       </button>
-    </p>
-
-    <p>
-      <input type="button" value="button" style="padding: 5px 20px;">
-    </p>
-
-    <p>
-      <input type="button" value="button" style="padding: 5px 20px; width: 300px;">
-    </p>
-
-    <p>
-      <input type="button" value="button" style="padding: 5px 20px; width: 300px; text-align: left;">
-    </p>
-
-    <p>
-      <input type="text" style="padding: 5px 20px; border: 4px solid grey;">
-    </p>
-
-    <p>
-      <input type="text" placeholder="placeholder" style="padding: 5px 20px; border: 4px solid grey;">
-    </p>
-
-    <p>
-      <input type="text" value="value" style="padding: 5px 20px; border: 4px solid grey;">
-    </p>
-
-    <p>
-      <input type="text" value="value" style="padding: 5px 20px; border: 4px solid grey; text-align: center;">
-    </p>
-
-    <p>
-      <span style="padding: 5px 20px; border: 4px solid grey;">
-        <input type="text" value="value" style="padding: 0; border: none;">
-      </span>
     </p>
 
     <p>
@@ -194,15 +483,50 @@
     </p>
 
     <p>
-      <button class="close">Close</button>
+      <div class="upload">
+        Upload file
+        <input type="file">
+      </div>
     </p>
 
     <p>
-      <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
-        <span style="float: right;">5</span>
-        Notifications
-      </a>
+      <button class="close">Close</button>
     </p>
+
+    <div style="margin-left: calc(100vw - 80px);">
+      <p>
+        <button class="icon-button" style="width: 200px;">
+          <img src="image.svg">
+        </button>
+      </p>
+
+      <p>
+        <input type="button" value="button" style="padding: 5px 60px;">
+      </p>
+    </div>
+
+    <ul class="tabs">
+      <li role="tab" style="z-index: 99;">Tab 1</li>
+      <li role="tab" style="z-index: 98;">Tab 2</li>
+      <li role="tab" style="z-index: 97;">
+        <img src="image.svg" style="vertical-align: -5px;">
+      </li>
+      <li role="tab" style="z-index: 96;">Tab 4</li>
+    </ul>
+
+    <div class="padded-links">
+      <a href="#">regular</a>
+      <a href="#" class="flex">flex</a>
+      <a href="#"><div class="flex">flex inner</div></a>
+      <a href="#" class="flex"><div class="flex">flex both</div></a>
+      <a href="#" style="position: relative;">
+        <div style="opacity: 0;">absolute child</div>
+        <div class="absolute">absolute child</div>
+      </a>
+      <a href="#" class="flex" style="padding: 0;">
+        <span style="padding: 30px;">padded child</span>
+      </a>
+    </div>
 
     <div class="badges">
       <a href="#" data-icon="🏠">
@@ -253,16 +577,63 @@
       <a href="#" style="font-size: 1.2em;">10h</a> and <a href="#"><strong>100 %</strong></a>
     </p>
 
-    <div style="margin-left: calc(100vw - 80px);">
+    <a href="#" class="card">
+      <div class="img">
+        <span>50% off</span>
+      </div>
+      <div>
+        <p>Light saber</p>
+        <p>Fully functioning light saber cheese knife.</p>
+        <p>May the roquefort be with you.</p>
+        <p>$199 <del>$399</del></p>
+      </div>
+    </a>
+
+    <a href="#" class="small-card">
+      <div class="img"></div>
+      <div>
+        <p>Computers & Phones</p>
+        <p>1473 products</p>
+      </div>
+    </a>
+
+    <div class="floats">
       <p>
-        <button class="icon-button" style="width: 200px;">
-          <img src="image.svg">
-        </button>
+        <a href="#">
+          <span style="float: left;">floated</span>
+        </a>
       </p>
 
       <p>
-        <input type="button" value="button" style="padding: 5px 60px;">
+        <a href="#">
+          <img src="image.svg" style="float: left;">
+        </a>
       </p>
+
+      <p>
+        <a href="#">
+          <span style="float: left;">
+            <span style="float: left;">double float</span>
+          </span>
+        </a>
+      </p>
+
+      <p>
+        <a href="#" style="position: relative;">
+          <span style="position: absolute; top: 0; left: 0;">positioned</span>
+        </a>
+      </p>
+    </div>
+
+    <p>
+      <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
+        <span style="float: right;">5</span>
+        Notifications
+      </a>
+    </p>
+
+    <div class="scroll">
+      <p>Scrollable element</p>
     </div>
   </body>
 </html>
