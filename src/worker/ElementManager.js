@@ -5,6 +5,7 @@ import {
   addEventListener,
   bind,
   log,
+  partition,
   waitForPaint,
 } from "../shared/main";
 
@@ -150,11 +151,9 @@ const MUTATION_ATTRIBUTES = [
   ...CLICKABLE_ATTRIBUTES,
 ];
 
-const IMAGE_SELECTOR = "img, svg";
-
 // Find actual images as well as icon font images. Matches for example “Icon”,
 // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
-const ICON_FONT_SELECTOR = "[class*='icon' i], [class|='fa']";
+const IMAGE_SELECTOR = "img, svg, [class*='icon' i], [class|='fa']";
 
 const infiniteDeadline = {
   timeRemaining: () => Infinity,
@@ -507,57 +506,48 @@ export default class ElementManager {
 
     const range = document.createRange();
 
-    const labels = new Set();
+    const deduper = new Deduper();
 
-    return (
-      Array.from(candidates, element => {
-        const data = this.elements.get(element);
+    return Array.from(candidates, element => {
+      const data = this.elements.get(element);
 
-        if (data == null) {
-          return undefined;
-        }
+      if (data == null) {
+        return undefined;
+      }
 
-        if (!types.has(data.type)) {
-          return undefined;
-        }
+      if (!types.has(data.type)) {
+        return undefined;
+      }
 
-        // Ignore `<label>` elements with no control and no click listeners.
-        // $FlowIgnore: Flow can't know, but `element` _is_ a `<label>` here.
-        if (data.type === "label" && element.control == null) {
-          return undefined;
-        }
+      // Ignore `<label>` elements with no control and no click listeners.
+      // $FlowIgnore: Flow can't know, but `element` _is_ a `<label>` here.
+      if (data.type === "label" && element.control == null) {
+        return undefined;
+      }
 
-        const measurements = getMeasurements(
-          element,
-          data.type,
-          viewports,
-          range
-        );
+      const measurements = getMeasurements(
+        element,
+        data.type,
+        viewports,
+        range
+      );
 
-        if (measurements == null) {
-          return undefined;
-        }
+      if (measurements == null) {
+        return undefined;
+      }
 
-        // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
-        if (element.labels instanceof NodeList) {
-          for (const label of element.labels) {
-            labels.add(label);
-          }
-        }
+      const visibleElement = {
+        element,
+        data,
+        measurements,
+      };
 
-        return {
-          element,
-          data,
-          measurements,
-        };
-      })
-        .filter(Boolean)
-        // Exclude `<label>` elements whose associated control has a hint.
-        // One _could_ shuffle things around to avoid calculating `measurements`
-        // at all for such labels, but I don't think it's worth it. Pages
-        // usually don't have that many labels.
-        .filter(result => !labels.has(result.element))
-    );
+      deduper.add(visibleElement);
+
+      return visibleElement;
+    })
+      .filter(Boolean)
+      .filter(result => !deduper.rejects(result));
   }
 
   getVisibleFrames(
@@ -613,6 +603,12 @@ export default class ElementManager {
       case "INPUT":
         // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
         return element.type === "hidden" ? undefined : "clickable";
+      // Twitter and DuckDuckGo have useless click handlers on the `<form>`
+      // around their search inputs, whose hints end up below the hint of the
+      // input. It feels like `<form>`s are never relevant to click, so exclude
+      // them.
+      case "FORM":
+        return undefined;
       default: {
         const document = element.ownerDocument;
 
@@ -649,6 +645,71 @@ export default class ElementManager {
       }
     }
   }
+}
+
+// Attempt to remove hints that do the same thing as some other element
+// (`<label>`–`<input>` pairs) or hints that are most likely false positives
+// (`<div>`s with click listeners wrapping a `<button>`).
+class Deduper {
+  positionMap: Map<string, Array<VisibleElement>>;
+  rejected: Set<HTMLElement>;
+
+  constructor() {
+    this.positionMap = new Map();
+    this.rejected = new Set();
+  }
+
+  add(visibleElement: VisibleElement) {
+    const { element } = visibleElement;
+
+    // Exclude `<label>` elements whose associated control has a hint.
+    // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
+    if (element.labels instanceof NodeList) {
+      for (const label of element.labels) {
+        this.rejected.add(label);
+      }
+    }
+
+    const key = hintPositionKey(visibleElement.measurements);
+    const elements = this.positionMap.get(key);
+
+    if (elements == null) {
+      this.positionMap.set(key, [visibleElement]);
+      return;
+    }
+
+    elements.push(visibleElement);
+
+    const [bad, good] = partition(
+      elements,
+      ({ data: { type } }) => type === "clickable-event"
+    );
+
+    // If hints are positioned in the exact same spot, reject those of low
+    // quality (that only have click listeners and nothing else) since they are
+    // likely just noise. Many `<button>`s and `<a>`s on Twitter and Gmail are
+    // wrapped in `<div>`s with click listeners. And on GitHub there are
+    // dropdown menus near the top where the hint for the `<summary>` elements
+    // that open them are covered by the hint for a `<details>` element with a
+    // click listener that doesn't do anything when clicked.
+    if (bad.length > 0 && good.length > 0) {
+      for (const { element: badElement } of bad) {
+        this.rejected.add(badElement);
+      }
+    }
+  }
+
+  rejects({ element }: VisibleElement): boolean {
+    return this.rejected.has(element);
+  }
+}
+
+function hintPositionKey(measurements: HintMeasurements): string {
+  return [
+    String(Math.round(measurements.x)),
+    String(Math.round(measurements.y)),
+    measurements.align,
+  ].join(",");
 }
 
 function getMeasurements(
@@ -905,13 +966,20 @@ function getMultiRectPoint({
 }
 
 function getFirstImagePoint(element: HTMLElement): ?Point {
-  // Due to the float case in `getMeasurements` the element itself can be an
-  // image. (Don’t check for icon fonts in that case, to avoid `<button
-  // class="icon-button"><img></button>` getting the hint at the edge of the
-  // button instead of at the edge of the image).
-  const image = element.matches(IMAGE_SELECTOR)
-    ? element
-    : element.querySelector(`${IMAGE_SELECTOR}, ${ICON_FONT_SELECTOR}`);
+  // First try to find an image _child._ For example, <button
+  // class="icon-button"><img></button>`. (This button should get the hint at
+  // the image, not at the edge of the button.)
+  const imageChild = element.querySelector(IMAGE_SELECTOR);
+
+  // Then, see if the element itself is an image. For example, `<button
+  // class="Icon Icon-search"></button>`. The element itself can also be an
+  // `<img>` due to the `float` case in `getMeasurements`.
+  const image =
+    imageChild == null
+      ? element.matches(IMAGE_SELECTOR)
+        ? element
+        : undefined
+      : imageChild;
 
   if (image == null) {
     return undefined;
