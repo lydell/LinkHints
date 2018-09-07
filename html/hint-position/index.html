@@ -6,17 +6,28 @@
     <style>
       body {
         margin: 30px;
+        font-family: sans-serif;
       }
 
       body > * {
         margin: 20px 0;
       }
 
+      h2 {
+        margin-top: 40px;
+      }
+
       .icon-button {
         padding: 0;
         width: 80px;
         height: 40px;
+        line-height: 40px;
         border: 1px solid black;
+      }
+
+      .icon-button > img,
+      .icon-button > svg {
+        vertical-align: -6px;
       }
 
       .button {
@@ -31,6 +42,7 @@
       .search {
         display: inline-block;
         position: relative;
+        margin: 0;
       }
 
       .search > input {
@@ -232,7 +244,6 @@
         margin-right: 10px;
         position: relative;
         font-size: 14px;
-        font-family: sans-serif;
         color: inherit;
         text-decoration: none;
       }
@@ -272,7 +283,6 @@
 
       .stats > a {
         font-size: 14px;
-        font-family: sans-serif;
         color: inherit;
         text-decoration: none;
         margin-right: 30px;
@@ -290,7 +300,6 @@
         padding: 15px;
         text-decoration: none;
         color: inherit;
-        font-family: sans-serif;
       }
 
       .card .img {
@@ -335,7 +344,6 @@
         padding: 15px;
         text-decoration: none;
         color: inherit;
-        font-family: sans-serif;
       }
 
       .small-card .img {
@@ -378,54 +386,55 @@
     </style>
   </head>
   <body>
+    <h2>Simplest case</h2>
     <p>
       <a href="#">link</a>
     </p>
 
+    <h2>Line-wrapped link</h2>
+    <p>The hint should be at the "w". If "w" is scrolled outside the viewport, center the hint vertically.</p>
     <p style="width: 200px;">
       some text <a href="#">wrapped link text text text text text text text</a>
     </p>
 
-    <p><a href="#">no whitespace</a></p>
-    <p><a href="#"> regular space</a></p>
-    <p><a href="#">&nbsp;non-breaking space</a></p>
-    <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> svg icon</a></p>
-    <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> span</a></p>
+    <h2>First non-blank character</h2>
+    <p><a href="#">starts with no whitespace</a></p>
+    <p><a href="#"> starts with regular space (invisible)</a></p>
+    <p><a href="#">&nbsp;starts with non-breaking space</a></p>
+    <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> starts with svg icon</a></p>
+    <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> starts with span</a></p>
 
+    <h2>&lt;input type="button"&gt;, &lt;input type="text"&gt; and similar</h2>
+    <p>These don't have real text nodes, but reading border and padding many times give a good enough result.</p>
     <p>
       <input type="button" value="button" class="button">
     </p>
-
     <p>
       <input type="button" value="button" class="button" style="width: 300px;">
     </p>
-
     <p>
       <input type="button" value="button" class="button" style="width: 300px; text-align: left;">
     </p>
-
     <p>
       <input type="text" class="input">
     </p>
-
     <p>
       <input type="text" placeholder="placeholder" class="input">
     </p>
-
     <p>
       <input type="text" value="value" class="input">
     </p>
-
     <p>
       <input type="text" value="value" class="input" style="text-align: center;">
     </p>
-
     <p>
       <span class="input">
         <input type="text" value="value" style="padding: 0; border: none;">
       </span>
     </p>
 
+    <h2>Tricky search fields</h2>
+    <p>This one has unnecessary click handlers. (From Twitter.)</p>
     <form class="search" onclick="console.log('track clicks on form')">
       <input type="search" placeholder="placeholder" class="input">
       <span class="search-icon" onclick="console.log('unnecessary click handler on span')">
@@ -434,23 +443,26 @@
         </button>
       </span>
     </form>
-
+    <p>This one is fully covered by the search icon to the left. (From MDN.)</p>
     <p class="search2">
       <span>🔍</span>
       <input type="text" placeholder="Search">
     </p>
 
+    <h2>&lt;details&gt; with unnecessary click handler (GitHub)</h2>
     <details onclick="console.log('unnecessary click handler on details')">
       <summary>Click to expand</summary>
       <p>Expanded content.</p>
     </details>
 
+    <h2>Buttons with only icons as children</h2>
+    <p>&lt;img&gt;</p>
     <p>
       <button class="icon-button">
         <img src="image.svg">
       </button>
     </p>
-
+    <p>&lt;svg&gt;</p>
     <p>
       <button class="icon-button">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="24" height="24">
@@ -458,14 +470,14 @@
         </svg>
       </button>
     </p>
-
+    <p>visually-hidden text</p>
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
         <img src="image.svg">
       </button>
     </p>
-
+    <p>Visually-hidden text and badge.</p>
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
@@ -473,7 +485,7 @@
         5
       </button>
     </p>
-
+    <p>Visually-hidden (different implementation) text and badge.</p>
     <p>
       <button class="icon-button">
         <span class="visually-hidden2">Vote</span>
@@ -481,30 +493,43 @@
         5
       </button>
     </p>
-
+    <p>Visually-hidden text and label.</p>
     <p>
-      <div class="upload">
-        Upload file
-        <input type="file">
-      </div>
+      <button class="icon-button" style="width: 200px;">
+        <span class="visually-hidden">Vote</span>
+        <img src="image.svg">
+        Strawberries
+      </button>
     </p>
 
-    <p>
-      <button class="close">Close</button>
-    </p>
-
+    <h2>Buttons with the preferred hint position off-screen</h2>
     <div style="margin-left: calc(100vw - 80px);">
       <p>
         <button class="icon-button" style="width: 200px;">
           <img src="image.svg">
         </button>
       </p>
-
       <p>
         <input type="button" value="button" style="padding: 5px 60px;">
       </p>
     </div>
 
+    <h2>Tricky special buttons</h2>
+    <p>&lt;input type="file"&gt; in disguise. (<a href="https://blueimp.github.io/jQuery-File-Upload/">jQuery File Upload</a>.)</p>
+    <p>
+      <div class="upload">
+        Upload file
+        <input type="file">
+      </div>
+    </p>
+    <p>Text outside the element (clipped). (Mozilla.)</p>
+    <p>
+      <button class="close">Close</button>
+    </p>
+
+    <h2>Mixed UI components</h2>
+
+    <p>Tabs overlapping using ::before and ::after. (Caniuse.)</p>
     <ul class="tabs">
       <li role="tab" style="z-index: 99;">Tab 1</li>
       <li role="tab" style="z-index: 98;">Tab 2</li>
@@ -514,6 +539,7 @@
       <li role="tab" style="z-index: 96;">Tab 4</li>
     </ul>
 
+    <p>Cases where .selectNodeContents returns a too big rect.</p>
     <div class="padded-links">
       <a href="#">regular</a>
       <a href="#" class="flex">flex</a>
@@ -528,6 +554,7 @@
       </a>
     </div>
 
+    <p>The hints should ideally not be placed at the "badges".</p>
     <div class="badges">
       <a href="#" data-icon="🏠">
         Home
@@ -558,6 +585,7 @@
       </a>
     </div>
 
+    <p>Twitter-style icons with badges. Here it's nice placing the hints at the icon, not the text.</p>
     <div class="stats">
       <a href="#">
         <span class="Icon" data-icon="💬">8</span>
@@ -573,10 +601,12 @@
       </a>
     </div>
 
+    <p>These links should not be mistaken as badges.</p>
     <p>
       <a href="#" style="font-size: 1.2em;">10h</a> and <a href="#"><strong>100 %</strong></a>
     </p>
 
+    <p>A "large" card. The hint should be placed at the left edge.</p>
     <a href="#" class="card">
       <div class="img">
         <span>50% off</span>
@@ -589,6 +619,7 @@
       </div>
     </a>
 
+    <p>A "small" card. The hint should be placed at the text.</p>
     <a href="#" class="small-card">
       <div class="img"></div>
       <div>
@@ -597,19 +628,19 @@
       </div>
     </a>
 
+    <h2>Floats</h2>
+    <p>Links which have 0 height due to floated children.</p>
     <div class="floats">
       <p>
         <a href="#">
           <span style="float: left;">floated</span>
         </a>
       </p>
-
       <p>
         <a href="#">
           <img src="image.svg" style="float: left;">
         </a>
       </p>
-
       <p>
         <a href="#">
           <span style="float: left;">
@@ -617,33 +648,41 @@
           </span>
         </a>
       </p>
-
       <p>
         <a href="#" style="position: relative;">
           <span style="position: absolute; top: 0; left: 0;">positioned</span>
         </a>
       </p>
     </div>
-
+    <p>Here, the right-aligned text comes first in DOM order because of how floats work.</p>
     <p>
       <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
         <span style="float: right;">5</span>
         Notifications
       </a>
     </p>
+    <p>
+      <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
+        <small style="float: right;">(all)</small>
+        Notifications
+      </a>
+    </p>
 
+    <h2>Images taller than their link</h2>
+    <p>The hint should be in the middle of the image, even though the link technically isn't that tall.</p>
     <p>
       <a href="#">
         <img src="image.svg" alt="" height="100">
       </a>
     </p>
-
     <p>
       <a href="#">
         <img src="image.svg" alt="" height="150">
       </a>
     </p>
 
+    <h2>Scrollable element</h2>
+    <p>The hint should be placed at the edge, not at children text.</p>
     <div class="scroll">
       <p>Scrollable element</p>
     </div>
