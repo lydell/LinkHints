@@ -779,6 +779,7 @@ function getMeasurements(
           elementType,
           rect: rects[0],
           visibleBox: visibleBoxes[0],
+          viewports,
           range,
         })
       : getMultiRectPoint({ element, visibleBoxes, range });
@@ -853,12 +854,14 @@ function getSingleRectPoint({
   elementType,
   rect,
   visibleBox,
+  viewports,
   range,
 }: {|
   element: HTMLElement,
   elementType: ElementType,
   rect: ClientRect,
   visibleBox: Box,
+  viewports: Array<Box>,
   range: Range,
 |}): Point {
   // Scrollable elements and very tall elements.
@@ -892,9 +895,15 @@ function getSingleRectPoint({
 
   // Try to place the hint near an image. Many buttons have just an icon and no
   // (visible) text.
-  const imagePoint = getFirstImagePoint(element);
-  if (imagePoint != null && isAcceptable(imagePoint)) {
-    return imagePoint;
+  const imagePoint = getFirstImagePoint(element, viewports);
+  if (
+    imagePoint != null &&
+    // For images that are taller than the element, allow the point to be
+    // outside the rects. It's common to find `p > a > img` where the `<a>` is
+    // just a regular inline element with the `<img>` sticking out the top.
+    (isAcceptable(imagePoint.point) || rect.height < imagePoint.rect.height)
+  ) {
+    return imagePoint.point;
   }
 
   // Checkboxes and radio buttons are typically small and we don't want to cover
@@ -965,7 +974,10 @@ function getMultiRectPoint({
   };
 }
 
-function getFirstImagePoint(element: HTMLElement): ?Point {
+function getFirstImagePoint(
+  element: HTMLElement,
+  viewports: Array<Box>
+): ?{| point: Point, rect: ClientRect |} {
   // First try to find an image _child._ For example, <button
   // class="icon-button"><img></button>`. (This button should get the hint at
   // the image, not at the edge of the button.)
@@ -986,10 +998,18 @@ function getFirstImagePoint(element: HTMLElement): ?Point {
   }
 
   const rect = image.getBoundingClientRect();
+  const visibleBox = getVisibleBox(rect, viewports);
+
+  if (visibleBox == null) {
+    return undefined;
+  }
 
   return {
-    ...getXY(rect),
-    align: "right",
+    point: {
+      ...getXY(visibleBox),
+      align: rect.height >= BOX_MIN_HEIGHT ? "left" : "right",
+    },
+    rect,
   };
 }
 
