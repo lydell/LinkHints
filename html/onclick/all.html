@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>all onclick</title>
+  </head>
+  <body>
+    <p>All the different ways to add a click listener to an element.</p>
+    <p onclick="console.log('onclick=&quot;...&quot;')">onclick="..."</p>
+    <script>
+      {
+        const p = document.createElement("p");
+        p.textContent = ".onclick = ...";
+        p.onclick = () => console.log('.onclick = ...');
+        document.currentScript.replaceWith(p);
+      }
+    </script>
+    <script>
+      {
+        const p = document.createElement("p");
+        p.textContent = `.addEventListener("click", ...)`;
+        p.addEventListener("click", () => console.log('.addEventListener("click", ...)'));
+        document.currentScript.replaceWith(p);
+      }
+    </script>
+    <script>
+      {
+        const p = document.createElement("p");
+        p.textContent = `.addEventListener("mousedown", ...)`;
+        p.addEventListener("mousedown", () => console.log('.addEventListener("mousedown", ...)'));
+        document.currentScript.replaceWith(p);
+      }
+    </script>
+  </body>
+</html>

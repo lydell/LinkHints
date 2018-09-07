@@ -5,35 +5,7 @@
     <title>changing onclick</title>
   </head>
   <body>
-    <p onclick="console.log('onclick=&quot;...&quot;')">onclick="..."</p>
-    <script>
-      {
-        const p = document.createElement("p");
-        p.textContent = ".onclick = ...";
-        p.onclick = () => console.log('.onclick = ...');
-        document.currentScript.replaceWith(p);
-      }
-    </script>
-    <script>
-      {
-        const p = document.createElement("p");
-        p.textContent = `.addEventListener("click", ...)`;
-        p.addEventListener("click", () => console.log('.addEventListener("click", ...)'));
-        document.currentScript.replaceWith(p);
-      }
-    </script>
-    <script>
-      {
-        const p = document.createElement("p");
-        p.textContent = `.addEventListener("mousedown", ...)`;
-        p.addEventListener("mousedown", () => console.log('.addEventListener("mousedown", ...)'));
-        document.currentScript.replaceWith(p);
-      }
-    </script>
-
-    <hr>
-
-    <p id="p">click me</p>
+    <p id="p">This text should change between clickable and unclickable as it goes to and from 0 click listeners.</p>
     <p>
       <button onclick="p.setAttribute('onclick', 'console.log(`onclick=&quot;...&quot;`)')">set onclick="..."</button>
       <button onclick="p.removeAttribute('onclick')">remove onclick="..."</button>

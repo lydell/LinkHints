@@ -8,6 +8,12 @@
         padding: calc(100vh - 1em) 0;
       }
 
+      body > p:first-child {
+        position: absolute;
+        top: 0;
+        left: 1em;
+      }
+
       body > div {
         margin-bottom: 30px;
       }
@@ -38,6 +44,8 @@
     </style>
   </head>
   <body>
+    <p>&lt;label&gt; elements should only get hints if their control isn't visible, or if has no control but is clickable some other way. (Scroll down.)</p>
+
     <div>
       <label>
         label with nested control<br>

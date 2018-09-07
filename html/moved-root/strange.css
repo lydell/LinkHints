@@ -23,3 +23,9 @@ body {
   left: 100%;
   margin: 50px;
 }
+
+body > p:first-child {
+  position: fixed;
+  top: 0;
+  left: 1em;
+}
