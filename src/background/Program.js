@@ -390,10 +390,7 @@ export default class BackgroundProgram {
             },
             { tabId: info.tabId }
           );
-          browser.browserAction.setBadgeText({
-            text: "",
-            tabId: info.tabId,
-          });
+          this.updateBadge(info.tabId);
         }
 
         hintsState.enteredHintChars = enteredHintChars;
@@ -529,10 +526,7 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
-    browser.browserAction.setBadgeText({
-      text: String(hintsState.pendingElements.elements.length),
-      tabId,
-    });
+    this.updateBadge(tabId);
   }
 
   onRendererMessage(
@@ -648,10 +642,7 @@ export default class BackgroundProgram {
           },
           timeoutId: undefined,
         };
-        browser.browserAction.setBadgeText({
-          text: "…",
-          tabId: info.tabId,
-        });
+        this.updateBadge(info.tabId);
         break;
       }
 
@@ -710,10 +701,7 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
-    browser.browserAction.setBadgeText({
-      text: "",
-      tabId,
-    });
+    this.updateBadge(tabId);
   }
 
   onTabCreated(tab: Tab) {
@@ -747,6 +735,21 @@ export default class BackgroundProgram {
     const icons = getIcons(type);
     log("log", "BackgroundProgram#updateIcon", tabId, type);
     await browser.browserAction.setIcon({ path: icons, tabId });
+  }
+
+  updateBadge(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+
+    browser.browserAction.setBadgeText({
+      text: getBadgeText(hintsState),
+      tabId,
+    });
   }
 
   makeWorkerState(
@@ -937,4 +940,17 @@ function compareWeights<T: { weight: number }>(a: T, b: T): number {
   }
 
   return 0;
+}
+
+function getBadgeText(hintsState: HintsState): string {
+  switch (hintsState.type) {
+    case "Idle":
+      return "";
+    case "Collecting":
+      return "…";
+    case "Hinting":
+      return String(hintsState.elementsWithHints.length);
+    default:
+      return unreachable(hintsState.type);
+  }
 }
