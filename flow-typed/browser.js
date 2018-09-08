@@ -89,9 +89,15 @@ declare type TabStatus = "loading" | "complete";
 
 declare var browser: {|
   browserAction: {|
-    setBadgeText({|
-      text: string,
+    setBadgeBackgroundColor({|
+      color: string | [number, number, number, number] | null,
       tabId?: number,
+      windowId?: number,
+    |}): void,
+    setBadgeText({|
+      text: string | null,
+      tabId?: number,
+      windowId?: number,
     |}): void,
     setIcon({|
       path: { [string]: string },
