@@ -4,6 +4,7 @@ import {
   Resets,
   addEventListener,
   bind,
+  getTitle,
   log,
   partition,
   waitForPaint,
@@ -164,6 +165,7 @@ const MUTATION_ATTRIBUTES = [
   "contenteditable",
   "href",
   "role",
+  "title",
   ...CLICKABLE_EVENT_PROPS,
   ...CLICKABLE_ATTRIBUTES,
 ];
@@ -655,6 +657,10 @@ export default class ElementManager {
         }
 
         if (CLICKABLE_ROLES.has(element.getAttribute("role"))) {
+          return "clickable";
+        }
+
+        if (getTitle(element) != null) {
           return "clickable";
         }
 

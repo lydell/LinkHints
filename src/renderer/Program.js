@@ -2,6 +2,7 @@
 
 import {
   Resets,
+  addEventListener,
   addListener,
   bind,
   log,
@@ -32,6 +33,7 @@ const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_HINT_CLASS = "matchedHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
+const TITLE_CLASS = "title";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 const UNRENDER_DELAY = 200; // ms
@@ -75,6 +77,25 @@ const CSS = `
 
 .${MATCHED_CHARS_CLASS} {
   opacity: 0.3;
+}
+
+.${TITLE_CLASS} {
+  box-sizing: border-box;
+  position: absolute;
+  z-index: ${MAX_Z_INDEX};
+  bottom: 0;
+  right: 0;
+  max-width: 100%;
+  padding: 4px 6px;
+  box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-color: black;
+  color: white;
+  font: menu;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 `.trim();
 
@@ -185,10 +206,18 @@ export default class RendererProgram {
         break;
 
       case "Unrender":
-        if (message.delayed) {
-          this.unrenderDelayed();
-        } else {
-          this.unrender();
+        switch (message.mode.type) {
+          case "immediate":
+            this.unrender();
+            break;
+          case "delayed":
+            this.unrenderDelayed();
+            break;
+          case "title":
+            this.unrenderTitle(message.mode.title);
+            break;
+          default:
+            unreachable(message.mode.type, message);
         }
         break;
 
@@ -485,6 +514,49 @@ export default class RendererProgram {
     this.unrenderTimeoutId = setTimeout(() => {
       this.unrenderTimeoutId = undefined;
       this.unrender();
+    }, UNRENDER_DELAY);
+  }
+
+  unrenderTitle(title: string) {
+    const container = document.getElementById(CONTAINER_ID);
+
+    if (container == null) {
+      return;
+    }
+
+    const root = container.shadowRoot;
+
+    if (root == null) {
+      return;
+    }
+
+    if (this.unrenderTimeoutId != null) {
+      clearTimeout(this.unrenderTimeoutId);
+    }
+
+    const titleElement = document.createElement("div");
+    titleElement.textContent = title;
+    titleElement.className = TITLE_CLASS;
+    root.append(titleElement);
+
+    const resets = new Resets();
+
+    const removeTitle = () => {
+      resets.reset();
+      this.unrender();
+    };
+
+    resets.add(
+      addEventListener(window, "click", removeTitle),
+      addEventListener(window, "keydown", removeTitle)
+    );
+
+    this.unrenderTimeoutId = setTimeout(() => {
+      this.unrenderTimeoutId = undefined;
+      for (const element of this.hints) {
+        element.remove();
+      }
+      this.hints = [];
     }, UNRENDER_DELAY);
   }
 

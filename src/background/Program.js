@@ -299,7 +299,7 @@ export default class BackgroundProgram {
             ),
             (a, b) => b.weight - a.weight
           );
-          const { url } = match;
+          const { url, title } = match;
 
           switch (hintsState.mode) {
             case "Click":
@@ -378,7 +378,10 @@ export default class BackgroundProgram {
           this.sendRendererMessage(
             {
               type: "Unrender",
-              delayed: true,
+              mode:
+                hintsState.mode === "Click" && title != null
+                  ? { type: "title", title }
+                  : { type: "delayed" },
             },
             { tabId: info.tabId }
           );
@@ -427,11 +430,12 @@ export default class BackgroundProgram {
         }
 
         const elements = message.elements.map(
-          ({ type, index, hintMeasurements, url }) => ({
+          ({ type, index, hintMeasurements, url, title }) => ({
             type,
             index,
             hintMeasurements,
             url,
+            title,
             frameId: info.frameId,
           })
         );
@@ -484,6 +488,7 @@ export default class BackgroundProgram {
         index: element.index,
         hintMeasurements: element.hintMeasurements,
         url: element.url,
+        title: element.title,
         frameId: element.frameId,
         weight: hintWeight(element),
         hint: "",
@@ -684,7 +689,7 @@ export default class BackgroundProgram {
     this.sendRendererMessage(
       {
         type: "Unrender",
-        delayed: false,
+        mode: { type: "immediate" },
       },
       { tabId }
     );

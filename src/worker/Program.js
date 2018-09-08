@@ -5,6 +5,7 @@ import {
   addEventListener,
   addListener,
   bind,
+  getTitle,
   log,
   unreachable,
 } from "../shared/main";
@@ -350,6 +351,7 @@ export default class WorkerProgram {
           type,
           index,
           url: element instanceof HTMLAnchorElement ? element.href : undefined,
+          title: getTitle(element),
           hintMeasurements: measurements,
         })
       ),

@@ -221,3 +221,15 @@ export function makeRandomToken(): string {
   window.crypto.getRandomValues(array);
   return array.join("");
 }
+
+export function getTitle(element: HTMLElement): ?string {
+  const { title } = element;
+
+  // `.title` is undefined for SVG elements.
+  if (title == null) {
+    return undefined;
+  }
+
+  const trimmed = title.trim();
+  return trimmed === "" ? undefined : trimmed;
+}

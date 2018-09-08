@@ -119,7 +119,10 @@ export type ToRenderer =
     |}
   | {|
       type: "Unrender",
-      delayed: boolean,
+      mode:
+        | {| type: "immediate" |}
+        | {| type: "delayed" |}
+        | {| type: "title", title: string |},
     |};
 
 export type FromPopup =
@@ -144,6 +147,7 @@ export type ElementReport = {|
   index: number,
   hintMeasurements: HintMeasurements,
   url: ?string,
+  title: ?string,
 |};
 
 export type ExtendedElementReport = {|
