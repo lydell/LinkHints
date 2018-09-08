@@ -91,7 +91,14 @@ export function applyStyles(element: HTMLElement, styles: Array<Rule>) {
   // First reset non-matching rules, in case they were applied before.
   for (const rule of notMatching) {
     for (const decl of rule.declarations) {
-      element.style.setProperty(decl.property, "");
+      const important =
+        element.style.getPropertyPriority(decl.property) === "important";
+      // All inline styling set in renderer/Program.js uses `!important`. Only
+      // reset here if the `importants` match so we don’t lose the inline
+      // styling (such as `left` and `right` for hint markers).
+      if (important === decl.important) {
+        element.style.setProperty(decl.property, "");
+      }
     }
   }
 

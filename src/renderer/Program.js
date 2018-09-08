@@ -332,9 +332,11 @@ export default class RendererProgram {
 
     if (elements.length === 0) {
       const element = createHintElement("¯\\_(ツ)_/¯");
-      element.style.top = "50%";
-      element.style.left = "50%";
-      element.style.transform = "translate(-50%, -50%)";
+      setStyles(element, {
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+      });
       root.append(element);
       this.maybeApplyStyles(element);
       return;
@@ -373,19 +375,19 @@ export default class RendererProgram {
         // This is useful for the tiny voting arrows on hackernews.
         hintMeasurements.x + width < hintMeasurements.maxX;
 
-      if (alignLeft) {
-        element.style.left = `${Math.round(hintMeasurements.x)}px`;
-      } else {
+      const styles = {
+        left: alignLeft ? `${Math.round(hintMeasurements.x)}px` : "",
         // This could also be done using `left` and
         // `transform: translateX(-100%)`, but that results in blurry hints in
         // Chrome due to Chrome making the widths of the hints non-integer based
         // on the font.
-        element.style.right = `${Math.round(
-          viewport.width - hintMeasurements.x
-        )}px`;
-      }
-      element.style.top = `${Math.round(hintMeasurements.y)}px`;
-      element.style.zIndex = String(MAX_Z_INDEX - index);
+        right: alignLeft
+          ? ""
+          : `${Math.round(viewport.width - hintMeasurements.x)}px`,
+        top: `${Math.round(hintMeasurements.y)}px`,
+        "z-index": String(MAX_Z_INDEX - index),
+      };
+      setStyles(element, styles);
 
       root.append(element);
       this.hints.push(element);
@@ -492,7 +494,7 @@ export default class RendererProgram {
         const [first, ...rest] = stack.map(element => element.style.zIndex);
         const zIndexes = [...rest, first];
         for (const [index, element] of stack.entries()) {
-          element.style.zIndex = zIndexes[index];
+          setStyles(element, { "z-index": zIndexes[index] });
         }
       }
     }
@@ -570,6 +572,8 @@ export default class RendererProgram {
     }, UNRENDER_DELAY);
   }
 
+  // It’s important to use `setStyles` instead of `.style.foo =` in this file,
+  // since `applyStyles` could override inline styles otherwise.
   maybeApplyStyles(element: HTMLElement) {
     if (BROWSER === "firefox" && this.parsedCSS != null) {
       applyStyles(element, this.parsedCSS);
@@ -584,20 +588,20 @@ export default class RendererProgram {
       this.rects.set(element, rect);
 
       if (rect.left < 0) {
-        element.style.marginRight = `${Math.round(rect.left)}px`;
+        setStyles(element, { "margin-right": `${Math.round(rect.left)}px` });
       }
       if (rect.top < 0) {
-        element.style.marginTop = `${Math.round(-rect.top)}px`;
+        setStyles(element, { "margin-top": `${Math.round(-rect.top)}px` });
       }
       if (rect.right > viewport.width) {
-        element.style.marginRight = `${Math.round(
-          rect.right - viewport.width
-        )}px`;
+        setStyles(element, {
+          "margin-right": `${Math.round(rect.right - viewport.width)}px`,
+        });
       }
       if (rect.bottom > viewport.height) {
-        element.style.marginTop = `${Math.round(
-          viewport.height - rect.bottom
-        )}px`;
+        setStyles(element, {
+          "margin-top": `${Math.round(viewport.height - rect.bottom)}px`,
+        });
       }
     }
   }
