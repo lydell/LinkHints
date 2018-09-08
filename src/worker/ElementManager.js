@@ -37,11 +37,12 @@ const constants = {
 };
 
 export type ElementType =
-  | "link"
   | "clickable"
   | "clickable-event"
+  | "label"
+  | "link"
   | "scrollable"
-  | "label";
+  | "textarea";
 
 type ElementData = {|
   type: ElementType,
@@ -614,7 +615,6 @@ export default class ElementManager {
       case "BUTTON":
       case "SELECT":
       case "SUMMARY":
-      case "TEXTAREA":
         return "clickable";
       case "INPUT":
         // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
@@ -625,6 +625,8 @@ export default class ElementManager {
       // them.
       case "FORM":
         return undefined;
+      case "TEXTAREA":
+        return "textarea";
       default: {
         const document = element.ownerDocument;
 
@@ -638,11 +640,12 @@ export default class ElementManager {
           return "scrollable";
         }
 
-        if (
-          CLICKABLE_ROLES.has(element.getAttribute("role")) ||
-          !NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)
-        ) {
+        if (CLICKABLE_ROLES.has(element.getAttribute("role"))) {
           return "clickable";
+        }
+
+        if (!NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)) {
+          return "textarea";
         }
 
         if (
@@ -883,7 +886,16 @@ function getSingleRectPoint({
   range: Range,
 |}): Point {
   // Scrollable elements and very tall elements.
-  if (elementType === "scrollable" || rect.height >= BOX_MIN_HEIGHT) {
+  // Also do not look for text nodes or images in `<textarea>` (which does have
+  // hidden text nodes) and `contenteditable` elements, since it looks nicer
+  // always placing the hint at the edge for such elements. Usually they are
+  // tall enough to have their hint end up there. This ensures the hint is
+  // _always_ placed there for consistency.
+  if (
+    elementType === "scrollable" ||
+    elementType === "textarea" ||
+    rect.height >= BOX_MIN_HEIGHT
+  ) {
     return {
       ...getXY(visibleBox),
       align: "left",
