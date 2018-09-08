@@ -54,6 +54,9 @@ const TOP_FRAME_ID = 0;
 // alive after this timeout, ignore it.
 const FRAME_REPORT_TIMEOUT = 100; // ms
 
+// Only show the bagde “spinner” if the hints are slow.
+const BADGE_COLLECTING_DELAY = 300; // ms
+
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
@@ -642,7 +645,9 @@ export default class BackgroundProgram {
           },
           timeoutId: undefined,
         };
-        this.updateBadge(info.tabId);
+        setTimeout(() => {
+          this.updateBadge(info.tabId);
+        }, BADGE_COLLECTING_DELAY);
         break;
       }
 
