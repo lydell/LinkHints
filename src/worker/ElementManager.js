@@ -630,6 +630,12 @@ export default class ElementManager {
       default: {
         const document = element.ownerDocument;
 
+        // Even `<html>` and `<body>` can be contenteditable. That trumps all
+        // the below types.
+        if (!NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)) {
+          return "textarea";
+        }
+
         if (
           this.elementsWithScrollbars.has(element) &&
           // Allow `<html>` (or `<body>`) to get hints only if they are
@@ -650,10 +656,6 @@ export default class ElementManager {
 
         if (CLICKABLE_ROLES.has(element.getAttribute("role"))) {
           return "clickable";
-        }
-
-        if (!NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)) {
-          return "textarea";
         }
 
         if (
