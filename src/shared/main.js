@@ -192,6 +192,8 @@ export function partition<T>(
   return [left, right];
 }
 
+// TODO: Get rid of this when Chrome 70 comes out, which switched to stable sort.
+// See <https://twitter.com/mathias/status/1036626116654637057>.
 export function stableSort<T>(array: Array<T>, fn: (T, T) => number): Array<T> {
   if (BROWSER === "firefox") {
     // Firefox’s `Array.prototype.sort` is already stable.
