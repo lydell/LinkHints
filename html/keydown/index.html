@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>keydown</title>
+  </head>
+  <body>
+    <p>This page should not report any keydown events when triggering Synth shortcuts.</p>
+    <p><a href="#">link</a></p>
+
+    <p>Global keydown listener:</p>
+    <pre id="preGlobal">Press a key!</pre>
+
+    <p>Element keydown listener:</p>
+    <pre id="preElement" tabindex="0">Focus me and press a key!</pre>
+
+    <script>
+      window.addEventListener("keydown", event => {
+        console.log("page keydown listener", event);
+        preGlobal.textContent = stringifyEvent(event);
+      }, true);
+
+      preElement.addEventListener("keydown", event => {
+        console.log("element keydown listener", event);
+        preElement.textContent = stringifyEvent(event);
+      }, true);
+
+      function stringifyEvent(event) {
+        return JSON.stringify({
+          key: event.key,
+          code: event.code,
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        }, undefined, 2);
+      }
+    </script>
+  </body>
+</html>

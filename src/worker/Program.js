@@ -294,7 +294,11 @@ export default class WorkerProgram {
 
     if (match != null || this.keyboardOptions.suppressByDefault) {
       event.preventDefault();
-      event.stopPropagation();
+      // `event.stopPropagation()` prevents the event from propagating further
+      // up and down the DOM tree. `event.stopImmediatePropagation()` also
+      // prevents additional listeners on the same node (`window` in this case)
+      // from being called.
+      event.stopImmediatePropagation();
     }
 
     if (match != null) {
