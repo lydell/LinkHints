@@ -863,7 +863,7 @@ function getMeasurements(
     y: y + offsetY,
     area,
     align: hintPoint.align,
-    maxX,
+    maxX: maxX + offsetX,
   };
 }
 
