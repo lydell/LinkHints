@@ -43,10 +43,16 @@ const MAX_Z_INDEX = 2147483647;
 
 const CONTAINER_STYLES = {
   all: "unset",
+  // Allow scrolling away the hints.
   position: "absolute",
   "z-index": String(MAX_Z_INDEX),
   "pointer-events": "none",
   overflow: "hidden",
+};
+
+const CONTAINER_STYLES_TITLE = {
+  // Make the title “tooltip” stay at the bottom of the viewport when scrolling.
+  position: "fixed",
 };
 
 const font = BROWSER === "firefox" ? "font: menu;" : "font-family: system-ui;";
@@ -216,7 +222,7 @@ export default class RendererProgram {
             this.unrenderDelayed();
             break;
           case "title":
-            this.unrenderTitle(message.mode.title);
+            this.unrenderToTitle(message.mode.title);
             break;
           default:
             unreachable(message.mode.type, message);
@@ -519,7 +525,7 @@ export default class RendererProgram {
     }, UNRENDER_DELAY);
   }
 
-  unrenderTitle(title: string) {
+  unrenderToTitle(title: string) {
     const container = document.getElementById(CONTAINER_ID);
 
     if (container == null) {
@@ -535,6 +541,8 @@ export default class RendererProgram {
     if (this.unrenderTimeoutId != null) {
       clearTimeout(this.unrenderTimeoutId);
     }
+
+    setStyles(container, CONTAINER_STYLES_TITLE);
 
     const titleElement = document.createElement("div");
     titleElement.textContent = title;
