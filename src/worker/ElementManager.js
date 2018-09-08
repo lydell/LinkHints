@@ -496,11 +496,14 @@ export default class ElementManager {
     viewports: Array<Box>
   ): Promise<Array<VisibleElement>> {
     const injectedNeedsFlush = this.injectedHasQueue;
-    const needsFlush = this.queue.length > 0;
 
     if (injectedNeedsFlush) {
       sendInjectedMessage(MESSAGE_FLUSH);
     }
+
+    // If `injectedNeedsFlush` then `this.queue` will be modified, so check the
+    // length _after_ flusing injected.js.
+    const needsFlush = this.queue.length > 0;
 
     if (needsFlush) {
       this.flushQueue(infiniteDeadline);
