@@ -6,7 +6,6 @@ import {
   addListener,
   bind,
   log,
-  partition,
   unreachable,
   waitForPaint,
 } from "../shared/main";
@@ -111,6 +110,7 @@ export default class RendererProgram {
   css: string;
   parsedCSS: ?Array<Rule>;
   hints: Array<HTMLElement>;
+  rects: Map<HTMLElement, ClientRect>;
   unrenderTimeoutId: ?TimeoutID;
   resets: Resets;
 
@@ -118,6 +118,7 @@ export default class RendererProgram {
     this.css = CSS;
     this.parsedCSS = undefined;
     this.hints = [];
+    this.rects = new Map();
     this.unrenderTimeoutId = undefined;
     this.resets = new Resets();
 
@@ -418,7 +419,7 @@ export default class RendererProgram {
     // that the hints appear on screen as quickly as possible. Adjusting
     // positions is just a tweak – that can be delayed a little bit.
     if (numEdgeElements > 0) {
-      moveInsideViewport(edgeElements, viewport);
+      this.moveInsideViewport(edgeElements, viewport);
     }
 
     timestamps.moveInside1 = performance.now();
@@ -427,7 +428,7 @@ export default class RendererProgram {
 
     timestamps.paint1 = performance.now();
 
-    moveInsideViewport(restElements, viewport);
+    this.moveInsideViewport(restElements, viewport);
 
     timestamps.moveInside2 = performance.now();
 
@@ -481,16 +482,13 @@ export default class RendererProgram {
 
   rotateHints({ forward }: {| forward: boolean |}) {
     const sign = forward ? 1 : +1;
-    const stacks = getStacks(this.hints).map(stack =>
-      stack
-        .slice()
-        // All `z-index`:es are unique, so there’s no need for a stable sort.
-        .sort(
-          (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
-        )
-    );
+    const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
       if (stack.length >= 2) {
+        // All `z-index`:es are unique, so there’s no need for a stable sort.
+        stack.sort(
+          (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
+        );
         const [first, ...rest] = stack.map(element => element.style.zIndex);
         const zIndexes = [...rest, first];
         for (const [index, element] of stack.entries()) {
@@ -507,6 +505,7 @@ export default class RendererProgram {
     }
 
     this.hints = [];
+    this.rects.clear();
 
     const container = document.getElementById(CONTAINER_ID);
     if (container != null) {
@@ -567,12 +566,39 @@ export default class RendererProgram {
         element.remove();
       }
       this.hints = [];
+      this.rects.clear();
     }, UNRENDER_DELAY);
   }
 
   maybeApplyStyles(element: HTMLElement) {
     if (BROWSER === "firefox" && this.parsedCSS != null) {
       applyStyles(element, this.parsedCSS);
+    }
+  }
+
+  moveInsideViewport(elements: Array<HTMLElement>, viewport: Viewport) {
+    for (const element of elements) {
+      const rect = element.getBoundingClientRect();
+
+      // Save the rect for `rotateHints`.
+      this.rects.set(element, rect);
+
+      if (rect.left < 0) {
+        element.style.marginRight = `${Math.round(rect.left)}px`;
+      }
+      if (rect.top < 0) {
+        element.style.marginTop = `${Math.round(-rect.top)}px`;
+      }
+      if (rect.right > viewport.width) {
+        element.style.marginRight = `${Math.round(
+          rect.right - viewport.width
+        )}px`;
+      }
+      if (rect.bottom > viewport.height) {
+        element.style.marginTop = `${Math.round(
+          viewport.height - rect.bottom
+        )}px`;
+      }
     }
   }
 }
@@ -597,28 +623,6 @@ function emptyElement(element: HTMLElement) {
   }
 }
 
-function moveInsideViewport(elements: Array<HTMLElement>, viewport: Viewport) {
-  for (const element of elements) {
-    const rect = element.getBoundingClientRect();
-    if (rect.left < 0) {
-      element.style.marginRight = `${Math.round(rect.left)}px`;
-    }
-    if (rect.top < 0) {
-      element.style.marginTop = `${Math.round(-rect.top)}px`;
-    }
-    if (rect.right > viewport.width) {
-      element.style.marginRight = `${Math.round(
-        rect.right - viewport.width
-      )}px`;
-    }
-    if (rect.bottom > viewport.height) {
-      element.style.marginTop = `${Math.round(
-        viewport.height - rect.bottom
-      )}px`;
-    }
-  }
-}
-
 function createHintElement(hint: string): HTMLElement {
   const element = document.createElement("div");
   element.className = HINT_CLASS;
@@ -626,32 +630,54 @@ function createHintElement(hint: string): HTMLElement {
   return element;
 }
 
-function getStacks(elements: Array<HTMLElement>): Array<Array<HTMLElement>> {
-  if (elements.length === 0) {
-    return [];
+function getStacks(
+  originalElements: Array<HTMLElement>,
+  rects: Map<HTMLElement, ClientRect>
+): Array<Array<HTMLElement>> {
+  // `elements` will be mutated and eventually empty.
+  const elements = originalElements.slice();
+  const stacks = [];
+
+  while (elements.length > 0) {
+    stacks.push(getStackFor(elements.pop(), elements, rects));
   }
 
-  const [first, ...rest] = elements;
-  const { stack, remainder } = getStackFor(first, rest);
-
-  return [stack, ...getStacks(remainder)];
+  return stacks;
 }
 
+// Get an array containing `element` and all elements that overlap `element`, if
+// any, which is called a "stack". All elements in the returned stack are spliced
+// out from `elements`, thus mutating it.
 function getStackFor(
   element: HTMLElement,
-  rest: Array<HTMLElement>
-): {| stack: Array<HTMLElement>, remainder: Array<HTMLElement> |} {
-  const [overlapping, notOverlapping] = partition(rest, element2 =>
-    overlaps(element.getBoundingClientRect(), element2.getBoundingClientRect())
-  );
+  elements: Array<HTMLElement>,
+  rects: Map<HTMLElement, ClientRect>
+): Array<HTMLElement> {
+  const stack = [element];
 
-  return overlapping.reduce(
-    ({ stack, remainder }, element2) => {
-      const next = getStackFor(element2, remainder);
-      return { stack: [...stack, ...next.stack], remainder: next.remainder };
-    },
-    { stack: [element], remainder: notOverlapping }
-  );
+  let index = 0;
+  while (index < elements.length) {
+    const nextElement = elements[index];
+
+    // In practice, `rects` will already contain all rects needed (since all
+    // hint elements are run through `moveInsideViewport`), so
+    // `.getBoundingClientRect()` never hits here. That is a major performance
+    // boost.
+    const rect = rects.get(element) || element.getBoundingClientRect();
+    const nextRect =
+      rects.get(nextElement) || nextElement.getBoundingClientRect();
+
+    if (overlaps(nextRect, rect)) {
+      // Also get all elements overlapping this one.
+      elements.splice(index, 1);
+      stack.push(...getStackFor(nextElement, elements, rects));
+    } else {
+      // Continue the search.
+      index += 1;
+    }
+  }
+
+  return stack;
 }
 
 function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
