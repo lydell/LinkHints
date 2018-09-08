@@ -630,14 +630,22 @@ export default class ElementManager {
       default: {
         const document = element.ownerDocument;
 
+        if (
+          this.elementsWithScrollbars.has(element) &&
+          // Allow `<html>` (or `<body>`) to get hints only if they are
+          // scrollable and in a frame. This allows focusing frames to scroll
+          // them. In Chrome, `iframeElement.focus()` seems to allow for
+          // scrolling a specific frame, but I haven’t found a good way to show
+          // hints only for _scrollable_ frames.
+          !(element === document.scrollingElement && window.top === window)
+        ) {
+          return "scrollable";
+        }
+
         // `<html>` and `<body>` might have click listeners or role attributes
         // etc. but we never want hints for them.
         if (element === document.documentElement || element === document.body) {
           return undefined;
-        }
-
-        if (this.elementsWithScrollbars.has(element)) {
-          return "scrollable";
         }
 
         if (CLICKABLE_ROLES.has(element.getAttribute("role"))) {
@@ -1281,14 +1289,16 @@ function isScrollable(element: HTMLElement): boolean {
   return (
     // $FlowIgnore: See above.
     (element.scrollLeftMax > 0 &&
-      SCROLLABLE_OVERFLOW_VALUES.has(
+      (SCROLLABLE_OVERFLOW_VALUES.has(
         computedStyle.getPropertyValue("overflow-x")
-      )) ||
+      ) ||
+        element === document.scrollingElement)) ||
     // $FlowIgnore: See above.
     (element.scrollTopMax > 0 &&
-      SCROLLABLE_OVERFLOW_VALUES.has(
+      (SCROLLABLE_OVERFLOW_VALUES.has(
         computedStyle.getPropertyValue("overflow-y")
-      ))
+      ) ||
+        element === document.scrollingElement))
   );
 }
 
