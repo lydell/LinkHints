@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>contenteditable</title>
+  </head>
+  <body>
+    <p>Elements which the browser recognizes at contenteditable have a green outline. Those should get hints.</p>
+    <p>Number of elments green outlines: <span id="numRoots"></span></p>
+    <p>Number of elments where element.isContentEditable: <span id="numEditables"></span> (nested elements are considered contenteditable as well)</p>
+
+    <p>:not([contenteditable])</p>
+    <p contenteditable>[contenteditable]</p>
+    <p contenteditable="">[contenteditable=""]</p>
+    <p contenteditable="true">[contenteditable="true"]</p>
+    <p contenteditable="True">[contenteditable="True"]</p>
+    <p contenteditable="TRUE">[contenteditable="TRUE"]</p>
+    <p contenteditable="on">[contenteditable="on"]</p>
+    <p contenteditable="false">[contenteditable="false"]</p>
+    <p contenteditable="False">[contenteditable="False"]</p>
+    <p contenteditable="FALSE">[contenteditable="FALSE"]</p>
+    <p contenteditable="off">[contenteditable="off"]</p>
+    <p contenteditable="events">[contenteditable="events"]</p>
+    <p contenteditable="caret">[contenteditable="caret"]</p>
+    <p contenteditable="typing">[contenteditable="typing"]</p>
+    <p contenteditable="plaintext-only">[contenteditable="plaintext-only"]</p>
+
+    <div contenteditable="">
+      <p>paragraph one</p>
+      <p>paragraph two</p>
+    </div>
+
+    <div contenteditable="">
+      <p>paragraph one</p>
+      <p>paragraph two</p>
+      <p>paragraph three</p>
+      <p>paragraph four</p>
+    </div>
+
+    <div contenteditable="">
+      <p>contenteditable</p>
+      <div contenteditable="false">
+        <p>not contenteditable</p>
+        <div contenteditable="true">
+          <p>contenteditable</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="width: 200px;">Some text before <span contenteditable="">some content editable text that wraps several lines</span> and some text after.</p>
+
+    <script>
+      const elements = Array.from(document.querySelectorAll("*"));
+
+      const roots = elements.filter(element =>
+        element.contentEditable !== "false" &&
+        element.contentEditable !== "inherit"
+      );
+      const editables = elements.filter(element => element.isContentEditable);
+
+      numRoots.textContent = roots.length;
+      numEditables.textContent = editables.length;
+
+      for (const element of roots) {
+        element.style.outline = "2px solid green";
+      }
+    </script>
+  </body>
+</html>

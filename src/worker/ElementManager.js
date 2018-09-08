@@ -132,6 +132,21 @@ const CLICKABLE_ROLES = new Set([
   // "tabpanel",
 ]);
 
+// "true" indicates that contenteditable on. Chrome also supports
+// "plaintext-only". There may be more modes in the future, such as "caret", so
+// it’s better to only list the values that indicate that an element _isn’t_
+// contenteditable.
+const NON_CONTENTEDITABLE_VALUES = new Set([
+  // The default value. If a parent is contenteditable, it means that this
+  // element is as well (and `element.isContentEditable` is true). But we only
+  // want hints for the “root” contenteditable element.
+  "inherit",
+  // Explicitly turned off:
+  "false",
+  // The value for SVG elements:
+  undefined,
+]);
+
 const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 
 const FRAME_MIN_SIZE = 6; // px
@@ -145,6 +160,7 @@ const CLICKABLE_ATTRIBUTES = [
 ];
 
 const MUTATION_ATTRIBUTES = [
+  "contenteditable",
   "href",
   "role",
   ...CLICKABLE_EVENT_PROPS,
@@ -622,8 +638,10 @@ export default class ElementManager {
           return "scrollable";
         }
 
-        const roleAttr = element.getAttribute("role");
-        if (CLICKABLE_ROLES.has(roleAttr)) {
+        if (
+          CLICKABLE_ROLES.has(element.getAttribute("role")) ||
+          !NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)
+        ) {
           return "clickable";
         }
 
