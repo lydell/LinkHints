@@ -49,6 +49,8 @@ const CONTAINER_STYLES = {
   overflow: "hidden",
 };
 
+const font = BROWSER === "firefox" ? "font: menu;" : "font-family: system-ui;";
+
 const CSS = `
 .${HINT_CLASS} {
   position: absolute;
@@ -58,7 +60,7 @@ const CSS = `
   border: solid 1px rgba(0, 0, 0, 0.4);
   background-color: #ffd76e;
   color: black;
-  font: menu;
+  ${font}
   font-size: 12px;
   line-height: 1;
   font-weight: bold;
@@ -90,7 +92,7 @@ const CSS = `
   box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
   background-color: black;
   color: white;
-  font: menu;
+  ${font}
   font-size: 14px;
   line-height: 1;
   white-space: nowrap;
