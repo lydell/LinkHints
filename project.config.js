@@ -11,6 +11,11 @@ module.exports = {
   rimraf: "{src/compiled,src/icons/!(png-*|*.js)}",
   webextIgnoreFiles: [
     `*.js`,
+    // Having both of the following two patterns might seem redundant. The first
+    // is needed to make sure make sure changing non-compiled JS files don’t
+    // trigger the web-ext watcher during development. The second excludes empty
+    // directories from the production build.
+    `./!(compiled)/**/*.js`,
     `./!(compiled|icons|manifest.json)`,
     "icons/*.*",
     ...browserSpecificIgnores(currentBrowser),
