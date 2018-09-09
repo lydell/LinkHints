@@ -870,7 +870,7 @@ function getMeasurements(
 
   const { x, y } = nonCoveredPoint == null ? hintPoint : nonCoveredPoint;
 
-  // The coordinates at which to place the hint and the area of the element.
+  // Where to place the hint and the weight of the element.
   return {
     x: x + offsetX,
     y: y + offsetY,
