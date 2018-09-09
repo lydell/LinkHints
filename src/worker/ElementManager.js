@@ -64,6 +64,7 @@ export type HintMeasurements = {|
   area: number,
   align: "left" | "right",
   maxX: number,
+  weight: number,
 |};
 
 type Point = {|
@@ -886,6 +887,7 @@ function getMeasurements(
     area,
     align: hintPoint.align,
     maxX: maxX + offsetX,
+    weight: hintWeight(elementType, visibleBoxes),
   };
 }
 
@@ -1380,4 +1382,30 @@ function getXY(box: Box | ClientRect): {| x: number, y: number |} {
     // $FlowIgnore: See above.
     y: box.y + box.height / 2,
   };
+}
+
+function hintWeight(
+  elementType: ElementType,
+  visibleBoxes: Array<Box>
+): number {
+  // Use the height as the weight. In a list of links, all links will then get
+  // the same weight, since they have the same weight. (They’re all as important
+  // as the other.) A multiline link gets the height of one of its lines as
+  // weight. But use the width as weight if it is smaller so that very tall but
+  // not very wide elements aren’t over powered.
+  const weight = Math.min(
+    Math.max(...visibleBoxes.map(box => box.width)),
+    Math.max(...visibleBoxes.map(box => box.height))
+  );
+
+  // Use logarithms too make the difference between small and large elements
+  // smaller. Instead of an “image card” being 10 times heavier than a
+  // navigation link, it’ll only be about 3 times heavier. Give worse hints to
+  // scrollable elements by using a logarithm with a higher base. They are
+  // usually very large by nature, but not that commonly used. A tall scrollable
+  // element (1080px) gets a weight slightly smaller than that of a small link
+  // (12px high).
+  const lg = elementType === "scrollable" ? Math.log10 : Math.log2;
+
+  return Math.max(1, lg(weight));
 }

@@ -2,23 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>area-decimals</title>
+    <title>vertical area-decimals</title>
     <style>
-      #grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      #list {
+        display: flex;
+        flex-direction: column;
+        height: 900px;
       }
 
-      #grid > * {
+      #list > * {
+        flex: 1;
         display: flex;
         justify-content: center;
         align-items: center;
-        width: auto;
-        height: 112px;
         background-color: #eee;
       }
 
-      #grid > *:nth-child(even) {
+      #list > *:nth-child(even) {
         background-color: #ddd;
       }
     </style>
@@ -26,7 +26,7 @@
   <body>
     <p>All boxes are supposed to have the same area but differ ever so slightly:</p>
     <pre id="pre"></pre>
-    <div id="grid">
+    <div id="list">
       <a href="#">link</a>
       <a href="#">link</a>
       <a href="#">link</a>
@@ -55,7 +55,7 @@
       <a href="#">link</a>
     </div>
     <script>
-      const rects = Array.from(grid.querySelectorAll("a"), a => a.getBoundingClientRect());
+      const rects = Array.from(list.querySelectorAll("a"), a => a.getBoundingClientRect());
       const areas = new Set(rects.map(rect => rect.width * rect.height));
       const widths = new Set(rects.map(rect => rect.width));
       const heights = new Set(rects.map(rect => rect.height));

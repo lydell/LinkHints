@@ -15,7 +15,6 @@ import iconsChecksum from "../icons/checksum";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
-  ExtendedElementReport,
   FromBackground,
   FromPopup,
   FromRenderer,
@@ -493,13 +492,8 @@ export default class BackgroundProgram {
 
     const elementsWithHints = stableSort(
       hintsState.pendingElements.elements.map(element => ({
-        type: element.type,
-        index: element.index,
-        hintMeasurements: element.hintMeasurements,
-        url: element.url,
-        title: element.title,
-        frameId: element.frameId,
-        weight: hintWeight(element),
+        ...element,
+        weight: element.hintMeasurements.weight,
         hint: "",
       })),
       (a, b) => compareWeights(b, a)
@@ -902,35 +896,14 @@ function getIcons(type: IconType): { [string]: string } {
   );
 }
 
-// These types of elements can be very large, making them get much shorter hints
-// than they deserve. There’s also the case of `<div
-// onclick="..."><input></div>` where the hint for the `<div>` and the hint for
-// the `<input>` end up on top of each other. Usually only clicking the
-// `<input>` actually focuses the `<input>`, so giving it a better weight makes
-// sure it stays on top.
-const DOWN_PRIORITIZED_ELEMENT_TYPES: Set<ElementType> = new Set([
-  "clickable-event",
-  "scrollable",
-]);
-
-// The types of elements above get the area of a small-ish link (plus log2 of
-// their original area to distinguish the elements from each other somewhat).
-const DOWN_PRIORITIZED_ELEMENT_AREA = 1000; // px
-
-function hintWeight(element: ExtendedElementReport): number {
-  const { area } = element.hintMeasurements;
-  return DOWN_PRIORITIZED_ELEMENT_TYPES.has(element.type)
-    ? Math.min(area, DOWN_PRIORITIZED_ELEMENT_AREA + Math.log2(area))
-    : area;
-}
-
-// If there are a bunch boxes next to each other with seemingly the same area
+// If there are a bunch boxes next to each other with seemingly the same size
 // (and no other clickable elements around) the first box should get the first
 // hint chars as a hint, the second should get the second hint char, and so on.
-// However, the areas of the boxes can differ ever so slightly (usually by less
-// than 1px). If two elements have too little difference in area for a human to
-// detect, consider their areas equal.
-const MIN_WEIGHT_DIFF = 10; // Pixels of area.
+// However, the sizes of the boxes can differ ever so slightly (usually by less
+// than 1px). If two elements have too little difference in size for a human to
+// detect, consider their areas equal. These tiny size differences seem to
+// result in weights that differ by less than 1.
+const MIN_WEIGHT_DIFF = 1;
 
 function compareWeights<T: { weight: number }>(a: T, b: T): number {
   const diff = a.weight - b.weight;
