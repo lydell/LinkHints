@@ -270,29 +270,7 @@ export default class RendererProgram {
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
 
-    // If the `<html>` element has `transform: translate(...);` (some sites push
-    // the entire page to the side when opening a sidebar menu using this
-    // technique) we need to take that into account. When checking the bounding
-    // client rect of the `<html>` element there’s no need to take
-    // `window.scrollX` and `window.scrollY` into account anymore.
-    const rect = documentElement.getBoundingClientRect();
-
-    // If the `<html>` element has margins or borders they must also be
-    // accounted for. Padding, on the other hand, does not affect the
-    // positioning. Whether to account for margins or borders depends on
-    // `position`.
-    const computedStyle = window.getComputedStyle(documentElement);
-    const isStatic = computedStyle.getPropertyValue("position") === "static";
-    const left =
-      rect.left +
-      (isStatic
-        ? -parseFloat(computedStyle.getPropertyValue("margin-left"))
-        : parseFloat(computedStyle.getPropertyValue("border-left-width")));
-    const top =
-      rect.top +
-      (isStatic
-        ? -parseFloat(computedStyle.getPropertyValue("margin-top"))
-        : parseFloat(computedStyle.getPropertyValue("border-top-width")));
+    const { left, top } = getContainerPosition(documentElement);
 
     setStyles(container, {
       ...CONTAINER_STYLES,
@@ -527,9 +505,10 @@ export default class RendererProgram {
   }
 
   unrenderToTitle(title: string) {
+    const { documentElement } = document;
     const container = document.getElementById(CONTAINER_ID);
 
-    if (container == null) {
+    if (documentElement == null || container == null) {
       return;
     }
 
@@ -543,7 +522,12 @@ export default class RendererProgram {
       clearTimeout(this.unrenderTimeoutId);
     }
 
-    setStyles(container, CONTAINER_STYLES_TITLE);
+    const { left, top } = getContainerPosition(documentElement);
+    setStyles(container, {
+      ...CONTAINER_STYLES_TITLE,
+      left: `${-left - window.scrollX}px`,
+      top: `${-top - window.scrollY}px`,
+    });
 
     const titleElement = document.createElement("div");
     titleElement.textContent = title;
@@ -691,4 +675,34 @@ function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
     rectA.bottom >= rectB.top &&
     rectA.top <= rectB.bottom
   );
+}
+
+function getContainerPosition(
+  documentElement: HTMLElement
+): {| left: number, top: number |} {
+  // If the `<html>` element has `transform: translate(...);` (some sites push
+  // the entire page to the side when opening a sidebar menu using this
+  // technique) we need to take that into account. When checking the bounding
+  // client rect of the `<html>` element there’s no need to take
+  // `window.scrollX` and `window.scrollY` into account anymore.
+  const rect = documentElement.getBoundingClientRect();
+
+  // If the `<html>` element has margins or borders they must also be
+  // accounted for. Padding, on the other hand, does not affect the
+  // positioning. Whether to account for margins or borders depends on
+  // `position`.
+  const computedStyle = window.getComputedStyle(documentElement);
+  const isStatic = computedStyle.getPropertyValue("position") === "static";
+  const left =
+    rect.left +
+    (isStatic
+      ? -parseFloat(computedStyle.getPropertyValue("margin-left"))
+      : parseFloat(computedStyle.getPropertyValue("border-left-width")));
+  const top =
+    rect.top +
+    (isStatic
+      ? -parseFloat(computedStyle.getPropertyValue("margin-top"))
+      : parseFloat(computedStyle.getPropertyValue("border-top-width")));
+
+  return { left, top };
 }
