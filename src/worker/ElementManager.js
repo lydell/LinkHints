@@ -61,7 +61,6 @@ type Align = "left" | "right";
 export type HintMeasurements = {|
   x: number,
   y: number,
-  area: number,
   align: "left" | "right",
   maxX: number,
   weight: number,
@@ -766,9 +765,7 @@ function getMeasurements(
   // Ignore elements with only click listeners that are really large. These are
   // most likely not clickable, and only used for event delegation.
   if (elementType === "clickable-event" && rects.length === 1) {
-    const rect = rects[0];
-    const area = rect.width * rect.height;
-    if (area > MAX_CLICKABLE_EVENT_AREA) {
+    if (area(rects[0]) > MAX_CLICKABLE_EVENT_AREA) {
       return undefined;
     }
   }
@@ -825,12 +822,6 @@ function getMeasurements(
         })
       : getMultiRectPoint({ element, visibleBoxes, range });
 
-  // The entire visible area of the element.
-  const area = visibleBoxes.reduce(
-    (sum, box) => sum + box.width * box.height,
-    0
-  );
-
   const maxX = Math.max(...visibleBoxes.map(box => box.x + box.width));
 
   // Check that the element isn’t covered. A little bit expensive, but totally
@@ -848,7 +839,8 @@ function getMeasurements(
     if (
       element instanceof HTMLInputElement &&
       element.type === "file" &&
-      element.parentNode instanceof HTMLElement
+      element.parentNode instanceof HTMLElement &&
+      area(element.parentNode.getBoundingClientRect()) < area(rects[0])
     ) {
       const measurements = getMeasurements(
         element.parentNode,
@@ -856,9 +848,7 @@ function getMeasurements(
         viewports,
         range
       );
-      return measurements != null && measurements.area < area
-        ? measurements
-        : undefined;
+      return measurements == null ? undefined : measurements;
     }
 
     // CodeMirror editor uses a tiny hidden textarea positioned at the caret.
@@ -884,7 +874,6 @@ function getMeasurements(
   return {
     x: x + offsetX,
     y: y + offsetY,
-    area,
     align: hintPoint.align,
     maxX: maxX + offsetX,
     weight: hintWeight(elementType, visibleBoxes),
@@ -1382,6 +1371,10 @@ function getXY(box: Box | ClientRect): {| x: number, y: number |} {
     // $FlowIgnore: See above.
     y: box.y + box.height / 2,
   };
+}
+
+function area(rect: ClientRect): number {
+  return rect.width * rect.height;
 }
 
 function hintWeight(
