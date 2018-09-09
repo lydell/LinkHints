@@ -658,7 +658,7 @@ export default () => {
     // Immediately call another function so that `.toString()` gives away as
     // little as possible (especially the secret).
     // $FlowIgnore: It’s OK to call `noop` with as many params as you like.
-    value: (m, s) => external(m, s),
+    value: (...args) => external(...args),
     // The rest of the options default to being neither enumerable nor changable.
   });
 
