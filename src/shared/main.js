@@ -235,3 +235,25 @@ export function getTitle(element: HTMLElement): ?string {
   const trimmed = title.trim();
   return trimmed === "" ? undefined : trimmed;
 }
+
+export type Viewport = {|
+  width: number,
+  height: number,
+|};
+
+export function getViewport(): Viewport {
+  const { scrollingElement } = document;
+
+  if (scrollingElement == null) {
+    return { width: 0, height: 0 };
+  }
+
+  // `scrollingElement.client{Width,Height}` is the size of the viewport without
+  // scrollbars (unlike `window.inner{Width,Height}` which include the
+  // scrollbars). This works in both Firefox and Chrome, quirks and non-quirks
+  // mode and with strange styling like setting a width on `<html>`.
+  return {
+    width: scrollingElement.clientWidth,
+    height: scrollingElement.clientHeight,
+  };
+}

@@ -2,9 +2,11 @@
 
 import {
   Resets,
+  type Viewport,
   addEventListener,
   addListener,
   bind,
+  getViewport,
   log,
   unreachable,
   waitForPaint,
@@ -18,11 +20,6 @@ import type {
 } from "../data/Messages";
 
 import { type Rule, applyStyles, parseCSS } from "./css";
-
-type Viewport = {|
-  width: number,
-  height: number,
-|};
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -250,20 +247,13 @@ export default class RendererProgram {
 
     this.unrender();
 
-    const { documentElement, scrollingElement } = document;
+    const { documentElement } = document;
 
-    if (documentElement == null || scrollingElement == null) {
+    if (documentElement == null) {
       return;
     }
 
-    // `scrollingElement.client{Width,Height}` is the size of the viewport
-    // without scrollbars (unlike `window.inner{Width,Height}` which include the
-    // scrollbars). This works in both Firefox and Chrome, quirks and non-quirks
-    // mode and with strange styling like setting a width on `<html>`.
-    const viewport: Viewport = {
-      width: scrollingElement.clientWidth,
-      height: scrollingElement.clientHeight,
-    };
+    const viewport = getViewport();
 
     // I've tried creating the container in the constructor and re-using it for
     // all renders, but that didn't turn out to be faster.
