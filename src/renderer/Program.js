@@ -2,6 +2,7 @@
 
 import {
   Resets,
+  TimeTracker,
   type Viewport,
   addEventListener,
   addListener,
@@ -286,30 +287,18 @@ export default class RendererProgram {
   }
 
   async render(elements: Array<ElementWithHint>): Promise<void> {
-    const timestamps = {
-      collect: -1,
-      prepare: -1,
-      render: -1,
-      moveInside1: -1,
-      paint1: -1,
-      moveInside2: -1,
-      paint2: -1,
-    };
-
-    timestamps.collect = performance.now();
-
-    this.unrender();
-
     const { documentElement } = document;
 
     if (documentElement == null) {
       return;
     }
 
+    const time = new TimeTracker();
+
+    time.start("prepare");
+    this.unrender();
     const viewport = getViewport();
-
     this.updateContainer(viewport);
-
     const { root } = this.container;
 
     if (this.parsedCSS == null) {
@@ -368,12 +357,11 @@ export default class RendererProgram {
     probe1.remove();
     probe2.remove();
 
-    timestamps.prepare = performance.now();
-
     const edgeElements = [];
     const restElements = [];
     let numEdgeElements = 0;
 
+    time.start("loop");
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
@@ -423,39 +411,36 @@ export default class RendererProgram {
       }
     }
 
-    timestamps.render = performance.now();
-
     // Most hints are already correctly positioned, but some near the edges
     // might need to be moved a tiny bit to avoid being partially off-screen.
     // Do this in a separate animation frame if there are a lot of hints so
     // that the hints appear on screen as quickly as possible. Adjusting
     // positions is just a tweak – that can be delayed a little bit.
+    time.start("move inside 1");
     if (numEdgeElements > 0) {
       this.moveInsideViewport(edgeElements, viewport);
     }
 
-    timestamps.moveInside1 = performance.now();
-
+    time.start("paint 1");
     await waitForPaint();
 
-    timestamps.paint1 = performance.now();
+    const firstPaintTimestamp = performance.now();
 
+    time.start("move inside 2");
     const moved = this.moveInsideViewport(restElements, viewport);
-
-    timestamps.moveInside2 = performance.now();
 
     // Only measure the next paint if we actually moved any hints inside the
     // viewport during the second round. This makes the performance report more
     // relevant.
+    time.start("paint 2");
     if (moved) {
       await waitForPaint();
     }
 
-    timestamps.paint2 = performance.now();
-
     this.sendMessage({
       type: "Rendered",
-      timestamps,
+      firstPaintTimestamp,
+      durations: time.export(),
     });
   }
 

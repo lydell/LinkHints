@@ -1,11 +1,17 @@
 // @flow
 
-import { Resets, addListener, bind, log, unreachable } from "../shared/main";
+import {
+  type Durations,
+  Resets,
+  addListener,
+  bind,
+  log,
+  unreachable,
+} from "../shared/main";
 import type {
   FromBackground,
   FromPopup,
   TabState,
-  Timestamps,
   ToBackground,
 } from "../data/Messages";
 
@@ -91,9 +97,7 @@ export default class PopupProgram {
     if (tabState.perf.length > 0) {
       const average = document.createElement("p");
       const averageDuration = getAverage(
-        tabState.perf.map(({ startTime, timestamps }) =>
-          getMostImportantDuration(startTime, timestamps)
-        )
+        tabState.perf.map(({ timeToFirstPaint }) => timeToFirstPaint)
       );
       average.textContent = `Average: ${formatDuration(
         averageDuration
@@ -102,17 +106,40 @@ export default class PopupProgram {
 
       const list = document.createElement("ol");
       list.style.paddingLeft = "1em";
-      for (const { startTime, timestamps } of tabState.perf) {
-        const mostImportantDuration = getMostImportantDuration(
-          startTime,
-          timestamps
-        );
+      for (const {
+        timeToFirstPaint,
+        topDurations,
+        collectDurations,
+        renderDurations,
+      } of tabState.perf) {
         const li = document.createElement("li");
         const details = document.createElement("details");
         const summary = document.createElement("summary");
-        summary.textContent = `${formatDuration(mostImportantDuration)} ms`;
+        summary.textContent = `${formatDuration(timeToFirstPaint)} ms`;
         details.append(summary);
-        details.append(makeTimestampsList(startTime, timestamps));
+        const collectTables =
+          collectDurations.length === 1
+            ? [["Collect (no frames)", collectDurations[0].durations]]
+            : [
+                [
+                  "Collect total",
+                  sumDurations(
+                    collectDurations.map(({ durations }) => durations)
+                  ),
+                ],
+                ...collectDurations.map(({ url, durations }) => [
+                  `Collect ${url}`,
+                  durations,
+                ]),
+              ];
+        const tables = [
+          ["Top", topDurations],
+          ...collectTables,
+          ["Render", renderDurations],
+        ];
+        for (const [caption, durations] of tables) {
+          details.append(makeTimestampsList(caption, durations));
+        }
         li.append(details);
         list.append(li);
       }
@@ -171,30 +198,37 @@ function formatDuration(duration: number): string {
 }
 
 function makeTimestampsList(
-  startTime: number,
-  timestamps: Timestamps
+  captionText: string,
+  durations: Durations
 ): HTMLElement {
   const table = document.createElement("table");
+  const caption = document.createElement("caption");
   const headingsRow = document.createElement("tr");
   const padding = "0 5px";
+
+  caption.textContent = captionText;
+  caption.style.marginTop = "10px";
+  caption.style.padding = padding;
+  caption.style.fontSize = "1.2em";
+  caption.style.fontWeight = "bold";
+  table.append(caption);
 
   const headings = ["Phase", "Duration\xa0(ms)", "Total\xa0(ms)"];
   for (const [index, heading] of headings.entries()) {
     const th = document.createElement("th");
     th.textContent = heading;
     th.style.textAlign = index === 0 ? "left" : "right";
+    th.style.minWidth = index === 0 ? "12em" : "";
     th.style.padding = padding;
     headingsRow.append(th);
   }
   table.append(headingsRow);
 
-  let last = startTime;
-  for (const key of Object.keys(timestamps)) {
-    const timestamp = timestamps[key];
-    const duration = timestamp - last;
-    const total = timestamp - startTime;
+  let total = 0;
+  for (const [label, duration] of durations) {
+    total += duration;
     const tr = document.createElement("tr");
-    const items = [key, formatDuration(duration), formatDuration(total)];
+    const items = [label, formatDuration(duration), formatDuration(total)];
     for (const [index, item] of items.entries()) {
       const td = document.createElement("td");
       td.textContent = item;
@@ -203,14 +237,19 @@ function makeTimestampsList(
       tr.append(td);
     }
     table.append(tr);
-    last = timestamp;
   }
   return table;
 }
 
-function getMostImportantDuration(
-  startTime: number,
-  timestamps: Timestamps
-): number {
-  return timestamps.paint1 - startTime;
+function sumDurations(allDurations: Array<Durations>): Durations {
+  const result: Map<string, number> = new Map();
+
+  for (const durations of allDurations) {
+    for (const [label, duration] of durations) {
+      const previous = result.get(label) || 0;
+      result.set(label, previous + duration);
+    }
+  }
+
+  return Array.from(result);
 }

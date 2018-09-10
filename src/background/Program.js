@@ -4,6 +4,7 @@ import huffman from "n-ary-huffman";
 
 import {
   Resets,
+  TimeTracker,
   addListener,
   bind,
   log,
@@ -452,6 +453,11 @@ export default class BackgroundProgram {
           hintsState.pendingElements.pendingFrames.collecting - 1
         );
 
+        hintsState.durations.push({
+          url: info.url == null ? "?" : info.url,
+          durations: message.durations,
+        });
+
         if (message.numFrames === 0) {
           // If there are no frames, start hinting immediately, unless we're
           // waiting for frames in another frame.
@@ -561,6 +567,9 @@ export default class BackgroundProgram {
       return;
     }
 
+    const { time } = hintsState;
+    time.start("assign hints");
+
     const elementsWithHints = stableSort(
       hintsState.pendingElements.elements.map(element => ({
         ...element,
@@ -585,7 +594,9 @@ export default class BackgroundProgram {
     tabState.hintsState = {
       type: "Hinting",
       mode: hintsState.mode,
-      startTime: hintsState.pendingElements.startTime,
+      startTime: hintsState.startTime,
+      time,
+      durations: hintsState.durations,
       enteredHintChars: "",
       elementsWithHints,
     };
@@ -593,6 +604,8 @@ export default class BackgroundProgram {
       tabId,
       frameId: "all_frames",
     });
+
+    time.start("render");
     this.sendRendererMessage(
       {
         type: "Render",
@@ -624,12 +637,19 @@ export default class BackgroundProgram {
         if (hintsState.type !== "Hinting") {
           return;
         }
-        const { startTime } = hintsState;
-        const { timestamps } = message;
-        tabState.perf = [{ startTime, timestamps }, ...tabState.perf].slice(
-          0,
-          10
-        );
+        const { startTime, time, durations: collectDurations } = hintsState;
+        time.stop();
+        const { durations, firstPaintTimestamp } = message;
+        const timeToFirstPaint = firstPaintTimestamp - startTime;
+        tabState.perf = [
+          {
+            timeToFirstPaint,
+            topDurations: time.export(),
+            collectDurations,
+            renderDurations: durations,
+          },
+          ...tabState.perf,
+        ].slice(0, 10);
         break;
       }
 
@@ -693,6 +713,8 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Idle") {
           return;
         }
+        const time = new TimeTracker();
+        time.start("collect");
         this.sendWorkerMessage(
           {
             type: "StartFindElements",
@@ -711,9 +733,11 @@ export default class BackgroundProgram {
               answering: 0,
               collecting: 0,
             },
-            startTime: timestamp,
             elements: [],
           },
+          startTime: timestamp,
+          time,
+          durations: [],
           timeoutId: undefined,
         };
         setTimeout(() => {

@@ -2,6 +2,7 @@
 
 import {
   Resets,
+  type TimeTracker,
   addEventListener,
   bind,
   getTitle,
@@ -569,12 +570,16 @@ export default class ElementManager {
 
   async getVisibleElements(
     types: Set<ElementType>,
-    viewports: Array<Box>
+    viewports: Array<Box>,
+    time: TimeTracker
   ): Promise<Array<VisibleElement>> {
     // Make sure that the MutationObserver and the IntersectionObserver have had
     // a chance to run. This is important if you click a button that adds new
     // elements and really quickly enter hints mode after that.
+    time.start("flush observers");
     await this.flushObservers();
+
+    time.start("flush queues");
 
     const injectedNeedsFlush = this.injectedHasQueue;
 
@@ -597,12 +602,11 @@ export default class ElementManager {
     const candidates = this.bailed
       ? this.elements.keys()
       : this.visibleElements;
-
     const range = document.createRange();
-
     const deduper = new Deduper();
 
-    return Array.from(candidates, element => {
+    time.start("loop");
+    const maybeResults = Array.from(candidates, element => {
       const data = this.elements.get(element);
 
       if (data == null) {
@@ -639,7 +643,10 @@ export default class ElementManager {
       deduper.add(visibleElement);
 
       return visibleElement;
-    })
+    });
+
+    time.start("filter");
+    return maybeResults
       .filter(Boolean)
       .filter(result => !deduper.rejects(result));
   }

@@ -2,6 +2,7 @@
 
 import {
   Resets,
+  TimeTracker,
   addEventListener,
   addListener,
   bind,
@@ -395,13 +396,16 @@ export default class WorkerProgram {
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
   ): Promise<void> {
+    const time = new TimeTracker();
+
     const elements = await this.elementManager.getVisibleElements(
       types,
-      viewports
+      viewports,
+      time
     );
 
+    time.start("frames");
     const frames = this.elementManager.getVisibleFrames(viewports);
-
     for (const frame of frames) {
       const message: FrameMessage = {
         token: oneTimeWindowMessageToken,
@@ -411,6 +415,7 @@ export default class WorkerProgram {
       frame.contentWindow.postMessage(message, "*");
     }
 
+    time.start("report");
     this.sendMessage({
       type: "ReportVisibleElements",
       elements: elements.map(
@@ -426,6 +431,7 @@ export default class WorkerProgram {
         })
       ),
       numFrames: frames.length,
+      durations: time.export(),
     });
 
     this.elements = elements;

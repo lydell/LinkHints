@@ -1,8 +1,8 @@
 // @flow
 
 // TODO: Move these types somewhere.
+import type { Durations, LogLevel, TimeTracker } from "../shared/main";
 import type { ElementType, HintMeasurements } from "../worker/ElementManager";
-import type { LogLevel } from "../shared/main";
 
 import type {
   HintsMode,
@@ -63,6 +63,7 @@ export type FromWorker =
       type: "ReportVisibleElements",
       elements: Array<ElementReport>,
       numFrames: number,
+      durations: Durations,
     |}
   | {|
       type: "Interaction",
@@ -112,7 +113,8 @@ export type FromRenderer =
     |}
   | {|
       type: "Rendered",
-      timestamps: Timestamps,
+      durations: Durations,
+      firstPaintTimestamp: number,
     |};
 
 export type ToRenderer =
@@ -189,7 +191,12 @@ export type HintUpdate =
 
 export type TabState = {|
   hintsState: HintsState,
-  perf: Array<{| startTime: number, timestamps: Timestamps |}>,
+  perf: Array<{|
+    timeToFirstPaint: number,
+    topDurations: Durations,
+    collectDurations: Array<{| url: string, durations: Durations |}>,
+    renderDurations: Durations,
+  |}>,
 |};
 
 export type HintsState =
@@ -200,12 +207,17 @@ export type HintsState =
       type: "Collecting",
       mode: HintsMode,
       pendingElements: PendingElements,
+      startTime: number,
+      time: TimeTracker,
+      durations: Array<{| url: string, durations: Durations |}>,
       timeoutId: ?TimeoutID,
     |}
   | {|
       type: "Hinting",
       mode: HintsMode,
       startTime: number,
+      time: TimeTracker,
+      durations: Array<{| url: string, durations: Durations |}>,
       enteredHintChars: string,
       elementsWithHints: Array<ElementWithHint>,
     |};
@@ -215,16 +227,5 @@ export type PendingElements = {|
     answering: number,
     collecting: number,
   |},
-  startTime: number,
   elements: Array<ExtendedElementReport>,
-|};
-
-export type Timestamps = {|
-  collect: number,
-  prepare: number,
-  render: number,
-  moveInside1: number,
-  paint1: number,
-  moveInside2: number,
-  paint2: number,
 |};
