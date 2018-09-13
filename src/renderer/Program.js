@@ -398,11 +398,16 @@ export default class RendererProgram {
 
     timestamps.paint1 = performance.now();
 
-    this.moveInsideViewport(restElements, viewport);
+    const moved = this.moveInsideViewport(restElements, viewport);
 
     timestamps.moveInside2 = performance.now();
 
-    await waitForPaint();
+    // Only measure the next paint if we actually moved any hints inside the
+    // viewport during the second round. This makes the performance report more
+    // relevant.
+    if (moved) {
+      await waitForPaint();
+    }
 
     timestamps.paint2 = performance.now();
 
@@ -554,7 +559,12 @@ export default class RendererProgram {
     }
   }
 
-  moveInsideViewport(elements: Array<HTMLElement>, viewport: Viewport) {
+  moveInsideViewport(
+    elements: Array<HTMLElement>,
+    viewport: Viewport
+  ): boolean {
+    let moved = false;
+
     for (const element of elements) {
       const rect = element.getBoundingClientRect();
 
@@ -563,21 +573,27 @@ export default class RendererProgram {
 
       if (rect.left < 0) {
         setStyles(element, { "margin-right": `${Math.round(rect.left)}px` });
+        moved = true;
       }
       if (rect.top < 0) {
         setStyles(element, { "margin-top": `${Math.round(-rect.top)}px` });
+        moved = true;
       }
       if (rect.right > viewport.width) {
         setStyles(element, {
           "margin-right": `${Math.round(rect.right - viewport.width)}px`,
         });
+        moved = true;
       }
       if (rect.bottom > viewport.height) {
         setStyles(element, {
           "margin-top": `${Math.round(viewport.height - rect.bottom)}px`,
         });
+        moved = true;
       }
     }
+
+    return moved;
   }
 }
 
