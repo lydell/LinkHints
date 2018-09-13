@@ -826,6 +826,8 @@ function getMeasurements(
 
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes link hints in fixed menus so much easier find.
+  // If this runs in a frame, the element can still be covered by something in a
+  // parent frame, but it's not worth the trouble to try and check that.
   const nonCoveredPoint = getNonCoveredPoint(element, {
     x: hintPoint.x,
     y: hintPoint.y,
