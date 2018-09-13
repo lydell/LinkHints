@@ -204,12 +204,10 @@ export default class WorkerProgram {
         // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
         // requires the full mousedown+mouseup+click event sequence.
         element.element.dispatchEvent(
-          new window.MouseEvent("mousedown", { ...options, buttons: 1 })
+          new MouseEvent("mousedown", { ...options, buttons: 1 })
         );
-        element.element.dispatchEvent(
-          new window.MouseEvent("mouseup", options)
-        );
-        element.element.dispatchEvent(new window.MouseEvent("click", options));
+        element.element.dispatchEvent(new MouseEvent("mouseup", options));
+        element.element.dispatchEvent(new MouseEvent("click", options));
 
         if (element.element instanceof HTMLAnchorElement && target != null) {
           element.element.target = target;
