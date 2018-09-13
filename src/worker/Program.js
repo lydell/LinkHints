@@ -216,6 +216,24 @@ export default class WorkerProgram {
         break;
       }
 
+      // Used instead of `browser.tabs.create` in Chrome, to have the opened tab
+      // end up in the same position as if you'd clicked a link with the mouse.
+      // This technique does not seem to work in Firefox, but it's not needed
+      // there anyway (see background/Program.js).
+      case "OpenNewTab": {
+        const { url, foreground } = message;
+        const link = document.createElement("a");
+        link.href = url;
+        link.dispatchEvent(
+          new MouseEvent("click", {
+            ctrlKey: true,
+            metaKey: true,
+            shiftKey: foreground,
+          })
+        );
+        break;
+      }
+
       case "Escape": {
         if (document.activeElement != null) {
           document.activeElement.blur();

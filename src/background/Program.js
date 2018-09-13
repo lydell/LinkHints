@@ -482,11 +482,32 @@ export default class BackgroundProgram {
       },
       { tabId, frameId }
     );
-    await browser.tabs.create({
-      active: foreground,
-      url,
-      openerTabId: tabId,
-    });
+
+    // In Firefox, creating a tab with `openerTabId` works just like
+    // right-clicking a link and choosing "Open Link in New Tab" (basically,
+    // it's opened to the right of the current tab). In Chrome, created tabs are
+    // always opened at the end of the tab strip. However, dispatching a
+    // ctrl-click on an `<a>` element opens a tab just like ctrl-clicking it for
+    // real. I considered keeping track of where to open tabs manually for
+    // Chrome, but the logic for where to open tabs turned out to be too
+    // complicated to replicate in a good way, and there does not seem to be a
+    // downside of using the fake ctrl-click method in Chrome.
+    if (BROWSER === "chrome") {
+      this.sendWorkerMessage(
+        {
+          type: "OpenNewTab",
+          url,
+          foreground,
+        },
+        { tabId, frameId: TOP_FRAME_ID }
+      );
+    } else {
+      await browser.tabs.create({
+        active: foreground,
+        url,
+        openerTabId: tabId,
+      });
+    }
   }
 
   maybeStartHinting(tabState: TabState, tabId: number) {

@@ -87,6 +87,11 @@ export type ToWorker =
       index: number,
     |}
   | {|
+      type: "OpenNewTab",
+      url: string,
+      foreground: boolean,
+    |}
+  | {|
       type: "Escape",
     |};
 
