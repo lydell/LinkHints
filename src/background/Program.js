@@ -86,6 +86,7 @@ export default class BackgroundProgram {
       [this.onPopupMessage, { log: true, catch: true }],
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
+      [this.openNewTab, { catch: true }],
       [this.sendBackgroundMessage, { catch: true }],
       [this.sendContentMessage, { catch: true }],
       [this.sendPopupMessage, { log: true, catch: true }],
@@ -227,11 +228,7 @@ export default class BackgroundProgram {
     // Do nothing.
   }
 
-  async onWorkerMessage(
-    message: FromWorker,
-    info: MessageInfo,
-    tabState: TabState
-  ): Promise<void> {
+  onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
     switch (message.type) {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(
@@ -331,20 +328,12 @@ export default class BackgroundProgram {
                 );
                 break;
               }
-              this.sendWorkerMessage(
-                {
-                  type: "FocusElement",
-                  index: match.index,
-                },
-                {
-                  tabId: info.tabId,
-                  frameId: match.frameId,
-                }
-              );
-              await browser.tabs.create({
-                active: false,
+              this.openNewTab({
                 url,
-                openerTabId: info.tabId,
+                elementIndex: match.index,
+                tabId: info.tabId,
+                frameId: match.frameId,
+                foreground: false,
               });
               break;
 
@@ -352,25 +341,17 @@ export default class BackgroundProgram {
               if (url == null) {
                 log(
                   "error",
-                  "Cannot open background tab due to missing URL",
+                  "Cannot open foreground tab due to missing URL",
                   match
                 );
                 break;
               }
-              this.sendWorkerMessage(
-                {
-                  type: "FocusElement",
-                  index: match.index,
-                },
-                {
-                  tabId: info.tabId,
-                  frameId: match.frameId,
-                }
-              );
-              await browser.tabs.create({
-                active: true,
+              this.openNewTab({
                 url,
-                openerTabId: info.tabId,
+                elementIndex: match.index,
+                tabId: info.tabId,
+                frameId: match.frameId,
+                foreground: true,
               });
               break;
 
@@ -479,6 +460,33 @@ export default class BackgroundProgram {
       default:
         unreachable(message.type, message);
     }
+  }
+
+  async openNewTab({
+    url,
+    elementIndex,
+    tabId,
+    frameId,
+    foreground,
+  }: {|
+    url: string,
+    elementIndex: number,
+    tabId: number,
+    frameId: number,
+    foreground: boolean,
+  |}): Promise<void> {
+    this.sendWorkerMessage(
+      {
+        type: "FocusElement",
+        index: elementIndex,
+      },
+      { tabId, frameId }
+    );
+    await browser.tabs.create({
+      active: foreground,
+      url,
+      openerTabId: tabId,
+    });
   }
 
   maybeStartHinting(tabState: TabState, tabId: number) {
