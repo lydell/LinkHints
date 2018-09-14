@@ -364,7 +364,10 @@ export default class WorkerProgram {
         ({ element, data: { type }, measurements }, index) => ({
           type,
           index,
-          url: element instanceof HTMLAnchorElement ? element.href : undefined,
+          url:
+            type === "link" && element instanceof HTMLAnchorElement
+              ? element.href
+              : undefined,
           title: getTitle(element),
           hintMeasurements: measurements,
         })

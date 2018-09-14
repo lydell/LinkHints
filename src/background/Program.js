@@ -15,6 +15,7 @@ import iconsChecksum from "../icons/checksum";
 // TODO: Move this type somewhere.
 import type { ElementType } from "../worker/ElementManager";
 import type {
+  ElementWithHint,
   FromBackground,
   FromPopup,
   FromRenderer,
@@ -527,12 +528,18 @@ export default class BackgroundProgram {
       })),
       (a, b) => compareWeights(b, a)
     );
-    const tree = huffman.createTree(elementsWithHints, this.hintChars.length, {
-      sorted: true,
+    const combined = combineByHref(elementsWithHints);
+    const tree = huffman.createTree(combined, this.hintChars.length, {
       compare: compareWeights,
     });
     tree.assignCodeWords(this.hintChars, (item, codeWord) => {
-      item.hint = codeWord;
+      if (item instanceof Combined) {
+        for (const child of item.children) {
+          child.hint = codeWord;
+        }
+      } else {
+        item.hint = codeWord;
+      }
     });
     tabState.hintsState = {
       type: "Hinting",
@@ -960,4 +967,39 @@ function getBadgeText(hintsState: HintsState): string {
     default:
       return unreachable(hintsState.type);
   }
+}
+
+class Combined {
+  children: Array<ElementWithHint>;
+  weight: number;
+
+  constructor(children: Array<ElementWithHint>) {
+    this.children = children;
+    this.weight = Math.max(...children.map(child => child.weight));
+  }
+}
+
+function combineByHref(
+  elements: Array<ElementWithHint>
+): Array<Combined | ElementWithHint> {
+  const map: Map<string, Array<ElementWithHint>> = new Map();
+  const rest: Array<ElementWithHint> = [];
+
+  for (const element of elements) {
+    const { url } = element;
+    if (url != null) {
+      const previous = map.get(url);
+      if (previous != null) {
+        previous.push(element);
+      } else {
+        map.set(url, [element]);
+      }
+    } else {
+      rest.push(element);
+    }
+  }
+
+  return Array.from(map.values())
+    .map(children => new Combined(children))
+    .concat(rest);
 }
