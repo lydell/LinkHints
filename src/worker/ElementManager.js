@@ -107,7 +107,17 @@ const NON_WHITESPACE = /\S/;
 // “1,300”.
 const BADGE_TEXT = /^\s*[\d+%:.,\s]+[a-z]?\s*$/i;
 
-const LINK_PROTOCOLS = new Set(["http:", "https:", "ftp:", "file:"]);
+const LINK_PROTOCOLS = new Set(
+  [
+    "http:",
+    "https:",
+    "ftp:",
+    // Firefox does not allow opening `file://` URLs in new tabs, but Chrome
+    // does. Both allow _clicking_ them.
+    // See: <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create>
+    BROWSER === "chrome" ? "file:" : undefined,
+  ].filter(Boolean)
+);
 
 // http://w3c.github.io/aria/#widget_roles
 const CLICKABLE_ROLES = new Set([
