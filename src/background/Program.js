@@ -987,7 +987,11 @@ function combineByHref(
 
   for (const element of elements) {
     const { url } = element;
-    if (url != null) {
+    // The diff expander buttons on GitHub are links to the same fragment
+    // identifier. So are Bootstrap carousel next/previous “buttons”. So it’s
+    // not safe to combine links with fragment identifiers at all. I guess they
+    // aren’t as common anyway.
+    if (url != null && !url.includes("#")) {
       const previous = map.get(url);
       if (previous != null) {
         previous.push(element);
