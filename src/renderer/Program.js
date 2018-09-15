@@ -39,16 +39,10 @@ const MAX_Z_INDEX = 2147483647;
 
 const CONTAINER_STYLES = {
   all: "unset",
-  // Allow scrolling away the hints.
-  position: "absolute",
+  position: "fixed",
   "z-index": String(MAX_Z_INDEX),
   "pointer-events": "none",
   overflow: "hidden",
-};
-
-const CONTAINER_STYLES_TITLE = {
-  // Make the title “tooltip” stay at the bottom of the viewport when scrolling.
-  position: "fixed",
 };
 
 const font = BROWSER === "firefox" ? "font: menu;" : "font-family: system-ui;";
@@ -110,6 +104,12 @@ export default class RendererProgram {
   rects: Map<HTMLElement, ClientRect>;
   unrenderTimeoutId: ?TimeoutID;
   resets: Resets;
+  container: {|
+    element: HTMLElement,
+    root: ShadowRoot,
+    resets: Resets,
+    intersectionObserver: IntersectionObserver,
+  |};
 
   constructor() {
     this.css = CSS;
@@ -125,7 +125,28 @@ export default class RendererProgram {
       [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
+      this.onIntersection,
+      this.unrender,
     ]);
+
+    const container = document.createElement("div");
+    container.id = CONTAINER_ID;
+    setStyles(container, CONTAINER_STYLES);
+
+    // Using `mode: "closed"` is tempting, but then Firefox does not seem to
+    // allow inspecting the elements inside in its devtools. That's important
+    // for people who want to customize the styling of the hints.
+    const root = container.attachShadow({ mode: "open" });
+
+    this.container = {
+      element: container,
+      root,
+      resets: new Resets(),
+      intersectionObserver: new IntersectionObserver(this.onIntersection, {
+        // Make sure the container stays within the viewport.
+        threshold: 1,
+      }),
+    };
   }
 
   async start(): Promise<void> {
@@ -232,6 +253,26 @@ export default class RendererProgram {
     }
   }
 
+  onIntersection(entries: Array<IntersectionObserverEntry>) {
+    // There will only be one entry.
+    const entry = entries[0];
+    if (entry.intersectionRatio !== 1) {
+      requestAnimationFrame(() => {
+        this.updateContainer(entry.rootBounds);
+      });
+    }
+  }
+
+  updateContainer(viewport: { width: number, height: number }) {
+    const { left, top } = getContainerPosition();
+    setStyles(this.container.element, {
+      left: `${-left}px`,
+      top: `${-top}px`,
+      width: `${viewport.width}px`,
+      height: `${viewport.height}px`,
+    });
+  }
+
   async render(elements: Array<ElementWithHint>): Promise<void> {
     const timestamps = {
       collect: -1,
@@ -255,25 +296,9 @@ export default class RendererProgram {
 
     const viewport = getViewport();
 
-    // I've tried creating the container in the constructor and re-using it for
-    // all renders, but that didn't turn out to be faster.
-    const container = document.createElement("div");
-    container.id = CONTAINER_ID;
+    this.updateContainer(viewport);
 
-    const { left, top } = getContainerPosition(documentElement);
-
-    setStyles(container, {
-      ...CONTAINER_STYLES,
-      left: `${-left}px`,
-      top: `${-top}px`,
-      width: `${viewport.width}px`,
-      height: `${viewport.height}px`,
-    });
-
-    // Using `mode: "closed"` is tempting, but then Firefox does not seem to
-    // allow inspecting the elements inside in its devtools. That's important
-    // for people who want to customize the styling of the hints.
-    const root = container.attachShadow({ mode: "open" });
+    const { root } = this.container;
 
     if (this.parsedCSS == null) {
       // Inserting a `<style>` element is way faster than doing
@@ -296,7 +321,12 @@ export default class RendererProgram {
       }
     }
 
-    documentElement.append(container);
+    documentElement.append(this.container.element);
+    this.container.intersectionObserver.observe(this.container.element);
+    this.container.resets.add(
+      addEventListener(window, "resize", this.updateContainer),
+      addEventListener(window, "underflow", this.updateContainer)
+    );
 
     if (elements.length === 0) {
       const element = createHintElement("¯\\_(ツ)_/¯");
@@ -437,7 +467,7 @@ export default class RendererProgram {
       child.classList.toggle(HIDDEN_HINT_CLASS, update.type === "Hide");
 
       if (update.type === "Update") {
-        emptyElement(child);
+        emptyNode(child);
         if (update.matched !== "") {
           const matched = document.createElement("span");
           matched.className = MATCHED_CHARS_CLASS;
@@ -482,8 +512,15 @@ export default class RendererProgram {
     this.hints = [];
     this.rects.clear();
 
-    const container = document.getElementById(CONTAINER_ID);
-    if (container != null) {
+    this.container.element.remove();
+    emptyNode(this.container.root);
+    this.container.resets.reset();
+    this.container.intersectionObserver.disconnect();
+
+    // In theory there can be several left-over elements with `id=CONTAINER_ID`.
+    // `querySelectorAll` finds them all.
+    const containers = document.querySelectorAll(`#${CONTAINER_ID}`);
+    for (const container of containers) {
       container.remove();
     }
   }
@@ -500,45 +537,18 @@ export default class RendererProgram {
   }
 
   unrenderToTitle(title: string) {
-    const { documentElement } = document;
-    const container = document.getElementById(CONTAINER_ID);
-
-    if (documentElement == null || container == null) {
-      return;
-    }
-
-    const root = container.shadowRoot;
-
-    if (root == null) {
-      return;
-    }
-
     if (this.unrenderTimeoutId != null) {
       clearTimeout(this.unrenderTimeoutId);
     }
 
-    const { left, top } = getContainerPosition(documentElement);
-    setStyles(container, {
-      ...CONTAINER_STYLES_TITLE,
-      left: `${-left - window.scrollX}px`,
-      top: `${-top - window.scrollY}px`,
-    });
-
     const titleElement = document.createElement("div");
     titleElement.textContent = title;
     titleElement.className = TITLE_CLASS;
-    root.append(titleElement);
+    this.container.root.append(titleElement);
 
-    const resets = new Resets();
-
-    const removeTitle = () => {
-      resets.reset();
-      this.unrender();
-    };
-
-    resets.add(
-      addEventListener(window, "click", removeTitle),
-      addEventListener(window, "keydown", removeTitle)
+    this.container.resets.add(
+      addEventListener(window, "click", this.unrender),
+      addEventListener(window, "keydown", this.unrender)
     );
 
     this.unrenderTimeoutId = setTimeout(() => {
@@ -611,9 +621,9 @@ function setStyles(element: HTMLElement, styles: { [string]: string }) {
   }
 }
 
-function emptyElement(element: HTMLElement) {
-  while (element.firstChild != null) {
-    element.removeChild(element.firstChild);
+function emptyNode(node: Node) {
+  while (node.firstChild != null) {
+    node.removeChild(node.firstChild);
   }
 }
 
@@ -683,9 +693,13 @@ function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
   );
 }
 
-function getContainerPosition(
-  documentElement: HTMLElement
-): {| left: number, top: number |} {
+function getContainerPosition(): {| left: number, top: number |} {
+  const { documentElement } = document;
+
+  if (documentElement == null) {
+    return { left: 0, top: 0 };
+  }
+
   // If the `<html>` element has `transform: translate(...);` (some sites push
   // the entire page to the side when opening a sidebar menu using this
   // technique) we need to take that into account. When checking the bounding

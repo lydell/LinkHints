@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>intersection-observer-cover</title>
+    <style>
+      html {
+        transition: transform 200ms;
+      }
+
+      .shift {
+        transform: translateX(300px);
+      }
+
+      .scroll {
+        min-height: 200vh;
+        min-width: 200vw;
+      }
+
+      .buttons {
+        margin: 30px;
+      }
+
+      #cover {
+        position: fixed;
+        z-index: 1000;
+        box-sizing: border-box;
+        border: 10px solid red;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="buttons">
+      <button onclick="document.documentElement.classList.toggle('shift');">
+        Shift entire page
+      </button>
+
+      <button onclick="document.body.classList.toggle('scroll');">
+        Toggle scrollbars
+      </button>
+    </div>
+
+    <div id="cover"></div>
+    <script>
+      updateCover();
+
+      const observer = new IntersectionObserver(
+        entries => {
+          const entry = entries[0];
+          console.log("Intersection", entry);
+          if (entry.intersectionRatio !== 1) {
+            requestAnimationFrame(updateCover);
+          }
+        },
+        {
+          threshold: 1,
+        }
+      );
+
+      observer.observe(cover);
+
+      window.addEventListener("resize", updateCover);
+      window.addEventListener("underflow", updateCover);
+
+      function updateCover() {
+        const viewport = getViewport();
+        const position = getContainerPosition();
+        cover.style.width = `${viewport.width}px`;
+        cover.style.height = `${viewport.height}px`;
+        cover.style.left = `${-position.left}px`;
+        cover.style.top = `${-position.top}px`;
+      }
+
+      function getViewport() {
+        return {
+          width: document.scrollingElement.clientWidth,
+          height: document.scrollingElement.clientHeight,
+        };
+      }
+
+      function getContainerPosition() {
+        const { documentElement } = document;
+        const rect = documentElement.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(documentElement);
+        const isStatic = computedStyle.getPropertyValue("position") === "static";
+        const left =
+          rect.left +
+          (isStatic
+            ? -parseFloat(computedStyle.getPropertyValue("margin-left"))
+            : parseFloat(computedStyle.getPropertyValue("border-left-width")));
+        const top =
+          rect.top +
+          (isStatic
+            ? -parseFloat(computedStyle.getPropertyValue("margin-top"))
+            : parseFloat(computedStyle.getPropertyValue("border-top-width")));
+
+        return { left, top };
+      }
+    </script>
+  </body>
+</html>

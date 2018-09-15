@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>title for removed element</title>
+  </head>
+  <body>
+    <div id="container">
+      <p>When clicking this link, several things happen:</p>
+      <ol>
+        <li>The title of the link is shown.</li>
+        <li>After 2 seconds, the “next page” is shown. Should the shown title also be removed, since its element was removed? Or should it be removed because the URL changed?</li>
+        <li>A vertical scrollbar appears. The shown title should not end up underneath the scrollbar.</li>
+      </ol>
+      <p>Also test this <a href="removed-within-iframe.html">within an iframe</a>.</p>
+      <p>
+        <a href="#" id="next" title="Go to the next page">Next page</a>
+      </p>
+    </div>
+
+    <script>
+      container.addEventListener("click", () => {
+        next.textContent += " (loading…)";
+        setTimeout(() => {
+          container.textContent = "";
+          const now = Date.now();
+          const p = document.createElement("p");
+          p.textContent = `Next page, with scroll (${now})`;
+          p.style.paddingBottom = "120vh";
+          container.append(p);
+          window.parent.history.pushState(null, "", `?next=${now}`);
+        }, 2000);
+      }, {once: true});
+    </script>
+  </body>
+</html>
