@@ -384,8 +384,8 @@ export default class WorkerProgram {
     }
   }
 
-  onClick() {
-    if (this.trackInteractions) {
+  onClick(event: MouseEvent) {
+    if (event.isTrusted && this.trackInteractions) {
       this.sendMessage({ type: "Interaction" });
     }
   }
