@@ -575,9 +575,14 @@ export default class ElementManager {
   ): Promise<Array<VisibleElement>> {
     // Make sure that the MutationObserver and the IntersectionObserver have had
     // a chance to run. This is important if you click a button that adds new
-    // elements and really quickly enter hints mode after that.
+    // elements and really quickly enter hints mode after that. Only do this in
+    // the top frame, because that cuts the time to first paint in half on
+    // Twitter. Hopefully, while waiting for the observers in the top frame the
+    // child frame observers run too.
     time.start("flush observers");
-    await this.flushObservers();
+    if (window.top === window) {
+      await this.flushObservers();
+    }
 
     time.start("flush queues");
 
