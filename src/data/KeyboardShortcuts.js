@@ -35,4 +35,4 @@ export type KeyboardOptions = {|
   sendAll: boolean,
 |};
 
-export type HintsMode = "Click" | "BackgroundTab" | "ForegroundTab";
+export type HintsMode = "Click" | "BackgroundTab" | "ForegroundTab" | "Select";

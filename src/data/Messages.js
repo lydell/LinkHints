@@ -2,7 +2,11 @@
 
 // TODO: Move these types somewhere.
 import type { Durations, LogLevel, TimeTracker } from "../shared/main";
-import type { ElementType, HintMeasurements } from "../worker/ElementManager";
+import type {
+  ElementType,
+  ElementTypes,
+  HintMeasurements,
+} from "../worker/ElementManager";
 
 import type {
   HintsMode,
@@ -83,7 +87,7 @@ export type ToWorker =
     |}
   | {|
       type: "StartFindElements",
-      types: Array<ElementType>,
+      types: ElementTypes,
     |}
   | {|
       type: "FocusElement",
@@ -91,6 +95,11 @@ export type ToWorker =
     |}
   | {|
       type: "ClickElement",
+      index: number,
+      trackRemoval: boolean,
+    |}
+  | {|
+      type: "SelectElement",
       index: number,
       trackRemoval: boolean,
     |}

@@ -54,6 +54,12 @@
 
     <p style="width: 200px;">Some text before <span contenteditable="">some content editable text that wraps several lines</span> and some text after.</p>
 
+    <p contenteditable="true" tabindex="1">[tabindex="1"]</p>
+    <p contenteditable="true" tabindex="-1">[tabindex="-1"]</p>
+    <p contenteditable="true" tabindex="invalid">[tabindex="invalid"]</p>
+
+    <p contenteditable="true">last contenteditable</p>
+
     <script>
       const elements = Array.from(document.querySelectorAll("*"));
 

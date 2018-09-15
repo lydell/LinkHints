@@ -22,11 +22,11 @@ import type {
 } from "../data/KeyboardShortcuts";
 
 import ElementManager from "./ElementManager";
-import type { Box, ElementType, VisibleElement } from "./ElementManager";
+import type { Box, ElementTypes, VisibleElement } from "./ElementManager";
 
 type FrameMessage = {|
   token: string,
-  types: Set<ElementType>,
+  types: ElementTypes,
   viewports: Array<Box>,
 |};
 
@@ -144,7 +144,7 @@ export default class WorkerProgram {
           ...getViewport(),
         };
         this.reportVisibleElements(
-          new Set(message.types),
+          message.types,
           [viewport],
           oneTimeWindowMessageToken
         );
@@ -152,54 +152,33 @@ export default class WorkerProgram {
       }
 
       case "FocusElement": {
-        const element =
+        const elementData =
           this.elements == null ? undefined : this.elements[message.index];
-        if (element == null) {
+        if (elementData == null) {
           log("error", "FocusElement: Missing element", message, this.elements);
           return;
         }
-        element.element.focus();
+        const { element } = elementData;
+        element.focus();
         break;
       }
 
       case "ClickElement": {
-        const element =
+        const elementData =
           this.elements == null ? undefined : this.elements[message.index];
         const { trackRemoval } = message;
 
-        if (element == null) {
+        if (elementData == null) {
           log("error", "ClickElement: Missing element", message, this.elements);
           return;
         }
 
-        log("log", "WorkerProgram: ClickElement", element);
+        log("log", "WorkerProgram: ClickElement", elementData);
 
-        // Track if the element (or any of its parents) is removed. This is used
-        // to hide the title popup if its element is removed. If the element is
-        // in a frame, it could also be removed by removing one of its parent
-        // frames, but I don’t think it’s worth trying to detect that.
-        const { documentElement } = document;
-        if (trackRemoval && documentElement != null) {
-          if (this.mutationObserver != null) {
-            this.mutationObserver.disconnect();
-          }
-          const mutationObserver = new MutationObserver(records => {
-            const nodesWereRemoved = records.some(
-              record => record.removedNodes.length > 0
-            );
-            if (
-              nodesWereRemoved &&
-              !documentElement.contains(element.element)
-            ) {
-              mutationObserver.disconnect();
-              this.sendMessage({ type: "ClickedElementRemoved" });
-            }
-          });
-          mutationObserver.observe(documentElement, {
-            childList: true,
-            subtree: true,
-          });
-          this.mutationObserver = mutationObserver;
+        const { element } = elementData;
+
+        if (trackRemoval) {
+          this.trackRemoval(element);
         }
 
         // Programmatically clicking on an `<a href="..." target="_blank">`
@@ -209,14 +188,24 @@ export default class WorkerProgram {
         // want a new tab.
         let target = undefined;
         if (
-          element.element instanceof HTMLAnchorElement &&
-          element.element.target.toLowerCase() === "_blank"
+          element instanceof HTMLAnchorElement &&
+          element.target.toLowerCase() === "_blank"
         ) {
-          ({ target } = element.element);
-          element.element.target = "";
+          ({ target } = element);
+          element.target = "";
         }
 
-        const rect = element.element.getBoundingClientRect();
+        if (element instanceof HTMLMediaElement) {
+          element.focus();
+          if (element.paused) {
+            element.play();
+          } else {
+            element.pause();
+          }
+          return;
+        }
+
+        const rect = element.getBoundingClientRect();
         const options = {
           // Mimic real events as closely as possible.
           bubbles: true,
@@ -235,18 +224,92 @@ export default class WorkerProgram {
         // and the mouseup, but moving this line between those two
         // `.dispatchEvent` calls below causes dropdowns in gmail not to be
         // triggered anymore.
-        element.element.focus();
+        element.focus();
 
         // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
         // requires the full mousedown+mouseup+click event sequence.
-        element.element.dispatchEvent(
+        element.dispatchEvent(
           new MouseEvent("mousedown", { ...options, buttons: 1 })
         );
-        element.element.dispatchEvent(new MouseEvent("mouseup", options));
-        element.element.dispatchEvent(new MouseEvent("click", options));
+        element.dispatchEvent(new MouseEvent("mouseup", options));
+        element.dispatchEvent(new MouseEvent("click", options));
 
-        if (element.element instanceof HTMLAnchorElement && target != null) {
-          element.element.target = target;
+        if (element instanceof HTMLAnchorElement && target != null) {
+          element.target = target;
+        }
+
+        break;
+      }
+
+      case "SelectElement": {
+        const elementData =
+          this.elements == null ? undefined : this.elements[message.index];
+        const { trackRemoval } = message;
+
+        if (elementData == null) {
+          log(
+            "error",
+            "SelectElement: Missing element",
+            message,
+            this.elements
+          );
+          return;
+        }
+
+        log("log", "WorkerProgram: SelectElement", elementData);
+
+        const { element } = elementData;
+
+        if (trackRemoval) {
+          this.trackRemoval(element);
+        }
+
+        if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement
+        ) {
+          // Focus and, if possible, select the text inside. There are two cases
+          // here: "Text input" (`<textarea>`, `<input type="text">`, `<input
+          // type="search">`, `<input type="invalid">`, etc) style elements
+          // technically only need `.select()`, but it doesn't hurt calling
+          // `.focus()` first. For all other types (`<input type="checkbox">`,
+          // `<input type="color">`, etc) `.select()` seems to be a no-op, so
+          // `.focus()` is strictly needed but calling `.select()` also doesn't
+          // hurt.
+          element.focus();
+          element.select();
+        } else if (
+          // Text inside `<button>` elements can be selected and copied just
+          // fine in Chrome, but not in Firefox. In Firefox,
+          // `document.elementFromPoint(x, y)` returns the `<button>` for
+          // elements nested inside, causing them not to get hints either.
+          (BROWSER === "firefox" && element instanceof HTMLButtonElement) ||
+          // `<select>` elements _can_ be selected, but you seem to get the
+          // empty string when trying to copy them.
+          element instanceof HTMLSelectElement ||
+          // Frame elements can be selected in Chrome, but that just looks
+          // weird. The reason to focus a frame element is to allow the arrow
+          // keys to scroll them.
+          element instanceof HTMLIFrameElement ||
+          element instanceof HTMLFrameElement
+        ) {
+          element.focus();
+        } else {
+          // Focus the element, even if it isn't usually focusable.
+          focusElement(element);
+
+          // Try to select the text of the element, or the element itself.
+          const selection: Selection | null = window.getSelection();
+          if (selection != null) {
+            const range = document.createRange();
+            if (element.childNodes.length === 0) {
+              range.selectNode(element);
+            } else {
+              range.selectNodeContents(element);
+            }
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
 
         break;
@@ -392,7 +455,7 @@ export default class WorkerProgram {
   }
 
   async reportVisibleElements(
-    types: Set<ElementType>,
+    types: ElementTypes,
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
   ): Promise<void> {
@@ -436,6 +499,39 @@ export default class WorkerProgram {
 
     this.elements = elements;
   }
+
+  // Track if the element (or any of its parents) is removed. This is used to
+  // hide the title popup if its element is removed. If the element is in a
+  // frame, it could also be removed by removing one of its parent frames, but I
+  // don’t think it’s worth trying to detect that.
+  trackRemoval(element: HTMLElement) {
+    const { documentElement } = document;
+
+    if (documentElement == null) {
+      return;
+    }
+
+    if (this.mutationObserver != null) {
+      this.mutationObserver.disconnect();
+    }
+
+    const mutationObserver = new MutationObserver(records => {
+      const nodesWereRemoved = records.some(
+        record => record.removedNodes.length > 0
+      );
+      if (nodesWereRemoved && !documentElement.contains(element)) {
+        mutationObserver.disconnect();
+        this.sendMessage({ type: "ClickedElementRemoved" });
+      }
+    });
+
+    mutationObserver.observe(documentElement, {
+      childList: true,
+      subtree: true,
+    });
+
+    this.mutationObserver = mutationObserver;
+  }
 }
 
 function wrapMessage(message: FromWorker): ToBackground {
@@ -445,7 +541,11 @@ function wrapMessage(message: FromWorker): ToBackground {
   };
 }
 
-function parseTypes(rawTypes: any): Set<ElementType> {
+function parseTypes(rawTypes: any): ElementTypes {
+  if (rawTypes === "selectable") {
+    return rawTypes;
+  }
+
   try {
     // `rawTypes instanceof Set` doesn’t work when the `Set` comes from a posted
     // message. Instead, use duck typing.
@@ -518,4 +618,98 @@ function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {
     height:
       rect.height - border.top - border.bottom - padding.top - padding.bottom,
   };
+}
+
+// Focus any element. Temporarily alter tabindex if needed, and properly
+// restore it again when blurring.
+function focusElement(element: HTMLElement) {
+  if (element === document.activeElement) {
+    return;
+  }
+
+  const focusable = isFocusable(element);
+  const tabIndexAttr = element.getAttribute("tabindex");
+
+  if (!focusable) {
+    element.setAttribute("tabindex", "-1");
+  }
+
+  element.focus();
+
+  const { documentElement } = document;
+
+  if (!focusable && documentElement != null) {
+    const onBlur = () => {
+      if (tabIndexAttr == null) {
+        element.removeAttribute("tabindex");
+      } else {
+        element.setAttribute("tabindex", tabIndexAttr);
+      }
+      stop();
+    };
+
+    const options = { capture: true, passive: true };
+    element.addEventListener("blur", onBlur, options);
+
+    const mutationObserver = new MutationObserver(records => {
+      const removed = !documentElement.contains(element);
+      const tabindexChanged = records.some(
+        record => record.type === "attributes"
+      );
+      if (removed || tabindexChanged) {
+        stop();
+      }
+    });
+
+    const stop = () => {
+      element.removeEventListener("blur", onBlur, options);
+      mutationObserver.disconnect();
+    };
+
+    mutationObserver.observe(element, {
+      attributes: true,
+      attributeFilter: ["tabindex"],
+    });
+    mutationObserver.observe(documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  }
+}
+
+// https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
+const TABINDEX = /^\s*([+-]\d+)\s*$/;
+
+// Returns whether `element.focus()` will do anything or not.
+function isFocusable(element: HTMLElement): boolean {
+  const propValue = element.tabIndex;
+
+  // `<a>`, `<button>`, etc. are natively focusable (`.tabIndex === 0`).
+  // `.tabIndex` can also be set if the HTML contains a valid `tabindex`
+  // attribute.
+  // `-1` means either that the element isn't focusable, or that
+  // `tabindex="-1"` was set, so we have to use `.getAttribute` to
+  // disambiguate.
+  if (propValue !== -1) {
+    return true;
+  }
+
+  // Contenteditable elements are always focusable.
+  if (element.isContentEditable) {
+    return true;
+  }
+
+  const attrValue = element.getAttribute("tabindex");
+
+  if (attrValue == null) {
+    return false;
+  }
+
+  // In Firefox, elements are focusable if they have the tabindex attribute,
+  // regardless of whether it is valid or not.
+  if (BROWSER === "firefox") {
+    return true;
+  }
+
+  return TABINDEX.test(attrValue);
 }

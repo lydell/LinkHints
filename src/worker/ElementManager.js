@@ -47,6 +47,8 @@ export type ElementType =
   | "textarea"
   | "title";
 
+export type ElementTypes = Set<ElementType> | "selectable";
+
 type ElementData = {|
   type: ElementType,
 |};
@@ -570,7 +572,7 @@ export default class ElementManager {
   }
 
   async getVisibleElements(
-    types: Set<ElementType>,
+    types: ElementTypes,
     viewports: Array<Box>,
     time: TimeTracker
   ): Promise<Array<VisibleElement>> {
@@ -605,21 +607,31 @@ export default class ElementManager {
       await this.flushObservers();
     }
 
-    const candidates = this.bailed
-      ? this.elements.keys()
-      : this.visibleElements;
+    const candidates =
+      types === "selectable"
+        ? document.querySelectorAll("*")
+        : this.bailed
+          ? this.elements.keys()
+          : this.visibleElements;
     const range = document.createRange();
     const deduper = new Deduper();
 
     time.start("loop");
     const maybeResults = Array.from(candidates, element => {
-      const data = this.elements.get(element);
+      const data: ?ElementData =
+        types === "selectable"
+          ? { type: "clickable" }
+          : this.elements.get(element);
 
       if (data == null) {
         return undefined;
       }
 
-      if (!types.has(data.type)) {
+      if (types === "selectable") {
+        if (!isSelectable(element)) {
+          return undefined;
+        }
+      } else if (!types.has(data.type)) {
         return undefined;
       }
 
@@ -652,7 +664,11 @@ export default class ElementManager {
         measurements,
       };
 
-      deduper.add(visibleElement);
+      // In selectable mode we need to be able to select `<label>` text, and
+      // click listeners aren't taken into account at all, so skip the deduping.
+      if (types !== "selectable") {
+        deduper.add(visibleElement);
+      }
 
       return visibleElement;
     });
@@ -711,6 +727,8 @@ export default class ElementManager {
       case "BUTTON":
       case "SELECT":
       case "SUMMARY":
+      case "AUDIO":
+      case "VIDEO":
         return "clickable";
       case "INPUT":
         // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
@@ -736,9 +754,10 @@ export default class ElementManager {
           this.elementsWithScrollbars.has(element) &&
           // Allow `<html>` (or `<body>`) to get hints only if they are
           // scrollable and in a frame. This allows focusing frames to scroll
-          // them. In Chrome, `iframeElement.focus()` seems to allow for
-          // scrolling a specific frame, but I haven’t found a good way to show
-          // hints only for _scrollable_ frames.
+          // them. In Chrome, `iframeElement.focus()` allows for scrolling a
+          // specific frame, but I haven’t found a good way to show hints only
+          // for _scrollable_ frames. Chrome users can use the "select element"
+          // command instead. See `isSelectable`.
           !(element === document.scrollingElement && window.top === window)
         ) {
           return "scrollable";
@@ -1494,4 +1513,57 @@ function hintWeight(
   const lg = elementType === "scrollable" ? Math.log10 : Math.log2;
 
   return Math.max(1, lg(weight));
+}
+
+function isSelectable(element: HTMLElement): boolean {
+  switch (element.nodeName) {
+    // Always consider the following elements as selectable, regardless of their
+    // children, since they have special context menu items. A
+    // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
+    // an be skipped otherwise. Making frames selectable also allows Chrome
+    // users to scroll frames using the arrow keys. It would be convenient to
+    // give frames hints during regular click hints mode for that reason, but
+    // unfortunately for example Twitter uses iframes for many of its little
+    // widgets/embeds which would result in many unnecessary/confusing hints.
+    case "A":
+    case "AUDIO":
+    case "BUTTON":
+    case "CANVAS":
+    case "FRAME":
+    case "IFRAME":
+    case "IMG":
+    case "SELECT":
+    case "TEXTAREA":
+    case "VIDEO":
+      return true;
+    case "INPUT":
+      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
+      return element.type !== "hidden";
+    default: {
+      // If an element has no child _elements_ (but possibly child text nodes),
+      // consider it selectable. This allows focusing `<div>`-based "buttons"
+      // with only a background image as icon inside. It also catches many
+      // elements with text without having to iterate through all child text
+      // nodes.
+      if (element.childElementCount === 0) {
+        return true;
+      }
+
+      // Allow showing the title attribute without clicking on the element.
+      if (getTitle(element) != null) {
+        return true;
+      }
+
+      // If the element has at least one immediate non-blank text node, consider
+      // it selectable. If an element contains only other elements, whitespace
+      // and comments it is a "wrapper" element that would just cause duplicate
+      // hints.
+      for (const node of element.childNodes) {
+        if (node instanceof Text && NON_WHITESPACE.test(node.data)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
 }

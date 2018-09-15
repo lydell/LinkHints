@@ -104,6 +104,34 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
       mode: "ForegroundTab",
     },
   },
+  {
+    shortcut: {
+      key: "K",
+      code: "KeyK",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Select",
+    },
+  },
+  {
+    shortcut: {
+      key: "T",
+      code: "KeyT",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Select",
+    },
+  },
 ];
 
 const hintsKeyboardShortcuts: Array<KeyboardMapping> = [

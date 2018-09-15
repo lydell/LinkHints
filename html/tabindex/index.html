@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>focus</title>
+    <style>
+      *:focus {
+        outline: 4px solid magenta;
+      }
+    </style>
+  </head>
+  <body>
+    <ol>
+      <li>Select an element using Synth.</li>
+      <li>Optionally press one of the below keys.</li>
+      <li>Optionally wait for the timeout.</li>
+      <li>Blur the element.</li>
+      <li>The tabindex should not have been changed by Synth.</li>
+    </ol>
+
+    <p>Keys:</p>
+    <ul>
+      <li><kbd>a</kbd>: Change tabindex attribute in 2 seconds.</li>
+      <li><kbd>p</kbd>: Change tabindex property in 2 seconds.</li>
+      <li><kbd>d</kbd>: Delete the element in 2 seconds.</li>
+    </ul>
+
+    <div id="container">
+      <a href="#">link</a>
+      <div></div>
+      <div tabindex="0"></div>
+      <div tabindex="1"></div>
+      <div tabindex="-1"></div>
+      <div tabindex="-2"></div>
+      <div tabindex=""></div>
+      <div tabindex="invalid"></div>
+      <div tabindex=" 23 "></div>
+    </div>
+
+    <script>
+      const observer = new MutationObserver(records => {
+        for (const record of records) {
+          update(record.target);
+        }
+      });
+
+      let i = 0;
+      const values = [null, "text", "", -3, 3];
+
+      for (const element of container.children) {
+        update(element);
+        observer.observe(element, { attributeFilter: ["tabindex"] });
+
+        element.addEventListener("click", event => {
+          element.focus();
+        })
+
+        element.addEventListener("keydown", event => {
+          setTimeout(() => {
+            const value = values[i % values.length];
+            switch (event.key) {
+              case "d":
+                element.remove();
+                break;
+              case "a":
+                element.setAttribute("tabindex", value);
+                i++;
+                break;
+              case "p":
+                element.tabIndex = value;
+                i++;
+                break;
+              default:
+                // Do nothing.
+            }
+          }, 2000);
+        });
+      }
+
+      function update(element) {
+        element.textContent = `[tabindex=${JSON.stringify(element.getAttribute("tabindex"))}] .tabIndex===${JSON.stringify(element.tabIndex)}`;
+      }
+    </script>
+  </body>
+</html>

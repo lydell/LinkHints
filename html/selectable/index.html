@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>selectable</title>
+    <style media="screen">
+      .background {
+        width: 100px;
+        height: 100px;
+        background-image: url("image.svg");
+        background-size: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Selectable elements</h1>
+    <p>Also try selecting things in:</p>
+    <ul>
+      <li><a href="../all-types/index.html">all-types</a></li>
+      <li><a href="../media/index.html">media</a></li>
+      <li><a href="../frames/monster/index.html">frames monster</a></li>
+    </ul>
+
+    <p>Simple text</p>
+    <p>Simple text with <em>nested</em> element.</p>
+
+    <div>
+      Wrappers:
+      <div>
+        <!-- comment -->
+        <div>
+          <p><span>deeply nested</span></p>
+        </div>
+      </div>
+    </div>
+
+    <p><a href="#"><em>Links always get a hint, even if they just wrap somehting else.</em></a></p>
+
+    <p>&lt;img&gt;:</p>
+    <img src="image.svg" alt="">
+
+    <p>Background image:</p>
+    <div class="background"></div>
+
+    <p>&lt;canvas&gt;:</p>
+    <canvas width="100" height="100"></canvas>
+
+    <p>&lt;canvas&gt; with fallback content:</p>
+    <canvas width="100" height="100">
+      <p>Your browser does not support canvas.</p>
+    </canvas>
+
+    <script>
+      for (const canvas of document.querySelectorAll("canvas")) {
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "red";
+        ctx.fillRect(0, 0, 100, 100);
+      }
+    </script>
+  </body>
+</html>

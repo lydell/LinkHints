@@ -14,7 +14,7 @@ import {
 } from "../shared/main";
 import iconsChecksum from "../icons/checksum";
 // TODO: Move this type somewhere.
-import type { ElementType } from "../worker/ElementManager";
+import type { ElementTypes } from "../worker/ElementManager";
 import type {
   ElementWithHint,
   FromBackground,
@@ -370,6 +370,33 @@ export default class BackgroundProgram {
               });
               break;
 
+            case "Select": {
+              this.sendWorkerMessage(
+                {
+                  type: "SelectElement",
+                  index: match.index,
+                  trackRemoval: title != null,
+                },
+                {
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                }
+              );
+              if (title != null) {
+                this.sendWorkerMessage(
+                  {
+                    type: "TrackInteractions",
+                    track: true,
+                  },
+                  {
+                    tabId: info.tabId,
+                    frameId: "all_frames",
+                  }
+                );
+              }
+              break;
+            }
+
             default:
               unreachable(hintsState.mode);
           }
@@ -382,7 +409,8 @@ export default class BackgroundProgram {
             {
               type: "Unrender",
               mode:
-                hintsState.mode === "Click" && title != null
+                (hintsState.mode === "Click" || hintsState.mode === "Select") &&
+                title != null
                   ? { type: "title", title }
                   : { type: "delayed" },
             },
@@ -894,10 +922,10 @@ function makeEmptyTabState(): TabState {
   };
 }
 
-function getHintsTypes(mode: HintsMode): Array<ElementType> {
+function getHintsTypes(mode: HintsMode): ElementTypes {
   switch (mode) {
     case "Click":
-      return [
+      return new Set([
         "clickable",
         "clickable-event",
         "label",
@@ -905,13 +933,16 @@ function getHintsTypes(mode: HintsMode): Array<ElementType> {
         "scrollable",
         "textarea",
         "title",
-      ];
+      ]);
 
     case "BackgroundTab":
-      return ["link"];
+      return new Set(["link"]);
 
     case "ForegroundTab":
-      return ["link"];
+      return new Set(["link"]);
+
+    case "Select":
+      return "selectable";
 
     default:
       return unreachable(mode);
