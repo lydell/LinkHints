@@ -264,13 +264,25 @@ export default class RendererProgram {
   }
 
   updateContainer(viewport: { width: number, height: number }) {
-    const { left, top } = getContainerPosition();
-    setStyles(this.container.element, {
-      left: `${-left}px`,
-      top: `${-top}px`,
+    const container = this.container.element;
+
+    setStyles(container, {
+      left: "0",
+      top: "0",
       width: `${viewport.width}px`,
       height: `${viewport.height}px`,
     });
+
+    // If the `<html>` element has `transform: translate(...);` (some sites push
+    // the entire page to the side when opening a sidebar menu using this
+    // technique) we need to take that into account.
+    const rect = container.getBoundingClientRect();
+    if (rect.left !== 0) {
+      setStyles(container, { left: `${-rect.left}px` });
+    }
+    if (rect.top !== 0) {
+      setStyles(container, { top: `${-rect.top}px` });
+    }
   }
 
   async render(elements: Array<ElementWithHint>): Promise<void> {
@@ -679,38 +691,4 @@ function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
     rectA.bottom >= rectB.top &&
     rectA.top <= rectB.bottom
   );
-}
-
-function getContainerPosition(): {| left: number, top: number |} {
-  const { documentElement } = document;
-
-  if (documentElement == null) {
-    return { left: 0, top: 0 };
-  }
-
-  // If the `<html>` element has `transform: translate(...);` (some sites push
-  // the entire page to the side when opening a sidebar menu using this
-  // technique) we need to take that into account. When checking the bounding
-  // client rect of the `<html>` element there’s no need to take
-  // `window.scrollX` and `window.scrollY` into account anymore.
-  const rect = documentElement.getBoundingClientRect();
-
-  // If the `<html>` element has margins or borders they must also be
-  // accounted for. Padding, on the other hand, does not affect the
-  // positioning. Whether to account for margins or borders depends on
-  // `position`.
-  const computedStyle = window.getComputedStyle(documentElement);
-  const isStatic = computedStyle.getPropertyValue("position") === "static";
-  const left =
-    rect.left +
-    (isStatic
-      ? -parseFloat(computedStyle.getPropertyValue("margin-left"))
-      : parseFloat(computedStyle.getPropertyValue("border-left-width")));
-  const top =
-    rect.top +
-    (isStatic
-      ? -parseFloat(computedStyle.getPropertyValue("margin-top"))
-      : parseFloat(computedStyle.getPropertyValue("border-top-width")));
-
-  return { left, top };
 }
