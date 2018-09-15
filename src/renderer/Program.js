@@ -298,7 +298,6 @@ export default class RendererProgram {
     time.start("prepare");
     this.unrender();
     const viewport = getViewport();
-    this.updateContainer(viewport);
     const { root } = this.container;
 
     if (this.parsedCSS == null) {
@@ -323,6 +322,7 @@ export default class RendererProgram {
     }
 
     documentElement.append(this.container.element);
+    this.updateContainer(viewport);
     this.container.intersectionObserver.observe(this.container.element);
     this.container.resets.add(
       addEventListener(window, "resize", this.updateContainer),
