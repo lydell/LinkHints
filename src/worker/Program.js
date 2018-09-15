@@ -39,6 +39,7 @@ export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardOptions: KeyboardOptions;
   trackInteractions: boolean;
+  mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
   elements: ?Array<VisibleElement>;
   oneTimeWindowMessageToken: ?string;
@@ -51,6 +52,7 @@ export default class WorkerProgram {
       sendAll: false,
     };
     this.trackInteractions = false;
+    this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
     });
@@ -162,6 +164,7 @@ export default class WorkerProgram {
       case "ClickElement": {
         const element =
           this.elements == null ? undefined : this.elements[message.index];
+        const { trackRemoval } = message;
 
         if (element == null) {
           log("error", "ClickElement: Missing element", message, this.elements);
@@ -169,6 +172,34 @@ export default class WorkerProgram {
         }
 
         log("log", "WorkerProgram: ClickElement", element);
+
+        // Track if the element (or any of its parents) is removed. This is used
+        // to hide the title popup if its element is removed. If the element is
+        // in a frame, it could also be removed by removing one of its parent
+        // frames, but I don’t think it’s worth trying to detect that.
+        const { documentElement } = document;
+        if (trackRemoval && documentElement != null) {
+          if (this.mutationObserver != null) {
+            this.mutationObserver.disconnect();
+          }
+          const mutationObserver = new MutationObserver(records => {
+            const nodesWereRemoved = records.some(
+              record => record.removedNodes.length > 0
+            );
+            if (
+              nodesWereRemoved &&
+              !documentElement.contains(element.element)
+            ) {
+              mutationObserver.disconnect();
+              this.sendMessage({ type: "ClickedElementRemoved" });
+            }
+          });
+          mutationObserver.observe(documentElement, {
+            childList: true,
+            subtree: true,
+          });
+          this.mutationObserver = mutationObserver;
+        }
 
         // Programmatically clicking on an `<a href="..." target="_blank">`
         // causes the popup blocker to block the new tab/window from opening.
@@ -251,6 +282,10 @@ export default class WorkerProgram {
 
       case "TrackInteractions":
         this.trackInteractions = message.track;
+        if (!this.trackInteractions && this.mutationObserver != null) {
+          this.mutationObserver.disconnect();
+          this.mutationObserver = undefined;
+        }
         break;
 
       default:

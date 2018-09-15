@@ -66,6 +66,9 @@ export type FromWorker =
     |}
   | {|
       type: "Interaction",
+    |}
+  | {|
+      type: "ClickedElementRemoved",
     |};
 
 export type ToWorker =
@@ -88,6 +91,7 @@ export type ToWorker =
   | {|
       type: "ClickElement",
       index: number,
+      trackRemoval: boolean,
     |}
   | {|
       type: "OpenNewTab",
