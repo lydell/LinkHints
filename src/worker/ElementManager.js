@@ -7,7 +7,7 @@ import {
   getTitle,
   log,
   partition,
-  waitForPaint,
+  setStyles,
 } from "../shared/main";
 
 import injected, {
@@ -184,6 +184,19 @@ const MUTATION_ATTRIBUTES = [
 // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
 const IMAGE_SELECTOR = "img, svg, [class*='icon' i], [class|='fa']";
 
+// If the `<html>` element has for example `transform: translate(-10px, -10px);`
+// it can cause the probe to be off-screen, but both Firefox and Chrome seem to
+// trigger the IntersectionObserver anyway so we can safely position the probe
+// at (0, 0).
+const PROBE_STYLES = {
+  all: "unset",
+  position: "fixed",
+  top: "0",
+  left: "0",
+  width: "1px",
+  height: "1px",
+};
+
 const infiniteDeadline = {
   timeRemaining: () => Infinity,
 };
@@ -203,6 +216,8 @@ export default class ElementManager {
   idleCallbackId: ?IdleCallbackID;
   bailed: boolean;
   resets: Resets;
+  probe: HTMLElement;
+  observerProbeCallback: ?() => void;
 
   constructor({
     maxIntersectionObservedElements,
@@ -234,6 +249,11 @@ export default class ElementManager {
     this.idleCallbackId = undefined;
     this.bailed = false;
     this.resets = new Resets();
+
+    const probe = document.createElement("div");
+    setStyles(probe, PROBE_STYLES);
+    this.probe = probe;
+    this.observerProbeCallback = undefined;
 
     bind(this, [
       this.onClickableElements,
@@ -340,12 +360,20 @@ export default class ElementManager {
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
+    let probed = false;
+
     for (const entry of entries) {
-      if (entry.isIntersecting) {
+      if (entry.target === this.probe) {
+        probed = true;
+      } else if (entry.isIntersecting) {
         this.visibleElements.add(entry.target);
       } else {
         this.visibleElements.delete(entry.target);
       }
+    }
+
+    if (probed && this.observerProbeCallback != null) {
+      this.observerProbeCallback();
     }
   }
 
@@ -366,9 +394,13 @@ export default class ElementManager {
   }
 
   onMutation(records: Array<MutationRecord>) {
+    let probed = false;
+
     for (const record of records) {
       for (const node of record.addedNodes) {
-        if (
+        if (node === this.probe) {
+          probed = true;
+        } else if (
           node instanceof HTMLIFrameElement ||
           node instanceof HTMLFrameElement
         ) {
@@ -383,7 +415,9 @@ export default class ElementManager {
       }
 
       for (const node of record.removedNodes) {
-        if (
+        if (node === this.probe) {
+          probed = true;
+        } else if (
           node instanceof HTMLIFrameElement ||
           node instanceof HTMLFrameElement
         ) {
@@ -400,6 +434,10 @@ export default class ElementManager {
           this.queueItem({ mutationType: "changed", element });
         }
       }
+    }
+
+    if (probed && this.observerProbeCallback != null) {
+      this.observerProbeCallback();
     }
   }
 
@@ -501,10 +539,43 @@ export default class ElementManager {
     this.queue = [];
   }
 
+  flushObservers(): Promise<void> {
+    const { documentElement } = document;
+
+    if (documentElement == null) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      const intersectionCallback = () => {
+        this.observerProbeCallback = undefined;
+        this.intersectionObserver.unobserve(this.probe);
+        this.probe.remove();
+        resolve();
+      };
+
+      const mutationCallback = () => {
+        this.observerProbeCallback = intersectionCallback;
+        this.intersectionObserver.observe(this.probe);
+      };
+
+      // Trigger first the MutationObserver, then the IntersectionObserver.
+      // `this.observerProbeCallback` like this is a bit ugly, but it works (at
+      // least until we need concurrent flushes).
+      this.observerProbeCallback = mutationCallback;
+      documentElement.append(this.probe);
+    });
+  }
+
   async getVisibleElements(
     types: Set<ElementType>,
     viewports: Array<Box>
   ): Promise<Array<VisibleElement>> {
+    // Make sure that the MutationObserver and the IntersectionObserver have had
+    // a chance to run. This is important if you click a button that adds new
+    // elements and really quickly enter hints mode after that.
+    await this.flushObservers();
+
     const injectedNeedsFlush = this.injectedHasQueue;
 
     if (injectedNeedsFlush) {
@@ -519,17 +590,8 @@ export default class ElementManager {
       this.flushQueue(infiniteDeadline);
     }
 
-    if (
-      injectedNeedsFlush ||
-      needsFlush ||
-      // Firefox oddly does not report any elements as visible when entering
-      // hints mode for the first time on some pages. `this.elements` is
-      // populated, but `this.visisbleElements` isn't. Waiting for the next
-      // paint works around the problem.
-      (!this.bailed && this.visibleElements.size === 0)
-    ) {
-      // The IntersectionObserver triggers after paint.
-      await waitForPaint();
+    if (injectedNeedsFlush || needsFlush) {
+      await this.flushObservers();
     }
 
     const candidates = this.bailed

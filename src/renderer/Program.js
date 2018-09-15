@@ -8,6 +8,7 @@ import {
   bind,
   getViewport,
   log,
+  setStyles,
   unreachable,
   waitForPaint,
 } from "../shared/main";
@@ -606,13 +607,6 @@ function wrapMessage(message: FromRenderer): ToBackground {
     type: "FromRenderer",
     message,
   };
-}
-
-function setStyles(element: HTMLElement, styles: { [string]: string }) {
-  for (const [property, value] of Object.entries(styles)) {
-    // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
-    element.style.setProperty(property, value, "important");
-  }
 }
 
 function emptyNode(node: Node) {

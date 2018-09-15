@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>heavy dom</title>
+    <style>
+      html {
+        /* This does not appear to break the observer probe. */
+        transform: translate(-10px, -10px);
+      }
+
+      body {
+        margin: 20px;
+      }
+
+      #container {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+      }
+
+      .highlighted {
+        background-color: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Click this button using hints twice in super quick succession. All elements should get hints both times.</p>
+    <button onclick="refresh();">Refresh</button>
+    <div id="container"></div>
+    <script>
+      refresh();
+
+      function refresh() {
+        container.textContent = "";
+        container.classList.toggle("highlighted");
+
+        for (let i = 0; i < 1e3; i++) {
+          const a = document.createElement("a");
+          a.href = "#";
+          a.textContent = "link";
+          container.append(a);
+        }
+      }
+    </script>
+  </body>
+</html>
