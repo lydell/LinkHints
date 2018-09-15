@@ -44,7 +44,8 @@ export type ElementType =
   | "label"
   | "link"
   | "scrollable"
-  | "textarea";
+  | "textarea"
+  | "title";
 
 type ElementData = {|
   type: ElementType,
@@ -628,6 +629,12 @@ export default class ElementManager {
         return undefined;
       }
 
+      // Ignore elements with title inside links and buttons. They most likely
+      // cause duplicate hints.
+      if (data.type === "title" && element.closest("a, button") != null) {
+        return undefined;
+      }
+
       const measurements = getMeasurements(
         element,
         data.type,
@@ -748,7 +755,7 @@ export default class ElementManager {
         }
 
         if (getTitle(element) != null) {
-          return "clickable";
+          return "title";
         }
 
         if (

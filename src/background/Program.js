@@ -904,6 +904,7 @@ function getHintsTypes(mode: HintsMode): Array<ElementType> {
         "link",
         "scrollable",
         "textarea",
+        "title",
       ];
 
     case "BackgroundTab":
