@@ -1004,8 +1004,8 @@ function getIcons(type: IconType): { [string]: string } {
 // However, the sizes of the boxes can differ ever so slightly (usually by less
 // than 1px). If two elements have too little difference in size for a human to
 // detect, consider their areas equal. These tiny size differences seem to
-// result in weights that differ by less than 1.
-const MIN_WEIGHT_DIFF = 1;
+// result in weights that differ by less than 0.1.
+const MIN_WEIGHT_DIFF = 0.1;
 
 function compareWeights<T: { weight: number }>(a: T, b: T): number {
   const diff = a.weight - b.weight;
