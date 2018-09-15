@@ -17,6 +17,18 @@
         margin-top: 40px;
       }
 
+      .content-only::after {
+        content: "CSS content";
+      }
+
+      .content-before::before {
+        content: "CSS content ";
+      }
+
+      .content-after::after {
+        content: " CSS content";
+      }
+
       .icon-button {
         padding: 0;
         width: 80px;
@@ -403,6 +415,12 @@
     <p><a href="#">&nbsp;starts with non-breaking space</a></p>
     <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> starts with svg icon</a></p>
     <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> starts with span</a></p>
+
+    <h2>CSS content</h2>
+    <p>The position of CSS content cannot be queried, so even if these look like a regular links the hint might not end up in the expected position:</p>
+    <p><a href="#" class="content-only"></a></p>
+    <p><a href="#" class="content-before">HTML text</a></p>
+    <p><a href="#" class="content-after">HTML text</a></p>
 
     <h2>&lt;input type="button"&gt;, &lt;input type="text"&gt; and similar</h2>
     <p>These don't have real text nodes, but reading border and padding many times give a good enough result.</p>
