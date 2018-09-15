@@ -318,6 +318,18 @@ export default class BackgroundProgram {
                   frameId: match.frameId,
                 }
               );
+              if (title != null) {
+                this.sendWorkerMessage(
+                  {
+                    type: "TrackInteractions",
+                    track: true,
+                  },
+                  {
+                    tabId: info.tabId,
+                    frameId: "all_frames",
+                  }
+                );
+              }
               break;
 
             case "BackgroundTab":
@@ -457,6 +469,26 @@ export default class BackgroundProgram {
         }
         break;
       }
+
+      case "Interaction":
+        this.sendWorkerMessage(
+          {
+            type: "TrackInteractions",
+            track: false,
+          },
+          {
+            tabId: info.tabId,
+            frameId: "all_frames",
+          }
+        );
+        this.sendRendererMessage(
+          {
+            type: "Unrender",
+            mode: { type: "immediate" },
+          },
+          { tabId: info.tabId }
+        );
+        break;
 
       default:
         unreachable(message.type, message);

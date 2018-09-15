@@ -38,6 +38,7 @@ const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardOptions: KeyboardOptions;
+  trackInteractions: boolean;
   elementManager: ElementManager;
   elements: ?Array<VisibleElement>;
   oneTimeWindowMessageToken: ?string;
@@ -49,6 +50,7 @@ export default class WorkerProgram {
       suppressByDefault: false,
       sendAll: false,
     };
+    this.trackInteractions = false;
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
     });
@@ -57,6 +59,7 @@ export default class WorkerProgram {
     this.resets = new Resets();
 
     bind(this, [
+      [this.onClick, { catch: true }],
       [this.onKeydown, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
@@ -70,6 +73,7 @@ export default class WorkerProgram {
   async start(): Promise<void> {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
+      addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage)
     );
@@ -245,6 +249,10 @@ export default class WorkerProgram {
         break;
       }
 
+      case "TrackInteractions":
+        this.trackInteractions = message.track;
+        break;
+
       default:
         unreachable(message.type, message);
     }
@@ -292,8 +300,12 @@ export default class WorkerProgram {
   // (at least for now) the Synth shortcuts always do their thing (making it
   // impossible to trigger a site shortcut using the same keys).
   onKeydown(event: KeyboardEvent) {
-    if (!event.isTrusted || event.defaultPrevented) {
+    if (!event.isTrusted) {
       return;
+    }
+
+    if (this.trackInteractions) {
+      this.sendMessage({ type: "Interaction" });
     }
 
     const match = this.keyboardShortcuts.find(
@@ -334,6 +346,12 @@ export default class WorkerProgram {
           shiftKey: event.shiftKey,
         },
       });
+    }
+  }
+
+  onClick() {
+    if (this.trackInteractions) {
+      this.sendMessage({ type: "Interaction" });
     }
   }
 

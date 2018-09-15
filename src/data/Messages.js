@@ -63,6 +63,9 @@ export type FromWorker =
       type: "ReportVisibleElements",
       elements: Array<ElementReport>,
       numFrames: number,
+    |}
+  | {|
+      type: "Interaction",
     |};
 
 export type ToWorker =
@@ -93,6 +96,10 @@ export type ToWorker =
     |}
   | {|
       type: "Escape",
+    |}
+  | {|
+      type: "TrackInteractions",
+      track: boolean,
     |};
 
 export type FromRenderer =

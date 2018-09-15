@@ -126,7 +126,6 @@ export default class RendererProgram {
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
       this.onIntersection,
-      this.unrender,
     ]);
 
     const container = document.createElement("div");
@@ -545,11 +544,6 @@ export default class RendererProgram {
     titleElement.textContent = title;
     titleElement.className = TITLE_CLASS;
     this.container.root.append(titleElement);
-
-    this.container.resets.add(
-      addEventListener(window, "click", this.unrender),
-      addEventListener(window, "keydown", this.unrender)
-    );
 
     this.unrenderTimeoutId = setTimeout(() => {
       this.unrenderTimeoutId = undefined;
