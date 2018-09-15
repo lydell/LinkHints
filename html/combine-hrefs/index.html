@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>combined href</title>
+    <style>
+      body {
+        margin: 30px;
+      }
+
+      body > * + * {
+        margin-top: 3em;
+      }
+
+      a::after {
+        content: " " attr(href);
+      }
+
+      a[target]::after {
+        content: "[target=" attr(target) "]: " attr(href) ;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>All of these links go to the same place and should get the same hint:</p>
+      <p><a href="https://example.com"></a></p>
+      <p><a href="https://example.com"></a></p>
+      <p><a href="https://example.com/"></a></p>
+      <p><a href="https://example.com/."></a></p>
+      <p><a href="https://example.com/.."></a></p>
+      <p><a href="https://example.com/../"></a></p>
+      <p><a href="https://example.com/../../."></a></p>
+      <p><a href="https://example.com:443"></a></p>
+      <p><a href="HTTPS://EXAMPLE.COM"></a></p>
+      <iframe src="iframe.html" height="40"></iframe>
+      <p><a href="https://example.com" target="_blank"></a></p>
+      <p>(target=_blank is ignored when clicking links.)</p>
+    </div>
+
+    <div>
+      <p>The following links should <em>not</em> get the same hint as any of the above:</p>
+      <p><a href="http://example.com"></a></p>
+      <p><a href="example.com"></a></p>
+      <p><a href="https://example.com/path"></a></p>
+      <p><a href="https://example.com/?query=param"></a></p>
+      <p><a href="https://example.com/?"></a></p>
+      <p><a href="https://example.com/#hash"></a></p>
+      <p><a href="https://example.com/#"></a></p>
+    </div>
+
+    <div>
+      <p>Fragment identifier links can be combined:</p>
+      <p><a href="https://example.com/#frag"></a></p>
+      <p><a href="https://example.com/#frag"></a></p>
+      <p><a href="https://example.com/#FRAG"></a></p>
+      <p><a href="https://example.com/#FRAG"></a></p>
+      <p><a href="#frag"></a></p>
+      <p><a href="#frag"></a></p>
+      <p><a href="#frag" class="full"></a></p>
+      <p>(In Firefox, the last three links are only combined if serving this page on localhost.)</p>
+    </div>
+
+    <div>
+      <p>These “link buttons” might appear to have the same href sometimes, but should <em>not</em> get the same hint:</p>
+      <p><a>no href button</a></p>
+      <p><a>no href button</a></p>
+      <p><a href="">empty href button</a></p>
+      <p><a href="">empty href button</a></p>
+      <p><a href="#">empty hash button:</a></p>
+      <p><a href="#">empty hash button:</a></p>
+      <p><a href="#" class="full">empty hash button:</a></p>
+      <p><a href="javascript:">javascript button:</a></p>
+      <p><a href="javascript:">javascript button:</a></p>
+    </div>
+
+    <div>
+      <p>Other protocols <em>might</em> also combine hints:</p>
+      <p><a href="tel:123"></a></p>
+      <p><a href="tel:123"></a></p>
+      <p><a href="mailto:me@example.com"></a></p>
+      <p><a href="mailto:me@example.com"></a></p>
+      <p><a href="ftp://speedtest.tele2.net/"></a></p>
+      <p><a href="ftp://speedtest.tele2.net/"></a></p>
+      <p><a href="file:///"></a></p>
+      <p><a href="file:///"></a></p>
+      <p>(This is uncommon, so it’s not worth spending code on.)</p>
+    </div>
+
+    <script>
+      for (const element of document.querySelectorAll(".full")) {
+        element.setAttribute("href", location.href + element.getAttribute("href"));
+      }
+    </script>
+  </body>
+</html>
