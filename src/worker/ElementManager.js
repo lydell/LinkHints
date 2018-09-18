@@ -1529,9 +1529,11 @@ function isSelectable(element: HTMLElement): boolean {
     case "AUDIO":
     case "BUTTON":
     case "CANVAS":
+    case "EMBED":
     case "FRAME":
     case "IFRAME":
     case "IMG":
+    case "OBJECT":
     case "SELECT":
     case "TEXTAREA":
     case "VIDEO":
