@@ -159,7 +159,14 @@ export default class WorkerProgram {
           return;
         }
         const { element } = elementData;
-        element.focus();
+        const { activeElement } = document;
+        const textInputIsFocused =
+          activeElement != null && isTextInput(activeElement);
+        // Allow opening links in new tabs without losing focus from a text
+        // input.
+        if (!textInputIsFocused) {
+          element.focus();
+        }
         break;
       }
 
@@ -270,7 +277,7 @@ export default class WorkerProgram {
         ) {
           // Focus and, if possible, select the text inside. There are two cases
           // here: "Text input" (`<textarea>`, `<input type="text">`, `<input
-          // type="search">`, `<input type="invalid">`, etc) style elements
+          // type="search">`, `<input type="unknown">`, etc) style elements
           // technically only need `.select()`, but it doesn't hurt calling
           // `.focus()` first. For all other types (`<input type="checkbox">`,
           // `<input type="color">`, etc) `.select()` seems to be a no-op, so
@@ -712,4 +719,19 @@ function isFocusable(element: HTMLElement): boolean {
   }
 
   return TABINDEX.test(attrValue);
+}
+
+function isTextInput(element: HTMLElement): boolean {
+  return (
+    element.isContentEditable ||
+    element instanceof HTMLTextAreaElement ||
+    // `.selectionStart` is set to a number for all `<input>` types that you can
+    // type regular text into (`<input type="text">`, `<input type="search">`,
+    // `<input type="unknown">`, etc), but not for `<input type="email">` and
+    // `<input type="number">` for some reason.
+    (element instanceof HTMLInputElement &&
+      (element.selectionStart != null ||
+        element.type === "email" ||
+        element.type === "number"))
+  );
 }
