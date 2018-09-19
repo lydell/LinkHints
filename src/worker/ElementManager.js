@@ -43,11 +43,19 @@ export type ElementType =
   | "clickable-event"
   | "label"
   | "link"
+  | "selectable"
   | "scrollable"
   | "textarea"
   | "title";
 
 const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
+
+// Give worse hints to scrollable elements and (selectable) frames. They are
+// usually very large by nature, but not that commonly used. Give all selectable
+// elements worse hints than links and buttons, so that the elements found in
+// regular click hints mode stay on top in crowded areas such as `<div
+// title="..."><a href="..."><img src="..."></a></div>`.
+const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
 export type ElementTypes = Set<ElementType> | "selectable";
 
@@ -622,18 +630,14 @@ export default class ElementManager {
     const maybeResults = Array.from(candidates, element => {
       const data: ?ElementData =
         types === "selectable"
-          ? { type: "clickable" }
+          ? getElementDataSelectable(element)
           : this.elements.get(element);
 
       if (data == null) {
         return undefined;
       }
 
-      if (types === "selectable") {
-        if (!isSelectable(element)) {
-          return undefined;
-        }
-      } else if (!types.has(data.type)) {
+      if (types !== "selectable" && !types.has(data.type)) {
         return undefined;
       }
 
@@ -704,7 +708,7 @@ export default class ElementManager {
     }).filter(Boolean);
   }
 
-  getElementData(element: HTMLElement): ?{| type: ElementType |} {
+  getElementData(element: HTMLElement): ?ElementData {
     const type = this.getElementType(element);
     return type == null ? undefined : { type };
   }
@@ -759,7 +763,7 @@ export default class ElementManager {
           // them. In Chrome, `iframeElement.focus()` allows for scrolling a
           // specific frame, but I haven’t found a good way to show hints only
           // for _scrollable_ frames. Chrome users can use the "select element"
-          // command instead. See `isSelectable`.
+          // command instead. See `getElementTypeSelectable`.
           !(element === document.scrollingElement && window.top === window)
         ) {
           return "scrollable";
@@ -1508,16 +1512,20 @@ function hintWeight(
   // Use logarithms too make the difference between small and large elements
   // smaller. Instead of an “image card” being 10 times heavier than a
   // navigation link, it’ll only be about 3 times heavier. Give worse hints to
-  // scrollable elements by using a logarithm with a higher base. They are
-  // usually very large by nature, but not that commonly used. A tall scrollable
-  // element (1080px) gets a weight slightly smaller than that of a small link
-  // (12px high).
-  const lg = elementType === "scrollable" ? Math.log10 : Math.log2;
+  // some types, such as scrollable elements, by using a logarithm with a higher
+  // base. A tall scrollable element (1080px) gets a weight slightly smaller
+  // than that of a small link (12px high).
+  const lg = WORSE_HINT_TYPES.has(elementType) ? Math.log10 : Math.log2;
 
   return Math.max(1, lg(weight));
 }
 
-function isSelectable(element: HTMLElement): boolean {
+function getElementDataSelectable(element: HTMLElement): ?ElementData {
+  const type = getElementTypeSelectable(element);
+  return type == null ? undefined : { type };
+}
+
+function getElementTypeSelectable(element: HTMLElement): ?ElementType {
   switch (element.nodeName) {
     // Always consider the following elements as selectable, regardless of their
     // children, since they have special context menu items. A
@@ -1530,19 +1538,20 @@ function isSelectable(element: HTMLElement): boolean {
     case "A":
     case "AUDIO":
     case "BUTTON":
+    case "SELECT":
+    case "TEXTAREA":
+    case "VIDEO":
+      return "clickable";
+    case "INPUT":
+      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
+      return element.type === "hidden" ? "no" : "better";
     case "CANVAS":
     case "EMBED":
     case "FRAME":
     case "IFRAME":
     case "IMG":
     case "OBJECT":
-    case "SELECT":
-    case "TEXTAREA":
-    case "VIDEO":
-      return true;
-    case "INPUT":
-      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-      return element.type !== "hidden";
+      return "selectable";
     default: {
       // If an element has no child _elements_ (but possibly child text nodes),
       // consider it selectable. This allows focusing `<div>`-based "buttons"
@@ -1550,12 +1559,12 @@ function isSelectable(element: HTMLElement): boolean {
       // elements with text without having to iterate through all child text
       // nodes.
       if (element.childElementCount === 0) {
-        return true;
+        return "selectable";
       }
 
       // Allow showing the title attribute without clicking on the element.
       if (getTitle(element) != null) {
-        return true;
+        return "selectable";
       }
 
       // If the element has at least one immediate non-blank text node, consider
@@ -1564,10 +1573,10 @@ function isSelectable(element: HTMLElement): boolean {
       // hints.
       for (const node of element.childNodes) {
         if (node instanceof Text && NON_WHITESPACE.test(node.data)) {
-          return true;
+          return "selectable";
         }
       }
-      return false;
+      return undefined;
     }
   }
 }
