@@ -47,6 +47,8 @@ export type ElementType =
   | "textarea"
   | "title";
 
+const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
+
 export type ElementTypes = Set<ElementType> | "selectable";
 
 type ElementData = {|
@@ -830,18 +832,18 @@ class Deduper {
 
     elements.push(visibleElement);
 
-    const [bad, good] = partition(
-      elements,
-      ({ data: { type } }) => type === "clickable-event"
+    const [bad, good] = partition(elements, ({ data: { type } }) =>
+      LOW_QUALITY_TYPES.has(type)
     );
 
     // If hints are positioned in the exact same spot, reject those of low
-    // quality (that only have click listeners and nothing else) since they are
-    // likely just noise. Many `<button>`s and `<a>`s on Twitter and Gmail are
-    // wrapped in `<div>`s with click listeners. And on GitHub there are
-    // dropdown menus near the top where the hint for the `<summary>` elements
-    // that open them are covered by the hint for a `<details>` element with a
-    // click listener that doesn't do anything when clicked.
+    // quality (for exmaple those that only have click listeners and nothing
+    // else) since they are likely just noise. Many `<button>`s and `<a>`s on
+    // Twitter and Gmail are wrapped in `<div>`s with click listeners. And on
+    // GitHub there are dropdown menus near the top where the hint for the
+    // `<summary>` elements that open them are covered by the hint for a
+    // `<details>` element with a click listener that doesn't do anything when
+    // clicked.
     if (bad.length > 0 && good.length > 0) {
       for (const { element: badElement } of bad) {
         this.rejected.add(badElement);
