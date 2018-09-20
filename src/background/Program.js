@@ -255,6 +255,7 @@ export default class BackgroundProgram {
           return;
         }
 
+        const { timestamp } = message;
         const { key } = message.shortcut;
         const isBackspace = key === "Backspace";
 
@@ -333,6 +334,47 @@ export default class BackgroundProgram {
                 );
               }
               break;
+
+            case "Many":
+              if (url == null) {
+                this.sendWorkerMessage(
+                  {
+                    type: "ClickElement",
+                    index: match.index,
+                    trackRemoval: false,
+                  },
+                  {
+                    tabId: info.tabId,
+                    frameId: match.frameId,
+                  }
+                );
+              } else {
+                this.openNewTab({
+                  url,
+                  elementIndex: match.index,
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                  foreground: false,
+                });
+              }
+              this.sendRendererMessage(
+                {
+                  type: "UpdateHints",
+                  updates,
+                  markMatched: true,
+                },
+                { tabId: info.tabId }
+              );
+              this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+                tabId: info.tabId,
+                frameId: "all_frames",
+              });
+              this.enterHintsMode({
+                tabId: info.tabId,
+                timestamp,
+                mode: hintsState.mode,
+              });
+              return;
 
             case "BackgroundTab":
               if (url == null) {
@@ -752,36 +794,11 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Idle") {
           return;
         }
-        const time = new TimeTracker();
-        time.start("collect");
-        this.sendWorkerMessage(
-          {
-            type: "StartFindElements",
-            types: getHintsTypes(action.mode),
-          },
-          {
-            tabId: info.tabId,
-            frameId: TOP_FRAME_ID,
-          }
-        );
-        tabState.hintsState = {
-          type: "Collecting",
+        this.enterHintsMode({
+          tabId: info.tabId,
+          timestamp,
           mode: action.mode,
-          pendingElements: {
-            pendingFrames: {
-              answering: 0,
-              collecting: 0,
-            },
-            elements: [],
-          },
-          startTime: timestamp,
-          time,
-          durations: [],
-          timeoutId: undefined,
-        };
-        setTimeout(() => {
-          this.updateBadge(info.tabId);
-        }, BADGE_COLLECTING_DELAY);
+        });
         break;
       }
 
@@ -821,6 +838,51 @@ export default class BackgroundProgram {
       default:
         unreachable(action.type, action);
     }
+  }
+
+  enterHintsMode({
+    tabId,
+    timestamp,
+    mode,
+  }: {|
+    tabId: number,
+    timestamp: number,
+    mode: HintsMode,
+  |}) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+    const time = new TimeTracker();
+    time.start("collect");
+    this.sendWorkerMessage(
+      {
+        type: "StartFindElements",
+        types: getHintsTypes(mode),
+      },
+      {
+        tabId,
+        frameId: TOP_FRAME_ID,
+      }
+    );
+    tabState.hintsState = {
+      type: "Collecting",
+      mode,
+      pendingElements: {
+        pendingFrames: {
+          answering: 0,
+          collecting: 0,
+        },
+        elements: [],
+      },
+      startTime: timestamp,
+      time,
+      durations: [],
+      timeoutId: undefined,
+    };
+    setTimeout(() => {
+      this.updateBadge(tabId);
+    }, BADGE_COLLECTING_DELAY);
   }
 
   exitHintsMode(tabId: number) {
@@ -933,24 +995,31 @@ function makeEmptyTabState(): TabState {
   };
 }
 
+const CLICK_TYPES: ElementTypes = [
+  "clickable",
+  "clickable-event",
+  "label",
+  "link",
+  "scrollable",
+  "textarea",
+  "title",
+];
+
+const TAB_TYPES: ElementTypes = ["link"];
+
 function getHintsTypes(mode: HintsMode): ElementTypes {
   switch (mode) {
     case "Click":
-      return [
-        "clickable",
-        "clickable-event",
-        "label",
-        "link",
-        "scrollable",
-        "textarea",
-        "title",
-      ];
+      return CLICK_TYPES;
 
     case "BackgroundTab":
-      return ["link"];
+      return TAB_TYPES;
 
     case "ForegroundTab":
-      return ["link"];
+      return TAB_TYPES;
+
+    case "Many":
+      return CLICK_TYPES;
 
     case "Select":
       return "selectable";

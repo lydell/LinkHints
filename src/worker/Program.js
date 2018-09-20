@@ -453,6 +453,7 @@ export default class WorkerProgram {
           metaKey: event.metaKey,
           shiftKey: event.shiftKey,
         },
+        timestamp: performance.now(),
       });
     }
   }

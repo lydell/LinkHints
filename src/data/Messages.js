@@ -59,6 +59,7 @@ export type FromWorker =
   | {|
       type: "NonKeyboardShortcutMatched",
       shortcut: KeyboardShortcut,
+      timestamp: number,
     |}
   | {|
       type: "ReportVisibleFrame",

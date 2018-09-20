@@ -106,6 +106,34 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
+      key: "J",
+      code: "KeyJ",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Many",
+    },
+  },
+  {
+    shortcut: {
+      key: "H",
+      code: "KeyH",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Many",
+    },
+  },
+  {
+    shortcut: {
       key: "K",
       code: "KeyK",
       altKey: true,
