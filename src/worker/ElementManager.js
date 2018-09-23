@@ -945,8 +945,8 @@ function getMeasurements(
   // If this runs in a frame, the element can still be covered by something in a
   // parent frame, but it's not worth the trouble to try and check that.
   const nonCoveredPoint = getNonCoveredPoint(element, {
-    x: hintPoint.x,
-    y: hintPoint.y,
+    x: Math.round(hintPoint.x),
+    y: Math.round(hintPoint.y),
     maxX,
   });
 
