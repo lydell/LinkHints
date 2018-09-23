@@ -115,7 +115,7 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: {
       type: "EnterHintsMode",
-      mode: "Many",
+      mode: "ManyClick",
     },
   },
   {
@@ -129,7 +129,7 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: {
       type: "EnterHintsMode",
-      mode: "Many",
+      mode: "ManyClick",
     },
   },
   {
@@ -143,13 +143,41 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: {
       type: "EnterHintsMode",
-      mode: "Select",
+      mode: "ManyLink",
     },
   },
   {
     shortcut: {
       key: "T",
       code: "KeyT",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "ManyLink",
+    },
+  },
+  {
+    shortcut: {
+      key: "L",
+      code: "KeyL",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Select",
+    },
+  },
+  {
+    shortcut: {
+      key: "R",
+      code: "KeyR",
       altKey: true,
       ctrlKey: false,
       metaKey: false,

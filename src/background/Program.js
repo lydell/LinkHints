@@ -344,28 +344,53 @@ export default class BackgroundProgram {
               }
               break;
 
-            case "Many":
-              if (url == null) {
-                this.sendWorkerMessage(
-                  {
-                    type: "ClickElement",
-                    index: match.index,
-                    trackRemoval: false,
-                  },
-                  {
-                    tabId: info.tabId,
-                    frameId: match.frameId,
-                  }
-                );
-              } else {
-                this.openNewTab({
-                  url,
-                  elementIndex: match.index,
+            case "ManyClick":
+              this.sendWorkerMessage(
+                {
+                  type: "ClickElement",
+                  index: match.index,
+                  trackRemoval: false,
+                },
+                {
                   tabId: info.tabId,
                   frameId: match.frameId,
-                  foreground: false,
-                });
+                }
+              );
+              this.sendRendererMessage(
+                {
+                  type: "UpdateHints",
+                  updates,
+                  markMatched: true,
+                },
+                { tabId: info.tabId }
+              );
+              this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+                tabId: info.tabId,
+                frameId: "all_frames",
+              });
+              this.enterHintsMode({
+                tabId: info.tabId,
+                timestamp,
+                mode: hintsState.mode,
+              });
+              return;
+
+            case "ManyLink":
+              if (url == null) {
+                log(
+                  "error",
+                  "Cannot open background tab due to missing URL",
+                  match
+                );
+                break;
               }
+              this.openNewTab({
+                url,
+                elementIndex: match.index,
+                tabId: info.tabId,
+                frameId: match.frameId,
+                foreground: false,
+              });
               this.sendRendererMessage(
                 {
                   type: "UpdateHints",
@@ -1027,8 +1052,11 @@ function getHintsTypes(mode: HintsMode): ElementTypes {
     case "ForegroundTab":
       return TAB_TYPES;
 
-    case "Many":
+    case "ManyClick":
       return CLICK_TYPES;
+
+    case "ManyLink":
+      return TAB_TYPES;
 
     case "Select":
       return "selectable";
