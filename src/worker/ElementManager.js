@@ -1185,7 +1185,12 @@ function getBorderAndPaddingPoint(
   return {
     ...getXY(visibleBox),
     x: rect.left + left,
-    align: "right",
+    align:
+      element instanceof HTMLInputElement &&
+      (element.type === "file" ||
+        (element.type === "image" && element.src !== ""))
+        ? "left"
+        : "right",
   };
 }
 
