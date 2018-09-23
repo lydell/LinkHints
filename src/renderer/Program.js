@@ -151,6 +151,11 @@ export default class RendererProgram {
   }
 
   async start(): Promise<void> {
+    // This is useful during development. If reloading the extension during
+    // hints mode, the old hints will be removed as soon as the new version
+    // starts.
+    this.unrender();
+
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     try {
