@@ -513,6 +513,17 @@ export default class BackgroundProgram {
         this.removeTitle(info.tabId);
         break;
 
+      case "PageLeave":
+        // If the user clicks a link while hints mode is active, exit it.
+        // Otherwise you’ll end up in hints mode on the new page (it is still
+        // the tab, after all) but with no hints. Also, in Firefox, when
+        // clicking the back button the content scripts aren’t re-run but
+        // instead pick up from where they where when leaving the page. Exiting
+        // hints mode before leaving makes sure that there are no left-over
+        // hints shown when navigating back.
+        this.exitHintsMode(info.tabId);
+        break;
+
       default:
         unreachable(message.type, message);
     }

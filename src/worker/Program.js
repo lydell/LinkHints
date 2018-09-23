@@ -66,6 +66,7 @@ export default class WorkerProgram {
       [this.onKeydown, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
+      [this.onPagehide, { catch: true }],
       [this.reportVisibleElements, { catch: true }],
       [this.sendMessage, { catch: true }],
       [this.start, { catch: true }],
@@ -78,7 +79,8 @@ export default class WorkerProgram {
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
-      addEventListener(window, "message", this.onWindowMessage)
+      addEventListener(window, "message", this.onWindowMessage),
+      addEventListener(window, "pagehide", this.onPagehide)
     );
     this.elementManager.start();
 
@@ -458,6 +460,12 @@ export default class WorkerProgram {
   onClick(event: MouseEvent) {
     if (event.isTrusted && this.trackInteractions) {
       this.sendMessage({ type: "Interaction" });
+    }
+  }
+
+  onPagehide() {
+    if (window.top === window) {
+      this.sendMessage({ type: "PageLeave" });
     }
   }
 

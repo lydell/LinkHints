@@ -74,6 +74,9 @@ export type FromWorker =
     |}
   | {|
       type: "ClickedElementRemoved",
+    |}
+  | {|
+      type: "PageLeave",
     |};
 
 export type ToWorker =
