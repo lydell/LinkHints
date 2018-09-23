@@ -233,25 +233,16 @@ export default class BackgroundProgram {
   onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
     switch (message.type) {
       case "WorkerScriptAdded":
-        // If clicking something in click/open many mode causes a page
-        // navigation, exit hints mode.
-        if (
-          info.frameId === TOP_FRAME_ID &&
-          tabState.hintsState.type !== "Idle"
-        ) {
-          this.exitHintsMode(info.tabId);
-        } else {
-          this.sendWorkerMessage(
-            // Make sure that the added worker script gets the same token as all
-            // other frames in the page. Otherwise the first hints mode won't
-            // reach into any frames.
-            this.makeWorkerState(tabState.hintsState, { refreshToken: false }),
-            {
-              tabId: info.tabId,
-              frameId: info.frameId,
-            }
-          );
-        }
+        this.sendWorkerMessage(
+          // Make sure that the added worker script gets the same token as all
+          // other frames in the page. Otherwise the first hints mode won't
+          // reach into any frames.
+          this.makeWorkerState(tabState.hintsState, { refreshToken: false }),
+          {
+            tabId: info.tabId,
+            frameId: info.frameId,
+          }
+        );
         break;
 
       case "KeyboardShortcutMatched":
