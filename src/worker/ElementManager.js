@@ -57,7 +57,7 @@ const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
 // title="..."><a href="..."><img src="..."></a></div>`.
 const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
-export type ElementTypes = Set<ElementType> | "selectable";
+export type ElementTypes = Array<ElementType> | "selectable";
 
 type ElementData = {|
   type: ElementType,
@@ -637,7 +637,7 @@ export default class ElementManager {
         return undefined;
       }
 
-      if (types !== "selectable" && !types.has(data.type)) {
+      if (types !== "selectable" && !types.includes(data.type)) {
         return undefined;
       }
 

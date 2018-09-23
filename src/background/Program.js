@@ -925,7 +925,7 @@ function makeEmptyTabState(): TabState {
 function getHintsTypes(mode: HintsMode): ElementTypes {
   switch (mode) {
     case "Click":
-      return new Set([
+      return [
         "clickable",
         "clickable-event",
         "label",
@@ -933,13 +933,13 @@ function getHintsTypes(mode: HintsMode): ElementTypes {
         "scrollable",
         "textarea",
         "title",
-      ]);
+      ];
 
     case "BackgroundTab":
-      return new Set(["link"]);
+      return ["link"];
 
     case "ForegroundTab":
-      return new Set(["link"]);
+      return ["link"];
 
     case "Select":
       return "selectable";
