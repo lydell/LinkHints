@@ -738,7 +738,10 @@ export default class ElementManager {
         return "clickable";
       case "INPUT":
         // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-        return element.type === "hidden" ? undefined : "clickable";
+        return element.type === "hidden"
+          ? // </FlowIgnore>
+            undefined
+          : "clickable";
       // Twitter and DuckDuckGo have useless click handlers on the `<form>`
       // around their search inputs, whose hints end up below the hint of the
       // input. It feels like `<form>`s are never relevant to click, so exclude
@@ -1549,7 +1552,10 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
       return "clickable";
     case "INPUT":
       // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-      return element.type === "hidden" ? "no" : "better";
+      return element.type === "hidden"
+        ? // </FlowIgnore>
+          undefined
+        : "clickable";
     case "CANVAS":
     case "EMBED":
     case "FRAME":
