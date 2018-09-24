@@ -336,7 +336,12 @@ export default class BackgroundProgram {
               break;
 
             case "Many":
-              if (url == null) {
+              if (
+                url == null ||
+                // Click internal fragment links instead of opening them in new
+                // tabs.
+                (info.url != null && stripHash(info.url) === stripHash(url))
+              ) {
                 this.sendWorkerMessage(
                   {
                     type: "ClickElement",
@@ -1183,4 +1188,10 @@ function combineByHref(
   return Array.from(map.values())
     .map(children => new Combined(children))
     .concat(rest);
+}
+
+const URL_HASH = /#[\s\S]*$/;
+
+function stripHash(href: string): string {
+  return href.replace(URL_HASH, "");
 }
