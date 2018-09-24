@@ -37,8 +37,7 @@ export type KeyboardOptions = {|
 
 export type HintsMode =
   | "Click"
-  | "ManyClick"
-  | "ManyLink"
+  | "Many"
   | "BackgroundTab"
   | "ForegroundTab"
   | "Select";
