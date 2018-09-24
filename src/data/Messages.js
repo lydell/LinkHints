@@ -142,7 +142,6 @@ export type ToRenderer =
   | {|
       type: "UpdateHints",
       updates: Array<HintUpdate>,
-      markMatched: boolean,
     |}
   | {|
       type: "RotateHints",
@@ -200,6 +199,7 @@ export type HintUpdate =
       type: "Update",
       matched: string,
       rest: string,
+      markMatched: boolean,
     |};
 
 export type TabState = {|

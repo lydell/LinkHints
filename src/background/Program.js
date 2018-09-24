@@ -270,6 +270,14 @@ export default class BackgroundProgram {
           ? hintsState.enteredHintChars.slice(0, -1)
           : `${hintsState.enteredHintChars}${key}`;
 
+        const matchingHints = new Set(
+          hintsState.elementsWithHints
+            .map(element => element.hint)
+            .filter(hint => hint === enteredHintChars)
+        );
+
+        const done = matchingHints.size === 1;
+
         const updates = hintsState.elementsWithHints.map(
           element =>
             element.hint.startsWith(enteredHintChars)
@@ -277,6 +285,7 @@ export default class BackgroundProgram {
                   type: "Update",
                   matched: enteredHintChars,
                   rest: element.hint.slice(enteredHintChars.length),
+                  markMatched: done,
                 }
               : { type: "Hide" }
         );
@@ -284,19 +293,6 @@ export default class BackgroundProgram {
         if (updates.length === 0) {
           return;
         }
-
-        const matchingHints = new Set(
-          updates
-            .map(
-              update =>
-                update.type === "Update" && update.rest === ""
-                  ? update.matched
-                  : undefined
-            )
-            .filter(Boolean)
-        );
-
-        const done = matchingHints.size === 1;
 
         if (done) {
           const [hint] = Array.from(matchingHints);
@@ -353,7 +349,24 @@ export default class BackgroundProgram {
                     frameId: match.frameId,
                   }
                 );
+                this.sendRendererMessage(
+                  {
+                    type: "UpdateHints",
+                    updates,
+                  },
+                  { tabId: info.tabId }
+                );
+                this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+                  tabId: info.tabId,
+                  frameId: "all_frames",
+                });
+                this.enterHintsMode({
+                  tabId: info.tabId,
+                  timestamp,
+                  mode: hintsState.mode,
+                });
               } else {
+                hintsState.enteredHintChars = "";
                 this.openNewTab({
                   url,
                   elementIndex: match.index,
@@ -361,24 +374,19 @@ export default class BackgroundProgram {
                   frameId: match.frameId,
                   foreground: false,
                 });
+                this.sendRendererMessage(
+                  {
+                    type: "UpdateHints",
+                    updates: hintsState.elementsWithHints.map(element => ({
+                      type: "Update",
+                      matched: "",
+                      rest: element.hint,
+                      markMatched: element.hint === enteredHintChars,
+                    })),
+                  },
+                  { tabId: info.tabId }
+                );
               }
-              this.sendRendererMessage(
-                {
-                  type: "UpdateHints",
-                  updates,
-                  markMatched: true,
-                },
-                { tabId: info.tabId }
-              );
-              this.sendWorkerMessage(this.makeWorkerState(hintsState), {
-                tabId: info.tabId,
-                frameId: "all_frames",
-              });
-              this.enterHintsMode({
-                tabId: info.tabId,
-                timestamp,
-                mode: hintsState.mode,
-              });
               return;
 
             case "BackgroundTab":
@@ -471,7 +479,6 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates,
-            markMatched: done,
           },
           { tabId: info.tabId }
         );
