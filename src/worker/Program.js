@@ -557,27 +557,14 @@ function wrapMessage(message: FromWorker): ToBackground {
 }
 
 function parseTypes(rawTypes: any): ElementTypes {
-  if (rawTypes === "selectable") {
+  // Don’t bother checking the contents of the array. It doesn’t matter if
+  // there’s invalid stuff in there, because we only check if certain types
+  // exist in the array or not (`types.includes(type)`).
+  if (Array.isArray(rawTypes) || rawTypes === "selectable") {
     return rawTypes;
   }
 
-  try {
-    // `rawTypes instanceof Set` doesn’t work when the `Set` comes from a posted
-    // message. Instead, use duck typing.
-    const result = rawTypes.has("test");
-    if (typeof result !== "boolean") {
-      throw new Error(
-        `Expected .has() to return a boolean, but got: ${typeof result}`
-      );
-    }
-  } catch (error) {
-    throw new Error(`Expected a Set, but got: ${typeof rawTypes}. ${error}`);
-  }
-
-  // Don’t bother checking the contents of the Set. It doesn’t matter if there’s
-  // invalid stuff in there, because we only check if certain types exist in the
-  // Set or not (`types.has(type)`).
-  return rawTypes;
+  throw new Error(`Expected an Array, but got: ${typeof rawTypes}`);
 }
 
 function parseViewports(rawViewports: mixed): Array<Box> {
