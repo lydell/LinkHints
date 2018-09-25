@@ -197,6 +197,17 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
     },
     action: { type: "RotateHints", forward: false },
   },
+  {
+    shortcut: {
+      key: "F5",
+      code: "F5",
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: { type: "RefreshHints" },
+  },
 ];
 
 const program = new BackgroundProgram({

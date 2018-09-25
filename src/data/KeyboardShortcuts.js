@@ -13,6 +13,9 @@ export type KeyboardAction =
       forward: boolean,
     |}
   | {|
+      type: "RefreshHints",
+    |}
+  | {|
       type: "Escape",
     |};
 

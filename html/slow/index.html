@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>slow</title>
+  </head>
+  <body>
+    <button onclick="toggle();">Toggle immediately</button>
+    <button onclick="setTimeout(toggle, 500);">Toggle with timeout</button>
+    <div id="container"></div>
+    <script>
+      toggle();
+
+      function toggle() {
+        container.textContent = "";
+        const times = Math.random() * 10;
+        for (let i = 0; i < times; i++) {
+          const p = document.createElement("p");
+          const a = document.createElement("a");
+          a.href = "#";
+          a.textContent = `link ${Date.now()}`;
+          p.append(a);
+          container.append(p);
+        }
+      }
+    </script>
+  </body>
+</html>

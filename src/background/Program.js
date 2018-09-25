@@ -838,6 +838,24 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "RefreshHints": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null || tabState.hintsState.type !== "Hinting") {
+          return;
+        }
+        this.enterHintsMode({
+          tabId: info.tabId,
+          timestamp,
+          mode: tabState.hintsState.mode,
+        });
+        // `this.enterHintsMode` also updates the badge, but after a timeout.
+        // Update it immediately so that one can see it flash in case you get
+        // exactly the same hints after refreshing, so that you understand that
+        // something happened.
+        this.updateBadge(info.tabId);
+        break;
+      }
+
       case "Escape": {
         this.exitHintsMode(info.tabId);
         this.sendWorkerMessage(
