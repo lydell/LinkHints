@@ -506,6 +506,7 @@ export default class WorkerProgram {
               ? element.href
               : undefined,
           title: getTitle(element),
+          isTextInput: isTextInput(element),
           hintMeasurements: measurements,
         })
       ),

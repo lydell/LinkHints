@@ -178,6 +178,7 @@ export type ElementReport = {|
   hintMeasurements: HintMeasurements,
   url: ?string,
   title: ?string,
+  isTextInput: boolean,
 |};
 
 export type ExtendedElementReport = {|

@@ -306,33 +306,13 @@ export default class BackgroundProgram {
 
           switch (hintsState.mode) {
             case "Click":
-              this.sendWorkerMessage(
-                {
-                  type: "ClickElement",
-                  index: match.index,
-                  trackRemoval: title != null,
-                },
-                {
-                  tabId: info.tabId,
-                  frameId: match.frameId,
-                }
-              );
-              if (title != null) {
-                this.sendWorkerMessage(
-                  {
-                    type: "TrackInteractions",
-                    track: true,
-                  },
-                  {
-                    tabId: info.tabId,
-                    frameId: "all_frames",
-                  }
-                );
-              }
+              this.clickElement(info.tabId, match);
               break;
 
             case "Many":
-              if (
+              if (match.isTextInput) {
+                this.clickElement(info.tabId, match);
+              } else if (
                 url == null ||
                 // Click internal fragment links instead of opening them in new
                 // tabs.
@@ -365,6 +345,7 @@ export default class BackgroundProgram {
                   timestamp,
                   mode: hintsState.mode,
                 });
+                return;
               } else {
                 hintsState.enteredHintChars = "";
                 this.openNewTab({
@@ -386,8 +367,9 @@ export default class BackgroundProgram {
                   },
                   { tabId: info.tabId }
                 );
+                return;
               }
-              return;
+              break;
 
             case "BackgroundTab":
               if (url == null) {
@@ -464,7 +446,9 @@ export default class BackgroundProgram {
             {
               type: "Unrender",
               mode:
-                (hintsState.mode === "Click" || hintsState.mode === "Select") &&
+                (hintsState.mode === "Click" ||
+                  hintsState.mode === "Many" ||
+                  hintsState.mode === "Select") &&
                 title != null
                   ? { type: "title", title }
                   : { type: "delayed" },
@@ -515,16 +499,10 @@ export default class BackgroundProgram {
           return;
         }
 
-        const elements = message.elements.map(
-          ({ type, index, hintMeasurements, url, title }) => ({
-            type,
-            index,
-            hintMeasurements,
-            url,
-            title,
-            frameId: info.frameId,
-          })
-        );
+        const elements = message.elements.map(element => ({
+          ...element,
+          frameId: info.frameId,
+        }));
 
         hintsState.pendingElements.elements.push(...elements);
 
@@ -601,6 +579,32 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
+  }
+
+  clickElement(tabId: number, match: ElementWithHint) {
+    this.sendWorkerMessage(
+      {
+        type: "ClickElement",
+        index: match.index,
+        trackRemoval: match.title != null,
+      },
+      {
+        tabId,
+        frameId: match.frameId,
+      }
+    );
+    if (match.title != null) {
+      this.sendWorkerMessage(
+        {
+          type: "TrackInteractions",
+          track: true,
+        },
+        {
+          tabId,
+          frameId: "all_frames",
+        }
+      );
+    }
   }
 
   async openNewTab({
