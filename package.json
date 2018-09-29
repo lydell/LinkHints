@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "start": "run-p --race watch run",
-    "run": "npm run web-ext -- run",
+    "start": "run-p --race watch firefox",
+    "firefox": "npm run web-ext -- run",
     "compile": "npm run rollup -- --config",
     "watch": "npm run compile -- --watch",
     "build": "run-s compile \"web-ext -- build\" \"web-ext -- lint\"",
