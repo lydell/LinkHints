@@ -153,7 +153,7 @@ export default () => {
                   // $FlowIgnore: `hook` isn't undefined here.
                   const result = hook(orig, this, ...args);
                   if (result != null && typeof result.then === "function") {
-                    result.catch(error => {
+                    result.then(undefined, error => {
                       logHookError(error, obj, name);
                     });
                   }

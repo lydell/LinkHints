@@ -93,7 +93,7 @@ export function bind(
             try {
               const result = method.apply(object, args);
               if (result != null && typeof result.then === "function") {
-                result.catch(error => {
+                result.then(undefined, error => {
                   log("error", prefix, error, ...args);
                 });
               }
