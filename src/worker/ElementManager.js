@@ -270,8 +270,8 @@ export default class ElementManager {
     this.observerProbeCallback = undefined;
 
     bind(this, [
-      this.onClickableElements,
-      this.onUnclickableElements,
+      this.onClickableElement,
+      this.onUnclickableElement,
       this.onInjectedQueue,
       this.onOverflowChange,
     ]);
@@ -300,8 +300,8 @@ export default class ElementManager {
     }
 
     this.resets.add(
-      addEventListener(window, CLICKABLE_EVENT, this.onClickableElements),
-      addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElements),
+      addEventListener(window, CLICKABLE_EVENT, this.onClickableElement),
+      addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElement),
       addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
       addEventListener(window, "overflow", this.onOverflowChange),
       addEventListener(window, "underflow", this.onOverflowChange)
@@ -455,17 +455,17 @@ export default class ElementManager {
     }
   }
 
-  onClickableElements(event: CustomEvent) {
-    const elements = extractElements(event);
-    for (const element of elements) {
+  onClickableElement(event: CustomEvent) {
+    const element = event.target;
+    if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.add(element);
       this.queueItem({ mutationType: "changed", element });
     }
   }
 
-  onUnclickableElements(event: CustomEvent) {
-    const elements = extractElements(event);
-    for (const element of elements) {
+  onUnclickableElement(event: CustomEvent) {
+    const element = event.target;
+    if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.delete(element);
       this.queueItem({ mutationType: "changed", element });
     }
@@ -1471,24 +1471,6 @@ function sendInjectedMessage(message: string) {
   } catch (error) {
     log("error", "Failed to message injected.js", error);
   }
-}
-
-function extractElements(event: CustomEvent): Array<HTMLElement> {
-  if (event.detail == null) {
-    return event.target instanceof HTMLElement ? [event.target] : [];
-  }
-
-  const { detail } = event;
-  if (detail == null) {
-    return [];
-  }
-
-  const { elements } = detail;
-  if (!Array.isArray(elements)) {
-    return [];
-  }
-
-  return elements.filter(element => element instanceof HTMLElement);
 }
 
 function getXY(box: Box | ClientRect): {| x: number, y: number |} {

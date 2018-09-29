@@ -38,6 +38,7 @@ module.exports = {
       },
       globals: Object.assign({}, baseRules.browserEnv(), {
         BROWSER: true,
+        BUILD_TIME: true,
         PROD: false,
         browser: false,
       }),

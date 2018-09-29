@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>iframe</title>
+  </head>
+  <body>
+    <p>
+      <button onclick="element.addEventListener('click', fn)">
+        addEventListener("click", fn)
+      </button>
+    </p>
+    <p>
+      <button onclick="element.removeEventListener('click', fn)">
+        removeEventListener("click", fn)
+      </button>
+    </p>
+    <script>
+      const fn = () => { console.log("click!") };
+      const element = document.createElement("div");
+      element.textContent = "This is a clickable element created in the iframe, but inserted at the top.";
+      element.addEventListener("click", fn);
+      window.parent.document.body.append(element);
+    </script>
+  </body>
+</html>

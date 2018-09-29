@@ -26,8 +26,12 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // Common prefix for events. It’s important to create a name unique from
 // previous versions of Synth, in case this script hangs around after an update
 // (it’s not possible to do cleanups before disabling an extension in Firefox).
-// We don’t want the old version to interfere with the new one.
-const prefix = `__SynthWebExt_${makeRandomToken()}_`;
+// We don’t want the old version to interfere with the new one. This uses
+// `BUILD_TIME` rather than `makeRandomToken()` so that all frames share the
+// same event name. Clickable elements created in this frame but inserted into
+// another frame need to dispatch an event in their parent window rather than
+// this one.
+const prefix = `__SynthWebExt_${BUILD_TIME}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
@@ -41,10 +45,8 @@ export const QUEUE_EVENT = `${prefix}Queue`;
 // console. Firefox still shows it, but accepting the autocomplete causes a
 // syntax error. Since we make the injected variable both non-writable and
 // non-configurable it is impossible to overwrite it so we _have_ to use
-// a new name when installing an update. (This uses a different random token
-// than the events in order not to give away then event names. I don’t think you
-// could do anything interesting by listening to those events, but whay not.)
-export const INJECTED_VAR = `__SynthWebExt_${makeRandomToken()}\0`;
+// a new name when installing an update.
+export const INJECTED_VAR = `__SynthWebExt_${BUILD_TIME}\0`;
 export const INJECTED_VAR_PATTERN = RegExp(
   `^${INJECTED_VAR.replace(/\d+/, "\\d+").replace(/\0/, "\\0")}$`
 );
@@ -296,6 +298,8 @@ export default () => {
       // removed the element at all (and vice versa).
       const addedRemoved = new AddedRemoved();
 
+      let timesUp = false;
+
       for (const [index, item] of this.queue.entries()) {
         // `.onclick` or similar changed.
         if (item.type === "prop") {
@@ -328,25 +332,18 @@ export default () => {
         }
 
         if (deadline.timeRemaining() <= 0) {
+          timesUp = true;
           this.queue = this.queue.slice(index + 1);
           this.requestIdleCallback();
           return;
         }
       }
 
-      this.queue = [];
+      if (!timesUp) {
+        this.queue = [];
+      }
 
       const { added, removed } = addedRemoved;
-
-      if (BROWSER === "firefox") {
-        sendWindowEvent(CLICKABLE_EVENT, {
-          elements: Array.from(added),
-        });
-        sendWindowEvent(UNCLICKABLE_EVENT, {
-          elements: Array.from(removed),
-        });
-        return;
-      }
 
       for (const element of added) {
         this.sendQueue.push({ added: true, element });
@@ -356,7 +353,9 @@ export default () => {
         this.sendQueue.push({ added: false, element });
       }
 
-      this.flushSendQueue(deadline);
+      if (!timesUp) {
+        this.flushSendQueue(deadline);
+      }
     }
 
     flushSendQueue(deadline: Deadline): boolean {
@@ -426,7 +425,12 @@ export default () => {
 
       // The element has no click listeners.
       if (optionsByListener == null) {
-        return false;
+        // If the element was created and given a listener in another frame and
+        // then was inserted in another frame, the element might actually have
+        // had a listener after all that was now removed. In Chrome this is
+        // tracked correctly, but in Firefox we need to "lie" here and say that
+        // the last listener was removed in case it was.
+        return BROWSER === "firefox";
       }
 
       const optionsSet = optionsByListener.get(listener);
@@ -512,22 +516,25 @@ export default () => {
   }
 
   function sendWindowEvent(eventName: string, detail: any) {
-    // The events are dispatched on `window` rather than on `element`, since
-    // `element` might not be inserted into the DOM (yet/anymore), which causes
-    // the event not to fire. However, sending a DOM element as `detail` from a
-    // web page to an extension is not allowed in Chrome, so there we have to
-    // temporarily insert the element into the DOM if needed. In that case the
-    // `sendElementEvent` function is used instead.
     apply(dispatchEvent, window, [new CustomEvent2(eventName, { detail })]);
   }
 
+  // In Firefox, it is also possible to use `sendWindowEvent` passing `element`
+  // as `detail`, but that does not work properly in all cases when an element
+  // is inserted into another frame. Chrome does not allow passing DOM elements
+  // as `detail` from a page to an extension at all.
   function sendElementEvent(eventName: string, element: HTMLElement) {
-    const { documentElement } = document;
+    // The element might have been inserted into another frame.
+    // `element.ownerDocument` refers to the document the element exists in.
+    const { documentElement } = element.ownerDocument;
 
     if (documentElement == null) {
       return;
     }
 
+    // The element might not be inserted into the DOM (yet/anymore), which
+    // causes the event not to fire, so  temporarily insert the element into the
+    // DOM if needed.
     const isDetached = !documentElement.contains(element);
 
     if (isDetached) {

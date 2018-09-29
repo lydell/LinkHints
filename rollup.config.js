@@ -143,6 +143,8 @@ function makeGlobals() {
       config.browser == null
         ? `(window.sidebar ? "firefox" : "chrome")`
         : JSON.stringify(config.browser),
+    // Note: BUILD_TIME might vary between different files.
+    BUILD_TIME: JSON.stringify(Date.now()),
     PROD: JSON.stringify(PROD),
   };
 }
