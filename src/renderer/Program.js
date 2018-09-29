@@ -128,6 +128,7 @@ export default class RendererProgram {
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
       this.onIntersection,
+      this.onResize,
     ]);
 
     const container = document.createElement("div");
@@ -264,9 +265,18 @@ export default class RendererProgram {
     const entry = entries[0];
     if (entry.intersectionRatio !== 1) {
       requestAnimationFrame(() => {
-        this.updateContainer(entry.rootBounds);
+        this.updateContainer(
+          // `entry.rootBounds` is supposed to be the viewport size, but I've
+          // noticed it being way larger in Chrome sometimes, so calculate it
+          // manually there.
+          BROWSER === "chrome" ? getViewport() : entry.rootBounds
+        );
       });
     }
+  }
+
+  onResize() {
+    this.updateContainer(getViewport());
   }
 
   updateContainer(viewport: { width: number, height: number }) {
@@ -330,8 +340,8 @@ export default class RendererProgram {
     this.updateContainer(viewport);
     this.container.intersectionObserver.observe(this.container.element);
     this.container.resets.add(
-      addEventListener(window, "resize", this.updateContainer),
-      addEventListener(window, "underflow", this.updateContainer)
+      addEventListener(window, "resize", this.onResize),
+      addEventListener(window, "underflow", this.onResize)
     );
 
     if (elements.length === 0) {
