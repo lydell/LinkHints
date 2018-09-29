@@ -179,6 +179,11 @@ const FRAME_MIN_SIZE = 6; // px
 const TEXT_RECT_MIN_SIZE = 2; // px
 
 const CLICKABLE_ATTRIBUTES = [
+  // These are supposed to be used with a `role` attribute. In some GitHub
+  // dropdowns some items only have this attribute hinting that they are
+  // clickable, though.
+  "aria-checked",
+  "aria-selected",
   // Bootstrap.
   "data-dismiss",
   // Twitter
