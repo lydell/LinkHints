@@ -59,6 +59,7 @@ export type FromWorker =
   | {|
       type: "NonKeyboardShortcutMatched",
       shortcut: KeyboardShortcut,
+      timestamp: number,
     |}
   | {|
       type: "ReportVisibleFrame",
@@ -141,7 +142,6 @@ export type ToRenderer =
   | {|
       type: "UpdateHints",
       updates: Array<HintUpdate>,
-      markMatched: boolean,
     |}
   | {|
       type: "RotateHints",
@@ -178,6 +178,7 @@ export type ElementReport = {|
   hintMeasurements: HintMeasurements,
   url: ?string,
   title: ?string,
+  isTextInput: boolean,
 |};
 
 export type ExtendedElementReport = {|
@@ -199,6 +200,7 @@ export type HintUpdate =
       type: "Update",
       matched: string,
       rest: string,
+      markMatched: boolean,
     |};
 
 export type TabState = {|

@@ -232,7 +232,7 @@ export default class RendererProgram {
         break;
 
       case "UpdateHints":
-        this.updateHints(message.updates, { markMatched: message.markMatched });
+        this.updateHints(message.updates);
         break;
 
       case "RotateHints":
@@ -459,10 +459,7 @@ export default class RendererProgram {
     });
   }
 
-  updateHints(
-    updates: Array<HintUpdate>,
-    { markMatched = false }: {| markMatched: boolean |} = {}
-  ) {
+  updateHints(updates: Array<HintUpdate>) {
     for (const [index, update] of updates.entries()) {
       const child = this.hints[index];
 
@@ -487,9 +484,7 @@ export default class RendererProgram {
           child.append(matched);
           this.maybeApplyStyles(matched);
         }
-        if (markMatched) {
-          child.classList.add(MATCHED_HINT_CLASS);
-        }
+        child.classList.toggle(MATCHED_HINT_CLASS, update.markMatched);
         child.append(document.createTextNode(update.rest));
       }
 

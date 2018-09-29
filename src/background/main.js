@@ -106,6 +106,34 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
+      key: "J",
+      code: "KeyJ",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Many",
+    },
+  },
+  {
+    shortcut: {
+      key: "H",
+      code: "KeyH",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "EnterHintsMode",
+      mode: "Many",
+    },
+  },
+  {
+    shortcut: {
       key: "K",
       code: "KeyK",
       altKey: true,
@@ -168,6 +196,17 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
       shiftKey: true,
     },
     action: { type: "RotateHints", forward: false },
+  },
+  {
+    shortcut: {
+      key: "F5",
+      code: "F5",
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+    action: { type: "RefreshHints" },
   },
 ];
 

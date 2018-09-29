@@ -453,6 +453,7 @@ export default class WorkerProgram {
           metaKey: event.metaKey,
           shiftKey: event.shiftKey,
         },
+        timestamp: performance.now(),
       });
     }
   }
@@ -505,6 +506,7 @@ export default class WorkerProgram {
               ? element.href
               : undefined,
           title: getTitle(element),
+          isTextInput: isTextInput(element),
           hintMeasurements: measurements,
         })
       ),

@@ -255,6 +255,7 @@ export default class BackgroundProgram {
           return;
         }
 
+        const { timestamp } = message;
         const { key } = message.shortcut;
         const isBackspace = key === "Backspace";
 
@@ -269,6 +270,14 @@ export default class BackgroundProgram {
           ? hintsState.enteredHintChars.slice(0, -1)
           : `${hintsState.enteredHintChars}${key}`;
 
+        const matchingHints = new Set(
+          hintsState.elementsWithHints
+            .map(element => element.hint)
+            .filter(hint => hint === enteredHintChars)
+        );
+
+        const done = matchingHints.size === 1;
+
         const updates = hintsState.elementsWithHints.map(
           element =>
             element.hint.startsWith(enteredHintChars)
@@ -276,6 +285,7 @@ export default class BackgroundProgram {
                   type: "Update",
                   matched: enteredHintChars,
                   rest: element.hint.slice(enteredHintChars.length),
+                  markMatched: done,
                 }
               : { type: "Hide" }
         );
@@ -283,19 +293,6 @@ export default class BackgroundProgram {
         if (updates.length === 0) {
           return;
         }
-
-        const matchingHints = new Set(
-          updates
-            .map(
-              update =>
-                update.type === "Update" && update.rest === ""
-                  ? update.matched
-                  : undefined
-            )
-            .filter(Boolean)
-        );
-
-        const done = matchingHints.size === 1;
 
         if (done) {
           const [hint] = Array.from(matchingHints);
@@ -309,28 +306,68 @@ export default class BackgroundProgram {
 
           switch (hintsState.mode) {
             case "Click":
-              this.sendWorkerMessage(
-                {
-                  type: "ClickElement",
-                  index: match.index,
-                  trackRemoval: title != null,
-                },
-                {
-                  tabId: info.tabId,
-                  frameId: match.frameId,
-                }
-              );
-              if (title != null) {
+              this.clickElement(info.tabId, match);
+              break;
+
+            case "Many":
+              if (match.isTextInput) {
+                this.clickElement(info.tabId, match);
+              } else if (
+                url == null ||
+                // Click internal fragment links instead of opening them in new
+                // tabs.
+                (info.url != null && stripHash(info.url) === stripHash(url))
+              ) {
                 this.sendWorkerMessage(
                   {
-                    type: "TrackInteractions",
-                    track: true,
+                    type: "ClickElement",
+                    index: match.index,
+                    trackRemoval: false,
                   },
                   {
                     tabId: info.tabId,
-                    frameId: "all_frames",
+                    frameId: match.frameId,
                   }
                 );
+                this.sendRendererMessage(
+                  {
+                    type: "UpdateHints",
+                    updates,
+                  },
+                  { tabId: info.tabId }
+                );
+                this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+                  tabId: info.tabId,
+                  frameId: "all_frames",
+                });
+                this.enterHintsMode({
+                  tabId: info.tabId,
+                  timestamp,
+                  mode: hintsState.mode,
+                });
+                return;
+              } else {
+                hintsState.enteredHintChars = "";
+                this.openNewTab({
+                  url,
+                  elementIndex: match.index,
+                  tabId: info.tabId,
+                  frameId: match.frameId,
+                  foreground: false,
+                });
+                this.sendRendererMessage(
+                  {
+                    type: "UpdateHints",
+                    updates: hintsState.elementsWithHints.map(element => ({
+                      type: "Update",
+                      matched: "",
+                      rest: element.hint,
+                      markMatched: element.hint === enteredHintChars,
+                    })),
+                  },
+                  { tabId: info.tabId }
+                );
+                return;
               }
               break;
 
@@ -409,7 +446,9 @@ export default class BackgroundProgram {
             {
               type: "Unrender",
               mode:
-                (hintsState.mode === "Click" || hintsState.mode === "Select") &&
+                (hintsState.mode === "Click" ||
+                  hintsState.mode === "Many" ||
+                  hintsState.mode === "Select") &&
                 title != null
                   ? { type: "title", title }
                   : { type: "delayed" },
@@ -424,7 +463,6 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates,
-            markMatched: done,
           },
           { tabId: info.tabId }
         );
@@ -461,16 +499,10 @@ export default class BackgroundProgram {
           return;
         }
 
-        const elements = message.elements.map(
-          ({ type, index, hintMeasurements, url, title }) => ({
-            type,
-            index,
-            hintMeasurements,
-            url,
-            title,
-            frameId: info.frameId,
-          })
-        );
+        const elements = message.elements.map(element => ({
+          ...element,
+          frameId: info.frameId,
+        }));
 
         hintsState.pendingElements.elements.push(...elements);
 
@@ -547,6 +579,32 @@ export default class BackgroundProgram {
       },
       { tabId }
     );
+  }
+
+  clickElement(tabId: number, match: ElementWithHint) {
+    this.sendWorkerMessage(
+      {
+        type: "ClickElement",
+        index: match.index,
+        trackRemoval: match.title != null,
+      },
+      {
+        tabId,
+        frameId: match.frameId,
+      }
+    );
+    if (match.title != null) {
+      this.sendWorkerMessage(
+        {
+          type: "TrackInteractions",
+          track: true,
+        },
+        {
+          tabId,
+          frameId: "all_frames",
+        }
+      );
+    }
   }
 
   async openNewTab({
@@ -752,36 +810,11 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Idle") {
           return;
         }
-        const time = new TimeTracker();
-        time.start("collect");
-        this.sendWorkerMessage(
-          {
-            type: "StartFindElements",
-            types: getHintsTypes(action.mode),
-          },
-          {
-            tabId: info.tabId,
-            frameId: TOP_FRAME_ID,
-          }
-        );
-        tabState.hintsState = {
-          type: "Collecting",
+        this.enterHintsMode({
+          tabId: info.tabId,
+          timestamp,
           mode: action.mode,
-          pendingElements: {
-            pendingFrames: {
-              answering: 0,
-              collecting: 0,
-            },
-            elements: [],
-          },
-          startTime: timestamp,
-          time,
-          durations: [],
-          timeoutId: undefined,
-        };
-        setTimeout(() => {
-          this.updateBadge(info.tabId);
-        }, BADGE_COLLECTING_DELAY);
+        });
         break;
       }
 
@@ -809,6 +842,24 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "RefreshHints": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null || tabState.hintsState.type !== "Hinting") {
+          return;
+        }
+        this.enterHintsMode({
+          tabId: info.tabId,
+          timestamp,
+          mode: tabState.hintsState.mode,
+        });
+        // `this.enterHintsMode` also updates the badge, but after a timeout.
+        // Update it immediately so that one can see it flash in case you get
+        // exactly the same hints after refreshing, so that you understand that
+        // something happened.
+        this.updateBadge(info.tabId);
+        break;
+      }
+
       case "Escape": {
         this.exitHintsMode(info.tabId);
         this.sendWorkerMessage(
@@ -821,6 +872,51 @@ export default class BackgroundProgram {
       default:
         unreachable(action.type, action);
     }
+  }
+
+  enterHintsMode({
+    tabId,
+    timestamp,
+    mode,
+  }: {|
+    tabId: number,
+    timestamp: number,
+    mode: HintsMode,
+  |}) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+    const time = new TimeTracker();
+    time.start("collect");
+    this.sendWorkerMessage(
+      {
+        type: "StartFindElements",
+        types: getHintsTypes(mode),
+      },
+      {
+        tabId,
+        frameId: TOP_FRAME_ID,
+      }
+    );
+    tabState.hintsState = {
+      type: "Collecting",
+      mode,
+      pendingElements: {
+        pendingFrames: {
+          answering: 0,
+          collecting: 0,
+        },
+        elements: [],
+      },
+      startTime: timestamp,
+      time,
+      durations: [],
+      timeoutId: undefined,
+    };
+    setTimeout(() => {
+      this.updateBadge(tabId);
+    }, BADGE_COLLECTING_DELAY);
   }
 
   exitHintsMode(tabId: number) {
@@ -933,24 +1029,31 @@ function makeEmptyTabState(): TabState {
   };
 }
 
+const CLICK_TYPES: ElementTypes = [
+  "clickable",
+  "clickable-event",
+  "label",
+  "link",
+  "scrollable",
+  "textarea",
+  "title",
+];
+
+const TAB_TYPES: ElementTypes = ["link"];
+
 function getHintsTypes(mode: HintsMode): ElementTypes {
   switch (mode) {
     case "Click":
-      return [
-        "clickable",
-        "clickable-event",
-        "label",
-        "link",
-        "scrollable",
-        "textarea",
-        "title",
-      ];
+      return CLICK_TYPES;
 
     case "BackgroundTab":
-      return ["link"];
+      return TAB_TYPES;
 
     case "ForegroundTab":
-      return ["link"];
+      return TAB_TYPES;
+
+    case "Many":
+      return CLICK_TYPES;
 
     case "Select":
       return "selectable";
@@ -1114,4 +1217,10 @@ function combineByHref(
   return Array.from(map.values())
     .map(children => new Combined(children))
     .concat(rest);
+}
+
+const URL_HASH = /#[\s\S]*$/;
+
+function stripHash(href: string): string {
+  return href.replace(URL_HASH, "");
 }
