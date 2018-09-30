@@ -869,6 +869,13 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "ReverseSelection":
+        this.sendWorkerMessage(
+          { type: "ReverseSelection" },
+          { tabId: info.tabId, frameId: "all_frames" }
+        );
+        break;
+
       default:
         unreachable(action.type, action);
     }

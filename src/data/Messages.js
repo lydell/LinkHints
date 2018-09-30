@@ -118,6 +118,9 @@ export type ToWorker =
   | {|
       type: "TrackInteractions",
       track: boolean,
+    |}
+  | {|
+      type: "ReverseSelection",
     |};
 
 export type FromRenderer =

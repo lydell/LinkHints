@@ -17,6 +17,9 @@ export type KeyboardAction =
     |}
   | {|
       type: "Escape",
+    |}
+  | {|
+      type: "ReverseSelection",
     |};
 
 export type KeyboardShortcut = {|

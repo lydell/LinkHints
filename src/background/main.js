@@ -160,6 +160,32 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
       mode: "Select",
     },
   },
+  {
+    shortcut: {
+      key: "L",
+      code: "KeyL",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "ReverseSelection",
+    },
+  },
+  {
+    shortcut: {
+      key: "R",
+      code: "KeyR",
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+    },
+    action: {
+      type: "ReverseSelection",
+    },
+  },
 ];
 
 const hintsKeyboardShortcuts: Array<KeyboardMapping> = [

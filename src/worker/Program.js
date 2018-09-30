@@ -361,6 +361,14 @@ export default class WorkerProgram {
         }
         break;
 
+      case "ReverseSelection": {
+        const selection: Selection | null = window.getSelection();
+        if (selection != null) {
+          reverseSelection(selection);
+        }
+        break;
+      }
+
       default:
         unreachable(message.type, message);
     }
@@ -731,4 +739,40 @@ function isTextInput(element: HTMLElement): boolean {
         element.type === "email" ||
         element.type === "number"))
   );
+}
+
+function reverseSelection(selection: Selection) {
+  const direction = getSelectionDirection(selection);
+
+  if (direction == null) {
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const [edgeNode, edgeOffset] = direction
+    ? [range.startContainer, range.startOffset]
+    : [range.endContainer, range.endOffset];
+
+  range.collapse(!direction);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  selection.extend(edgeNode, edgeOffset);
+}
+
+// true → forward, false → backward, undefined → unknown
+function getSelectionDirection(selection: Selection): ?boolean {
+  if (selection.isCollapsed) {
+    return undefined;
+  }
+
+  const { anchorNode, focusNode } = selection;
+
+  if (anchorNode == null || focusNode == null) {
+    return undefined;
+  }
+
+  const range = document.createRange();
+  range.setStart(anchorNode, selection.anchorOffset);
+  range.setEnd(focusNode, selection.focusOffset);
+  return !range.collapsed;
 }
