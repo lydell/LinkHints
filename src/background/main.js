@@ -239,8 +239,12 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
-  // hintChars: "fjdkslaghrueiwoncmv",
-  hintChars: "ehstirnoamupcwlfgdy",
+  hints: {
+    // chars: "fjdkslaghrueiwoncmv",
+    chars: "ehstirnoamupcwlfgdy",
+    autoActivate: true,
+    timeout: 400, // ms
+  },
 });
 
 program.start();

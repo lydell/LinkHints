@@ -21,7 +21,7 @@ import type {
   KeyboardOptions,
 } from "../data/KeyboardShortcuts";
 
-import ElementManager from "./ElementManager";
+import ElementManager, { getVisibleBox } from "./ElementManager";
 import type { Box, ElementTypes, VisibleElement } from "./ElementManager";
 
 type FrameMessage = {|
@@ -42,7 +42,8 @@ export default class WorkerProgram {
   trackInteractions: boolean;
   mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
-  elements: ?Array<VisibleElement>;
+  elements: Array<VisibleElement>;
+  viewports: Array<Box>;
   oneTimeWindowMessageToken: ?string;
   resets: Resets;
 
@@ -57,7 +58,8 @@ export default class WorkerProgram {
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
     });
-    this.elements = undefined;
+    this.elements = [];
+    this.viewports = [];
     this.oneTimeWindowMessageToken = undefined;
     this.resets = new Resets();
 
@@ -130,7 +132,8 @@ export default class WorkerProgram {
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
 
         if (message.clearElements) {
-          this.elements = undefined;
+          this.elements = [];
+          this.viewports = [];
         }
         break;
 
@@ -153,9 +156,28 @@ export default class WorkerProgram {
         break;
       }
 
+      case "GetTextRects": {
+        const elements = this.elements.filter((_elementData, index) =>
+          message.indexes.includes(index)
+        );
+        const rects = [].concat(
+          ...elements.map(elementData =>
+            getTextRects(
+              elementData.element,
+              this.viewports,
+              new Set(message.words)
+            )
+          )
+        );
+        this.sendMessage({
+          type: "ReportTextRects",
+          rects,
+        });
+        break;
+      }
+
       case "FocusElement": {
-        const elementData =
-          this.elements == null ? undefined : this.elements[message.index];
+        const elementData = this.elements[message.index];
         if (elementData == null) {
           log("error", "FocusElement: Missing element", message, this.elements);
           return;
@@ -173,8 +195,7 @@ export default class WorkerProgram {
       }
 
       case "ClickElement": {
-        const elementData =
-          this.elements == null ? undefined : this.elements[message.index];
+        const elementData = this.elements[message.index];
         const { trackRemoval } = message;
 
         if (elementData == null) {
@@ -251,8 +272,7 @@ export default class WorkerProgram {
       }
 
       case "SelectElement": {
-        const elementData =
-          this.elements == null ? undefined : this.elements[message.index];
+        const elementData = this.elements[message.index];
         const { trackRemoval } = message;
 
         if (elementData == null) {
@@ -420,10 +440,6 @@ export default class WorkerProgram {
       return;
     }
 
-    if (this.trackInteractions) {
-      this.sendMessage({ type: "Interaction" });
-    }
-
     const match = this.keyboardShortcuts.find(
       ({ shortcut }) =>
         event.key === shortcut.key &&
@@ -442,6 +458,21 @@ export default class WorkerProgram {
       // prevents additional listeners on the same node (`window` in this case)
       // from being called.
       event.stopImmediatePropagation();
+    }
+
+    if (
+      this.trackInteractions &&
+      // If the key press is suppressed and doesn’t trigger anything, it’s not
+      // really an interaction. This allows showing title attributes when
+      // overtyping after filtering hints by text. Otherwise the extra key
+      // presses would cause the title to immediately disappear.
+      !(
+        this.keyboardOptions.suppressByDefault &&
+        !this.keyboardOptions.sendAll &&
+        match == null
+      )
+    ) {
+      this.sendMessage({ type: "Interaction" });
     }
 
     if (match != null) {
@@ -506,23 +537,29 @@ export default class WorkerProgram {
     this.sendMessage({
       type: "ReportVisibleElements",
       elements: elements.map(
-        ({ element, data: { type }, measurements }, index) => ({
-          type,
-          index,
-          url:
-            type === "link" && element instanceof HTMLAnchorElement
-              ? element.href
-              : undefined,
-          title: getTitle(element),
-          isTextInput: isTextInput(element),
-          hintMeasurements: measurements,
-        })
+        ({ element, data: { type }, measurements }, index) => {
+          const text = element.textContent;
+          return {
+            type,
+            index,
+            url:
+              type === "link" && element instanceof HTMLAnchorElement
+                ? element.href
+                : undefined,
+            title: getTitle(element),
+            text,
+            textWeight: getTextWeight(text, measurements.weight),
+            isTextInput: isTextInput(element),
+            hintMeasurements: measurements,
+          };
+        }
       ),
       numFrames: frames.length,
       durations: time.export(),
     });
 
     this.elements = elements;
+    this.viewports = viewports;
   }
 
   // Track if the element (or any of its parents) is removed. This is used to
@@ -775,4 +812,68 @@ function getSelectionDirection(selection: Selection): ?boolean {
   range.setStart(anchorNode, selection.anchorOffset);
   range.setEnd(focusNode, selection.focusOffset);
   return !range.collapsed;
+}
+
+function getTextWeight(text: string, weight: number): number {
+  // The weight used for hints after filtering by text is the number of
+  // non-whitespace characters, plus a tiny bit of the regular hint weight in
+  // case of ties.
+  return Math.max(1, text.replace(/\s/g, "").length + Math.log10(weight));
+}
+
+function getTextRects(
+  element: HTMLElement,
+  viewports: Array<Box>,
+  words: Set<string>
+): Array<Box> {
+  const text = element.textContent.toLowerCase();
+
+  const ranges = [];
+
+  for (const word of words) {
+    let index = -1;
+    while ((index = text.indexOf(word, index + 1)) >= 0) {
+      ranges.push({
+        start: index,
+        end: index + word.length,
+        range: document.createRange(),
+      });
+    }
+  }
+
+  let index = 0;
+
+  for (const node of walkTextNodes(element)) {
+    const nextIndex = index + node.length;
+
+    for (const { start, end, range } of ranges) {
+      if (start >= index && start < nextIndex) {
+        range.setStart(node, start - index);
+      }
+      if (end >= index && end <= nextIndex) {
+        range.setEnd(node, end - index);
+      }
+    }
+
+    index = nextIndex;
+  }
+
+  return [].concat(
+    ...ranges.map(({ range }) => {
+      const rects = range.getClientRects();
+      return Array.from(rects, rect => getVisibleBox(rect, viewports)).filter(
+        Boolean
+      );
+    })
+  );
+}
+
+function* walkTextNodes(element: HTMLElement): Generator<Text, void, void> {
+  for (const node of element.childNodes) {
+    if (node instanceof Text) {
+      yield node;
+    } else if (node instanceof HTMLElement) {
+      yield* walkTextNodes(node);
+    }
+  }
 }

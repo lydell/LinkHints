@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>filter by text</title>
+    <style>
+      .boxes {
+        display: flex;
+      }
+
+      .boxes > a {
+        margin-right: 15px;
+        width: 100px;
+        height: 100px;
+        border: 1px solid;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <p>When filtering by text:</p>
+    <ul>
+      <li>The shortest text should get the best hint.</li>
+      <li>The updated hints should not be off-screen.</li>
+      <li>The highlighting should work nested elements and separate text nodes.</li>
+      <li>The button badge count should update.</li>
+    </ul>
+    <p>Don’t forget to try backspacing.</p>
+
+    <p><a href="#">Case insensitve text!</a></p>
+    <p><a href="#">Case Insensitve TEXT! (different case)</a></p>
+    <p><a href="#">Case <em>in</em>sensitve TEXT! (nested element)</a></p>
+    <p><a href="#">Case <em>i<!-- comment -->n</em>sensitve TE<!-- comment -->XT!
+      (nested element and separate text nodes)</a></p>
+    <p><a href="#">Case <small>in</small>sensitve T<sup>E</sup><sub>X</sub>T! (different text sizes)</a></p>
+
+    <iframe src="iframe.html"></iframe>
+
+    <p>
+      The following links are the same size. After filtering on “CD” and then
+      backspacing back, they should get the original hints and not swap with
+      each other.
+    </p>
+    <div class="boxes">
+      <a href="#">AB</a>
+      <a href="#">AB</a>
+      <a href="#">CD</a>
+      <a href="#">CD</a>
+    </div>
+
+    <p><a href="https://example.com">example.com</a></p>
+    <p>
+      <textarea rows="5" cols="90">Focus this textarea and open the above link in a new tab to try the overtyping prevention.</textarea>
+    </p>
+    <p>Also try overtyping to show the title of this abbreviation: <abbr title="Cascading Style Sheets">CSS</abbr></p>
+  </body>
+</html>

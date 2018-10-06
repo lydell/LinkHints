@@ -9,7 +9,7 @@ import {
   bind,
   log,
   makeRandomToken,
-  stableSort,
+  partition,
   unreachable,
 } from "../shared/main";
 import iconsChecksum from "../icons/checksum";
@@ -17,10 +17,12 @@ import iconsChecksum from "../icons/checksum";
 import type { ElementTypes } from "../worker/ElementManager";
 import type {
   ElementWithHint,
+  ExtendedElementReport,
   FromBackground,
   FromPopup,
   FromRenderer,
   FromWorker,
+  HintUpdate,
   HintsState,
   TabState,
   ToBackground,
@@ -39,6 +41,12 @@ type MessageInfo = {|
   frameId: number,
   // Currently unused, but nice to have in logging.
   url: ?string,
+|};
+
+type Hints = {|
+  chars: string,
+  autoActivate: boolean,
+  timeout: number,
 |};
 
 // This is the same color as the pointer in the icon.
@@ -61,7 +69,7 @@ const BADGE_COLLECTING_DELAY = 300; // ms
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
-  hintChars: string;
+  hints: Hints;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
@@ -69,15 +77,15 @@ export default class BackgroundProgram {
   constructor({
     normalKeyboardShortcuts,
     hintsKeyboardShortcuts,
-    hintChars,
+    hints,
   }: {|
     normalKeyboardShortcuts: Array<KeyboardMapping>,
     hintsKeyboardShortcuts: Array<KeyboardMapping>,
-    hintChars: string,
+    hints: Hints,
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
-    this.hintChars = hintChars;
+    this.hints = hints;
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
@@ -147,6 +155,17 @@ export default class BackgroundProgram {
     message: ToWorker,
     { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
   ): Promise<void> {
+    const tabState = this.tabState.get(tabId);
+
+    if (
+      tabState != null &&
+      tabState.preventOverTypingTimeoutId != null &&
+      message.type === "StateSync"
+    ) {
+      clearTimeout(tabState.preventOverTypingTimeoutId);
+      tabState.preventOverTypingTimeoutId = undefined;
+    }
+
     await this.sendContentMessage(
       { type: "ToWorker", message },
       { tabId, frameId }
@@ -258,50 +277,132 @@ export default class BackgroundProgram {
         const { timestamp } = message;
         const { key } = message.shortcut;
         const isBackspace = key === "Backspace";
+        const isEnter = key === "Enter";
 
+        // Ignore unknown/non-text keys.
+        if (!(isBackspace || isEnter || key.length === 1)) {
+          return;
+        }
+
+        const isHintKey =
+          this.hints.chars.includes(key) ||
+          (isBackspace && hintsState.enteredHintChars !== "");
+
+        // Disallow filtering by text after having started entering hint chars.
+        if (!isHintKey && hintsState.enteredHintChars !== "") {
+          return;
+        }
+
+        // Update entered chars (either text chars or hint chars).
+        const chars = isHintKey
+          ? hintsState.enteredHintChars
+          : hintsState.enteredTextChars;
+        const newChars = isBackspace
+          ? chars.slice(0, -1)
+          : isEnter
+            ? chars
+            : `${chars}${key}`;
+        const enteredHintChars = isHintKey
+          ? newChars
+          : hintsState.enteredHintChars;
+        const enteredTextChars = isHintKey
+          ? hintsState.enteredTextChars
+          : newChars
+              .toLowerCase()
+              // Trim leading whitespace and allow only one trailing space.
+              .replace(/^\s+/, "")
+              .replace(/\s+$/, " ");
+
+        const hasEnteredTextCharsOnly =
+          enteredTextChars !== "" && enteredHintChars === "";
+        const words = enteredTextChars.split(" ").filter(word => word !== "");
+
+        // Filter away elements/hints not matching by text.
+        const [matching, nonMatching] = partition(
+          hintsState.elementsWithHints,
+          element => {
+            const text = element.text.toLowerCase();
+            return words.every(word => text.includes(word));
+          }
+        );
+
+        // Update the hints after the above filtering.
+        const elementsWithHints = assignHints(matching, {
+          hintChars: this.hints.chars,
+          hasEnteredTextChars: enteredTextChars !== "",
+        });
+
+        // Find which hints to highlight (if any), and which to activate (if
+        // any). This depends on whether only text chars have been enterd, if
+        // auto activation is enabled, if the Enter key is pressed and if hint
+        // chars have been entered.
+        const allHints = elementsWithHints.map(element => element.hint);
+        const matchingHints = allHints.filter(
+          hint => hint === enteredHintChars
+        );
+        const matchingHintsSet =
+          hasEnteredTextCharsOnly && this.hints.autoActivate
+            ? new Set(allHints)
+            : new Set(matchingHints);
+        const matchedHint =
+          matchingHintsSet.size === 1
+            ? Array.from(matchingHintsSet)[0]
+            : undefined;
+        const highlightedHint = hasEnteredTextCharsOnly
+          ? allHints[0]
+          : undefined;
+        const match = elementsWithHints.find(
+          element =>
+            element.hint === matchedHint ||
+            (isEnter && element.hint === highlightedHint)
+        );
+
+        const updates: Array<HintUpdate> = elementsWithHints
+          .map(
+            element =>
+              element.hint.startsWith(enteredHintChars)
+                ? {
+                    // Update the hint (which can change based on text filtering),
+                    // which part of the hint has been matched and whether it
+                    // should be marked as highlighted/matched.
+                    type: "Update",
+                    index: element.index,
+                    matched: enteredHintChars,
+                    rest: element.hint.slice(enteredHintChars.length),
+                    markMatched:
+                      match != null || element.hint === highlightedHint,
+                  }
+                : {
+                    // Hide hints not matching the entered hint chars.
+                    type: "Hide",
+                    index: element.index,
+                  }
+          )
+          .concat(
+            nonMatching.map(element => ({
+              // Hide hints for elements filtered by text.
+              type: "Hide",
+              index: element.index,
+            }))
+          );
+
+        // If pressing a hint char that is currently unused, ignore it.
         if (
-          !isBackspace &&
-          (key.length !== 1 || !this.hintChars.includes(key))
+          enteredHintChars !== "" &&
+          updates.every(update => update.type === "Hide")
         ) {
           return;
         }
 
-        const enteredHintChars = isBackspace
-          ? hintsState.enteredHintChars.slice(0, -1)
-          : `${hintsState.enteredHintChars}${key}`;
-
-        const matchingHints = new Set(
-          hintsState.elementsWithHints
-            .map(element => element.hint)
-            .filter(hint => hint === enteredHintChars)
+        hintsState.enteredHintChars = enteredHintChars;
+        hintsState.enteredTextChars = enteredTextChars;
+        // Blank out the hint for the elements filtered by text. The badge count
+        // only includes non-empty hints.
+        hintsState.elementsWithHints = elementsWithHints.concat(
+          nonMatching.map(element => ({ ...element, hint: "" }))
         );
 
-        const done = matchingHints.size === 1;
-
-        const updates = hintsState.elementsWithHints.map(
-          element =>
-            element.hint.startsWith(enteredHintChars)
-              ? {
-                  type: "Update",
-                  matched: enteredHintChars,
-                  rest: element.hint.slice(enteredHintChars.length),
-                  markMatched: done,
-                }
-              : { type: "Hide" }
-        );
-
-        if (updates.length === 0) {
-          return;
-        }
-
-        if (done) {
-          const [hint] = Array.from(matchingHints);
-          const [match] = stableSort(
-            hintsState.elementsWithHints.filter(
-              element => element.hint === hint
-            ),
-            (a, b) => b.weight - a.weight
-          );
+        if (match != null) {
           const { url, title } = match;
 
           switch (hintsState.mode) {
@@ -321,24 +422,25 @@ export default class BackgroundProgram {
                 this.sendWorkerMessage(
                   {
                     type: "ClickElement",
-                    index: match.index,
+                    index: match.frame.index,
                     trackRemoval: false,
                   },
                   {
                     tabId: info.tabId,
-                    frameId: match.frameId,
+                    frameId: match.frame.id,
                   }
                 );
                 this.sendRendererMessage(
                   {
                     type: "UpdateHints",
                     updates,
+                    enteredTextChars,
                   },
                   { tabId: info.tabId }
                 );
-                this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+                this.updateWorkerStateAfterHintActivation({
                   tabId: info.tabId,
-                  frameId: "all_frames",
+                  hasEnteredTextCharsOnly,
                 });
                 this.enterHintsMode({
                   tabId: info.tabId,
@@ -348,25 +450,32 @@ export default class BackgroundProgram {
                 return;
               } else {
                 hintsState.enteredHintChars = "";
+                hintsState.enteredTextChars = "";
                 this.openNewTab({
                   url,
-                  elementIndex: match.index,
+                  elementIndex: match.frame.index,
                   tabId: info.tabId,
-                  frameId: match.frameId,
+                  frameId: match.frame.id,
                   foreground: false,
                 });
                 this.sendRendererMessage(
                   {
                     type: "UpdateHints",
-                    updates: hintsState.elementsWithHints.map(element => ({
+                    updates: assignHints(hintsState.elementsWithHints, {
+                      hintChars: this.hints.chars,
+                      hasEnteredTextChars: false,
+                    }).map(element => ({
                       type: "Update",
+                      index: element.index,
                       matched: "",
                       rest: element.hint,
-                      markMatched: element.hint === enteredHintChars,
+                      markMatched: element.index === match.index,
                     })),
+                    enteredTextChars: "",
                   },
                   { tabId: info.tabId }
                 );
+                this.updateBadge(info.tabId);
                 return;
               }
               break;
@@ -382,9 +491,9 @@ export default class BackgroundProgram {
               }
               this.openNewTab({
                 url,
-                elementIndex: match.index,
+                elementIndex: match.frame.index,
                 tabId: info.tabId,
-                frameId: match.frameId,
+                frameId: match.frame.id,
                 foreground: false,
               });
               break;
@@ -400,9 +509,9 @@ export default class BackgroundProgram {
               }
               this.openNewTab({
                 url,
-                elementIndex: match.index,
+                elementIndex: match.frame.index,
                 tabId: info.tabId,
-                frameId: match.frameId,
+                frameId: match.frame.id,
                 foreground: true,
               });
               break;
@@ -411,12 +520,12 @@ export default class BackgroundProgram {
               this.sendWorkerMessage(
                 {
                   type: "SelectElement",
-                  index: match.index,
+                  index: match.frame.index,
                   trackRemoval: title != null,
                 },
                 {
                   tabId: info.tabId,
-                  frameId: match.frameId,
+                  frameId: match.frame.id,
                 }
               );
               if (title != null) {
@@ -437,11 +546,52 @@ export default class BackgroundProgram {
             default:
               unreachable(hintsState.mode);
           }
+
           tabState.hintsState = { type: "Idle" };
-          this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+          this.updateWorkerStateAfterHintActivation({
             tabId: info.tabId,
-            frameId: "all_frames",
+            hasEnteredTextCharsOnly,
           });
+        }
+
+        if (words.length > 0) {
+          const indexesByFrame: Map<number, Array<number>> = new Map();
+          for (const { frame } of elementsWithHints) {
+            const previous = indexesByFrame.get(frame.id);
+            if (previous == null) {
+              indexesByFrame.set(frame.id, [frame.index]);
+            } else {
+              previous.push(frame.index);
+            }
+          }
+          for (const [frameId, indexes] of indexesByFrame) {
+            this.sendWorkerMessage(
+              {
+                type: "GetTextRects",
+                indexes,
+                words,
+              },
+              { tabId: info.tabId, frameId }
+            );
+          }
+        } else {
+          this.sendRendererMessage(
+            { type: "UnrenderTextRects" },
+            { tabId: info.tabId }
+          );
+        }
+
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates,
+            enteredTextChars,
+          },
+          { tabId: info.tabId }
+        );
+
+        if (match != null) {
+          const { title } = match;
           this.sendRendererMessage(
             {
               type: "Unrender",
@@ -455,17 +605,9 @@ export default class BackgroundProgram {
             },
             { tabId: info.tabId }
           );
-          this.updateBadge(info.tabId);
         }
 
-        hintsState.enteredHintChars = enteredHintChars;
-        this.sendRendererMessage(
-          {
-            type: "UpdateHints",
-            updates,
-          },
-          { tabId: info.tabId }
-        );
+        this.updateBadge(info.tabId);
         break;
       }
 
@@ -499,10 +641,16 @@ export default class BackgroundProgram {
           return;
         }
 
-        const elements = message.elements.map(element => ({
-          ...element,
-          frameId: info.frameId,
-        }));
+        const elements: Array<ExtendedElementReport> = message.elements.map(
+          element => ({
+            ...element,
+            // Move the element index into the `.frame` property. `.index` is set
+            // later (in `this.maybeStartHinting`) and used to map elements in
+            // BackgroundProgram to DOM elements in RendererProgram.
+            index: -1,
+            frame: { id: info.frameId, index: element.index },
+          })
+        );
 
         hintsState.pendingElements.elements.push(...elements);
 
@@ -522,7 +670,7 @@ export default class BackgroundProgram {
           // If there are no frames, start hinting immediately, unless we're
           // waiting for frames in another frame.
           if (hintsState.timeoutId == null) {
-            this.maybeStartHinting(tabState, info.tabId);
+            this.maybeStartHinting(info.tabId);
           }
         } else {
           // If there are frames, wait for them.
@@ -531,11 +679,22 @@ export default class BackgroundProgram {
           }
           hintsState.timeoutId = setTimeout(() => {
             hintsState.timeoutId = undefined;
-            this.maybeStartHinting(tabState, info.tabId);
+            this.maybeStartHinting(info.tabId);
           }, FRAME_REPORT_TIMEOUT);
         }
         break;
       }
+
+      case "ReportTextRects":
+        this.sendRendererMessage(
+          {
+            type: "RenderTextRects",
+            rects: message.rects,
+            frameId: info.frameId,
+          },
+          { tabId: info.tabId }
+        );
+        break;
 
       case "Interaction":
         this.removeTitle(info.tabId);
@@ -585,12 +744,12 @@ export default class BackgroundProgram {
     this.sendWorkerMessage(
       {
         type: "ClickElement",
-        index: match.index,
+        index: match.frame.index,
         trackRemoval: match.title != null,
       },
       {
         tabId,
-        frameId: match.frameId,
+        frameId: match.frame.id,
       }
     );
     if (match.title != null) {
@@ -655,8 +814,15 @@ export default class BackgroundProgram {
     }
   }
 
-  maybeStartHinting(tabState: TabState, tabId: number) {
+  maybeStartHinting(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+
+    if (tabState == null) {
+      return;
+    }
+
     const { hintsState } = tabState;
+
     if (
       hintsState.type !== "Collecting" ||
       hintsState.pendingElements.pendingFrames.collecting > 0
@@ -667,27 +833,23 @@ export default class BackgroundProgram {
     const { time } = hintsState;
     time.start("assign hints");
 
-    const elementsWithHints = stableSort(
-      hintsState.pendingElements.elements.map(element => ({
+    const elementsWithHints = assignHints(
+      hintsState.pendingElements.elements.map((element, index) => ({
         ...element,
-        weight: element.hintMeasurements.weight,
+        // These are filled in by `assignHints` but need to be set here for type
+        // checking reasons.
+        weight: 0,
         hint: "",
+        // This is set for real in the next couple of lines, but set here also
+        // to make sorting in Chrome stable. This can be removed when Chrome 70
+        // is released (which makes `Array.prototype.sort` stable).
+        index,
       })),
-      (a, b) => compareWeights(b, a)
-    );
-    const combined = combineByHref(elementsWithHints);
-    const tree = huffman.createTree(combined, this.hintChars.length, {
-      compare: compareWeights,
-    });
-    tree.assignCodeWords(this.hintChars, (item, codeWord) => {
-      if (item instanceof Combined) {
-        for (const child of item.children) {
-          child.hint = codeWord;
-        }
-      } else {
-        item.hint = codeWord;
-      }
-    });
+      { hintChars: this.hints.chars, hasEnteredTextChars: false }
+      // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
+      // real to map these elements to DOM elements in RendererProgram.
+    ).map((element, index) => ({ ...element, index }));
+
     tabState.hintsState = {
       type: "Hinting",
       mode: hintsState.mode,
@@ -695,6 +857,7 @@ export default class BackgroundProgram {
       time,
       durations: hintsState.durations,
       enteredHintChars: "",
+      enteredTextChars: "",
       elementsWithHints,
     };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
@@ -996,35 +1159,100 @@ export default class BackgroundProgram {
 
   makeWorkerState(
     hintsState: HintsState,
-    { refreshToken = true }: {| refreshToken: boolean |} = {}
+    {
+      refreshToken = true,
+      preventOverTyping = false,
+    }: {| refreshToken?: boolean, preventOverTyping?: boolean |} = {}
   ): ToWorker {
     if (refreshToken) {
       this.oneTimeWindowMessageToken = makeRandomToken();
     }
+
+    const preventOverTypingKeyboardOptions = {
+      suppressByDefault: true,
+      sendAll: false,
+    };
+
     if (hintsState.type === "Hinting") {
       return {
         type: "StateSync",
         logLevel: log.level,
         clearElements: false,
-        keyboardShortcuts: this.hintsKeyboardShortcuts,
-        keyboardOptions: {
-          suppressByDefault: true,
-          sendAll: true,
-        },
+        keyboardShortcuts: preventOverTyping ? [] : this.hintsKeyboardShortcuts,
+        keyboardOptions: preventOverTyping
+          ? preventOverTypingKeyboardOptions
+          : {
+              suppressByDefault: true,
+              sendAll: true,
+            },
         oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       };
     }
+
     return {
       type: "StateSync",
       logLevel: log.level,
       clearElements: true,
-      keyboardShortcuts: this.normalKeyboardShortcuts,
-      keyboardOptions: {
-        suppressByDefault: false,
-        sendAll: false,
-      },
+      keyboardShortcuts: preventOverTyping ? [] : this.normalKeyboardShortcuts,
+      keyboardOptions: preventOverTyping
+        ? preventOverTypingKeyboardOptions
+        : {
+            suppressByDefault: false,
+            sendAll: false,
+          },
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
+  }
+
+  // Send a "StateSync" message to WorkerProgram. If a hint was auto-activated
+  // by text filtering, prevent “over-typing” (continued typing after the hint
+  // got matched, before realizing it got matched) by temporarily removing all
+  // keyboard shortcuts and suppressing all key presses for a short time.
+  updateWorkerStateAfterHintActivation({
+    tabId,
+    hasEnteredTextCharsOnly,
+  }: {|
+    tabId: number,
+    hasEnteredTextCharsOnly: boolean,
+  |}) {
+    const preventOverTyping =
+      this.hints.autoActivate && hasEnteredTextCharsOnly;
+
+    const tabState = this.tabState.get(tabId);
+
+    if (tabState == null) {
+      return;
+    }
+
+    this.sendWorkerMessage(
+      this.makeWorkerState(tabState.hintsState, { preventOverTyping }),
+      {
+        tabId,
+        frameId: "all_frames",
+      }
+    );
+
+    if (preventOverTyping) {
+      if (tabState.preventOverTypingTimeoutId != null) {
+        clearTimeout(tabState.preventOverTypingTimeoutId);
+      }
+
+      tabState.preventOverTypingTimeoutId = setTimeout(() => {
+        tabState.preventOverTypingTimeoutId = undefined;
+
+        // The tab might have been closed during the timeout.
+        const newTabState = this.tabState.get(tabId);
+
+        if (newTabState == null) {
+          return;
+        }
+
+        this.sendWorkerMessage(this.makeWorkerState(newTabState.hintsState), {
+          tabId,
+          frameId: "all_frames",
+        });
+      }, this.hints.timeout);
+    }
   }
 }
 
@@ -1032,6 +1260,7 @@ export default class BackgroundProgram {
 function makeEmptyTabState(): TabState {
   return {
     hintsState: { type: "Idle" },
+    preventOverTypingTimeoutId: undefined,
     perf: [],
   };
 }
@@ -1181,7 +1410,10 @@ function getBadgeText(hintsState: HintsState): string {
     case "Collecting":
       return "…";
     case "Hinting":
-      return String(hintsState.elementsWithHints.length);
+      return String(
+        hintsState.elementsWithHints.filter(element => element.hint !== "")
+          .length
+      );
     default:
       return unreachable(hintsState.type);
   }
@@ -1230,4 +1462,55 @@ const URL_HASH = /#[\s\S]*$/;
 
 function stripHash(href: string): string {
   return href.replace(URL_HASH, "");
+}
+
+function assignHints(
+  passedElements: Array<ElementWithHint>,
+  {
+    hintChars,
+    hasEnteredTextChars,
+  }: {| hintChars: string, hasEnteredTextChars: boolean |}
+): Array<ElementWithHint> {
+  const largestTextWeight = hasEnteredTextChars
+    ? Math.max(1, ...passedElements.map(element => element.textWeight))
+    : 0;
+
+  // Sort the elements so elements with more weight get higher z-index.
+  const elements: Array<ElementWithHint> = passedElements
+    .map(element => ({
+      ...element,
+      // When filtering by text, give better hints to elements with shorter
+      // text. The more of the text that is matched, the more likely to be what
+      // the user is looking for.
+      weight: hasEnteredTextChars
+        ? largestTextWeight - element.textWeight + 1
+        : element.hintMeasurements.weight,
+      // This is set to the real thing below.
+      hint: "",
+    }))
+    // `hintsState.elementsWithHints` changes order as
+    // `hintsState.enteredTextChars` come and go. Sort on `.index` if weights
+    // are equal, so that elements don’t unexpectedly swap hints after erasing
+    // some text chars.
+    .sort((a, b) => compareWeights(b, a) || a.index - b.index);
+
+  const combined = combineByHref(elements);
+
+  const tree = huffman.createTree(combined, hintChars.length, {
+    // Even though we sorted `elements` above, `combined` might not be sorted.
+    sorted: false,
+    compare: compareWeights,
+  });
+
+  tree.assignCodeWords(hintChars, (item, codeWord) => {
+    if (item instanceof Combined) {
+      for (const child of item.children) {
+        child.hint = codeWord;
+      }
+    } else {
+      item.hint = codeWord;
+    }
+  });
+
+  return elements;
 }

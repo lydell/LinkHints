@@ -192,20 +192,6 @@ export function partition<T>(
   return [left, right];
 }
 
-// TODO: Get rid of this when Chrome 70 comes out, which switched to stable sort.
-// See <https://twitter.com/mathias/status/1036626116654637057>.
-export function stableSort<T>(array: Array<T>, fn: (T, T) => number): Array<T> {
-  if (BROWSER === "firefox") {
-    // Firefox’s `Array.prototype.sort` is already stable.
-    return array.slice().sort(fn);
-  }
-
-  return array
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => fn(a.item, b.item) || a.index - b.index)
-    .map(({ item }) => item);
-}
-
 // Using double `requestAnimationFrame` since they run before paint.
 // See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
 export function waitForPaint(): Promise<void> {

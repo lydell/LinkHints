@@ -1,12 +1,13 @@
 // @flow
 
 // TODO: Move these types somewhere.
-import type { Durations, LogLevel, TimeTracker } from "../shared/main";
 import type {
+  Box,
   ElementType,
   ElementTypes,
   HintMeasurements,
 } from "../worker/ElementManager";
+import type { Durations, LogLevel, TimeTracker } from "../shared/main";
 
 import type {
   HintsMode,
@@ -71,6 +72,10 @@ export type FromWorker =
       durations: Durations,
     |}
   | {|
+      type: "ReportTextRects",
+      rects: Array<Box>,
+    |}
+  | {|
       type: "Interaction",
     |}
   | {|
@@ -92,6 +97,11 @@ export type ToWorker =
   | {|
       type: "StartFindElements",
       types: ElementTypes,
+    |}
+  | {|
+      type: "GetTextRects",
+      indexes: Array<number>,
+      words: Array<string>,
     |}
   | {|
       type: "FocusElement",
@@ -145,10 +155,19 @@ export type ToRenderer =
   | {|
       type: "UpdateHints",
       updates: Array<HintUpdate>,
+      enteredTextChars: string,
     |}
   | {|
       type: "RotateHints",
       forward: boolean,
+    |}
+  | {|
+      type: "RenderTextRects",
+      rects: Array<Box>,
+      frameId: number,
+    |}
+  | {|
+      type: "UnrenderTextRects",
     |}
   | {|
       type: "Unrender",
@@ -181,12 +200,17 @@ export type ElementReport = {|
   hintMeasurements: HintMeasurements,
   url: ?string,
   title: ?string,
+  text: string,
+  textWeight: number,
   isTextInput: boolean,
 |};
 
 export type ExtendedElementReport = {|
   ...ElementReport,
-  frameId: number,
+  frame: {|
+    id: number,
+    index: number,
+  |},
 |};
 
 export type ElementWithHint = {|
@@ -198,9 +222,11 @@ export type ElementWithHint = {|
 export type HintUpdate =
   | {|
       type: "Hide",
+      index: number,
     |}
   | {|
       type: "Update",
+      index: number,
       matched: string,
       rest: string,
       markMatched: boolean,
@@ -208,6 +234,7 @@ export type HintUpdate =
 
 export type TabState = {|
   hintsState: HintsState,
+  preventOverTypingTimeoutId: ?TimeoutID,
   perf: Array<{|
     timeToFirstPaint: number,
     topDurations: Durations,
@@ -236,6 +263,7 @@ export type HintsState =
       time: TimeTracker,
       durations: Array<{| url: string, durations: Durations |}>,
       enteredHintChars: string,
+      enteredTextChars: string,
       elementsWithHints: Array<ElementWithHint>,
     |};
 

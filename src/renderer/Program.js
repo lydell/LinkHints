@@ -13,6 +13,7 @@ import {
   unreachable,
   waitForPaint,
 } from "../shared/main";
+import type { Box } from "../worker/ElementManager";
 import type {
   ElementWithHint,
   FromBackground,
@@ -31,12 +32,14 @@ const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hiddenHint";
 const MATCHED_HINT_CLASS = "matchedHint";
 const MATCHED_CHARS_CLASS = "matchedChars";
+const TEXT_RECT_CLASS = "textRect";
 const TITLE_CLASS = "title";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 const UNRENDER_DELAY = 200; // ms
 
-// The maximum z-index browsers support.
+// The minimum and maximum z-index browsers support.
+const MIN_Z_INDEX = -2147483648;
 const MAX_Z_INDEX = 2147483647;
 
 const CONTAINER_STYLES = {
@@ -55,8 +58,11 @@ const CSS = `
   transform: translateY(-50%);
   box-sizing: border-box;
   padding: 2px;
-  border: solid 1px rgba(0, 0, 0, 0.4);
-  background-color: #ffd76e;
+  border: solid 1px rgba(0, 0, 0, 0.5);
+  ${
+    "" // This is the yellow used in Chrome for findbar matches.
+  }
+  background-color: #f6ff00;
   color: black;
   ${font}
   font-size: 12px;
@@ -77,6 +83,16 @@ const CSS = `
 
 .${MATCHED_CHARS_CLASS} {
   opacity: 0.3;
+}
+
+.${TEXT_RECT_CLASS} {
+  position: absolute;
+  z-index: ${MIN_Z_INDEX};
+  box-sizing: border-box;
+  ${
+    "" // This is the purple used in Firefox for findbar "Highlight all" matches.
+  }
+  border-bottom: 2px solid #ef0fff;
 }
 
 .${TITLE_CLASS} {
@@ -105,7 +121,10 @@ export default class RendererProgram {
   hints: Array<HTMLElement>;
   rects: Map<HTMLElement, ClientRect>;
   unrenderTimeoutId: ?TimeoutID;
+  enteredTextChars: string;
   resets: Resets;
+  shruggieElement: HTMLElement;
+  titleElement: HTMLElement;
   container: {|
     element: HTMLElement,
     root: ShadowRoot,
@@ -119,6 +138,7 @@ export default class RendererProgram {
     this.hints = [];
     this.rects = new Map();
     this.unrenderTimeoutId = undefined;
+    this.enteredTextChars = "";
     this.resets = new Resets();
 
     bind(this, [
@@ -130,6 +150,16 @@ export default class RendererProgram {
       this.onIntersection,
       this.onResize,
     ]);
+
+    this.shruggieElement = createHintElement("¯\\_(ツ)_/¯");
+    setStyles(this.shruggieElement, {
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+    });
+
+    this.titleElement = document.createElement("div");
+    this.titleElement.className = TITLE_CLASS;
 
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
@@ -232,11 +262,20 @@ export default class RendererProgram {
         break;
 
       case "UpdateHints":
-        this.updateHints(message.updates);
+        this.updateHints(message.updates, message.enteredTextChars);
         break;
 
       case "RotateHints":
         this.rotateHints({ forward: message.forward });
+        break;
+
+      case "RenderTextRects":
+        this.unrenderTextRects(message.frameId);
+        this.renderTextRects(message.rects, message.frameId);
+        break;
+
+      case "UnrenderTextRects":
+        this.unrenderTextRects();
         break;
 
       case "Unrender":
@@ -345,14 +384,7 @@ export default class RendererProgram {
     );
 
     if (elements.length === 0) {
-      const element = createHintElement("¯\\_(ツ)_/¯");
-      setStyles(element, {
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-      });
-      root.append(element);
-      this.maybeApplyStyles(element);
+      this.insertShruggie();
       return;
     }
 
@@ -459,37 +491,66 @@ export default class RendererProgram {
     });
   }
 
-  updateHints(updates: Array<HintUpdate>) {
-    for (const [index, update] of updates.entries()) {
-      const child = this.hints[index];
+  updateHints(updates: Array<HintUpdate>, enteredTextChars: string) {
+    let numHidden = 0;
+    const maybeNeedsMoveInsideViewport = [];
+
+    for (const update of updates) {
+      const child = this.hints[update.index];
 
       if (child == null) {
-        log(
-          "error",
-          "RendererProgram#updateHints: missing child",
-          index,
-          update
-        );
+        log("error", "RendererProgram#updateHints: missing child", update);
         continue;
       }
 
       child.classList.toggle(HIDDEN_HINT_CLASS, update.type === "Hide");
 
-      if (update.type === "Update") {
-        emptyNode(child);
-        if (update.matched !== "") {
-          const matched = document.createElement("span");
-          matched.className = MATCHED_CHARS_CLASS;
-          matched.append(document.createTextNode(update.matched));
-          child.append(matched);
-          this.maybeApplyStyles(matched);
-        }
-        child.classList.toggle(MATCHED_HINT_CLASS, update.markMatched);
-        child.append(document.createTextNode(update.rest));
+      switch (update.type) {
+        case "Hide":
+          numHidden++;
+          break;
+
+        case "Update":
+          emptyNode(child);
+          if (update.matched !== "") {
+            const matched = document.createElement("span");
+            matched.className = MATCHED_CHARS_CLASS;
+            matched.append(document.createTextNode(update.matched));
+            child.append(matched);
+            this.maybeApplyStyles(matched);
+          } else if (enteredTextChars !== this.enteredTextChars) {
+            setStyles(child, { "margin-right": "", "margin-top": "" });
+            maybeNeedsMoveInsideViewport.push(child);
+          }
+          child.classList.toggle(MATCHED_HINT_CLASS, update.markMatched);
+          child.append(document.createTextNode(update.rest));
+          break;
+
+        default:
+          unreachable(update.type, update);
       }
 
       this.maybeApplyStyles(child);
     }
+
+    if (numHidden === this.hints.length) {
+      this.insertShruggie();
+    } else {
+      this.removeShruggie();
+    }
+
+    if (enteredTextChars === "") {
+      this.removeTitle();
+    } else {
+      this.insertTitle(enteredTextChars.replace(/\s/g, "\u00a0"));
+    }
+
+    if (maybeNeedsMoveInsideViewport.length > 0) {
+      const viewport = getViewport();
+      this.moveInsideViewport(maybeNeedsMoveInsideViewport, viewport);
+    }
+
+    this.enteredTextChars = enteredTextChars;
   }
 
   rotateHints({ forward }: {| forward: boolean |}) {
@@ -508,6 +569,41 @@ export default class RendererProgram {
         }
       }
     }
+  }
+
+  renderTextRects(rects: Array<Box>, frameId: number) {
+    const { root } = this.container;
+    for (const rect of rects) {
+      const element = document.createElement("div");
+      element.className = TEXT_RECT_CLASS;
+      element.setAttribute("data-frame-id", String(frameId));
+      setStyles(element, {
+        left: `${rect.x}px`,
+        top: `${rect.y}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+      });
+      root.append(element);
+    }
+  }
+
+  insertShruggie() {
+    this.container.root.append(this.shruggieElement);
+    this.maybeApplyStyles(this.shruggieElement);
+  }
+
+  removeShruggie() {
+    this.shruggieElement.remove();
+  }
+
+  insertTitle(title: string) {
+    this.titleElement.textContent = title;
+    this.container.root.append(this.titleElement);
+    this.maybeApplyStyles(this.titleElement);
+  }
+
+  removeTitle() {
+    this.titleElement.remove();
   }
 
   unrender() {
@@ -548,19 +644,27 @@ export default class RendererProgram {
       clearTimeout(this.unrenderTimeoutId);
     }
 
-    const titleElement = document.createElement("div");
-    titleElement.textContent = title;
-    titleElement.className = TITLE_CLASS;
-    this.container.root.append(titleElement);
+    this.insertTitle(title);
 
     this.unrenderTimeoutId = setTimeout(() => {
       this.unrenderTimeoutId = undefined;
       for (const element of this.hints) {
         element.remove();
       }
+      this.unrenderTextRects();
       this.hints = [];
       this.rects.clear();
     }, UNRENDER_DELAY);
+  }
+
+  unrenderTextRects(frameId?: number) {
+    const selector =
+      frameId == null
+        ? `.${TEXT_RECT_CLASS}`
+        : `.${TEXT_RECT_CLASS}[data-frame-id="${frameId}"]`;
+    for (const element of this.container.root.querySelectorAll(selector)) {
+      element.remove();
+    }
   }
 
   // It’s important to use `setStyles` instead of `.style.foo =` in this file,

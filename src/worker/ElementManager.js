@@ -1254,7 +1254,10 @@ function getNonCoveredPoint(
 // Turn a `ClientRect` into a `Box` using the coordinates of the topmost
 // viewport. Only the part of the `ClientRect` visible through all viewports end
 // up in the `Box`.
-function getVisibleBox(passedRect: ClientRect, viewports: Array<Box>): ?Box {
+export function getVisibleBox(
+  passedRect: ClientRect,
+  viewports: Array<Box>
+): ?Box {
   // No shortcuts (such as summing up viewport x:s and y:s) can be taken here,
   // since each viewport (frame) clips the visible area. We have to loop them
   // all through.
