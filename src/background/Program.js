@@ -370,7 +370,9 @@ export default class BackgroundProgram {
                     matchedChars: enteredHintChars,
                     restChars: element.hint.slice(enteredHintChars.length),
                     highlighted:
-                      match != null || element.hint === highlightedHint,
+                      match != null || element.hint === highlightedHint
+                        ? "yes"
+                        : "no",
                   }
                 : {
                     // Hide hints not matching the entered hint chars.
@@ -469,7 +471,8 @@ export default class BackgroundProgram {
                       index: element.index,
                       matchedChars: "",
                       restChars: element.hint,
-                      highlighted: element.index === match.index,
+                      highlighted:
+                        element.index === match.index ? "temporarily" : "no",
                     })),
                     enteredTextChars: "",
                   },

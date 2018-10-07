@@ -510,8 +510,9 @@ export default class RendererProgram {
           numHidden++;
           break;
 
-        case "Update":
+        case "Update": {
           emptyNode(child);
+
           if (update.matchedChars !== "") {
             const matched = document.createElement("span");
             matched.className = MATCHED_CHARS_CLASS;
@@ -522,9 +523,32 @@ export default class RendererProgram {
             setStyles(child, { "margin-right": "", "margin-top": "" });
             maybeNeedsMoveInsideViewport.push(child);
           }
-          child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
+
+          child.classList.toggle(
+            HIGHLIGHTED_HINT_CLASS,
+            update.highlighted !== "no"
+          );
+
           child.append(document.createTextNode(update.restChars));
+
+          const { timeoutId } = child.dataset;
+          if (timeoutId != null) {
+            // $FlowIgnore: `dataset` can only store strings, but `clearTimeout` works with strings in browsers.
+            clearTimeout(timeoutId);
+            delete child.dataset.timeoutId;
+          }
+          if (update.highlighted === "temporarily") {
+            child.dataset.timeoutId = String(
+              setTimeout(() => {
+                delete child.dataset.timeoutId;
+                child.classList.remove(HIGHLIGHTED_HINT_CLASS);
+                this.maybeApplyStyles(child);
+              }, UNRENDER_DELAY)
+            );
+          }
+
           break;
+        }
 
         default:
           unreachable(update.type, update);

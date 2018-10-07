@@ -229,7 +229,7 @@ export type HintUpdate =
       index: number,
       matchedChars: string,
       restChars: string,
-      highlighted: boolean,
+      highlighted: "yes" | "no" | "temporarily",
     |};
 
 export type TabState = {|
