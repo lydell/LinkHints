@@ -29,10 +29,10 @@ import { type Rule, applyStyles, parseCSS } from "./css";
 // possible to find and remove it if the ID is known.
 const CONTAINER_ID = "__SynthWebExt";
 const HINT_CLASS = "hint";
-const HIDDEN_HINT_CLASS = "hiddenHint";
-const MATCHED_HINT_CLASS = "matchedHint";
+const HIDDEN_HINT_CLASS = "hidden";
+const HIGHLIGHTED_HINT_CLASS = "highlighted";
 const MATCHED_CHARS_CLASS = "matchedChars";
-const TEXT_RECT_CLASS = "textRect";
+const TEXT_RECT_CLASS = "matchedText";
 const TITLE_CLASS = "title";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
@@ -77,7 +77,7 @@ const CSS = `
   opacity: 0;
 }
 
-.${MATCHED_HINT_CLASS} {
+.${HIGHLIGHTED_HINT_CLASS} {
   background-color: lime;
 }
 
@@ -512,18 +512,18 @@ export default class RendererProgram {
 
         case "Update":
           emptyNode(child);
-          if (update.matched !== "") {
+          if (update.matchedChars !== "") {
             const matched = document.createElement("span");
             matched.className = MATCHED_CHARS_CLASS;
-            matched.append(document.createTextNode(update.matched));
+            matched.append(document.createTextNode(update.matchedChars));
             child.append(matched);
             this.maybeApplyStyles(matched);
           } else if (enteredTextChars !== this.enteredTextChars) {
             setStyles(child, { "margin-right": "", "margin-top": "" });
             maybeNeedsMoveInsideViewport.push(child);
           }
-          child.classList.toggle(MATCHED_HINT_CLASS, update.markMatched);
-          child.append(document.createTextNode(update.rest));
+          child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
+          child.append(document.createTextNode(update.restChars));
           break;
 
         default:

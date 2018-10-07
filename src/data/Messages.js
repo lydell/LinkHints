@@ -227,9 +227,9 @@ export type HintUpdate =
   | {|
       type: "Update",
       index: number,
-      matched: string,
-      rest: string,
-      markMatched: boolean,
+      matchedChars: string,
+      restChars: string,
+      highlighted: boolean,
     |};
 
 export type TabState = {|

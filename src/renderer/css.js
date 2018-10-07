@@ -95,7 +95,7 @@ export function applyStyles(element: HTMLElement, styles: Array<Rule>) {
         element.style.getPropertyPriority(decl.property) === "important";
       // All inline styling set in renderer/Program.js uses `!important`. Only
       // reset here if the `importants` match so we don’t lose the inline
-      // styling (such as `left` and `right` for hint markers).
+      // styling (such as `left` and `right` for hints).
       if (important === decl.important) {
         element.style.setProperty(decl.property, "");
       }

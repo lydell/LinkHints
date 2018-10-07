@@ -367,9 +367,9 @@ export default class BackgroundProgram {
                     // should be marked as highlighted/matched.
                     type: "Update",
                     index: element.index,
-                    matched: enteredHintChars,
-                    rest: element.hint.slice(enteredHintChars.length),
-                    markMatched:
+                    matchedChars: enteredHintChars,
+                    restChars: element.hint.slice(enteredHintChars.length),
+                    highlighted:
                       match != null || element.hint === highlightedHint,
                   }
                 : {
@@ -467,9 +467,9 @@ export default class BackgroundProgram {
                     }).map(element => ({
                       type: "Update",
                       index: element.index,
-                      matched: "",
-                      rest: element.hint,
-                      markMatched: element.index === match.index,
+                      matchedChars: "",
+                      restChars: element.hint,
+                      highlighted: element.index === match.index,
                     })),
                     enteredTextChars: "",
                   },
