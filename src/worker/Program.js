@@ -45,6 +45,7 @@ export default class WorkerProgram {
   elements: Array<VisibleElement>;
   viewports: Array<Box>;
   oneTimeWindowMessageToken: ?string;
+  suppressNextKeyup: ?{| key: string, code: string |};
   resets: Resets;
 
   constructor() {
@@ -61,11 +62,13 @@ export default class WorkerProgram {
     this.elements = [];
     this.viewports = [];
     this.oneTimeWindowMessageToken = undefined;
+    this.suppressNextKeyup = undefined;
     this.resets = new Resets();
 
     bind(this, [
       [this.onClick, { catch: true }],
       [this.onKeydown, { catch: true }],
+      [this.onKeyup, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
       [this.onPagehide, { catch: true }],
@@ -81,6 +84,7 @@ export default class WorkerProgram {
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
+      addEventListener(window, "keyup", this.onKeyup, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage),
       addEventListener(window, "pagehide", this.onPagehide)
     );
@@ -102,6 +106,8 @@ export default class WorkerProgram {
   stop() {
     this.resets.reset();
     this.elementManager.stop();
+    this.oneTimeWindowMessageToken = undefined;
+    this.suppressNextKeyup = undefined;
   }
 
   async sendMessage(message: FromWorker): Promise<void> {
@@ -452,12 +458,16 @@ export default class WorkerProgram {
     );
 
     if (match != null || this.keyboardOptions.suppressByDefault) {
-      event.preventDefault();
-      // `event.stopPropagation()` prevents the event from propagating further
-      // up and down the DOM tree. `event.stopImmediatePropagation()` also
-      // prevents additional listeners on the same node (`window` in this case)
-      // from being called.
-      event.stopImmediatePropagation();
+      suppressEvent(event);
+      // `keypress` events are automatically suppressed when suppressing
+      // `keydown`, but `keyup` needs to be manually suppressed. Note that if a
+      // keyboard shortcut is alt+j it's possible to either release the alt key
+      // first or the J key first, so we have to store _which_ key we want to
+      // suppress the `keyup` event for.
+      this.suppressNextKeyup = {
+        key: event.key,
+        code: event.code,
+      };
     }
 
     if (
@@ -494,6 +504,16 @@ export default class WorkerProgram {
         },
         timestamp: performance.now(),
       });
+    }
+  }
+
+  onKeyup(event: KeyboardEvent) {
+    if (event.isTrusted && this.suppressNextKeyup != null) {
+      const { key, code } = this.suppressNextKeyup;
+      if (event.key === key && event.code === code) {
+        suppressEvent(event);
+        this.suppressNextKeyup = undefined;
+      }
     }
   }
 
@@ -876,4 +896,13 @@ function* walkTextNodes(element: HTMLElement): Generator<Text, void, void> {
       yield* walkTextNodes(node);
     }
   }
+}
+
+function suppressEvent(event: Event) {
+  event.preventDefault();
+  // `event.stopPropagation()` prevents the event from propagating further
+  // up and down the DOM tree. `event.stopImmediatePropagation()` also
+  // prevents additional listeners on the same node (`window` in this case)
+  // from being called.
+  event.stopImmediatePropagation();
 }

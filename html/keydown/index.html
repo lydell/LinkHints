@@ -15,25 +15,34 @@
     <pre id="preElement" tabindex="0">Focus me and press a key!</pre>
 
     <script>
-      window.addEventListener("keydown", event => {
-        console.log("page keydown listener", event);
-        preGlobal.textContent = stringifyEvent(event);
-      }, true);
+      const globalEvents = {};
+      const elementEvents = {};
 
-      preElement.addEventListener("keydown", event => {
-        console.log("element keydown listener", event);
-        preElement.textContent = stringifyEvent(event);
-      }, true);
+      const eventNames = ["keydown", "keypress", "keyup"];
+      const variants = [
+        { target: window, events: globalEvents, pre: preGlobal },
+        { target: preElement, events: elementEvents, pre: preElement },
+      ]
 
-      function stringifyEvent(event) {
-        return JSON.stringify({
+      for (const { target, events, pre } of variants) {
+        for (const eventName of eventNames) {
+          events[eventName] = null;
+          target.addEventListener(eventName, event => {
+            events[eventName] = extractEvent(event);
+            pre.textContent = JSON.stringify(events, undefined, 2);
+          }, true);
+        }
+      }
+
+      function extractEvent(event) {
+        return {
           key: event.key,
           code: event.code,
           altKey: event.altKey,
           ctrlKey: event.ctrlKey,
           metaKey: event.metaKey,
           shiftKey: event.shiftKey,
-        }, undefined, 2);
+        };
       }
     </script>
   </body>
