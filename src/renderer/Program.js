@@ -519,8 +519,20 @@ export default class RendererProgram {
             matched.append(document.createTextNode(update.matchedChars));
             child.append(matched);
             this.maybeApplyStyles(matched);
-          } else if (enteredTextChars !== this.enteredTextChars) {
-            setStyles(child, { "margin-right": "", "margin-top": "" });
+          }
+
+          if (enteredTextChars !== this.enteredTextChars) {
+            setStyles(child, {
+              // Only update `z-index` when the entered text chars have changed
+              // (that's the only time `z-index` _needs_ updating), to avoid
+              // hints rotating back when entering hint chars.
+              "z-index": String(MAX_Z_INDEX - update.order),
+              // Reset margins for `this.moveInsideViewport`.
+              "margin-right": "",
+              "margin-top": "",
+            });
+            // If the entered text chars have changed, the hints might have
+            // changed as well and might not fit inside the viewport.
             maybeNeedsMoveInsideViewport.push(child);
           }
 

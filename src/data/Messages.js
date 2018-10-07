@@ -227,6 +227,7 @@ export type HintUpdate =
   | {|
       type: "Update",
       index: number,
+      order: number,
       matchedChars: string,
       restChars: string,
       highlighted: "yes" | "no" | "temporarily",

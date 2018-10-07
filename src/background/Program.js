@@ -359,7 +359,7 @@ export default class BackgroundProgram {
 
         const updates: Array<HintUpdate> = elementsWithHints
           .map(
-            element =>
+            (element, index) =>
               element.hint.startsWith(enteredHintChars)
                 ? {
                     // Update the hint (which can change based on text filtering),
@@ -367,6 +367,7 @@ export default class BackgroundProgram {
                     // should be marked as highlighted/matched.
                     type: "Update",
                     index: element.index,
+                    order: index,
                     matchedChars: enteredHintChars,
                     restChars: element.hint.slice(enteredHintChars.length),
                     highlighted:
@@ -466,9 +467,10 @@ export default class BackgroundProgram {
                     updates: assignHints(hintsState.elementsWithHints, {
                       hintChars: this.hints.chars,
                       hasEnteredTextChars: false,
-                    }).map(element => ({
+                    }).map((element, index) => ({
                       type: "Update",
                       index: element.index,
+                      order: index,
                       matchedChars: "",
                       restChars: element.hint,
                       highlighted:
