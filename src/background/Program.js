@@ -408,7 +408,12 @@ export default class BackgroundProgram {
         if (match != null) {
           const { url, title } = match;
 
-          switch (hintsState.mode) {
+          const mode: HintsMode =
+            url != null && message.shortcut.altKey
+              ? "ForegroundTab"
+              : hintsState.mode;
+
+          switch (mode) {
             case "Click":
               this.clickElement(info.tabId, match);
               break;
@@ -549,7 +554,7 @@ export default class BackgroundProgram {
             }
 
             default:
-              unreachable(hintsState.mode);
+              unreachable(mode);
           }
 
           tabState.hintsState = { type: "Idle" };
