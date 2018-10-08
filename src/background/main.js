@@ -218,6 +218,17 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
       code: "Space",
       altKey: false,
       ctrlKey: false,
+      metaKey: true,
+      shiftKey: false,
+    },
+    action: { type: "RotateHints", forward: true },
+  },
+  {
+    shortcut: {
+      key: " ",
+      code: "Space",
+      altKey: false,
+      ctrlKey: false,
       metaKey: false,
       shiftKey: true,
     },
