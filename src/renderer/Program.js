@@ -28,6 +28,8 @@ import { type Rule, applyStyles, parseCSS } from "./css";
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known.
 const CONTAINER_ID = "__SynthWebExt";
+const ROOT_CLASS = "root";
+const PEEK_CLASS = "peek";
 const HINT_CLASS = "hint";
 const HIDDEN_HINT_CLASS = "hidden";
 const HIGHLIGHTED_HINT_CLASS = "highlighted";
@@ -53,6 +55,14 @@ const CONTAINER_STYLES = {
 const font = BROWSER === "firefox" ? "font: menu;" : "font-family: system-ui;";
 
 const CSS = `
+.${ROOT_CLASS} {
+  ${font}
+}
+
+.${PEEK_CLASS} {
+  opacity: 0.2;
+}
+
 .${HINT_CLASS} {
   position: absolute;
   transform: translateY(-50%);
@@ -64,7 +74,6 @@ const CSS = `
   }
   background-color: #f6ff00;
   color: black;
-  ${font}
   font-size: 12px;
   line-height: 1;
   font-weight: bold;
@@ -106,7 +115,6 @@ const CSS = `
   box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
   background-color: black;
   color: white;
-  ${font}
   font-size: 14px;
   line-height: 1;
   white-space: nowrap;
@@ -127,7 +135,8 @@ export default class RendererProgram {
   titleElement: HTMLElement;
   container: {|
     element: HTMLElement,
-    root: ShadowRoot,
+    root: HTMLElement,
+    shadowRoot: ShadowRoot,
     resets: Resets,
     intersectionObserver: IntersectionObserver,
   |};
@@ -168,11 +177,15 @@ export default class RendererProgram {
     // Using `mode: "closed"` is tempting, but then Firefox does not seem to
     // allow inspecting the elements inside in its devtools. That's important
     // for people who want to customize the styling of the hints.
-    const root = container.attachShadow({ mode: "open" });
+    const shadowRoot = container.attachShadow({ mode: "open" });
+
+    const root = document.createElement("div");
+    root.className = ROOT_CLASS;
 
     this.container = {
       element: container,
       root,
+      shadowRoot,
       resets: new Resets(),
       intersectionObserver: new IntersectionObserver(this.onIntersection, {
         // Make sure the container stays within the viewport.
@@ -274,6 +287,14 @@ export default class RendererProgram {
         this.renderTextRects(message.rects, message.frameId);
         break;
 
+      case "Peek":
+        this.togglePeek({ peek: true });
+        break;
+
+      case "Unpeek":
+        this.togglePeek({ peek: false });
+        break;
+
       case "UnrenderTextRects":
         this.unrenderTextRects();
         break;
@@ -352,14 +373,14 @@ export default class RendererProgram {
     time.start("prepare");
     this.unrender();
     const viewport = getViewport();
-    const { root } = this.container;
+    const { root, shadowRoot } = this.container;
 
     if (this.parsedCSS == null) {
       // Inserting a `<style>` element is way faster than doing
       // `element.style.setProperty()` on every element.
       const style = document.createElement("style");
       style.append(document.createTextNode(this.css));
-      root.append(style);
+      shadowRoot.append(style);
 
       // Chrome nicely allows inline styles inserted by an extension regardless
       // of CSP. I look forward to the day Firefox works this way too. See
@@ -375,6 +396,8 @@ export default class RendererProgram {
       }
     }
 
+    shadowRoot.append(root);
+    this.maybeApplyStyles(root);
     documentElement.append(this.container.element);
     this.updateContainer(viewport);
     this.container.intersectionObserver.observe(this.container.element);
@@ -590,7 +613,7 @@ export default class RendererProgram {
   }
 
   rotateHints({ forward }: {| forward: boolean |}) {
-    const sign = forward ? 1 : +1;
+    const sign = forward ? 1 : -1;
     const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
       if (stack.length >= 2) {
@@ -642,6 +665,12 @@ export default class RendererProgram {
     this.titleElement.remove();
   }
 
+  togglePeek({ peek }: {| peek: boolean |}) {
+    const { root } = this.container;
+    root.classList.toggle(PEEK_CLASS, peek);
+    this.maybeApplyStyles(root);
+  }
+
   unrender() {
     if (this.unrenderTimeoutId != null) {
       clearTimeout(this.unrenderTimeoutId);
@@ -652,7 +681,9 @@ export default class RendererProgram {
     this.rects.clear();
 
     this.container.element.remove();
+    this.container.root.classList.remove(PEEK_CLASS);
     emptyNode(this.container.root);
+    emptyNode(this.container.shadowRoot);
     this.container.resets.reset();
     this.container.intersectionObserver.disconnect();
 

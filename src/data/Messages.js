@@ -13,7 +13,7 @@ import type {
   HintsMode,
   KeyboardAction,
   KeyboardMapping,
-  KeyboardOptions,
+  KeyboardMode,
   KeyboardShortcut,
 } from "./KeyboardShortcuts";
 
@@ -63,6 +63,10 @@ export type FromWorker =
       timestamp: number,
     |}
   | {|
+      type: "Keyup",
+      shortcut: KeyboardShortcut,
+    |}
+  | {|
       type: "ReportVisibleFrame",
     |}
   | {|
@@ -91,7 +95,7 @@ export type ToWorker =
       logLevel: LogLevel,
       clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
-      keyboardOptions: KeyboardOptions,
+      keyboardMode: KeyboardMode,
       oneTimeWindowMessageToken: string,
     |}
   | {|
@@ -165,6 +169,12 @@ export type ToRenderer =
       type: "RenderTextRects",
       rects: Array<Box>,
       frameId: number,
+    |}
+  | {|
+      type: "Peek",
+    |}
+  | {|
+      type: "Unpeek",
     |}
   | {|
       type: "UnrenderTextRects",

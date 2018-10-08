@@ -36,10 +36,7 @@ export type KeyboardMapping = {|
   action: KeyboardAction,
 |};
 
-export type KeyboardOptions = {|
-  suppressByDefault: boolean,
-  sendAll: boolean,
-|};
+export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping";
 
 export type HintsMode =
   | "Click"

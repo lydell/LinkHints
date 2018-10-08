@@ -16,10 +16,7 @@ import type {
   FromWorker,
   ToBackground,
 } from "../data/Messages";
-import type {
-  KeyboardMapping,
-  KeyboardOptions,
-} from "../data/KeyboardShortcuts";
+import type { KeyboardMapping, KeyboardMode } from "../data/KeyboardShortcuts";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";
 import type { Box, ElementTypes, VisibleElement } from "./ElementManager";
@@ -38,7 +35,7 @@ const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
 
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
-  keyboardOptions: KeyboardOptions;
+  keyboardMode: KeyboardMode;
   trackInteractions: boolean;
   mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
@@ -50,10 +47,7 @@ export default class WorkerProgram {
 
   constructor() {
     this.keyboardShortcuts = [];
-    this.keyboardOptions = {
-      suppressByDefault: false,
-      sendAll: false,
-    };
+    this.keyboardMode = "Normal";
     this.trackInteractions = false;
     this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
@@ -134,7 +128,7 @@ export default class WorkerProgram {
       case "StateSync":
         log.level = message.logLevel;
         this.keyboardShortcuts = message.keyboardShortcuts;
-        this.keyboardOptions = message.keyboardOptions;
+        this.keyboardMode = message.keyboardMode;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
 
         if (message.clearElements) {
@@ -457,7 +451,16 @@ export default class WorkerProgram {
         event.shiftKey === shortcut.shiftKey
     );
 
-    if (match != null || this.keyboardOptions.suppressByDefault) {
+    const suppress =
+      match != null ||
+      this.keyboardMode === "PreventOverTyping" ||
+      // Allow ctrl and cmd shortcuts in hints mode. ctrl and cmd can't safely
+      // be combined with hint chars anyway, due to some keyboard shortcuts not
+      // being suppressable (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
+      // ctrl+alt+t opens a terminal by default in Ubuntu).
+      (this.keyboardMode === "Hints" && !event.ctrlKey && !event.metaKey);
+
+    if (suppress) {
       suppressEvent(event);
       // `keypress` events are automatically suppressed when suppressing
       // `keydown`, but `keyup` needs to be manually suppressed. Note that if a
@@ -476,11 +479,7 @@ export default class WorkerProgram {
       // really an interaction. This allows showing title attributes when
       // overtyping after filtering hints by text. Otherwise the extra key
       // presses would cause the title to immediately disappear.
-      !(
-        this.keyboardOptions.suppressByDefault &&
-        !this.keyboardOptions.sendAll &&
-        match == null
-      )
+      !(suppress && match == null)
     ) {
       this.sendMessage({ type: "Interaction" });
     }
@@ -491,7 +490,16 @@ export default class WorkerProgram {
         action: match.action,
         timestamp: performance.now(),
       });
-    } else if (this.keyboardOptions.sendAll) {
+    } else if (
+      this.keyboardMode === "Hints" &&
+      (suppress ||
+        // Allow BackgroundProgram to detect modifier keys themselves being
+        // pressed. (Needed because of the above ctrl and cmd special case.)
+        event.key === "Control" ||
+        event.key === "Meta" ||
+        // Firefox's name for Meta: <bugzil.la/1232918>
+        event.key === "OS")
+    ) {
       this.sendMessage({
         type: "NonKeyboardShortcutMatched",
         shortcut: {
@@ -508,7 +516,25 @@ export default class WorkerProgram {
   }
 
   onKeyup(event: KeyboardEvent) {
-    if (event.isTrusted && this.suppressNextKeyup != null) {
+    if (!event.isTrusted) {
+      return;
+    }
+
+    if (this.keyboardMode === "Hints") {
+      this.sendMessage({
+        type: "Keyup",
+        shortcut: {
+          key: event.key,
+          code: event.code,
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        },
+      });
+    }
+
+    if (this.suppressNextKeyup != null) {
       const { key, code } = this.suppressNextKeyup;
       if (event.key === key && event.code === code) {
         suppressEvent(event);

@@ -203,10 +203,10 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
-      key: " ",
-      code: "Space",
+      key: "Tab",
+      code: "Tab",
       altKey: false,
-      ctrlKey: true,
+      ctrlKey: false,
       metaKey: false,
       shiftKey: false,
     },
@@ -214,19 +214,8 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
-      key: " ",
-      code: "Space",
-      altKey: false,
-      ctrlKey: false,
-      metaKey: true,
-      shiftKey: false,
-    },
-    action: { type: "RotateHints", forward: true },
-  },
-  {
-    shortcut: {
-      key: " ",
-      code: "Space",
+      key: "Tab",
+      code: "Tab",
       altKey: false,
       ctrlKey: false,
       metaKey: false,

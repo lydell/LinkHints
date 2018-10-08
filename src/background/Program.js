@@ -34,6 +34,7 @@ import type {
   HintsMode,
   KeyboardAction,
   KeyboardMapping,
+  KeyboardShortcut,
 } from "../data/KeyboardShortcuts";
 
 type MessageInfo = {|
@@ -278,6 +279,11 @@ export default class BackgroundProgram {
         const { key } = message.shortcut;
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
+
+        if (isPeekKey(message.shortcut)) {
+          this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
+          return;
+        }
 
         // Ignore unknown/non-text keys.
         if (!(isBackspace || isEnter || key.length === 1)) {
@@ -618,6 +624,13 @@ export default class BackgroundProgram {
         }
 
         this.updateBadge(info.tabId);
+        break;
+      }
+
+      case "Keyup": {
+        if (isPeekKey(message.shortcut)) {
+          this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
+        }
         break;
       }
 
@@ -1178,23 +1191,13 @@ export default class BackgroundProgram {
       this.oneTimeWindowMessageToken = makeRandomToken();
     }
 
-    const preventOverTypingKeyboardOptions = {
-      suppressByDefault: true,
-      sendAll: false,
-    };
-
     if (hintsState.type === "Hinting") {
       return {
         type: "StateSync",
         logLevel: log.level,
         clearElements: false,
         keyboardShortcuts: preventOverTyping ? [] : this.hintsKeyboardShortcuts,
-        keyboardOptions: preventOverTyping
-          ? preventOverTypingKeyboardOptions
-          : {
-              suppressByDefault: true,
-              sendAll: true,
-            },
+        keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
         oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       };
     }
@@ -1204,12 +1207,7 @@ export default class BackgroundProgram {
       logLevel: log.level,
       clearElements: true,
       keyboardShortcuts: preventOverTyping ? [] : this.normalKeyboardShortcuts,
-      keyboardOptions: preventOverTyping
-        ? preventOverTypingKeyboardOptions
-        : {
-            suppressByDefault: false,
-            sendAll: false,
-          },
+      keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
   }
@@ -1523,4 +1521,13 @@ function assignHints(
   });
 
   return elements;
+}
+
+function isPeekKey(shortcut: KeyboardShortcut): boolean {
+  return (
+    shortcut.key === "Control" ||
+    shortcut.key === "Meta" ||
+    // Firefox's name for Meta: <bugzil.la/1232918>
+    shortcut.key === "OS"
+  );
 }
