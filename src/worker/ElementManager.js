@@ -188,6 +188,7 @@ const CLICKABLE_ATTRIBUTES = [
   "data-dismiss",
   // Twitter
   "data-permalink-path",
+  "data-image-url",
 ];
 
 const MUTATION_ATTRIBUTES = [
