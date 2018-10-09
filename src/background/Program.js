@@ -445,6 +445,10 @@ export default class BackgroundProgram {
                   }
                 );
                 this.sendRendererMessage(
+                  { type: "UnrenderTextRects" },
+                  { tabId: info.tabId }
+                );
+                this.sendRendererMessage(
                   {
                     type: "UpdateHints",
                     updates,
@@ -472,6 +476,10 @@ export default class BackgroundProgram {
                   frameId: match.frame.id,
                   foreground: false,
                 });
+                this.sendRendererMessage(
+                  { type: "UnrenderTextRects" },
+                  { tabId: info.tabId }
+                );
                 this.sendRendererMessage(
                   {
                     type: "UpdateHints",
@@ -570,7 +578,7 @@ export default class BackgroundProgram {
           });
         }
 
-        if (words.length > 0) {
+        if (words.length > 0 && match == null) {
           const indexesByFrame: Map<number, Array<number>> = new Map();
           for (const { frame } of elementsWithHints) {
             const previous = indexesByFrame.get(frame.id);
