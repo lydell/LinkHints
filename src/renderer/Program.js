@@ -13,7 +13,7 @@ import {
   unreachable,
   waitForPaint,
 } from "../shared/main";
-import type { Box } from "../worker/ElementManager";
+import type { Box, HintMeasurements } from "../worker/ElementManager";
 import type {
   ElementWithHint,
   FromBackground,
@@ -24,18 +24,24 @@ import type {
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 
+type HintSize = {|
+  widthBase: number,
+  widthPerLetter: number,
+  height: number,
+|};
+
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known.
 const CONTAINER_ID = "__SynthWebExt";
 const ROOT_CLASS = "root";
-const PEEK_CLASS = "peek";
 const HINT_CLASS = "hint";
-const HIDDEN_HINT_CLASS = "hidden";
 const HIGHLIGHTED_HINT_CLASS = "highlighted";
 const MATCHED_CHARS_CLASS = "matchedChars";
 const TEXT_RECT_CLASS = "matchedText";
 const TITLE_CLASS = "title";
+const PEEK_CLASS = "peek";
+const HIDDEN_CLASS = "hidden";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 const UNRENDER_DELAY = 200; // ms
@@ -59,13 +65,8 @@ const CSS = `
   ${font}
 }
 
-.${PEEK_CLASS} {
-  opacity: 0.2;
-}
-
 .${HINT_CLASS} {
   position: absolute;
-  transform: translateY(-50%);
   box-sizing: border-box;
   padding: 2px;
   border: solid 1px rgba(0, 0, 0, 0.5);
@@ -80,10 +81,6 @@ const CSS = `
   white-space: nowrap;
   text-align: center;
   text-transform: uppercase;
-}
-
-.${HIDDEN_HINT_CLASS} {
-  opacity: 0;
 }
 
 .${HIGHLIGHTED_HINT_CLASS} {
@@ -121,6 +118,14 @@ const CSS = `
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.${PEEK_CLASS} {
+  opacity: 0.2;
+}
+
+.${HIDDEN_CLASS} {
+  opacity: 0;
+}
 `.trim();
 
 export default class RendererProgram {
@@ -133,6 +138,8 @@ export default class RendererProgram {
   resets: Resets;
   shruggieElement: HTMLElement;
   titleElement: HTMLElement;
+  titleText: Text;
+  hintSize: HintSize;
   container: {|
     element: HTMLElement,
     root: HTMLElement,
@@ -161,14 +168,24 @@ export default class RendererProgram {
     ]);
 
     this.shruggieElement = createHintElement("¯\\_(ツ)_/¯");
+    this.shruggieElement.classList.add(HIDDEN_CLASS);
     setStyles(this.shruggieElement, {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
+      "z-index": String(MAX_Z_INDEX),
     });
 
     this.titleElement = document.createElement("div");
-    this.titleElement.className = TITLE_CLASS;
+    this.titleElement.classList.add(TITLE_CLASS, HIDDEN_CLASS);
+    this.titleText = document.createTextNode("");
+    this.titleElement.append(this.titleText);
+
+    this.hintSize = {
+      widthBase: 0,
+      widthPerLetter: 0,
+      height: 0,
+    };
 
     const container = document.createElement("div");
     container.id = CONTAINER_ID;
@@ -361,6 +378,35 @@ export default class RendererProgram {
     }
   }
 
+  updateHintSize() {
+    // Note: This requires that the container has been placed into the DOM.
+    const { root } = this.container;
+
+    // "W" is usually (one of) the widest character(s). This is surprisingly
+    // cheap to calculate.
+    const probe1 = createHintElement("W");
+    const probe2 = createHintElement("WW");
+    root.append(probe1);
+    root.append(probe2);
+    this.maybeApplyStyles(probe1);
+    this.maybeApplyStyles(probe2);
+
+    const rect1 = probe1.getBoundingClientRect();
+    const rect2 = probe2.getBoundingClientRect();
+    const widthPerLetter = rect2.width - rect1.width;
+    const widthBase = rect1.width - widthPerLetter;
+    const { height } = rect1;
+
+    probe1.remove();
+    probe2.remove();
+
+    this.hintSize = {
+      widthBase,
+      widthPerLetter,
+      height,
+    };
+  }
+
   async render(elements: Array<ElementWithHint>): Promise<void> {
     const { documentElement } = document;
 
@@ -400,9 +446,12 @@ export default class RendererProgram {
       }
     }
 
+    root.append(this.shruggieElement);
+    root.append(this.titleElement);
     shadowRoot.append(root);
     this.maybeApplyStyles(root);
     this.updateContainer(viewport);
+    this.updateHintSize();
     this.container.intersectionObserver.observe(this.container.element);
     this.container.resets.add(
       addEventListener(window, "resize", this.onResize),
@@ -410,25 +459,9 @@ export default class RendererProgram {
     );
 
     if (elements.length === 0) {
-      this.insertShruggie();
+      this.toggleShruggie({ visible: true });
       return;
     }
-
-    // "W" is usually (one of) the widest character(s). This is surprisingly
-    // cheap to calculate.
-    const probe1 = createHintElement("W");
-    const probe2 = createHintElement("WW");
-    root.append(probe1);
-    root.append(probe2);
-    this.maybeApplyStyles(probe1);
-    this.maybeApplyStyles(probe2);
-    const rect1 = probe1.getBoundingClientRect();
-    const rect2 = probe2.getBoundingClientRect();
-    const halfHeight = Math.ceil(rect1.height / 2);
-    const widthK = rect2.width - rect1.width;
-    const widthM = rect1.width - widthK;
-    probe1.remove();
-    probe2.remove();
 
     const edgeElements = [];
     const restElements = [];
@@ -438,45 +471,26 @@ export default class RendererProgram {
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
 
-      const width = Math.ceil(widthM + widthK * hint.length);
-
-      const alignLeft =
-        hintMeasurements.align === "left" &&
-        // If the hint would end up covering the element, align right instead.
-        // This is useful for the tiny voting arrows on hackernews.
-        hintMeasurements.x + width < hintMeasurements.maxX;
-
-      const styles = {
-        left: alignLeft ? `${Math.round(hintMeasurements.x)}px` : "",
-        // This could also be done using `left` and
-        // `transform: translateX(-100%)`, but that results in blurry hints in
-        // Chrome due to Chrome making the widths of the hints non-integer based
-        // on the font.
-        right: alignLeft
-          ? ""
-          : `${Math.round(viewport.width - hintMeasurements.x)}px`,
-        top: `${Math.round(hintMeasurements.y)}px`,
-        "z-index": String(MAX_Z_INDEX - index),
-      };
-      setStyles(element, styles);
+      const { styles, maybeOutsideHorizontally } = getHintPosition({
+        hintSize: this.hintSize,
+        hint,
+        hintMeasurements,
+        viewport,
+      });
+      setStyles(element, {
+        ...styles,
+        // Remove 1 so that all hints stay below the title.
+        "z-index": String(MAX_Z_INDEX - index - 1),
+      });
 
       root.append(element);
       this.hints.push(element);
 
       this.maybeApplyStyles(element);
 
-      const outsideHorizontally =
-        hintMeasurements.align === "left"
-          ? viewport.width - hintMeasurements.x <= width
-          : hintMeasurements.x <= width;
-
-      const outsideVertically =
-        hintMeasurements.y <= halfHeight ||
-        viewport.height - hintMeasurements.y <= halfHeight;
-
       if (
         numEdgeElements < MAX_IMMEDIATE_HINT_MOVEMENTS &&
-        (outsideHorizontally || outsideVertically)
+        maybeOutsideHorizontally
       ) {
         numEdgeElements = edgeElements.push(element);
       } else {
@@ -518,7 +532,7 @@ export default class RendererProgram {
   }
 
   updateHints(updates: Array<HintUpdate>, enteredTextChars: string) {
-    let numHidden = 0;
+    const viewport = getViewport();
     const maybeNeedsMoveInsideViewport = [];
 
     for (const update of updates) {
@@ -529,15 +543,22 @@ export default class RendererProgram {
         continue;
       }
 
-      child.classList.toggle(HIDDEN_HINT_CLASS, update.type === "Hide");
-
+      // Remember that `HIDDEN_CLASS` just sets `opacity: 0`, so rects will
+      // still be available. If that opacity is customized, the chars and
+      // position should still be correct.
       switch (update.type) {
         case "Hide":
-          numHidden++;
+          child.classList.add(HIDDEN_CLASS);
           break;
 
-        case "Update": {
+        case "UpdateContent": {
           emptyNode(child);
+
+          child.classList.toggle(HIDDEN_CLASS, update.hidden);
+          child.classList.toggle(
+            HIGHLIGHTED_HINT_CLASS,
+            update.highlighted !== "no"
+          );
 
           if (update.matchedChars !== "") {
             const matched = document.createElement("span");
@@ -555,17 +576,11 @@ export default class RendererProgram {
               "z-index": String(MAX_Z_INDEX - update.order),
               // Reset margins for `this.moveInsideViewport`.
               "margin-right": "",
-              "margin-top": "",
             });
             // If the entered text chars have changed, the hints might have
             // changed as well and might not fit inside the viewport.
             maybeNeedsMoveInsideViewport.push(child);
           }
-
-          child.classList.toggle(
-            HIGHLIGHTED_HINT_CLASS,
-            update.highlighted !== "no"
-          );
 
           child.append(document.createTextNode(update.restChars));
 
@@ -588,6 +603,31 @@ export default class RendererProgram {
           break;
         }
 
+        case "UpdatePosition": {
+          child.classList.toggle(HIDDEN_CLASS, update.hidden);
+          child.classList.toggle(
+            HIGHLIGHTED_HINT_CLASS,
+            update.highlighted !== "no"
+          );
+          const { styles } = getHintPosition({
+            hintSize: this.hintSize,
+            hint: update.hint,
+            hintMeasurements: update.hintMeasurements,
+            viewport,
+          });
+          const needsUpdate = Object.entries(styles).some(
+            ([property, value]) =>
+              child.style.getPropertyValue(property) !== value
+          );
+          if (needsUpdate) {
+            // `update.order` could be used to update the z-index, but that is
+            // currently unused due to the hints rotation feature.
+            setStyles(child, styles);
+            maybeNeedsMoveInsideViewport.push(child);
+          }
+          break;
+        }
+
         default:
           unreachable(update.type, update);
       }
@@ -595,20 +635,13 @@ export default class RendererProgram {
       this.maybeApplyStyles(child);
     }
 
-    if (numHidden === this.hints.length) {
-      this.insertShruggie();
-    } else {
-      this.removeShruggie();
-    }
+    const allHidden =
+      updates.filter(update => update.hidden).length === this.hints.length;
+    this.toggleShruggie({ visible: allHidden });
 
-    if (enteredTextChars === "") {
-      this.removeTitle();
-    } else {
-      this.insertTitle(enteredTextChars.replace(/\s/g, "\u00a0"));
-    }
+    this.setTitle(enteredTextChars.replace(/\s/g, "\u00a0"));
 
     if (maybeNeedsMoveInsideViewport.length > 0) {
-      const viewport = getViewport();
       this.moveInsideViewport(maybeNeedsMoveInsideViewport, viewport);
     }
 
@@ -649,23 +682,18 @@ export default class RendererProgram {
     }
   }
 
-  insertShruggie() {
-    this.container.root.append(this.shruggieElement);
+  toggleShruggie({ visible }: {| visible: boolean |}) {
+    this.shruggieElement.classList.toggle(HIDDEN_CLASS, !visible);
     this.maybeApplyStyles(this.shruggieElement);
   }
 
-  removeShruggie() {
-    this.shruggieElement.remove();
-  }
-
-  insertTitle(title: string) {
-    this.titleElement.textContent = title;
-    this.container.root.append(this.titleElement);
+  setTitle(title: string) {
+    // Avoid unnecessary flashing in the devtools when inspecting the hints.
+    if (this.titleText.data !== title) {
+      this.titleText.data = title;
+    }
+    this.titleElement.classList.toggle(HIDDEN_CLASS, title === "");
     this.maybeApplyStyles(this.titleElement);
-  }
-
-  removeTitle() {
-    this.titleElement.remove();
   }
 
   togglePeek({ peek }: {| peek: boolean |}) {
@@ -685,6 +713,8 @@ export default class RendererProgram {
 
     this.container.element.remove();
     this.container.root.classList.remove(PEEK_CLASS);
+    this.toggleShruggie({ visible: false });
+    this.setTitle("");
     emptyNode(this.container.root);
     emptyNode(this.container.shadowRoot);
     this.container.resets.reset();
@@ -714,7 +744,7 @@ export default class RendererProgram {
       clearTimeout(this.unrenderTimeoutId);
     }
 
-    this.insertTitle(title);
+    this.setTitle(title);
 
     this.unrenderTimeoutId = setTimeout(() => {
       this.unrenderTimeoutId = undefined;
@@ -757,23 +787,15 @@ export default class RendererProgram {
       // Save the rect for `rotateHints`.
       this.rects.set(element, rect);
 
+      // The hints are always inside the viewport vertically, so only check
+      // horizontally.
       if (rect.left < 0) {
         setStyles(element, { "margin-right": `${Math.round(rect.left)}px` });
-        moved = true;
-      }
-      if (rect.top < 0) {
-        setStyles(element, { "margin-top": `${Math.round(-rect.top)}px` });
         moved = true;
       }
       if (rect.right > viewport.width) {
         setStyles(element, {
           "margin-right": `${Math.round(rect.right - viewport.width)}px`,
-        });
-        moved = true;
-      }
-      if (rect.bottom > viewport.height) {
-        setStyles(element, {
-          "margin-top": `${Math.round(viewport.height - rect.bottom)}px`,
         });
         moved = true;
       }
@@ -860,4 +882,53 @@ function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
     rectA.bottom >= rectB.top &&
     rectA.top <= rectB.bottom
   );
+}
+
+function getHintPosition({
+  hintSize,
+  hint,
+  hintMeasurements,
+  viewport,
+}: {|
+  hintSize: HintSize,
+  hint: string,
+  hintMeasurements: HintMeasurements,
+  viewport: Viewport,
+|}): {| styles: { [string]: string }, maybeOutsideHorizontally: boolean |} {
+  const width = Math.ceil(
+    hintSize.widthBase + hintSize.widthPerLetter * hint.length
+  );
+
+  const alignLeft =
+    hintMeasurements.align === "left" &&
+    // If the hint would end up covering the element, align right instead.
+    // This is useful for the tiny voting arrows on hackernews.
+    hintMeasurements.x + width < hintMeasurements.maxX;
+
+  const left = Math.round(hintMeasurements.x);
+  const right = Math.round(viewport.width - hintMeasurements.x);
+  const top = Math.max(
+    0,
+    Math.min(
+      Math.floor(viewport.height - hintSize.height),
+      Math.round(hintMeasurements.y - hintSize.height / 2)
+    )
+  );
+
+  const maybeOutsideHorizontally = alignLeft
+    ? left + width >= viewport.width
+    : right + width >= viewport.width;
+
+  return {
+    styles: {
+      left: alignLeft ? `${left}px` : "",
+      // This could also be done using `left` and
+      // `transform: translateX(-100%)`, but that results in blurry hints in
+      // Chrome due to Chrome making the widths of the hints non-integer based
+      // on the font.
+      right: alignLeft ? "" : `${right}px`,
+      top: `${top}px`,
+    },
+    maybeOutsideHorizontally,
+  };
 }

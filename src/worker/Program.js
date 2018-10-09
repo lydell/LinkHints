@@ -9,9 +9,11 @@ import {
   getTitle,
   getViewport,
   log,
+  matchesText,
   unreachable,
 } from "../shared/main";
 import type {
+  ElementReport,
   FromBackground,
   FromWorker,
   ToBackground,
@@ -19,12 +21,33 @@ import type {
 import type { KeyboardMapping, KeyboardMode } from "../data/KeyboardShortcuts";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";
-import type { Box, ElementTypes, VisibleElement } from "./ElementManager";
+import type {
+  Box,
+  ElementType,
+  ElementTypes,
+  VisibleElement,
+} from "./ElementManager";
 
-type FrameMessage = {|
-  token: string,
-  types: ElementTypes,
+type FrameMessage =
+  | {|
+      type: "FindElements",
+      token: string,
+      types: ElementTypes,
+      viewports: Array<Box>,
+    |}
+  | {|
+      type: "UpdateElements",
+      token: string,
+      words: Array<string>,
+      viewports: Array<Box>,
+    |};
+
+type CurrentElements = {|
+  elements: Array<VisibleElement>,
+  frames: Array<HTMLIFrameElement | HTMLFrameElement>,
   viewports: Array<Box>,
+  types: ElementTypes,
+  updating: boolean,
 |};
 
 // The single-page HTML specification has over 70K links! If trying to track all
@@ -39,8 +62,7 @@ export default class WorkerProgram {
   trackInteractions: boolean;
   mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
-  elements: Array<VisibleElement>;
-  viewports: Array<Box>;
+  current: ?CurrentElements;
   oneTimeWindowMessageToken: ?string;
   suppressNextKeyup: ?{| key: string, code: string |};
   resets: Resets;
@@ -53,8 +75,7 @@ export default class WorkerProgram {
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
     });
-    this.elements = [];
-    this.viewports = [];
+    this.current = undefined;
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
     this.resets = new Resets();
@@ -132,8 +153,7 @@ export default class WorkerProgram {
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
 
         if (message.clearElements) {
-          this.elements = [];
-          this.viewports = [];
+          this.current = undefined;
         }
         break;
 
@@ -156,17 +176,40 @@ export default class WorkerProgram {
         break;
       }
 
+      case "UpdateElements": {
+        const { current, oneTimeWindowMessageToken } = this;
+        if (current == null || oneTimeWindowMessageToken == null) {
+          return;
+        }
+
+        current.viewports = [
+          {
+            x: 0,
+            y: 0,
+            ...getViewport(),
+          },
+        ];
+
+        this.updateVisibleElements(
+          message.words,
+          current,
+          oneTimeWindowMessageToken
+        );
+        break;
+      }
+
       case "GetTextRects": {
-        const elements = this.elements.filter((_elementData, index) =>
+        const { current } = this;
+        if (current == null) {
+          return;
+        }
+        const elements = current.elements.filter((_elementData, index) =>
           message.indexes.includes(index)
         );
+        const wordsSet = new Set(message.words);
         const rects = [].concat(
           ...elements.map(elementData =>
-            getTextRects(
-              elementData.element,
-              this.viewports,
-              new Set(message.words)
-            )
+            getTextRects(elementData.element, current.viewports, wordsSet)
           )
         );
         this.sendMessage({
@@ -177,9 +220,9 @@ export default class WorkerProgram {
       }
 
       case "FocusElement": {
-        const elementData = this.elements[message.index];
+        const elementData = this.getElement(message.index);
         if (elementData == null) {
-          log("error", "FocusElement: Missing element", message, this.elements);
+          log("error", "FocusElement: Missing element", message, this.current);
           return;
         }
         const { element } = elementData;
@@ -195,11 +238,11 @@ export default class WorkerProgram {
       }
 
       case "ClickElement": {
-        const elementData = this.elements[message.index];
+        const elementData = this.getElement(message.index);
         const { trackRemoval } = message;
 
         if (elementData == null) {
-          log("error", "ClickElement: Missing element", message, this.elements);
+          log("error", "ClickElement: Missing element", message, this.current);
           return;
         }
 
@@ -272,16 +315,11 @@ export default class WorkerProgram {
       }
 
       case "SelectElement": {
-        const elementData = this.elements[message.index];
+        const elementData = this.getElement(message.index);
         const { trackRemoval } = message;
 
         if (elementData == null) {
-          log(
-            "error",
-            "SelectElement: Missing element",
-            message,
-            this.elements
-          );
+          log("error", "SelectElement: Missing element", message, this.current);
           return;
         }
 
@@ -396,19 +434,18 @@ export default class WorkerProgram {
 
   onWindowMessage(event: MessageEvent) {
     const { oneTimeWindowMessageToken } = this;
+
     if (
       oneTimeWindowMessageToken != null &&
       event.data != null &&
       typeof event.data === "object" &&
       !Array.isArray(event.data) &&
-      event.data.token === oneTimeWindowMessageToken
+      event.data.token === oneTimeWindowMessageToken &&
+      typeof event.data.type === "string"
     ) {
-      let types = undefined;
-      let viewports = undefined;
-      const { types: rawTypes, viewports: rawViewports } = event.data;
+      let message = undefined;
       try {
-        types = parseTypes(rawTypes);
-        viewports = parseViewports(rawViewports);
+        message = parseFrameMessage(event.data);
       } catch (error) {
         log(
           "warn",
@@ -419,10 +456,39 @@ export default class WorkerProgram {
         );
         return;
       }
+
       this.oneTimeWindowMessageToken = undefined;
-      log("log", "WorkerProgram#onWindowMessage", types, rawViewports);
-      this.sendMessage({ type: "ReportVisibleFrame" });
-      this.reportVisibleElements(types, viewports, oneTimeWindowMessageToken);
+      log("log", "WorkerProgram#onWindowMessage", message);
+
+      switch (message.type) {
+        case "FindElements":
+          this.sendMessage({ type: "ReportVisibleFrame" });
+          this.reportVisibleElements(
+            message.types,
+            message.viewports,
+            oneTimeWindowMessageToken
+          );
+          break;
+
+        case "UpdateElements": {
+          const { current } = this;
+
+          if (current == null) {
+            return;
+          }
+
+          current.viewports = message.viewports;
+          this.updateVisibleElements(
+            message.words,
+            current,
+            oneTimeWindowMessageToken
+          );
+          break;
+        }
+
+        default:
+          unreachable(message.type, message);
+      }
     }
   }
 
@@ -555,6 +621,10 @@ export default class WorkerProgram {
     }
   }
 
+  getElement(index: number): ?VisibleElement {
+    return this.current == null ? undefined : this.current.elements[index];
+  }
+
   async reportVisibleElements(
     types: ElementTypes,
     viewports: Array<Box>,
@@ -562,16 +632,18 @@ export default class WorkerProgram {
   ): Promise<void> {
     const time = new TimeTracker();
 
-    const elements = await this.elementManager.getVisibleElements(
+    const elementsWithNulls: Array<?VisibleElement> = await this.elementManager.getVisibleElements(
       types,
       viewports,
       time
     );
+    const elements = elementsWithNulls.filter(Boolean);
 
     time.start("frames");
     const frames = this.elementManager.getVisibleFrames(viewports);
     for (const frame of frames) {
       const message: FrameMessage = {
+        type: "FindElements",
         token: oneTimeWindowMessageToken,
         types,
         viewports: viewports.concat(getFrameViewport(frame)),
@@ -582,30 +654,83 @@ export default class WorkerProgram {
     time.start("report");
     this.sendMessage({
       type: "ReportVisibleElements",
-      elements: elements.map(
-        ({ element, data: { type }, measurements }, index) => {
-          const text = element.textContent;
-          return {
-            type,
-            index,
-            url:
-              type === "link" && element instanceof HTMLAnchorElement
-                ? element.href
-                : undefined,
-            title: getTitle(element),
-            text,
-            textWeight: getTextWeight(text, measurements.weight),
-            isTextInput: isTextInput(element),
-            hintMeasurements: measurements,
-          };
-        }
-      ),
+      elements: elements.map(visibleElementToElementReport),
       numFrames: frames.length,
       durations: time.export(),
     });
 
-    this.elements = elements;
-    this.viewports = viewports;
+    this.current = {
+      elements,
+      frames,
+      viewports,
+      types,
+      updating: false,
+    };
+  }
+
+  async updateVisibleElements(
+    words: Array<string>,
+    current: CurrentElements,
+    oneTimeWindowMessageToken: string
+  ): Promise<void> {
+    if (current.updating) {
+      return;
+    }
+
+    current.updating = true;
+
+    const elements: Array<?VisibleElement> = await this.elementManager.getVisibleElements(
+      current.types,
+      current.viewports,
+      new TimeTracker(),
+      current.elements.map(({ element }) => element)
+    );
+
+    for (const frame of current.frames) {
+      // Removing an iframe from the DOM nukes its page (this will be detected
+      // by the port disconnecting). Re-inserting it causes the page to be
+      // loaded anew.
+      if (frame.contentWindow != null) {
+        const message: FrameMessage = {
+          type: "UpdateElements",
+          token: oneTimeWindowMessageToken,
+          words,
+          viewports: current.viewports.concat(getFrameViewport(frame)),
+        };
+        frame.contentWindow.postMessage(message, "*");
+      }
+    }
+
+    const wordsSet = new Set(words);
+    const rects =
+      words.length === 0
+        ? []
+        : [].concat(
+            ...elements
+              .filter(Boolean)
+              .filter(({ element, data: { type } }) =>
+                matchesText(extractText(element, type), words)
+              )
+              .map(({ element }) =>
+                getTextRects(element, current.viewports, wordsSet)
+              )
+          );
+
+    current.updating = false;
+
+    this.sendMessage({
+      type: "ReportUpdatedElements",
+      elements: elements
+        // Doing `.filter(Boolean)` _after_ the `.map()` makes sure that the
+        // indexes stay the same.
+        .map((elementData, index) => {
+          return elementData == null
+            ? undefined
+            : visibleElementToElementReport(elementData, index);
+        })
+        .filter(Boolean),
+      rects,
+    });
   }
 
   // Track if the element (or any of its parents) is removed. This is used to
@@ -649,15 +774,56 @@ function wrapMessage(message: FromWorker): ToBackground {
   };
 }
 
-function parseTypes(rawTypes: any): ElementTypes {
-  // Don’t bother checking the contents of the array. It doesn’t matter if
-  // there’s invalid stuff in there, because we only check if certain types
-  // exist in the array or not (`types.includes(type)`).
-  if (Array.isArray(rawTypes) || rawTypes === "selectable") {
+function parseFrameMessage(data: Object): FrameMessage {
+  switch (data.type) {
+    case "FindElements":
+      return {
+        type: "FindElements",
+        token: "",
+        types: parseTypes(data.types),
+        viewports: parseViewports(data.viewports),
+      };
+
+    case "UpdateElements":
+      return {
+        type: "UpdateElements",
+        token: "",
+        words: parseArrayOfStrings(data.words),
+        viewports: parseViewports(data.viewports),
+      };
+
+    default:
+      throw new Error(`Unknown FrameMessage type: ${data.type}`);
+  }
+}
+
+function parseTypes(rawTypes: mixed): ElementTypes {
+  if (rawTypes === "selectable") {
     return rawTypes;
   }
 
-  throw new Error(`Expected an Array, but got: ${typeof rawTypes}`);
+  // Don’t bother stricyly checking the contents of the array. It doesn’t matter
+  // if there’s invalid types in there, because we only check if certain types
+  // exist in the array or not (`types.includes(type)`).
+  return (parseArrayOfStrings(rawTypes): Array<any>);
+}
+
+function parseArrayOfStrings(rawArray: mixed): Array<string> {
+  if (!Array.isArray(rawArray)) {
+    throw new Error(`Expected an array, but got: ${typeof rawArray}`);
+  }
+
+  const valid = rawArray
+    .map(item => (typeof item === "string" ? item : undefined))
+    .filter(Boolean);
+
+  if (valid.length !== rawArray.length) {
+    throw new Error(
+      `Expected an array of strings, but got: [${rawArray.join(", ")}]`
+    );
+  }
+
+  return valid;
 }
 
 function parseViewports(rawViewports: mixed): Array<Box> {
@@ -887,6 +1053,10 @@ function getTextRects(
     }
   }
 
+  if (ranges.length === 0) {
+    return [];
+  }
+
   let index = 0;
 
   for (const node of walkTextNodes(element)) {
@@ -931,4 +1101,36 @@ function suppressEvent(event: Event) {
   // prevents additional listeners on the same node (`window` in this case)
   // from being called.
   event.stopImmediatePropagation();
+}
+
+function visibleElementToElementReport(
+  { element, data: { type }, measurements }: VisibleElement,
+  index: number
+): ElementReport {
+  const text = extractText(element, type);
+  return {
+    type,
+    index,
+    url:
+      type === "link" && element instanceof HTMLAnchorElement
+        ? element.href
+        : undefined,
+    title: getTitle(element),
+    text,
+    textWeight: getTextWeight(text, measurements.weight),
+    isTextInput: isTextInput(element),
+    hintMeasurements: measurements,
+  };
+}
+
+function extractText(element: HTMLElement, type: ElementType): string {
+  // Scrollable elements do have `.textContent`, but it’s not intuitive to filter
+  // them by text (especially since the matching text might be scrolled away).
+  // Treat them more like frames (where you can’t look inside). `<textarea>`
+  // elements have `.textContent` they have default text in the HTML, but that
+  // is not updated as the user types. To be consistent with `<input>` text
+  // inputs, ignore their text as well.
+  return type === "scrollable" || type === "textarea"
+    ? ""
+    : element.textContent;
 }

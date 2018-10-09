@@ -298,3 +298,8 @@ export class TimeTracker {
     return this._durations;
   }
 }
+
+export function matchesText(passedText: string, words: Array<string>): boolean {
+  const text = passedText.toLowerCase();
+  return words.every(word => text.includes(word));
+}

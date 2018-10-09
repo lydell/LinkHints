@@ -590,16 +590,19 @@ export default class ElementManager {
   async getVisibleElements(
     types: ElementTypes,
     viewports: Array<Box>,
-    time: TimeTracker
-  ): Promise<Array<VisibleElement>> {
+    time: TimeTracker,
+    passedCandidates?: Array<HTMLElement>
+  ): Promise<Array<?VisibleElement>> {
     // Make sure that the MutationObserver and the IntersectionObserver have had
     // a chance to run. This is important if you click a button that adds new
     // elements and really quickly enter hints mode after that. Only do this in
     // the top frame, because that cuts the time to first paint in half on
     // Twitter. Hopefully, while waiting for the observers in the top frame the
-    // child frame observers run too.
+    // child frame observers run too. Also, don’t flush observers when updating
+    // the positions during hints mode. The thinking is that it should be
+    // faster, and observer updates get through during the next update anyway.
     time.start("flush observers");
-    if (window.top === window) {
+    if (window.top === window && passedCandidates == null) {
       await this.flushObservers();
     }
 
@@ -624,11 +627,13 @@ export default class ElementManager {
     }
 
     const candidates =
-      types === "selectable"
-        ? document.querySelectorAll("*")
-        : this.bailed
-          ? this.elements.keys()
-          : this.visibleElements;
+      passedCandidates != null
+        ? passedCandidates
+        : types === "selectable"
+          ? document.querySelectorAll("*")
+          : this.bailed
+            ? this.elements.keys()
+            : this.visibleElements;
     const range = document.createRange();
     const deduper = new Deduper();
 
@@ -670,7 +675,7 @@ export default class ElementManager {
         return undefined;
       }
 
-      const visibleElement = {
+      const visibleElement: VisibleElement = {
         element,
         data,
         measurements,
@@ -686,9 +691,9 @@ export default class ElementManager {
     });
 
     time.start("filter");
-    return maybeResults
-      .filter(Boolean)
-      .filter(result => !deduper.rejects(result));
+    return maybeResults.map(
+      result => (result == null || deduper.rejects(result) ? undefined : result)
+    );
   }
 
   getVisibleFrames(

@@ -9,13 +9,14 @@ import {
   bind,
   log,
   makeRandomToken,
+  matchesText,
   partition,
   unreachable,
 } from "../shared/main";
 import iconsChecksum from "../icons/checksum";
 // TODO: Move this type somewhere.
-import type { ElementTypes } from "../worker/ElementManager";
 import type {
+  ElementReport,
   ElementWithHint,
   ExtendedElementReport,
   FromBackground,
@@ -29,7 +30,9 @@ import type {
   ToPopup,
   ToRenderer,
   ToWorker,
+  UpdateState,
 } from "../data/Messages";
+import type { ElementTypes } from "../worker/ElementManager";
 import type {
   HintsMode,
   KeyboardAction,
@@ -40,7 +43,6 @@ import type {
 type MessageInfo = {|
   tabId: number,
   frameId: number,
-  // Currently unused, but nice to have in logging.
   url: ?string,
 |};
 
@@ -66,6 +68,14 @@ const FRAME_REPORT_TIMEOUT = 100; // ms
 
 // Only show the bagde “spinner” if the hints are slow.
 const BADGE_COLLECTING_DELAY = 300; // ms
+
+// Roughly how often to update the hints in hints mode. While a lower number
+// might yield updates faster, that feels very stuttery. Having a somewhat
+// longer interval feels better.
+const UPDATE_INTERVAL = 500; // ms
+const UPDATE_MIN_TIMEOUT = 100; // ms
+
+const SHOW_TITLE_MODES: Set<HintsMode> = new Set(["Click", "Many", "Select"]);
 
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
@@ -207,10 +217,7 @@ export default class BackgroundProgram {
     // `info` can be missing when the message comes from for example the popup
     // (which isn’t associated with a tab). The worker script can even load in
     // an `about:blank` frame somewhere when hovering the browserAction!
-    const info =
-      sender.tab != null && sender.frameId != null
-        ? { tabId: sender.tab.id, frameId: sender.frameId, url: sender.url }
-        : undefined;
+    const info = makeMessageInfo(sender);
 
     const tabStateRaw =
       info == null ? undefined : this.tabState.get(info.tabId);
@@ -242,12 +249,15 @@ export default class BackgroundProgram {
     }
   }
 
-  // Let the content scripts create a `Port` that will disconnect when the
-  // extension is disabled so that they can perform cleanups. In order for a
-  // port to connect, somebody must be listening on the other side, so use a
-  // dummy function as a listener.
-  onConnect() {
-    // Do nothing.
+  onConnect(port: Port) {
+    port.onDisconnect.addListener(({ sender }) => {
+      const info = sender == null ? undefined : makeMessageInfo(sender);
+      if (info != null) {
+        // A frame was removed. If in hints mode, hide all hints for elements in
+        // that frame.
+        this.hideElements(info);
+      }
+    });
   }
 
   onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
@@ -275,7 +285,6 @@ export default class BackgroundProgram {
           return;
         }
 
-        const { timestamp } = message;
         const { key } = message.shortcut;
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
@@ -319,262 +328,63 @@ export default class BackgroundProgram {
               .replace(/^\s+/, "")
               .replace(/\s+$/, " ");
 
-        const hasEnteredTextCharsOnly =
-          enteredTextChars !== "" && enteredHintChars === "";
-        const words = enteredTextChars.split(" ").filter(word => word !== "");
-
-        // Filter away elements/hints not matching by text.
-        const [matching, nonMatching] = partition(
-          hintsState.elementsWithHints,
-          element => {
-            const text = element.text.toLowerCase();
-            return words.every(word => text.includes(word));
-          }
-        );
-
-        // Update the hints after the above filtering.
-        const elementsWithHints = assignHints(matching, {
-          hintChars: this.hints.chars,
-          hasEnteredTextChars: enteredTextChars !== "",
+        const {
+          elementsWithHints,
+          allElementsWithHints,
+          match: actualMatch,
+          updates,
+          words,
+        } = updateHints({
+          enteredHintChars,
+          enteredTextChars,
+          elementsWithHints: hintsState.elementsWithHints,
+          hints: this.hints,
+          matchHighlighted: isEnter,
+          updateMeasurements: false,
         });
 
-        // Find which hints to highlight (if any), and which to activate (if
-        // any). This depends on whether only text chars have been enterd, if
-        // auto activation is enabled, if the Enter key is pressed and if hint
-        // chars have been entered.
-        const allHints = elementsWithHints.map(element => element.hint);
-        const matchingHints = allHints.filter(
-          hint => hint === enteredHintChars
-        );
-        const matchingHintsSet =
-          hasEnteredTextCharsOnly && this.hints.autoActivate
-            ? new Set(allHints)
-            : new Set(matchingHints);
-        const matchedHint =
-          matchingHintsSet.size === 1
-            ? Array.from(matchingHintsSet)[0]
-            : undefined;
-        const highlightedHint = hasEnteredTextCharsOnly
-          ? allHints[0]
-          : undefined;
-        const match = elementsWithHints.find(
-          element =>
-            element.hint === matchedHint ||
-            (isEnter && element.hint === highlightedHint)
-        );
-
-        const updates: Array<HintUpdate> = elementsWithHints
-          .map(
-            (element, index) =>
-              element.hint.startsWith(enteredHintChars)
-                ? {
-                    // Update the hint (which can change based on text filtering),
-                    // which part of the hint has been matched and whether it
-                    // should be marked as highlighted/matched.
-                    type: "Update",
-                    index: element.index,
-                    order: index,
-                    matchedChars: enteredHintChars,
-                    restChars: element.hint.slice(enteredHintChars.length),
-                    highlighted:
-                      match != null || element.hint === highlightedHint
-                        ? "yes"
-                        : "no",
-                  }
-                : {
-                    // Hide hints not matching the entered hint chars.
-                    type: "Hide",
-                    index: element.index,
-                  }
-          )
-          .concat(
-            nonMatching.map(element => ({
-              // Hide hints for elements filtered by text.
-              type: "Hide",
-              index: element.index,
-            }))
-          );
+        // Disallow matching hints (by text) by backspacing away chars. This can
+        // happen if your entered text matches two links and then the link you
+        // were after is removed.
+        const [match, preventOverTyping] =
+          isBackspace || actualMatch == null
+            ? [undefined, false]
+            : [actualMatch.elementWithHint, actualMatch.autoActivated];
 
         // If pressing a hint char that is currently unused, ignore it.
-        if (
-          enteredHintChars !== "" &&
-          updates.every(update => update.type === "Hide")
-        ) {
+        if (enteredHintChars !== "" && updates.every(update => update.hidden)) {
           return;
         }
 
         hintsState.enteredHintChars = enteredHintChars;
         hintsState.enteredTextChars = enteredTextChars;
-        // Blank out the hint for the elements filtered by text. The badge count
-        // only includes non-empty hints.
-        hintsState.elementsWithHints = elementsWithHints.concat(
-          nonMatching.map(element => ({ ...element, hint: "" }))
-        );
+        hintsState.elementsWithHints = allElementsWithHints;
+
+        const shouldContinue =
+          match == null
+            ? true
+            : this.handleHintMatch({
+                hintsState,
+                match,
+                info,
+                updates,
+                preventOverTyping,
+                shortcut: message.shortcut,
+                timestamp: message.timestamp,
+              });
+
+        // Some hint modes handle updating hintsState and sending messages
+        // themselves. The rest share the same implementation below.
+        if (!shouldContinue) {
+          return;
+        }
 
         if (match != null) {
-          const { url, title } = match;
-
-          const mode: HintsMode =
-            url != null && message.shortcut.altKey
-              ? "ForegroundTab"
-              : hintsState.mode;
-
-          switch (mode) {
-            case "Click":
-              this.clickElement(info.tabId, match);
-              break;
-
-            case "Many":
-              if (match.isTextInput) {
-                this.clickElement(info.tabId, match);
-              } else if (
-                url == null ||
-                // Click internal fragment links instead of opening them in new
-                // tabs.
-                (info.url != null && stripHash(info.url) === stripHash(url))
-              ) {
-                this.sendWorkerMessage(
-                  {
-                    type: "ClickElement",
-                    index: match.frame.index,
-                    trackRemoval: false,
-                  },
-                  {
-                    tabId: info.tabId,
-                    frameId: match.frame.id,
-                  }
-                );
-                this.sendRendererMessage(
-                  { type: "UnrenderTextRects" },
-                  { tabId: info.tabId }
-                );
-                this.sendRendererMessage(
-                  {
-                    type: "UpdateHints",
-                    updates,
-                    enteredTextChars,
-                  },
-                  { tabId: info.tabId }
-                );
-                this.updateWorkerStateAfterHintActivation({
-                  tabId: info.tabId,
-                  hasEnteredTextCharsOnly,
-                });
-                this.enterHintsMode({
-                  tabId: info.tabId,
-                  timestamp,
-                  mode: hintsState.mode,
-                });
-                return;
-              } else {
-                hintsState.enteredHintChars = "";
-                hintsState.enteredTextChars = "";
-                this.openNewTab({
-                  url,
-                  elementIndex: match.frame.index,
-                  tabId: info.tabId,
-                  frameId: match.frame.id,
-                  foreground: false,
-                });
-                this.sendRendererMessage(
-                  { type: "UnrenderTextRects" },
-                  { tabId: info.tabId }
-                );
-                this.sendRendererMessage(
-                  {
-                    type: "UpdateHints",
-                    updates: assignHints(hintsState.elementsWithHints, {
-                      hintChars: this.hints.chars,
-                      hasEnteredTextChars: false,
-                    }).map((element, index) => ({
-                      type: "Update",
-                      index: element.index,
-                      order: index,
-                      matchedChars: "",
-                      restChars: element.hint,
-                      highlighted:
-                        element.index === match.index ? "temporarily" : "no",
-                    })),
-                    enteredTextChars: "",
-                  },
-                  { tabId: info.tabId }
-                );
-                this.updateBadge(info.tabId);
-                return;
-              }
-              break;
-
-            case "BackgroundTab":
-              if (url == null) {
-                log(
-                  "error",
-                  "Cannot open background tab due to missing URL",
-                  match
-                );
-                break;
-              }
-              this.openNewTab({
-                url,
-                elementIndex: match.frame.index,
-                tabId: info.tabId,
-                frameId: match.frame.id,
-                foreground: false,
-              });
-              break;
-
-            case "ForegroundTab":
-              if (url == null) {
-                log(
-                  "error",
-                  "Cannot open foreground tab due to missing URL",
-                  match
-                );
-                break;
-              }
-              this.openNewTab({
-                url,
-                elementIndex: match.frame.index,
-                tabId: info.tabId,
-                frameId: match.frame.id,
-                foreground: true,
-              });
-              break;
-
-            case "Select": {
-              this.sendWorkerMessage(
-                {
-                  type: "SelectElement",
-                  index: match.frame.index,
-                  trackRemoval: title != null,
-                },
-                {
-                  tabId: info.tabId,
-                  frameId: match.frame.id,
-                }
-              );
-              if (title != null) {
-                this.sendWorkerMessage(
-                  {
-                    type: "TrackInteractions",
-                    track: true,
-                  },
-                  {
-                    tabId: info.tabId,
-                    frameId: "all_frames",
-                  }
-                );
-              }
-              break;
-            }
-
-            default:
-              unreachable(mode);
-          }
-
+          clearUpdateTimeout(hintsState.updateState);
           tabState.hintsState = { type: "Idle" };
           this.updateWorkerStateAfterHintActivation({
             tabId: info.tabId,
-            hasEnteredTextCharsOnly,
+            preventOverTyping,
           });
         }
 
@@ -620,10 +430,7 @@ export default class BackgroundProgram {
             {
               type: "Unrender",
               mode:
-                (hintsState.mode === "Click" ||
-                  hintsState.mode === "Many" ||
-                  hintsState.mode === "Select") &&
-                title != null
+                SHOW_TITLE_MODES.has(hintsState.mode) && title != null
                   ? { type: "title", title }
                   : { type: "delayed" },
             },
@@ -680,6 +487,7 @@ export default class BackgroundProgram {
             // BackgroundProgram to DOM elements in RendererProgram.
             index: -1,
             frame: { id: info.frameId, index: element.index },
+            hidden: false,
           })
         );
 
@@ -716,6 +524,83 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "ReportUpdatedElements": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Hinting") {
+          return;
+        }
+
+        const updatedElementsWithHints = mergeElements(
+          hintsState.elementsWithHints,
+          message.elements,
+          info.frameId
+        );
+
+        const { enteredHintChars, enteredTextChars } = hintsState;
+
+        const { allElementsWithHints, updates } = updateHints({
+          enteredHintChars,
+          enteredTextChars,
+          elementsWithHints: updatedElementsWithHints,
+          hints: this.hints,
+          matchHighlighted: false,
+          updateMeasurements: true,
+        });
+
+        hintsState.elementsWithHints = allElementsWithHints;
+
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates,
+            enteredTextChars,
+          },
+          { tabId: info.tabId }
+        );
+
+        this.sendRendererMessage(
+          {
+            type: "RenderTextRects",
+            rects: message.rects,
+            frameId: info.frameId,
+          },
+          { tabId: info.tabId }
+        );
+
+        this.updateBadge(info.tabId);
+
+        if (info.frameId === TOP_FRAME_ID) {
+          const { updateState } = hintsState;
+
+          const elapsedTime =
+            updateState.type === "Waiting"
+              ? Date.now() - updateState.startTime
+              : undefined;
+
+          const timeout =
+            elapsedTime == null
+              ? UPDATE_INTERVAL
+              : Math.max(0, UPDATE_INTERVAL - elapsedTime);
+
+          clearUpdateTimeout(updateState);
+
+          log("log", "Scheduling next elements update", {
+            UPDATE_INTERVAL,
+            elapsedTime,
+            timeout,
+            UPDATE_MIN_TIMEOUT,
+          });
+
+          hintsState.updateState = {
+            type: "Timeout",
+            timeoutId: setTimeout(() => {
+              this.updateElements(info.tabId);
+            }, Math.max(UPDATE_MIN_TIMEOUT, timeout)),
+          };
+        }
+        break;
+      }
+
       case "ReportTextRects":
         this.sendRendererMessage(
           {
@@ -748,6 +633,183 @@ export default class BackgroundProgram {
 
       default:
         unreachable(message.type, message);
+    }
+  }
+
+  handleHintMatch({
+    hintsState,
+    match,
+    updates,
+    preventOverTyping,
+    info,
+    shortcut,
+    timestamp,
+  }: {|
+    hintsState: HintsState,
+    match: ElementWithHint,
+    updates: Array<HintUpdate>,
+    preventOverTyping: boolean,
+    info: MessageInfo,
+    shortcut: KeyboardShortcut,
+    timestamp: number,
+  |}): boolean {
+    if (hintsState.type !== "Hinting") {
+      return true;
+    }
+
+    const { url, title } = match;
+
+    const mode: HintsMode =
+      url != null && shortcut.altKey ? "ForegroundTab" : hintsState.mode;
+
+    switch (mode) {
+      case "Click":
+        this.clickElement(info.tabId, match);
+        return true;
+
+      case "Many":
+        // Text inputs.
+        if (match.isTextInput) {
+          this.clickElement(info.tabId, match);
+          return true;
+        }
+
+        // Clickables.
+        if (
+          url == null ||
+          // Click internal fragment links instead of opening them in new
+          // tabs.
+          (info.url != null && stripHash(info.url) === stripHash(url))
+        ) {
+          this.sendWorkerMessage(
+            {
+              type: "ClickElement",
+              index: match.frame.index,
+              trackRemoval: false,
+            },
+            {
+              tabId: info.tabId,
+              frameId: match.frame.id,
+            }
+          );
+          this.sendRendererMessage(
+            { type: "UnrenderTextRects" },
+            { tabId: info.tabId }
+          );
+          this.sendRendererMessage(
+            {
+              type: "UpdateHints",
+              updates,
+              enteredTextChars: hintsState.enteredTextChars,
+            },
+            { tabId: info.tabId }
+          );
+          this.updateWorkerStateAfterHintActivation({
+            tabId: info.tabId,
+            preventOverTyping,
+          });
+          this.enterHintsMode({
+            tabId: info.tabId,
+            timestamp,
+            mode: hintsState.mode,
+          });
+          return false;
+        }
+
+        // Links, opened in new tabs.
+        hintsState.enteredHintChars = "";
+        hintsState.enteredTextChars = "";
+        this.openNewTab({
+          url,
+          elementIndex: match.frame.index,
+          tabId: info.tabId,
+          frameId: match.frame.id,
+          foreground: false,
+        });
+        this.sendRendererMessage(
+          { type: "UnrenderTextRects" },
+          { tabId: info.tabId }
+        );
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates: assignHints(hintsState.elementsWithHints, {
+              hintChars: this.hints.chars,
+              hasEnteredTextChars: false,
+            }).map((element, index) => ({
+              type: "UpdateContent",
+              index: element.index,
+              order: index,
+              matchedChars: "",
+              restChars: element.hint,
+              highlighted: element.index === match.index ? "temporarily" : "no",
+              hidden: element.hidden,
+            })),
+            enteredTextChars: "",
+          },
+          { tabId: info.tabId }
+        );
+        this.updateBadge(info.tabId);
+        return false;
+
+      case "BackgroundTab":
+        if (url == null) {
+          log("error", "Cannot open background tab due to missing URL", match);
+          return true;
+        }
+        this.openNewTab({
+          url,
+          elementIndex: match.frame.index,
+          tabId: info.tabId,
+          frameId: match.frame.id,
+          foreground: false,
+        });
+        return true;
+
+      case "ForegroundTab":
+        if (url == null) {
+          log("error", "Cannot open foreground tab due to missing URL", match);
+          return true;
+        }
+        this.openNewTab({
+          url,
+          elementIndex: match.frame.index,
+          tabId: info.tabId,
+          frameId: match.frame.id,
+          foreground: true,
+        });
+        return true;
+
+      case "Select": {
+        this.sendWorkerMessage(
+          {
+            type: "SelectElement",
+            index: match.frame.index,
+            trackRemoval: title != null,
+          },
+          {
+            tabId: info.tabId,
+            frameId: match.frame.id,
+          }
+        );
+        if (title != null) {
+          this.sendWorkerMessage(
+            {
+              type: "TrackInteractions",
+              track: true,
+            },
+            {
+              tabId: info.tabId,
+              frameId: "all_frames",
+            }
+          );
+        }
+        return true;
+      }
+
+      default:
+        unreachable(mode);
+        return true;
     }
   }
 
@@ -890,6 +952,12 @@ export default class BackgroundProgram {
       enteredHintChars: "",
       enteredTextChars: "",
       elementsWithHints,
+      updateState: {
+        type: "Timeout",
+        timeoutId: setTimeout(() => {
+          this.updateElements(tabId);
+        }, UPDATE_INTERVAL),
+      },
     };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
       tabId,
@@ -905,6 +973,99 @@ export default class BackgroundProgram {
       { tabId }
     );
     this.updateBadge(tabId);
+  }
+
+  updateElements(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+
+    if (hintsState.type !== "Hinting") {
+      return;
+    }
+
+    const { updateState } = hintsState;
+
+    clearUpdateTimeout(updateState);
+
+    hintsState.updateState = {
+      type: "Waiting",
+      startTime: Date.now(),
+    };
+
+    // Refresh `oneTimeWindowMessageToken`.
+    this.sendWorkerMessage(this.makeWorkerState(hintsState), {
+      tabId,
+      frameId: "all_frames",
+    });
+
+    this.sendWorkerMessage(
+      {
+        type: "UpdateElements",
+        words: splitEnteredTextChars(hintsState.enteredTextChars),
+      },
+      {
+        tabId,
+        frameId: TOP_FRAME_ID,
+      }
+    );
+  }
+
+  hideElements(info: MessageInfo) {
+    const tabState = this.tabState.get(info.tabId);
+
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+
+    if (hintsState.type !== "Hinting") {
+      return;
+    }
+
+    for (const element of hintsState.elementsWithHints) {
+      if (element.frame.id === info.frameId) {
+        element.hidden = true;
+      }
+    }
+
+    const { enteredHintChars, enteredTextChars } = hintsState;
+
+    const { allElementsWithHints, updates } = updateHints({
+      enteredHintChars,
+      enteredTextChars,
+      elementsWithHints: hintsState.elementsWithHints,
+      hints: this.hints,
+      matchHighlighted: false,
+      updateMeasurements: false,
+    });
+
+    hintsState.elementsWithHints = allElementsWithHints;
+
+    this.sendRendererMessage(
+      {
+        type: "RenderTextRects",
+        rects: [],
+        frameId: info.frameId,
+      },
+      { tabId: info.tabId }
+    );
+
+    this.sendRendererMessage(
+      {
+        type: "UpdateHints",
+        updates,
+        enteredTextChars,
+      },
+      { tabId: info.tabId }
+    );
+
+    this.updateBadge(info.tabId);
   }
 
   onRendererMessage(
@@ -1100,6 +1261,9 @@ export default class BackgroundProgram {
         frameId: TOP_FRAME_ID,
       }
     );
+    if (tabState.hintsState.type === "Hinting") {
+      clearUpdateTimeout(tabState.hintsState.updateState);
+    }
     tabState.hintsState = {
       type: "Collecting",
       mode,
@@ -1124,6 +1288,9 @@ export default class BackgroundProgram {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
+    }
+    if (tabState.hintsState.type === "Hinting") {
+      clearUpdateTimeout(tabState.hintsState.updateState);
     }
     tabState.hintsState = { type: "Idle" };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
@@ -1226,14 +1393,11 @@ export default class BackgroundProgram {
   // keyboard shortcuts and suppressing all key presses for a short time.
   updateWorkerStateAfterHintActivation({
     tabId,
-    hasEnteredTextCharsOnly,
+    preventOverTyping,
   }: {|
     tabId: number,
-    hasEnteredTextCharsOnly: boolean,
+    preventOverTyping: boolean,
   |}) {
-    const preventOverTyping =
-      this.hints.autoActivate && hasEnteredTextCharsOnly;
-
     const tabState = this.tabState.get(tabId);
 
     if (tabState == null) {
@@ -1427,8 +1591,12 @@ function getBadgeText(hintsState: HintsState): string {
       return "…";
     case "Hinting":
       return String(
-        hintsState.elementsWithHints.filter(element => element.hint !== "")
-          .length
+        hintsState.elementsWithHints.filter(
+          // "Hidden" elements have been removed from the DOM or moved
+          // off-screen. Elements with blank hints don't are filtered out by
+          // text.
+          element => !element.hidden && element.hint !== ""
+        ).length
       );
     default:
       return unreachable(hintsState.type);
@@ -1538,4 +1706,191 @@ function isPeekKey(shortcut: KeyboardShortcut): boolean {
     // Firefox's name for Meta: <bugzil.la/1232918>
     shortcut.key === "OS"
   );
+}
+
+function makeMessageInfo(sender: MessageSender): ?MessageInfo {
+  return sender.tab != null && sender.frameId != null
+    ? { tabId: sender.tab.id, frameId: sender.frameId, url: sender.url }
+    : undefined;
+}
+
+function updateHints({
+  enteredHintChars,
+  enteredTextChars,
+  elementsWithHints: passedElementsWithHints,
+  hints,
+  matchHighlighted,
+  updateMeasurements,
+}: {|
+  enteredHintChars: string,
+  enteredTextChars: string,
+  elementsWithHints: Array<ElementWithHint>,
+  hints: Hints,
+  matchHighlighted: boolean,
+  updateMeasurements: boolean,
+|}): {|
+  elementsWithHints: Array<ElementWithHint>,
+  allElementsWithHints: Array<ElementWithHint>,
+  match: ?{| elementWithHint: ElementWithHint, autoActivated: boolean |},
+  updates: Array<HintUpdate>,
+  words: Array<string>,
+|} {
+  const hasEnteredTextChars = enteredTextChars !== "";
+  const hasEnteredTextCharsOnly =
+    hasEnteredTextChars && enteredHintChars === "";
+  const words = splitEnteredTextChars(enteredTextChars);
+
+  // Filter away elements/hints not matching by text.
+  const [matching, nonMatching] = partition(passedElementsWithHints, element =>
+    matchesText(element.text, words)
+  );
+
+  // Update the hints after the above filtering.
+  const elementsWithHintsAndMaybeHidden = assignHints(matching, {
+    hintChars: hints.chars,
+    hasEnteredTextChars,
+  });
+
+  // Filter away elements that have become hidden _after_ assigning hints, so
+  // that the hints stay the same.
+  const elementsWithHints = elementsWithHintsAndMaybeHidden.filter(
+    element => !element.hidden
+  );
+
+  // Find which hints to highlight (if any), and which to activate (if
+  // any). This depends on whether only text chars have been enterd, if
+  // auto activation is enabled, if the Enter key is pressed and if hint
+  // chars have been entered.
+  const allHints = elementsWithHints.map(element => element.hint);
+  const matchingHints = allHints.filter(hint => hint === enteredHintChars);
+  const autoActivate = hasEnteredTextCharsOnly && hints.autoActivate;
+  const matchingHintsSet = autoActivate
+    ? new Set(allHints)
+    : new Set(matchingHints);
+  const matchedHint =
+    matchingHintsSet.size === 1 ? Array.from(matchingHintsSet)[0] : undefined;
+  const highlightedHint = hasEnteredTextCharsOnly ? allHints[0] : undefined;
+  const match = elementsWithHints.find(
+    element =>
+      element.hint === matchedHint ||
+      (matchHighlighted && element.hint === highlightedHint)
+  );
+
+  const updates: Array<HintUpdate> = elementsWithHintsAndMaybeHidden
+    .map((element, index) => {
+      const matches = element.hint.startsWith(enteredHintChars);
+      const highlighted =
+        match != null || element.hint === highlightedHint ? "yes" : "no";
+
+      return updateMeasurements
+        ? {
+            // Update the position of the hint.
+            type: "UpdatePosition",
+            index: element.index,
+            order: index,
+            hint: element.hint,
+            hintMeasurements: element.hintMeasurements,
+            highlighted,
+            hidden: element.hidden || !matches,
+          }
+        : matches
+          ? {
+              // Update the hint (which can change based on text filtering),
+              // which part of the hint has been matched and whether it
+              // should be marked as highlighted/matched.
+              type: "UpdateContent",
+              index: element.index,
+              order: index,
+              matchedChars: enteredHintChars,
+              restChars: element.hint.slice(enteredHintChars.length),
+              highlighted,
+              hidden: element.hidden || !matches,
+            }
+          : {
+              // Hide hints that don’t match the entered hint chars.
+              type: "Hide",
+              index: element.index,
+              hidden: true,
+            };
+    })
+    .concat(
+      nonMatching.map(element => ({
+        // Hide hints for elements filtered by text.
+        type: "Hide",
+        index: element.index,
+        hidden: true,
+      }))
+    );
+
+  // Blank out the hint for the elements filtered by text. The badge count
+  // only includes non-empty hints.
+  const allElementsWithHints = elementsWithHintsAndMaybeHidden.concat(
+    nonMatching.map(element => ({ ...element, hint: "" }))
+  );
+
+  return {
+    elementsWithHints,
+    allElementsWithHints,
+    match:
+      match == null
+        ? undefined
+        : {
+            elementWithHint: match,
+            autoActivated: autoActivate,
+          },
+    updates,
+    words,
+  };
+}
+
+function mergeElements(
+  elementsWithHints: Array<ElementWithHint>,
+  updates: Array<ElementReport>,
+  frameId: number
+): Array<ElementWithHint> {
+  const updateMap: Map<number, ElementReport> = new Map(
+    updates.map(update => [update.index, update])
+  );
+
+  return elementsWithHints.map(element => {
+    if (element.frame.id !== frameId) {
+      return element;
+    }
+
+    const update = updateMap.get(element.frame.index);
+
+    if (update == null) {
+      return { ...element, hidden: true };
+    }
+
+    return {
+      type: update.type,
+      index: element.index,
+      hintMeasurements: {
+        ...update.hintMeasurements,
+        // Keep the original weight so that hints don't change.
+        weight: element.hintMeasurements.weight,
+      },
+      url: update.url,
+      title: update.title,
+      text: update.text,
+      // Keep the original text weight so that hints don't change.
+      textWeight: element.textWeight,
+      isTextInput: update.isTextInput,
+      frame: element.frame,
+      hidden: false,
+      weight: element.weight,
+      hint: element.hint,
+    };
+  });
+}
+
+function splitEnteredTextChars(enteredTextChars: string): Array<string> {
+  return enteredTextChars.split(" ").filter(word => word !== "");
+}
+
+function clearUpdateTimeout(updateState: UpdateState) {
+  if (updateState.type === "Timeout") {
+    clearTimeout(updateState.timeoutId);
+  }
 }

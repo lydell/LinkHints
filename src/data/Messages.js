@@ -76,6 +76,11 @@ export type FromWorker =
       durations: Durations,
     |}
   | {|
+      type: "ReportUpdatedElements",
+      elements: Array<ElementReport>,
+      rects: Array<Box>,
+    |}
+  | {|
       type: "ReportTextRects",
       rects: Array<Box>,
     |}
@@ -101,6 +106,10 @@ export type ToWorker =
   | {|
       type: "StartFindElements",
       types: ElementTypes,
+    |}
+  | {|
+      type: "UpdateElements",
+      words: Array<string>,
     |}
   | {|
       type: "GetTextRects",
@@ -221,6 +230,7 @@ export type ExtendedElementReport = {|
     id: number,
     index: number,
   |},
+  hidden: boolean,
 |};
 
 export type ElementWithHint = {|
@@ -233,14 +243,25 @@ export type HintUpdate =
   | {|
       type: "Hide",
       index: number,
+      hidden: true,
     |}
   | {|
-      type: "Update",
+      type: "UpdateContent",
       index: number,
       order: number,
       matchedChars: string,
       restChars: string,
       highlighted: "yes" | "no" | "temporarily",
+      hidden: boolean,
+    |}
+  | {|
+      type: "UpdatePosition",
+      index: number,
+      order: number,
+      hint: string,
+      hintMeasurements: HintMeasurements,
+      highlighted: "yes" | "no", // "temporarily" not supported.
+      hidden: boolean,
     |};
 
 export type TabState = {|
@@ -276,6 +297,17 @@ export type HintsState =
       enteredHintChars: string,
       enteredTextChars: string,
       elementsWithHints: Array<ElementWithHint>,
+      updateState: UpdateState,
+    |};
+
+export type UpdateState =
+  | {|
+      type: "Waiting",
+      startTime: number,
+    |}
+  | {|
+      type: "Timeout",
+      timeoutId: TimeoutID,
     |};
 
 export type PendingElements = {|

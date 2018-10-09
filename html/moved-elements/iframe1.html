@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>iframe1</title>
+  </head>
+  <body>
+    <p>frame1 (ctrl+a to toggle)</p>
+    <p><a href="#">link</a></p>
+    <div id="iframeContainer">
+      <iframe src="iframe2.html" style="margin-top: 20vh;"></iframe>
+    </div>
+    <p style="padding-top: 75vh;"><a href="#">link</a></p>
+    <script>
+      const iframe = iframeContainer.querySelector("iframe");
+      function toggleIframe() {
+        if (iframeContainer.contains(iframe)) {
+          iframe.remove();
+        } else {
+          iframeContainer.prepend(iframe);
+        }
+      }
+    </script>
+  </body>
+</html>
