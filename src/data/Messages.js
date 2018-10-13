@@ -92,6 +92,9 @@ export type FromWorker =
     |}
   | {|
       type: "PageLeave",
+    |}
+  | {|
+      type: "WindowBlur",
     |};
 
 export type ToWorker =

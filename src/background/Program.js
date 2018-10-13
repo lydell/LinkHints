@@ -631,6 +631,20 @@ export default class BackgroundProgram {
         this.exitHintsMode(info.tabId);
         break;
 
+      // If the user used a ctrl or cmd (Windows key) shortcut to switch tabs or
+      // windows while in hints mode, the page receives a keydown event but no
+      // keyup event (since the modifier key is released in another tab or
+      // window). This causes peek mode to be stuck when the user returns. So
+      // unpeek if the user leaves the tab. Only the window of the current frame
+      // seems to blurred, so we need to listen in all frames. Frames can also
+      // be blurred by moving focus to another frame, which causes a false
+      // positive but it doesn’t matter.
+      case "WindowBlur":
+        if (tabState.hintsState.type === "Hinting") {
+          this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
+        }
+        break;
+
       default:
         unreachable(message.type, message);
     }

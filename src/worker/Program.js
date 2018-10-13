@@ -81,6 +81,7 @@ export default class WorkerProgram {
     this.resets = new Resets();
 
     bind(this, [
+      [this.onBlur, { catch: true }],
       [this.onClick, { catch: true }],
       [this.onKeydown, { catch: true }],
       [this.onKeyup, { catch: true }],
@@ -97,6 +98,7 @@ export default class WorkerProgram {
   async start(): Promise<void> {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
+      addEventListener(window, "blur", this.onBlur),
       addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "keyup", this.onKeyup, { passive: false }),
@@ -606,6 +608,12 @@ export default class WorkerProgram {
         suppressEvent(event);
         this.suppressNextKeyup = undefined;
       }
+    }
+  }
+
+  onBlur(event: FocusEvent) {
+    if (event.isTrusted && event.target === window) {
+      this.sendMessage({ type: "WindowBlur" });
     }
   }
 
