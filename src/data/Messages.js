@@ -91,6 +91,9 @@ export type FromWorker =
       type: "ClickedElementRemoved",
     |}
   | {|
+      type: "ClickedLinkNavigatingToOtherPage",
+    |}
+  | {|
       type: "PageLeave",
     |}
   | {|

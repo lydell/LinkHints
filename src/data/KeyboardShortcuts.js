@@ -40,7 +40,8 @@ export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping";
 
 export type HintsMode =
   | "Click"
-  | "Many"
+  | "ManyClick"
+  | "ManyTab"
   | "BackgroundTab"
   | "ForegroundTab"
   | "Select";

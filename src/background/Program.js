@@ -75,7 +75,11 @@ const BADGE_COLLECTING_DELAY = 300; // ms
 const UPDATE_INTERVAL = 500; // ms
 const UPDATE_MIN_TIMEOUT = 100; // ms
 
-const SHOW_TITLE_MODES: Set<HintsMode> = new Set(["Click", "Many", "Select"]);
+const SHOW_TITLE_MODES: Set<HintsMode> = new Set([
+  "Click",
+  "ManyClick",
+  "Select",
+]);
 
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
@@ -620,6 +624,20 @@ export default class BackgroundProgram {
         this.removeTitle(info.tabId);
         break;
 
+      // When clicking a link using Synth that causes a page load (no
+      // `.preventDefault()`, no internal fragment identifier, no `javascript:`
+      // protocol, etc), exit hints mode. This is especially nice for the
+      // "ManyClick" mode since it makes the hints go away immediately when
+      // clicking the link rather than after a little while when the "pagehide"
+      // event has fired.
+      case "ClickedLinkNavigatingToOtherPage": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Idle") {
+          this.exitHintsMode(info.tabId);
+        }
+        break;
+      }
+
       case "PageLeave":
         // If the user clicks a link while hints mode is active, exit it.
         // Otherwise you’ll end up in hints mode on the new page (it is still
@@ -650,6 +668,10 @@ export default class BackgroundProgram {
     }
   }
 
+  // Executes some action on the element of the matched hint. Returns whether
+  // the "NonKeyboardShortcutMatched" handler should continue with its default
+  // implementation for updating hintsState and sending messages or not. Some
+  // hint modes handle that themselves.
   handleHintMatch({
     hintsState,
     match,
@@ -681,56 +703,55 @@ export default class BackgroundProgram {
         this.clickElement(info.tabId, match);
         return true;
 
-      case "Many":
-        // Text inputs.
+      case "ManyClick":
         if (match.isTextInput) {
           this.clickElement(info.tabId, match);
           return true;
         }
 
-        // Clickables.
-        if (
-          url == null ||
-          // Click internal fragment links instead of opening them in new
-          // tabs.
-          (info.url != null && stripHash(info.url) === stripHash(url))
-        ) {
-          this.sendWorkerMessage(
-            {
-              type: "ClickElement",
-              index: match.frame.index,
-              trackRemoval: false,
-            },
-            {
-              tabId: info.tabId,
-              frameId: match.frame.id,
-            }
-          );
-          this.sendRendererMessage(
-            { type: "UnrenderTextRects" },
-            { tabId: info.tabId }
-          );
-          this.sendRendererMessage(
-            {
-              type: "UpdateHints",
-              updates,
-              enteredTextChars: hintsState.enteredTextChars,
-            },
-            { tabId: info.tabId }
-          );
-          this.updateWorkerStateAfterHintActivation({
+        this.sendWorkerMessage(
+          {
+            type: "ClickElement",
+            index: match.frame.index,
+            trackRemoval: false,
+          },
+          {
             tabId: info.tabId,
-            preventOverTyping,
-          });
-          this.enterHintsMode({
-            tabId: info.tabId,
-            timestamp,
-            mode: hintsState.mode,
-          });
-          return false;
-        }
+            frameId: match.frame.id,
+          }
+        );
+        this.sendRendererMessage(
+          { type: "UnrenderTextRects" },
+          { tabId: info.tabId }
+        );
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates,
+            enteredTextChars: hintsState.enteredTextChars,
+          },
+          { tabId: info.tabId }
+        );
+        this.updateWorkerStateAfterHintActivation({
+          tabId: info.tabId,
+          preventOverTyping,
+        });
+        this.enterHintsMode({
+          tabId: info.tabId,
+          timestamp,
+          mode: hintsState.mode,
+        });
+        return false;
 
-        // Links, opened in new tabs.
+      case "ManyTab":
+        if (url == null) {
+          log(
+            "error",
+            "Cannot open background tab (many) due to missing URL",
+            match
+          );
+          return true;
+        }
         hintsState.enteredHintChars = "";
         hintsState.enteredTextChars = "";
         this.openNewTab({
@@ -1482,8 +1503,11 @@ function getHintsTypes(mode: HintsMode): ElementTypes {
     case "ForegroundTab":
       return TAB_TYPES;
 
-    case "Many":
+    case "ManyClick":
       return CLICK_TYPES;
+
+    case "ManyTab":
+      return TAB_TYPES;
 
     case "Select":
       return "selectable";
@@ -1654,12 +1678,6 @@ function combineByHref(
   return Array.from(map.values())
     .map(children => new Combined(children))
     .concat(rest);
-}
-
-const URL_HASH = /#[\s\S]*$/;
-
-function stripHash(href: string): string {
-  return href.replace(URL_HASH, "");
 }
 
 function assignHints(

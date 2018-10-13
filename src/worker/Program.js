@@ -307,7 +307,13 @@ export default class WorkerProgram {
           new MouseEvent("mousedown", { ...options, buttons: 1 })
         );
         element.dispatchEvent(new MouseEvent("mouseup", options));
-        element.dispatchEvent(new MouseEvent("click", options));
+        const defaultNotPrevented = element.dispatchEvent(
+          new MouseEvent("click", options)
+        );
+
+        if (defaultNotPrevented && elementData.type === "link") {
+          this.sendMessage({ type: "ClickedLinkNavigatingToOtherPage" });
+        }
 
         if (element instanceof HTMLAnchorElement && target != null) {
           element.target = target;
