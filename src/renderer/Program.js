@@ -375,6 +375,10 @@ export default class RendererProgram {
     const viewport = getViewport();
     const { root, shadowRoot } = this.container;
 
+    // `style.sheet` below is only available after the container has been
+    // inserted into the DOM.
+    documentElement.append(this.container.element);
+
     if (this.parsedCSS == null) {
       // Inserting a `<style>` element is way faster than doing
       // `element.style.setProperty()` on every element.
@@ -385,12 +389,12 @@ export default class RendererProgram {
       // Chrome nicely allows inline styles inserted by an extension regardless
       // of CSP. I look forward to the day Firefox works this way too. See
       // <bugzil.la/1267027>. If `style.sheet` is null in Firefox (it is always
-      // null in Chrome), it means that the style tag was blocked by CSP. Unlike
-      // the case with the script tag in ElementManager.js, a data URI (`<link
-      // rel="stylesheet" href="data:text/css;utf8,...">`) does not work here
-      // (it causes no CSP warning in the console, but no styles are applied).
-      // The only workaround I could find was manually parsing and applying the
-      // CSS.
+      // available in Chrome), it means that the style tag was blocked by CSP.
+      // Unlike the case with the script tag in ElementManager.js, a data URI
+      // (`<link rel="stylesheet" href="data:text/css;utf8,...">`) does not work
+      // here (it causes no CSP warning in the console, but no styles are
+      // applied). The only workaround I could find was manually parsing and
+      // applying the CSS.
       if (BROWSER === "firefox" && style.sheet == null) {
         this.parsedCSS = parseCSS(this.css);
       }
@@ -398,7 +402,6 @@ export default class RendererProgram {
 
     shadowRoot.append(root);
     this.maybeApplyStyles(root);
-    documentElement.append(this.container.element);
     this.updateContainer(viewport);
     this.container.intersectionObserver.observe(this.container.element);
     this.container.resets.add(
