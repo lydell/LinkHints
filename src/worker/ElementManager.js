@@ -59,10 +59,6 @@ const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
 export type ElementTypes = Array<ElementType> | "selectable";
 
-type ElementData = {|
-  type: ElementType,
-|};
-
 export type Box = {|
   x: number,
   y: number,
@@ -88,7 +84,7 @@ type Point = {|
 
 export type VisibleElement = {|
   element: HTMLElement,
-  data: ElementData,
+  type: ElementType,
   measurements: HintMeasurements,
 |};
 
@@ -225,7 +221,7 @@ export default class ElementManager {
   maxIntersectionObservedElements: number;
   queue: Array<QueueItem>;
   injectedHasQueue: boolean;
-  elements: Map<HTMLElement, ElementData>;
+  elements: Map<HTMLElement, ElementType>;
   visibleElements: Set<HTMLElement>;
   visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement>;
   elementsWithClickListeners: WeakSet<HTMLElement>;
@@ -515,9 +511,9 @@ export default class ElementManager {
 
   flushQueue(deadline: { timeRemaining: () => number }) {
     for (const [index, { mutationType, element }] of this.queue.entries()) {
-      const data =
-        mutationType === "removed" ? undefined : this.getElementData(element);
-      if (data == null) {
+      const type =
+        mutationType === "removed" ? undefined : this.getElementType(element);
+      if (type == null) {
         if (mutationType !== "added") {
           this.elements.delete(element);
           // Removing an element from the DOM also triggers the
@@ -540,7 +536,7 @@ export default class ElementManager {
           // this.elementsWithScrollbars.delete(element);
         }
       } else {
-        this.elements.set(element, data);
+        this.elements.set(element, type);
         if (!this.bailed) {
           this.intersectionObserver.observe(element);
           if (this.elements.size > this.maxIntersectionObservedElements) {
@@ -639,37 +635,32 @@ export default class ElementManager {
 
     time.start("loop");
     const maybeResults = Array.from(candidates, element => {
-      const data: ?ElementData =
+      const type: ?ElementType =
         types === "selectable"
-          ? getElementDataSelectable(element)
+          ? getElementTypeSelectable(element)
           : this.elements.get(element);
 
-      if (data == null) {
+      if (type == null) {
         return undefined;
       }
 
-      if (types !== "selectable" && !types.includes(data.type)) {
+      if (types !== "selectable" && !types.includes(type)) {
         return undefined;
       }
 
       // Ignore `<label>` elements with no control and no click listeners.
       // $FlowIgnore: Flow can't know, but `element` _is_ a `<label>` here.
-      if (data.type === "label" && element.control == null) {
+      if (type === "label" && element.control == null) {
         return undefined;
       }
 
       // Ignore elements with title inside links and buttons. They most likely
       // cause duplicate hints.
-      if (data.type === "title" && element.closest("a, button") != null) {
+      if (type === "title" && element.closest("a, button") != null) {
         return undefined;
       }
 
-      const measurements = getMeasurements(
-        element,
-        data.type,
-        viewports,
-        range
-      );
+      const measurements = getMeasurements(element, type, viewports, range);
 
       if (measurements == null) {
         return undefined;
@@ -677,7 +668,7 @@ export default class ElementManager {
 
       const visibleElement: VisibleElement = {
         element,
-        data,
+        type,
         measurements,
       };
 
@@ -717,11 +708,6 @@ export default class ElementManager {
         ? element
         : undefined;
     }).filter(Boolean);
-  }
-
-  getElementData(element: HTMLElement): ?ElementData {
-    const type = this.getElementType(element);
-    return type == null ? undefined : { type };
   }
 
   getElementType(element: HTMLElement): ?ElementType {
@@ -850,7 +836,7 @@ class Deduper {
 
     elements.push(visibleElement);
 
-    const [bad, good] = partition(elements, ({ data: { type } }) =>
+    const [bad, good] = partition(elements, ({ type }) =>
       LOW_QUALITY_TYPES.has(type)
     );
 
@@ -1523,11 +1509,6 @@ function hintWeight(
   const lg = WORSE_HINT_TYPES.has(elementType) ? Math.log10 : Math.log2;
 
   return Math.max(1, lg(weight));
-}
-
-function getElementDataSelectable(element: HTMLElement): ?ElementData {
-  const type = getElementTypeSelectable(element);
-  return type == null ? undefined : { type };
 }
 
 function getElementTypeSelectable(element: HTMLElement): ?ElementType {

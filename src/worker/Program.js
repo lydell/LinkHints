@@ -708,7 +708,7 @@ export default class WorkerProgram {
         : [].concat(
             ...elements
               .filter(Boolean)
-              .filter(({ element, data: { type } }) =>
+              .filter(({ element, type }) =>
                 matchesText(extractText(element, type), words)
               )
               .map(({ element }) =>
@@ -1104,7 +1104,7 @@ function suppressEvent(event: Event) {
 }
 
 function visibleElementToElementReport(
-  { element, data: { type }, measurements }: VisibleElement,
+  { element, type, measurements }: VisibleElement,
   index: number
 ): ElementReport {
   const text = extractText(element, type);
