@@ -1089,7 +1089,7 @@ function getSingleRectPoint({
       rect,
       visibleBox
     );
-    if (borderAndPaddingPoint != null && isAcceptable(borderAndPaddingPoint)) {
+    if (isAcceptable(borderAndPaddingPoint)) {
       return borderAndPaddingPoint;
     }
   }
@@ -1165,7 +1165,8 @@ function getFirstImagePoint(
 
   return {
     point: {
-      ...getXY(visibleBox),
+      // The image might have padding around it.
+      ...getBorderAndPaddingPoint(image, rect, visibleBox),
       align: rect.height >= BOX_MIN_HEIGHT ? "left" : "right",
     },
     rect,
@@ -1176,7 +1177,7 @@ function getBorderAndPaddingPoint(
   element: HTMLElement,
   rect: ClientRect,
   visibleBox: Box
-): ?Point {
+): Point {
   const computedStyle = window.getComputedStyle(element);
 
   const left =
