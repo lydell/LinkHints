@@ -258,6 +258,7 @@ const program = new BackgroundProgram({
     // chars: "fjdkslaghrueiwoncmv",
     chars: "ehstirnoamupcwlfgdy",
     autoActivate: true,
+    // This is the "prevent overtyping" timeout from VimFx.
     timeout: 400, // ms
   },
 });
