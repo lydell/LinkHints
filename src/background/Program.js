@@ -293,7 +293,12 @@ export default class BackgroundProgram {
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
 
-        if (isPeekKey(message.shortcut)) {
+        // On Ubuntu (at least), shift+alt (but not alt+shift!) seems to
+        // generate Meta! But a Meta keyup event is only generated if you
+        // release the alt key first. This means that the peeking can get stuck
+        // depending on in which order you release modifier keys. To avoid that,
+        // don’t count a keydown as a peek start if shift already was held.
+        if (isPeekKey(message.shortcut) && !message.shortcut.shiftKey) {
           this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
           return;
         }
