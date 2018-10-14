@@ -197,9 +197,9 @@ export type ToRenderer =
   | {|
       type: "Unrender",
       mode:
-        | {| type: "immediate" |}
-        | {| type: "delayed" |}
-        | {| type: "title", title: string |},
+        | {| type: "Immediate" |}
+        | {| type: "Delayed" |}
+        | {| type: "Title", title: string |},
     |};
 
 export type FromPopup =

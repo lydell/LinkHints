@@ -435,8 +435,8 @@ export default class BackgroundProgram {
               type: "Unrender",
               mode:
                 SHOW_TITLE_MODES.has(hintsState.mode) && title != null
-                  ? { type: "title", title }
-                  : { type: "delayed" },
+                  ? { type: "Title", title }
+                  : { type: "Delayed" },
             },
             { tabId: info.tabId }
           );
@@ -633,7 +633,9 @@ export default class BackgroundProgram {
       case "ClickedLinkNavigatingToOtherPage": {
         const { hintsState } = tabState;
         if (hintsState.type !== "Idle") {
-          this.exitHintsMode(info.tabId);
+          // Exit in “Delayed” mode so that the matched hints still show as
+          // highlighted.
+          this.exitHintsMode({ tabId: info.tabId, delayed: true });
         }
         break;
       }
@@ -646,7 +648,7 @@ export default class BackgroundProgram {
         // instead pick up from where they where when leaving the page. Exiting
         // hints mode before leaving makes sure that there are no left-over
         // hints shown when navigating back.
-        this.exitHintsMode(info.tabId);
+        this.exitHintsMode({ tabId: info.tabId });
         break;
 
       // If the user used a ctrl or cmd (Windows key) shortcut to switch tabs or
@@ -862,7 +864,7 @@ export default class BackgroundProgram {
     this.sendRendererMessage(
       {
         type: "Unrender",
-        mode: { type: "immediate" },
+        mode: { type: "Immediate" },
       },
       { tabId }
     );
@@ -1213,7 +1215,7 @@ export default class BackgroundProgram {
         if (tabState == null || tabState.hintsState.type !== "Hinting") {
           return;
         }
-        this.exitHintsMode(info.tabId);
+        this.exitHintsMode({ tabId: info.tabId });
         break;
       }
 
@@ -1251,7 +1253,7 @@ export default class BackgroundProgram {
       }
 
       case "Escape": {
-        this.exitHintsMode(info.tabId);
+        this.exitHintsMode({ tabId: info.tabId });
         this.sendWorkerMessage(
           { type: "Escape" },
           { tabId: info.tabId, frameId: "all_frames" }
@@ -1319,7 +1321,13 @@ export default class BackgroundProgram {
     }, BADGE_COLLECTING_DELAY);
   }
 
-  exitHintsMode(tabId: number) {
+  exitHintsMode({
+    tabId,
+    delayed = false,
+  }: {|
+    tabId: number,
+    delayed?: boolean,
+  |}) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1335,7 +1343,7 @@ export default class BackgroundProgram {
     this.sendRendererMessage(
       {
         type: "Unrender",
-        mode: { type: "immediate" },
+        mode: delayed ? { type: "Delayed" } : { type: "Immediate" },
       },
       { tabId }
     );

@@ -318,13 +318,13 @@ export default class RendererProgram {
 
       case "Unrender":
         switch (message.mode.type) {
-          case "immediate":
+          case "Immediate":
             this.unrender();
             break;
-          case "delayed":
+          case "Delayed":
             this.unrenderDelayed();
             break;
-          case "title":
+          case "Title":
             this.unrenderToTitle(message.mode.title);
             break;
           default:
