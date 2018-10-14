@@ -45,6 +45,7 @@
     <p>Abbreviation: <abbr title="Cascading Style Sheets">CSS</abbr></p>
 
     <p>Bad clickable: <u title="Delete all messages in the inbox">Cleanup</u></p>
+    <p>Bad clickable: <u title="ticket.pdf">ticket.pdf</u></p>
 
     <form><input type="text" value="input element" title="Digits only" pattern="\d*"></form>
 
@@ -53,8 +54,14 @@
     <p title="">[title=""]</p>
     <p title="  ">[title="  "] (whitespace only)</p>
 
-    <p title="title same as text skipped">
-      title same as text skipped
+    <p>
+      <a href="https://example.com" title="title same as text skipped if clickable">
+        title same as text skipped if clickable
+      </a>
+    </p>
+
+    <p title="title same as text not skipped if not otherwise clickable">
+      title same as text not skipped if not otherwise clickable
     </p>
 
     <p>

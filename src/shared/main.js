@@ -220,16 +220,7 @@ export function getTitle(element: HTMLElement): ?string {
 
   const trimmed = title.trim();
 
-  if (trimmed === "") {
-    return undefined;
-  }
-
-  const text = element.textContent.trim();
-
-  // Links to files and notifications on GitHub often have the the title
-  // attribute set to the element text. That does not provide any new
-  // information and is only annoying.
-  return trimmed === text ? undefined : trimmed;
+  return trimmed === "" ? undefined : trimmed;
 }
 
 export type Viewport = {|

@@ -1122,6 +1122,7 @@ function visibleElementToElementReport(
   index: number
 ): ElementReport {
   const text = extractText(element, type);
+  const title = getTitle(element);
   return {
     type,
     index,
@@ -1129,7 +1130,13 @@ function visibleElementToElementReport(
       type === "link" && element instanceof HTMLAnchorElement
         ? element.href
         : undefined,
-    title: getTitle(element),
+    // Links to files and notifications on GitHub often have the the title
+    // attribute set to the element text. That does not provide any new
+    // information and is only annoying. So ignore the title if it is the same
+    // as the element text – and the element is clickable for some other reason
+    // than for having a title. Gmail attachments have equal title and element
+    // text, but having a title is the only thing marking them as clickable.
+    title: text.trim() === title && type !== "title" ? undefined : title,
     text,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),
