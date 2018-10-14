@@ -899,16 +899,16 @@ function getMeasurements(
     .map(box => ({ ...box, x: box.x - offsetX, y: box.y - offsetY }));
 
   if (visibleBoxes.length === 0) {
-    // If there’s only one rect and that rect has a height but not a width it
-    // means that all children are floated or absolutely positioned (and that
-    // `element` hasn’t been made to “contain” the floats). For example, a link
-    // in a menu could contain a span of text floated to the left and an icon
-    // floated to the right. Those are still clickable. So return the
-    // measurements of one of the children instead. For now we just pick the
-    // first (in DOM order), but there might be a more clever way of doing it.
+    // If there’s only one rect and that rect has no width it means that all
+    // children are floated or absolutely positioned (and that `element` hasn’t
+    // been made to “contain” the floats). For example, a link in a menu could
+    // contain a span of text floated to the left and an icon floated to the
+    // right. Those are still clickable. So return the measurements of one of
+    // the children instead. For now we just pick the first (in DOM order), but
+    // there might be a more clever way of doing it.
     if (rects.length === 1) {
       const rect = rects[0];
-      if (rect.width === 0 && rect.height > 0) {
+      if (rect.width === 0) {
         for (const child of element.children) {
           const measurements = getMeasurements(
             child,
