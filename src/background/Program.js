@@ -779,7 +779,7 @@ export default class BackgroundProgram {
               order: index,
               matchedChars: "",
               restChars: element.hint,
-              highlighted: element.index === match.index ? "temporarily" : "no",
+              highlighted: element.hint === match.hint ? "temporarily" : "no",
               hidden: element.hidden,
             })),
             enteredTextChars: "",
