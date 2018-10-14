@@ -190,21 +190,8 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
-      key: "L",
-      code: "KeyL",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
-    },
-    action: {
-      type: "ReverseSelection",
-    },
-  },
-  {
-    shortcut: {
-      key: "R",
-      code: "KeyR",
+      key: "ArrowUp",
+      code: "ArrowUp",
       altKey: true,
       ctrlKey: false,
       metaKey: false,
