@@ -397,30 +397,25 @@ export default class BackgroundProgram {
           });
         }
 
-        if (words.length > 0 && match == null) {
-          const indexesByFrame: Map<number, Array<number>> = new Map();
-          for (const { frame } of elementsWithHints) {
-            const previous = indexesByFrame.get(frame.id);
-            if (previous == null) {
-              indexesByFrame.set(frame.id, [frame.index]);
-            } else {
-              previous.push(frame.index);
-            }
+        const indexesByFrame: Map<number, Array<number>> = new Map();
+        for (const { frame } of elementsWithHints) {
+          const previous = indexesByFrame.get(frame.id);
+          if (previous == null) {
+            indexesByFrame.set(frame.id, [frame.index]);
+          } else {
+            previous.push(frame.index);
           }
-          for (const [frameId, indexes] of indexesByFrame) {
-            this.sendWorkerMessage(
-              {
-                type: "GetTextRects",
-                indexes,
-                words,
-              },
-              { tabId: info.tabId, frameId }
-            );
-          }
-        } else {
-          this.sendRendererMessage(
-            { type: "UnrenderTextRects" },
-            { tabId: info.tabId }
+        }
+        for (const [frameId, indexes] of indexesByFrame) {
+          this.sendWorkerMessage(
+            {
+              type: "GetTextRects",
+              indexes,
+              // If there's a match, send an empty array of words to unrender
+              // all text rects.
+              words: match == null ? words : [],
+            },
+            { tabId: info.tabId, frameId }
           );
         }
 
