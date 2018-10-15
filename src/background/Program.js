@@ -1046,10 +1046,7 @@ export default class BackgroundProgram {
     });
 
     this.sendWorkerMessage(
-      {
-        type: "UpdateElements",
-        words: splitEnteredTextChars(hintsState.enteredTextChars),
-      },
+      { type: "UpdateElements" },
       {
         tabId,
         frameId: TOP_FRAME_ID,

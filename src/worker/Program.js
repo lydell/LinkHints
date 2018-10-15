@@ -38,7 +38,6 @@ type FrameMessage =
   | {|
       type: "UpdateElements",
       token: string,
-      words: Array<string>,
       viewports: Array<Box>,
     |};
 
@@ -193,8 +192,6 @@ export default class WorkerProgram {
             ...getViewport(),
           },
         ];
-
-        current.words = message.words;
 
         this.updateVisibleElements({
           current,
@@ -490,8 +487,6 @@ export default class WorkerProgram {
             return;
           }
 
-          current.words = message.words;
-
           current.viewports = message.viewports;
           this.updateVisibleElements({
             current,
@@ -738,7 +733,6 @@ export default class WorkerProgram {
           const message: FrameMessage = {
             type: "UpdateElements",
             token: oneTimeWindowMessageToken,
-            words,
             viewports: current.viewports.concat(getFrameViewport(frame)),
           };
           frame.contentWindow.postMessage(message, "*");
@@ -833,7 +827,6 @@ function parseFrameMessage(data: Object): FrameMessage {
       return {
         type: "UpdateElements",
         token: "",
-        words: parseArrayOfStrings(data.words),
         viewports: parseViewports(data.viewports),
       };
 

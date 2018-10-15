@@ -115,7 +115,6 @@ export type ToWorker =
     |}
   | {|
       type: "UpdateElements",
-      words: Array<string>,
     |}
   | {|
       type: "GetTextRects",
