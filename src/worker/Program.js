@@ -1115,9 +1115,19 @@ function getTextRects(
   return [].concat(
     ...ranges.map(({ range }) => {
       const rects = range.getClientRects();
-      return Array.from(rects, rect => getVisibleBox(rect, viewports)).filter(
-        Boolean
-      );
+      return Array.from(rects, rect => {
+        const box = getVisibleBox(rect, viewports);
+        if (box == null) {
+          return undefined;
+        }
+        const elementAtPoint = document.elementFromPoint(
+          Math.round(box.x + box.width / 2),
+          Math.round(box.y + box.height / 2)
+        );
+        return elementAtPoint != null && element.contains(elementAtPoint)
+          ? box
+          : undefined;
+      }).filter(Boolean);
     })
   );
 }
