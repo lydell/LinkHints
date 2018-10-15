@@ -219,6 +219,7 @@ const infiniteDeadline = {
 
 export default class ElementManager {
   maxIntersectionObservedElements: number;
+  onTrackedElementsMutation: () => void;
   queue: Array<QueueItem>;
   injectedHasQueue: boolean;
   elements: Map<HTMLElement, ElementType>;
@@ -237,10 +238,13 @@ export default class ElementManager {
 
   constructor({
     maxIntersectionObservedElements,
+    onTrackedElementsMutation,
   }: {|
     maxIntersectionObservedElements: number,
+    onTrackedElementsMutation: () => void,
   |}) {
     this.maxIntersectionObservedElements = maxIntersectionObservedElements;
+    this.onTrackedElementsMutation = onTrackedElementsMutation;
 
     this.queue = [];
     this.injectedHasQueue = false;
@@ -411,6 +415,7 @@ export default class ElementManager {
 
   onMutation(records: Array<MutationRecord>) {
     let probed = false;
+    let changed = false;
 
     for (const record of records) {
       for (const node of record.addedNodes) {
@@ -427,6 +432,7 @@ export default class ElementManager {
           this.frameIntersectionObserver.observe(node);
         } else if (node instanceof HTMLElement) {
           this.queueItemAndChildren({ mutationType: "added", element: node });
+          changed = true;
         }
       }
 
@@ -441,6 +447,7 @@ export default class ElementManager {
           this.visibleFrames.delete(node); // Just to be sure.
         } else if (node instanceof HTMLElement) {
           this.queueItemAndChildren({ mutationType: "removed", element: node });
+          changed = true;
         }
       }
 
@@ -448,12 +455,17 @@ export default class ElementManager {
         const element = record.target;
         if (element instanceof HTMLElement) {
           this.queueItem({ mutationType: "changed", element });
+          changed = true;
         }
       }
     }
 
     if (probed && this.observerProbeCallback != null) {
       this.observerProbeCallback();
+    }
+
+    if (changed) {
+      this.onTrackedElementsMutation();
     }
   }
 

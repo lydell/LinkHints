@@ -47,6 +47,7 @@ type CurrentElements = {|
   frames: Array<HTMLIFrameElement | HTMLFrameElement>,
   viewports: Array<Box>,
   types: ElementTypes,
+  words: Array<string>,
   updating: boolean,
 |};
 
@@ -74,6 +75,7 @@ export default class WorkerProgram {
     this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
+      onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
     });
     this.current = undefined;
     this.oneTimeWindowMessageToken = undefined;
@@ -180,7 +182,7 @@ export default class WorkerProgram {
 
       case "UpdateElements": {
         const { current, oneTimeWindowMessageToken } = this;
-        if (current == null || oneTimeWindowMessageToken == null) {
+        if (current == null) {
           return;
         }
 
@@ -192,11 +194,12 @@ export default class WorkerProgram {
           },
         ];
 
-        this.updateVisibleElements(
-          message.words,
+        current.words = message.words;
+
+        this.updateVisibleElements({
           current,
-          oneTimeWindowMessageToken
-        );
+          oneTimeWindowMessageToken,
+        });
         break;
       }
 
@@ -208,7 +211,9 @@ export default class WorkerProgram {
         const elements = current.elements.filter((_elementData, index) =>
           message.indexes.includes(index)
         );
-        const wordsSet = new Set(message.words);
+        const { words } = message;
+        current.words = words;
+        const wordsSet = new Set(words);
         const rects = [].concat(
           ...elements.map(elementData =>
             getTextRects(elementData.element, current.viewports, wordsSet)
@@ -485,12 +490,13 @@ export default class WorkerProgram {
             return;
           }
 
+          current.words = message.words;
+
           current.viewports = message.viewports;
-          this.updateVisibleElements(
-            message.words,
+          this.updateVisibleElements({
             current,
-            oneTimeWindowMessageToken
-          );
+            oneTimeWindowMessageToken,
+          });
           break;
         }
 
@@ -629,6 +635,24 @@ export default class WorkerProgram {
     }
   }
 
+  onTrackedElementsMutation() {
+    const { current } = this;
+    if (current == null) {
+      return;
+    }
+
+    // In addition to the "UpdateElements" polling, update as soon as possible
+    // when elements are removed/added/changed for better UX. For example, if a
+    // modal closes it looks nicer if the hints for elements in the modal
+    // disappear immediately rather than after a small delay.
+    this.updateVisibleElements({
+      current,
+      // Skip updating child frames since we only know that things changed in
+      // _this_ frame. Child frames will be updated during the next poll.
+      oneTimeWindowMessageToken: undefined,
+    });
+  }
+
   onPagehide() {
     if (window.top === window) {
       this.sendMessage({ type: "PageLeave" });
@@ -678,15 +702,18 @@ export default class WorkerProgram {
       frames,
       viewports,
       types,
+      words: [],
       updating: false,
     };
   }
 
-  async updateVisibleElements(
-    words: Array<string>,
+  async updateVisibleElements({
+    current,
+    oneTimeWindowMessageToken,
+  }: {|
     current: CurrentElements,
-    oneTimeWindowMessageToken: string
-  ): Promise<void> {
+    oneTimeWindowMessageToken: ?string,
+  |}): Promise<void> {
     if (current.updating) {
       return;
     }
@@ -700,18 +727,22 @@ export default class WorkerProgram {
       current.elements.map(({ element }) => element)
     );
 
-    for (const frame of current.frames) {
-      // Removing an iframe from the DOM nukes its page (this will be detected
-      // by the port disconnecting). Re-inserting it causes the page to be
-      // loaded anew.
-      if (frame.contentWindow != null) {
-        const message: FrameMessage = {
-          type: "UpdateElements",
-          token: oneTimeWindowMessageToken,
-          words,
-          viewports: current.viewports.concat(getFrameViewport(frame)),
-        };
-        frame.contentWindow.postMessage(message, "*");
+    const { words } = current;
+
+    if (oneTimeWindowMessageToken != null) {
+      for (const frame of current.frames) {
+        // Removing an iframe from the DOM nukes its page (this will be detected
+        // by the port disconnecting). Re-inserting it causes the page to be
+        // loaded anew.
+        if (frame.contentWindow != null) {
+          const message: FrameMessage = {
+            type: "UpdateElements",
+            token: oneTimeWindowMessageToken,
+            words,
+            viewports: current.viewports.concat(getFrameViewport(frame)),
+          };
+          frame.contentWindow.postMessage(message, "*");
+        }
       }
     }
 
