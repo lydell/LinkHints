@@ -1743,7 +1743,8 @@ function assignHints(
 
 function isPeekKey(shortcut: KeyboardShortcut): boolean {
   return (
-    shortcut.key === "Control" ||
+    // TODO: Use ctrl instead of meta/cmd on mac.
+    // shortcut.key === "Control" ||
     shortcut.key === "Meta" ||
     // Firefox's name for Meta: <bugzil.la/1232918>
     shortcut.key === "OS"

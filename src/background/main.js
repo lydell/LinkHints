@@ -192,6 +192,7 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     shortcut: {
       key: "ArrowUp",
       code: "ArrowUp",
+      // TODO: Use ctrl instead of alt on mac.
       altKey: true,
       ctrlKey: false,
       metaKey: false,
@@ -240,10 +241,11 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
   },
   {
     shortcut: {
-      key: "F5",
-      code: "F5",
+      key: "r",
+      code: "KeyR",
       altKey: false,
-      ctrlKey: false,
+      // TODO: Use cmd instead of ctrl on mac.
+      ctrlKey: true,
       metaKey: false,
       shiftKey: false,
     },
