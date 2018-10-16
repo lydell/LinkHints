@@ -1,6 +1,7 @@
 // @flow
 
 import {
+  CONTAINER_ID,
   Resets,
   TimeTracker,
   type Viewport,
@@ -30,10 +31,6 @@ type HintSize = {|
   height: number,
 |};
 
-// It's tempting to put a random number or something in the ID, but in case
-// something goes wrong and a rogue container is left behind it's always
-// possible to find and remove it if the ID is known.
-const CONTAINER_ID = "__SynthWebExt";
 const ROOT_CLASS = "root";
 const HINT_CLASS = "hint";
 const HIGHLIGHTED_HINT_CLASS = "highlighted";
@@ -442,6 +439,7 @@ export default class RendererProgram {
       // applied). The only workaround I could find was manually parsing and
       // applying the CSS.
       if (BROWSER === "firefox" && style.sheet == null) {
+        log("log", "RendererProgram#render", "parsing CSS due to CSP");
         this.parsedCSS = parseCSS(this.css);
       }
     }

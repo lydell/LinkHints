@@ -511,7 +511,17 @@ export default class WorkerProgram {
   // (at least for now) the Synth shortcuts always do their thing (making it
   // impossible to trigger a site shortcut using the same keys).
   onKeydown(event: KeyboardEvent) {
+    const prefix = "WorkerProgram#onKeydown";
+
     if (!event.isTrusted) {
+      log("log", prefix, "ignoring untrusted event", event);
+      return;
+    }
+
+    // The "keydown" event fires at an interval while it is pressed. We're only
+    // interested in the event where the key was actually pressed down. Ignore
+    // the rest. Don't log this since it results in a _lot_ of logs.
+    if (event.repeat) {
       return;
     }
 
@@ -546,6 +556,14 @@ export default class WorkerProgram {
         key: event.key,
         code: event.code,
       };
+      log("log", prefix, "suppressing event", {
+        key: event.key,
+        code: event.code,
+        event,
+        match,
+        keyboardMode: this.keyboardMode,
+        suppressNextKeyup: this.suppressNextKeyup,
+      });
     }
 
     if (
@@ -591,7 +609,10 @@ export default class WorkerProgram {
   }
 
   onKeyup(event: KeyboardEvent) {
+    const prefix = "WorkerProgram#onKeyup";
+
     if (!event.isTrusted) {
+      log("log", prefix, "ignoring untrusted event", event);
       return;
     }
 
@@ -612,6 +633,11 @@ export default class WorkerProgram {
     if (this.suppressNextKeyup != null) {
       const { key, code } = this.suppressNextKeyup;
       if (event.key === key && event.code === code) {
+        log("log", prefix, "suppressing event", {
+          event,
+          keyboardMode: this.keyboardMode,
+          suppressNextKeyup: this.suppressNextKeyup,
+        });
         suppressEvent(event);
         this.suppressNextKeyup = undefined;
       }
@@ -619,13 +645,23 @@ export default class WorkerProgram {
   }
 
   onBlur(event: FocusEvent) {
-    if (event.isTrusted && event.target === window) {
+    if (!event.isTrusted) {
+      log("log", "WorkerProgram#onBlur", "ignoring untrusted event", event);
+      return;
+    }
+
+    if (event.target === window) {
       this.sendMessage({ type: "WindowBlur" });
     }
   }
 
   onClick(event: MouseEvent) {
-    if (event.isTrusted && this.trackInteractions) {
+    if (!event.isTrusted) {
+      log("log", "WorkerProgram#onClick", "ignoring untrusted event", event);
+      return;
+    }
+
+    if (this.trackInteractions) {
       this.sendMessage({ type: "Interaction" });
     }
   }
@@ -648,7 +684,12 @@ export default class WorkerProgram {
     });
   }
 
-  onPagehide() {
+  onPagehide(event: Event) {
+    if (!event.isTrusted) {
+      log("log", "WorkerProgram#onPagehide", "ignoring untrusted event", event);
+      return;
+    }
+
     if (window.top === window) {
       this.sendMessage({ type: "PageLeave" });
     }

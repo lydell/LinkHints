@@ -1,6 +1,7 @@
 // @flow
 
 import {
+  CONTAINER_ID,
   Resets,
   type TimeTracker,
   addEventListener,
@@ -430,7 +431,7 @@ export default class ElementManager {
           // intersection observer, but in practice there are never that many
           // frames. YAGNI.
           this.frameIntersectionObserver.observe(node);
-        } else if (node instanceof HTMLElement) {
+        } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
           this.queueItemAndChildren({ mutationType: "added", element: node });
           changed = true;
         }
@@ -445,7 +446,7 @@ export default class ElementManager {
         ) {
           this.frameIntersectionObserver.unobserve(node);
           this.visibleFrames.delete(node); // Just to be sure.
-        } else if (node instanceof HTMLElement) {
+        } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
           this.queueItemAndChildren({ mutationType: "removed", element: node });
           changed = true;
         }
@@ -601,6 +602,11 @@ export default class ElementManager {
     time: TimeTracker,
     passedCandidates?: Array<HTMLElement>
   ): Promise<Array<?VisibleElement>> {
+    const isUpdate = passedCandidates != null;
+    const prefix = `ElementManager#getVisibleElements${
+      isUpdate ? " (update)" : ""
+    }`;
+
     // Make sure that the MutationObserver and the IntersectionObserver have had
     // a chance to run. This is important if you click a button that adds new
     // elements and really quickly enter hints mode after that. Only do this in
@@ -610,7 +616,8 @@ export default class ElementManager {
     // the positions during hints mode. The thinking is that it should be
     // faster, and observer updates get through during the next update anyway.
     time.start("flush observers");
-    if (window.top === window && passedCandidates == null) {
+    if (window.top === window && !isUpdate) {
+      log("log", prefix, "flush observers (top frame only)");
       await this.flushObservers();
     }
 
@@ -619,6 +626,7 @@ export default class ElementManager {
     const injectedNeedsFlush = this.injectedHasQueue;
 
     if (injectedNeedsFlush) {
+      log("log", prefix, "flush injected");
       sendInjectedMessage(MESSAGE_FLUSH);
     }
 
@@ -627,10 +635,12 @@ export default class ElementManager {
     const needsFlush = this.queue.length > 0;
 
     if (needsFlush) {
+      log("log", prefix, "flush queue", this.queue);
       this.flushQueue(infiniteDeadline);
     }
 
     if (injectedNeedsFlush || needsFlush) {
+      log("log", prefix, "flush observers", { injectedNeedsFlush, needsFlush });
       await this.flushObservers();
     }
 

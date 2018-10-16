@@ -1,5 +1,11 @@
 // @flow
 
+// It's tempting to put a random number or something in the ID, but in case
+// something goes wrong and a rogue container is left behind it's always
+// possible to find and remove it if the ID is known. Also, RendererProgram and
+// ElementManager might not get the same random number.
+export const CONTAINER_ID = "__SynthWebExt";
+
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
 const LOG_LEVELS = {

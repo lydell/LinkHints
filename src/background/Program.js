@@ -523,6 +523,10 @@ export default class BackgroundProgram {
           hintsState.timeoutId = setTimeout(() => {
             hintsState.timeoutId = undefined;
             this.maybeStartHinting(info.tabId);
+            log("log", "frame report timeout", {
+              numFramesCollecting:
+                hintsState.pendingElements.pendingFrames.collecting,
+            });
           }, FRAME_REPORT_TIMEOUT);
         }
         break;
