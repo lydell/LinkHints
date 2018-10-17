@@ -309,10 +309,6 @@ export default class RendererProgram {
         this.togglePeek({ peek: false });
         break;
 
-      case "UnrenderTextRects":
-        this.unrenderTextRects();
-        break;
-
       case "Unrender":
         switch (message.mode.type) {
           case "Immediate":

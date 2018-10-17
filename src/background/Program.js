@@ -369,34 +369,6 @@ export default class BackgroundProgram {
         hintsState.enteredTextChars = enteredTextChars;
         hintsState.elementsWithHints = allElementsWithHints;
 
-        const shouldContinue =
-          match == null
-            ? true
-            : this.handleHintMatch({
-                hintsState,
-                match,
-                info,
-                updates,
-                preventOverTyping,
-                shortcut: message.shortcut,
-                timestamp: message.timestamp,
-              });
-
-        // Some hint modes handle updating hintsState and sending messages
-        // themselves. The rest share the same implementation below.
-        if (!shouldContinue) {
-          return;
-        }
-
-        if (match != null) {
-          clearUpdateTimeout(hintsState.updateState);
-          tabState.hintsState = { type: "Idle" };
-          this.updateWorkerStateAfterHintActivation({
-            tabId: info.tabId,
-            preventOverTyping,
-          });
-        }
-
         const indexesByFrame: Map<number, Array<number>> = new Map();
         for (const { frame } of elementsWithHints) {
           const previous = indexesByFrame.get(frame.id);
@@ -419,6 +391,25 @@ export default class BackgroundProgram {
           );
         }
 
+        const shouldContinue =
+          match == null
+            ? true
+            : this.handleHintMatch({
+                hintsState,
+                match,
+                info,
+                updates,
+                preventOverTyping,
+                shortcut: message.shortcut,
+                timestamp: message.timestamp,
+              });
+
+        // Some hint modes handle updating hintsState and sending messages
+        // themselves. The rest share the same implementation below.
+        if (!shouldContinue) {
+          return;
+        }
+
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -429,6 +420,13 @@ export default class BackgroundProgram {
         );
 
         if (match != null) {
+          clearUpdateTimeout(hintsState.updateState);
+          tabState.hintsState = { type: "Idle" };
+          this.updateWorkerStateAfterHintActivation({
+            tabId: info.tabId,
+            preventOverTyping,
+          });
+
           const { title } = match;
           this.sendRendererMessage(
             {
@@ -727,10 +725,6 @@ export default class BackgroundProgram {
           }
         );
         this.sendRendererMessage(
-          { type: "UnrenderTextRects" },
-          { tabId: info.tabId }
-        );
-        this.sendRendererMessage(
           {
             type: "UpdateHints",
             updates,
@@ -767,10 +761,6 @@ export default class BackgroundProgram {
           frameId: match.frame.id,
           foreground: false,
         });
-        this.sendRendererMessage(
-          { type: "UnrenderTextRects" },
-          { tabId: info.tabId }
-        );
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -1803,7 +1793,9 @@ function updateHints({
   // any). This depends on whether only text chars have been enterd, if
   // auto activation is enabled, if the Enter key is pressed and if hint
   // chars have been entered.
-  const allHints = elementsWithHints.map(element => element.hint);
+  const allHints = elementsWithHints
+    .map(element => element.hint)
+    .filter(hint => hint.startsWith(enteredHintChars));
   const matchingHints = allHints.filter(hint => hint === enteredHintChars);
   const autoActivate = hasEnteredTextCharsOnly && hints.autoActivate;
   const matchingHintsSet = autoActivate
@@ -1822,7 +1814,8 @@ function updateHints({
     .map((element, index) => {
       const matches = element.hint.startsWith(enteredHintChars);
       const highlighted =
-        match != null || element.hint === highlightedHint ? "yes" : "no";
+        (match != null && element.hint === match.hint) ||
+        element.hint === highlightedHint;
 
       return updateMeasurements
         ? {
@@ -1832,10 +1825,10 @@ function updateHints({
             order: index,
             hint: element.hint,
             hintMeasurements: element.hintMeasurements,
-            highlighted,
+            highlighted: highlighted ? "yes" : "no",
             hidden: element.hidden || !matches,
           }
-        : matches
+        : matches && (match == null || highlighted)
           ? {
               // Update the hint (which can change based on text filtering),
               // which part of the hint has been matched and whether it
@@ -1845,7 +1838,7 @@ function updateHints({
               order: index,
               matchedChars: enteredHintChars,
               restChars: element.hint.slice(enteredHintChars.length),
-              highlighted,
+              highlighted: highlighted ? "yes" : "no",
               hidden: element.hidden || !matches,
             }
           : {

@@ -191,9 +191,6 @@ export type ToRenderer =
       type: "Unpeek",
     |}
   | {|
-      type: "UnrenderTextRects",
-    |}
-  | {|
       type: "Unrender",
       mode:
         | {| type: "Immediate" |}
