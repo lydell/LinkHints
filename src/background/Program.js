@@ -313,7 +313,7 @@ export default class BackgroundProgram {
           (isBackspace && hintsState.enteredHintChars !== "");
 
         // Disallow filtering by text after having started entering hint chars.
-        if (!isHintKey && hintsState.enteredHintChars !== "") {
+        if (!isHintKey && !isEnter && hintsState.enteredHintChars !== "") {
           return;
         }
 
@@ -1811,7 +1811,7 @@ function updateHints({
     : new Set(matchingHints);
   const matchedHint =
     matchingHintsSet.size === 1 ? Array.from(matchingHintsSet)[0] : undefined;
-  const highlightedHint = hasEnteredTextCharsOnly ? allHints[0] : undefined;
+  const highlightedHint = hasEnteredTextChars ? allHints[0] : undefined;
   const match = elementsWithHints.find(
     element =>
       element.hint === matchedHint ||
