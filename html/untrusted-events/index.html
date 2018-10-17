@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>untrusted events</title>
+    <style>
+      body {
+        margin: 30px;
+      }
+
+      #wrapper {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 30px;
+        margin: 30px 0;
+      }
+
+      #actions {
+        display: grid;
+        grid-template-columns: 200px 200px;
+        gap: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Untrusted events dispatched by the page should not trigger Synth actions.</p>
+
+    <p>
+      <a id="link" href="#">link</a>
+      <abbr title="some title text">title</abbr>
+    </p>
+
+    <div id="wrapper">
+      <div id="actions"></div>
+
+      <iframe id="iframe" src="iframe.html"></iframe>
+    </div>
+
+    <script>
+      const events = {
+        "blur": () => {
+          window.dispatchEvent(new FocusEvent("blur"));
+          link.dispatchEvent(new FocusEvent("blur"));
+        },
+        "click": () => {
+          document.body.dispatchEvent(new MouseEvent("click"));
+        },
+        "keydown": () => {
+          window.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "j",
+            code: "KeyJ",
+            altKey: true,
+          }));
+        },
+        "keyup": () => {
+          window.dispatchEvent(new KeyboardEvent("keyup", {
+            key: "Meta",
+            code: "MetaLeft",
+          }));
+          window.dispatchEvent(new KeyboardEvent("keyup"), {
+            key: "Control",
+            code: "ControlLeft",
+          });
+        },
+        "pagehide": () => {
+          window.dispatchEvent(new PageTransitionEvent("pagehide"));
+        },
+        "message": () => {
+          const message = {
+            "type": "FindElements",
+            "token": "49515842341949434181808946120",
+            "types": [
+              "clickable",
+              "clickable-event",
+              "label",
+              "link",
+              "scrollable",
+              "textarea",
+              "title"
+            ],
+            "viewports": [
+              {
+                "x": 0,
+                "y": 0,
+                "width": 1600,
+                "height": 625
+              },
+              {
+                "x": 880,
+                "y": 137,
+                "width": 710,
+                "height": 434
+              }
+            ]
+          };
+          iframe.contentWindow.postMessage(message, "*");
+        },
+      };
+
+      for (const [eventName, fn] of Object.entries(events)) {
+        const button1 = document.createElement("button");
+        button1.textContent = `Trigger '${eventName}'`;
+        button1.onclick = fn;
+        actions.append(button1);
+
+        const button2 = document.createElement("button");
+        button2.append(document.createTextNode(`Trigger '${eventName}'`));
+        button2.append(document.createElement("br"));
+        button2.append(document.createTextNode("in 3 seconds"));
+        button2.onclick = () => {
+          setTimeout(fn, 3000);
+        };
+        actions.append(button2);
+
+        window.addEventListener(eventName, event => {
+          console.log(eventName, event.isTrusted, event);
+        }, true);
+      }
+    </script>
+  </body>
+</html>

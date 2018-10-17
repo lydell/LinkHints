@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>iframe</title>
+  </head>
+  <body>
+    <a href="#">link in iframe</a>
+    <script>
+      window.addEventListener("message", event => {
+        console.log("frame message", event.data, event);
+      });
+    </script>
+  </body>
+</html>
