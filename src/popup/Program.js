@@ -90,6 +90,17 @@ export default class PopupProgram {
     container.style.padding = `0 20px`;
     container.style.minWidth = "200px";
 
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Options";
+    button.onclick = () => {
+      browser.runtime.openOptionsPage().catch(error => {
+        log("error", "PopupProgram: Failed to open options page", error);
+      });
+    };
+    button.style.margin = "20px 0 10px";
+    container.append(button);
+
     const heading = document.createElement("h2");
     heading.textContent = "Latest durations";
     container.append(heading);

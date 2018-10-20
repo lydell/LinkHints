@@ -27,6 +27,11 @@ module.exports = () =>
       default_popup: config.popupHtml,
       default_icon: getIcons(config.icons, config.browser),
     },
+    options_ui: {
+      page: config.optionsHtml,
+      open_in_tab: true,
+      chrome_style: true,
+    },
     commands: {
       _execute_browser_action: {
         suggested_key: {

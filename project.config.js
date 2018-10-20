@@ -56,6 +56,11 @@ module.exports = {
     output: "compiled/popup.js",
   },
   popupHtml: "compiled/popup.html",
+  options: {
+    input: "options/main.js",
+    output: "compiled/options.js",
+  },
+  optionsHtml: "compiled/options.html",
   manifest: {
     input: "manifest.js",
     output: "manifest.json",

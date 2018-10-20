@@ -112,6 +112,7 @@ declare var browser: {|
       (ConnectInfo => Port) &
       ((extensionId: string, ConnectInfo) => Port),
     getManifest(): any,
+    openOptionsPage(): Promise<void>,
     sendMessage(message: any): Promise<any>,
     onConnect: OnEvent<(Port) => void>,
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,

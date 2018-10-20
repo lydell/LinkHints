@@ -26,6 +26,7 @@ module.exports = {
         // Disallow these dirs from importing from each other.
         zones: makeRestrictedPathsZones([
           "background",
+          "options",
           "popup",
           "renderer",
           "worker",

@@ -21,9 +21,11 @@ module.exports = [
   js(config.worker),
   js(config.renderer),
   js(config.popup),
+  js(config.options),
   template(config.manifest),
   template(config.iconsCompilation),
   html({ html: config.popupHtml, js: config.popup.output }),
+  html({ html: config.optionsHtml, js: config.options.output }),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
   .filter(Boolean)
