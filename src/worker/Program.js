@@ -16,8 +16,8 @@ import type {
   FromBackground,
   FromWorker,
   ToBackground,
-} from "../data/Messages";
-import type { KeyboardMapping, KeyboardMode } from "../data/KeyboardShortcuts";
+} from "../shared/messages";
+import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";
 import type {

@@ -21,7 +21,7 @@ import type {
   FromRenderer,
   HintUpdate,
   ToBackground,
-} from "../data/Messages";
+} from "../shared/messages";
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 

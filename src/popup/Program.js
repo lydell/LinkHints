@@ -2,7 +2,11 @@
 
 import { Resets, addListener, bind, log, unreachable } from "../shared/main";
 import type { Durations, Perf } from "../shared/perf";
-import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
+import type {
+  FromBackground,
+  FromPopup,
+  ToBackground,
+} from "../shared/messages";
 
 const CONTAINER_ID = "container";
 

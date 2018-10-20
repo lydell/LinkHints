@@ -6,15 +6,15 @@ import type {
   ElementTypes,
   HintMeasurements,
 } from "../worker/ElementManager";
-import type { Durations, Perf } from "../shared/perf";
-import type { LogLevel } from "../shared/main";
 
+import type { Durations, Perf } from "./perf";
 import type {
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
   KeyboardShortcut,
-} from "./KeyboardShortcuts";
+} from "./keyboard";
+import type { LogLevel } from "./main";
 
 export type FromBackground =
   | {|

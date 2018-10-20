@@ -26,14 +26,14 @@ import type {
   ToPopup,
   ToRenderer,
   ToWorker,
-} from "../data/Messages";
+} from "../shared/messages";
 import type { ElementTypes, HintMeasurements } from "../worker/ElementManager";
 import type {
   HintsMode,
   KeyboardAction,
   KeyboardMapping,
   KeyboardShortcut,
-} from "../data/KeyboardShortcuts";
+} from "../shared/keyboard";
 
 type MessageInfo = {|
   tabId: number,

@@ -1,6 +1,6 @@
 // @flow
 
-import type { KeyboardMapping } from "../data/KeyboardShortcuts";
+import type { KeyboardMapping } from "../shared/keyboard";
 
 import BackgroundProgram from "./Program";
 
