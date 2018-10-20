@@ -1,19 +1,28 @@
 // @flow
 
-function test() {
-  const container = document.createElement("div");
+import { createElement, render } from "preact";
 
-  const label = document.createElement("label");
-  label.appendChild(document.createTextNode("Test: "));
+const h = createElement;
+const makeElement = tag => (...rest) => h(tag, ...rest);
 
-  const input = document.createElement("input");
-  label.append(input);
+const br = makeElement("br");
+const div = makeElement("div");
+const input = makeElement("input");
+const label = makeElement("label");
 
-  container.append(label);
+type Props = {| placeholder: string |};
 
-  if (document.body != null) {
-    document.body.append(container);
-  }
+function Test({ placeholder }: Props) {
+  return div(label({}, "Test:", br(), input({ type: "text", placeholder })));
 }
 
-test();
+function start() {
+  const { body } = document;
+  if (body == null) {
+    return;
+  }
+
+  render(h(Test, { placeholder: "placeholder" }), body);
+}
+
+start();
