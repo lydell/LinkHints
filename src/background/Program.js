@@ -339,6 +339,7 @@ export default class BackgroundProgram {
           updates,
           words,
         } = updateHints({
+          mode: hintsState.mode,
           enteredHintChars,
           enteredTextChars,
           elementsWithHints: hintsState.elementsWithHints,
@@ -540,6 +541,7 @@ export default class BackgroundProgram {
         const { enteredHintChars, enteredTextChars } = hintsState;
 
         const { allElementsWithHints, updates } = updateHints({
+          mode: hintsState.mode,
           enteredHintChars,
           enteredTextChars,
           elementsWithHints: updatedElementsWithHints,
@@ -767,6 +769,7 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates: assignHints(hintsState.elementsWithHints, {
+              mode: "ManyTab",
               hintChars: this.hints.chars,
               hasEnteredTextChars: false,
             }).map((element, index) => ({
@@ -974,7 +977,11 @@ export default class BackgroundProgram {
         // is released (which makes `Array.prototype.sort` stable).
         index,
       })),
-      { hintChars: this.hints.chars, hasEnteredTextChars: false }
+      {
+        mode: hintsState.mode,
+        hintChars: this.hints.chars,
+        hasEnteredTextChars: false,
+      }
       // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
       // real to map these elements to DOM elements in RendererProgram.
     ).map((element, index) => ({ ...element, index }));
@@ -1070,6 +1077,7 @@ export default class BackgroundProgram {
     const { enteredHintChars, enteredTextChars } = hintsState;
 
     const { allElementsWithHints, updates } = updateHints({
+      mode: hintsState.mode,
       enteredHintChars,
       enteredTextChars,
       elementsWithHints: hintsState.elementsWithHints,
@@ -1521,6 +1529,46 @@ function getHintsTypes(mode: HintsMode): ElementTypes {
   }
 }
 
+function shouldCombineHints(
+  mode: HintsMode,
+  element: ElementWithHint
+): boolean {
+  switch (mode) {
+    case "Click":
+      return shouldCombineHintsForClick(element);
+
+    case "BackgroundTab":
+      return true;
+
+    case "ForegroundTab":
+      return true;
+
+    case "ManyClick":
+      return shouldCombineHintsForClick(element);
+
+    case "ManyTab":
+      return true;
+
+    case "Select":
+      return false;
+
+    default:
+      return unreachable(mode);
+  }
+}
+
+function shouldCombineHintsForClick(element: ElementWithHint): boolean {
+  const { url, hasClickListener } = element;
+  // The diff expander buttons on GitHub are links to the same fragment
+  // identifier. So are Bootstrap carousel next/previous “buttons”. So it’s not
+  // safe to combine links with fragment identifiers at all. (They may be
+  // powered by delegated event listeners.) I guess they aren’t as common
+  // anyway. Also don’t combine if the elements themselves have click listeners.
+  // Some sites use `<a>` as buttons with click listeners but still include an
+  // href for some reason.
+  return url != null && (!url.includes("#") && !hasClickListener);
+}
+
 function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<any>>> {
   const manifest = browser.runtime.getManifest();
 
@@ -1661,21 +1709,15 @@ class Combined {
 }
 
 function combineByHref(
-  elements: Array<ElementWithHint>
+  elements: Array<ElementWithHint>,
+  mode: HintsMode
 ): Array<Combined | ElementWithHint> {
   const map: Map<string, Array<ElementWithHint>> = new Map();
   const rest: Array<ElementWithHint> = [];
 
   for (const element of elements) {
-    const { url, hasClickListener } = element;
-    // The diff expander buttons on GitHub are links to the same fragment
-    // identifier. So are Bootstrap carousel next/previous “buttons”. So it’s
-    // not safe to combine links with fragment identifiers at all. (They may be
-    // powered by delegated event listeners.) I guess they aren’t as common
-    // anyway. Also don’t combine if the elements themselves have click
-    // listeners. Some sites use `<a>` as buttons with click listeners but still
-    // include an href for some reason.
-    if (url != null && !url.includes("#") && !hasClickListener) {
+    const { url } = element;
+    if (url != null && shouldCombineHints(mode, element)) {
       const previous = map.get(url);
       if (previous != null) {
         previous.push(element);
@@ -1695,9 +1737,10 @@ function combineByHref(
 function assignHints(
   passedElements: Array<ElementWithHint>,
   {
+    mode,
     hintChars,
     hasEnteredTextChars,
-  }: {| hintChars: string, hasEnteredTextChars: boolean |}
+  }: {| mode: HintsMode, hintChars: string, hasEnteredTextChars: boolean |}
 ): Array<ElementWithHint> {
   const largestTextWeight = hasEnteredTextChars
     ? Math.max(1, ...passedElements.map(element => element.textWeight))
@@ -1734,7 +1777,7 @@ function assignHints(
         a.index - b.index
     );
 
-  const combined = combineByHref(elements);
+  const combined = combineByHref(elements, mode);
 
   const tree = huffman.createTree(combined, hintChars.length, {
     // Even though we sorted `elements` above, `combined` might not be sorted.
@@ -1785,6 +1828,7 @@ function makeMessageInfo(sender: MessageSender): ?MessageInfo {
 }
 
 function updateHints({
+  mode,
   enteredHintChars,
   enteredTextChars,
   elementsWithHints: passedElementsWithHints,
@@ -1792,6 +1836,7 @@ function updateHints({
   matchHighlighted,
   updateMeasurements,
 }: {|
+  mode: HintsMode,
   enteredHintChars: string,
   enteredTextChars: string,
   elementsWithHints: Array<ElementWithHint>,
@@ -1817,6 +1862,7 @@ function updateHints({
 
   // Update the hints after the above filtering.
   const elementsWithHintsAndMaybeHidden = assignHints(matching, {
+    mode,
     hintChars: hints.chars,
     hasEnteredTextChars,
   });
