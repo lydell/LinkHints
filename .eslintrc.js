@@ -15,6 +15,19 @@ module.exports = {
   },
   rules: Object.assign({}, baseRules({ flow: true, import: true }), {
     "flowtype-errors/show-errors": "error",
+    "import/no-restricted-paths": [
+      "error",
+      {
+        basePath: "src",
+        // Disallow these dirs from importing from each other.
+        zones: makeRestrictedPathsZones([
+          "background",
+          "popup",
+          "renderer",
+          "worker",
+        ]),
+      },
+    ],
     "no-console": "error",
     "no-script-url": "off",
     "prettier/prettier": "error",
@@ -45,3 +58,12 @@ module.exports = {
     },
   ],
 };
+
+function makeRestrictedPathsZones(dirs) {
+  return [].concat(
+    ...dirs.map(dir => {
+      const otherDirs = dirs.filter(dir2 => dir2 !== dir);
+      return otherDirs.map(dir2 => ({ target: dir, from: dir2 }));
+    })
+  );
+}
