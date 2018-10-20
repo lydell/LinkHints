@@ -672,8 +672,11 @@ export default class ElementManager {
       }
 
       // Ignore `<label>` elements with no control and no click listeners.
-      // $FlowIgnore: Flow can't know, but `element` _is_ a `<label>` here.
-      if (type === "label" && element.control == null) {
+      if (
+        type === "label" &&
+        element instanceof HTMLLabelElement &&
+        element.control == null
+      ) {
         return undefined;
       }
 
@@ -736,21 +739,10 @@ export default class ElementManager {
 
   getElementType(element: HTMLElement): ?ElementType {
     switch (element.nodeName) {
-      case "A": {
-        const hrefAttr = element.getAttribute("href");
-        return (
-          // Exclude `<a>` tags used as buttons.
-          typeof hrefAttr === "string" &&
-            hrefAttr !== "" &&
-            hrefAttr !== "#" &&
-            // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
-            // don’t make sense to open in a new tab.
-            // $FlowIgnore: Flow can't know, but `.protocol` _does_ exist here.
-            LINK_PROTOCOLS.has(element.protocol)
-            ? "link"
-            : "clickable"
-        );
-      }
+      case "A":
+        return element instanceof HTMLAnchorElement
+          ? getLinkElementType(element)
+          : undefined;
       case "BUTTON":
       case "SELECT":
       case "SUMMARY":
@@ -758,11 +750,9 @@ export default class ElementManager {
       case "VIDEO":
         return "clickable";
       case "INPUT":
-        // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-        return element.type === "hidden"
-          ? // </FlowIgnore>
-            undefined
-          : "clickable";
+        return element instanceof HTMLInputElement && element.type !== "hidden"
+          ? "clickable"
+          : undefined;
       // Twitter and DuckDuckGo have useless click handlers on the `<form>`
       // around their search inputs, whose hints end up below the hint of the
       // input. It feels like `<form>`s are never relevant to click, so exclude
@@ -1538,6 +1528,13 @@ function hintWeight(
 
 function getElementTypeSelectable(element: HTMLElement): ?ElementType {
   switch (element.nodeName) {
+    // Links _could_ be marked as "clickable" as well for simplicity, but
+    // marking them as "link" allows opening them in a new tab by holding alt
+    // for consistency with all other hints modes.
+    case "A":
+      return element instanceof HTMLAnchorElement
+        ? getLinkElementType(element)
+        : undefined;
     // Always consider the following elements as selectable, regardless of their
     // children, since they have special context menu items. A
     // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
@@ -1546,7 +1543,6 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
     // give frames hints during regular click hints mode for that reason, but
     // unfortunately for example Twitter uses iframes for many of its little
     // widgets/embeds which would result in many unnecessary/confusing hints.
-    case "A":
     case "AUDIO":
     case "BUTTON":
     case "SELECT":
@@ -1554,11 +1550,9 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
     case "VIDEO":
       return "clickable";
     case "INPUT":
-      // $FlowIgnore: Flow can't know, but `.type` _does_ exist here.
-      return element.type === "hidden"
-        ? // </FlowIgnore>
-          undefined
-        : "clickable";
+      return element instanceof HTMLInputElement && element.type !== "hidden"
+        ? "clickable"
+        : undefined;
     case "CANVAS":
     case "EMBED":
     case "FRAME":
@@ -1593,4 +1587,19 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
       return undefined;
     }
   }
+}
+
+function getLinkElementType(element: HTMLAnchorElement): ElementType {
+  const hrefAttr = element.getAttribute("href");
+  return (
+    // Exclude `<a>` tags used as buttons.
+    typeof hrefAttr === "string" &&
+      hrefAttr !== "" &&
+      hrefAttr !== "#" &&
+      // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
+      // don’t make sense to open in a new tab.
+      LINK_PROTOCOLS.has(element.protocol)
+      ? "link"
+      : "clickable"
+  );
 }
