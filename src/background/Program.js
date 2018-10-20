@@ -444,16 +444,14 @@ export default class BackgroundProgram {
         break;
       }
 
-      case "Keyup": {
+      case "Keyup":
         if (isPeekKey(message.shortcut)) {
           this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
         }
         break;
-      }
 
       case "ReportVisibleFrame": {
         const { hintsState } = tabState;
-
         if (hintsState.type !== "Collecting") {
           return;
         }
@@ -756,6 +754,7 @@ export default class BackgroundProgram {
             frameId: match.frame.id,
           }
         );
+
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -764,15 +763,18 @@ export default class BackgroundProgram {
           },
           { tabId: info.tabId }
         );
+
         this.updateWorkerStateAfterHintActivation({
           tabId: info.tabId,
           preventOverTyping,
         });
+
         this.enterHintsMode({
           tabId: info.tabId,
           timestamp,
           mode: hintsState.mode,
         });
+
         return false;
 
       case "ManyTab": {
@@ -784,14 +786,17 @@ export default class BackgroundProgram {
           );
           return true;
         }
+
         const matchedIndexes = new Set(
           hintsState.elementsWithHints
             .filter(element => element.hint === match.hint)
             .map(element => element.index)
         );
+
         hintsState.highlightedIndexes = matchedIndexes;
         hintsState.enteredHintChars = "";
         hintsState.enteredTextChars = "";
+
         this.openNewTab({
           url,
           elementIndex: match.frame.index,
@@ -799,6 +804,7 @@ export default class BackgroundProgram {
           frameId: match.frame.id,
           foreground: false,
         });
+
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -819,11 +825,14 @@ export default class BackgroundProgram {
           },
           { tabId: info.tabId }
         );
+
         this.updateWorkerStateAfterHintActivation({
           tabId: info.tabId,
           preventOverTyping,
         });
+
         this.updateBadge(info.tabId);
+
         // There’s no need to clear this timeout somewhere, since it should be
         // idempotent.
         setTimeout(() => {
@@ -833,6 +842,7 @@ export default class BackgroundProgram {
           }
           this.refreshHintsRendering(info.tabId);
         }, MATCH_HIGHLIGHT_DURATION);
+
         return false;
       }
 
@@ -864,7 +874,7 @@ export default class BackgroundProgram {
         });
         return true;
 
-      case "Select": {
+      case "Select":
         this.sendWorkerMessage(
           {
             type: "SelectElement",
@@ -889,7 +899,6 @@ export default class BackgroundProgram {
           );
         }
         return true;
-      }
 
       default:
         unreachable(mode);
@@ -1047,7 +1056,6 @@ export default class BackgroundProgram {
 
   maybeStartHinting(tabId: number) {
     const tabState = this.tabState.get(tabId);
-
     if (tabState == null) {
       return;
     }
@@ -1120,7 +1128,6 @@ export default class BackgroundProgram {
 
   updateElements(tabId: number) {
     const tabState = this.tabState.get(tabId);
-
     if (tabState == null) {
       return;
     }
@@ -1157,7 +1164,6 @@ export default class BackgroundProgram {
 
   hideElements(info: MessageInfo) {
     const tabState = this.tabState.get(info.tabId);
-
     if (tabState == null) {
       return;
     }
@@ -1274,7 +1280,6 @@ export default class BackgroundProgram {
       case "ResetPerf": {
         const tab = await getCurrentTab();
         const tabState = this.tabState.get(tab.id);
-
         if (tabState == null) {
           return;
         }
@@ -1302,33 +1307,19 @@ export default class BackgroundProgram {
     timestamp: number
   ) {
     switch (action.type) {
-      case "EnterHintsMode": {
-        const tabState = this.tabState.get(info.tabId);
-        if (tabState == null || tabState.hintsState.type !== "Idle") {
-          return;
-        }
+      case "EnterHintsMode":
         this.enterHintsMode({
           tabId: info.tabId,
           timestamp,
           mode: action.mode,
         });
         break;
-      }
 
-      case "ExitHintsMode": {
-        const tabState = this.tabState.get(info.tabId);
-        if (tabState == null || tabState.hintsState.type !== "Hinting") {
-          return;
-        }
+      case "ExitHintsMode":
         this.exitHintsMode({ tabId: info.tabId });
         break;
-      }
 
-      case "RotateHints": {
-        const tabState = this.tabState.get(info.tabId);
-        if (tabState == null || tabState.hintsState.type !== "Hinting") {
-          return;
-        }
+      case "RotateHints":
         this.sendRendererMessage(
           {
             type: "RotateHints",
@@ -1337,18 +1328,24 @@ export default class BackgroundProgram {
           { tabId: info.tabId }
         );
         break;
-      }
 
       case "RefreshHints": {
         const tabState = this.tabState.get(info.tabId);
-        if (tabState == null || tabState.hintsState.type !== "Hinting") {
+        if (tabState == null) {
           return;
         }
+
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Hinting") {
+          return;
+        }
+
         this.enterHintsMode({
           tabId: info.tabId,
           timestamp,
-          mode: tabState.hintsState.mode,
+          mode: hintsState.mode,
         });
+
         // `this.enterHintsMode` also updates the badge, but after a timeout.
         // Update it immediately so that one can see it flash in case you get
         // exactly the same hints after refreshing, so that you understand that
@@ -1357,14 +1354,13 @@ export default class BackgroundProgram {
         break;
       }
 
-      case "Escape": {
+      case "Escape":
         this.exitHintsMode({ tabId: info.tabId });
         this.sendWorkerMessage(
           { type: "Escape" },
           { tabId: info.tabId, frameId: "all_frames" }
         );
         break;
-      }
 
       case "ReverseSelection":
         this.sendWorkerMessage(
@@ -1391,8 +1387,12 @@ export default class BackgroundProgram {
     if (tabState == null) {
       return;
     }
+
+    const { hintsState } = tabState;
+
     const time = new TimeTracker();
     time.start("collect");
+
     this.sendWorkerMessage(
       {
         type: "StartFindElements",
@@ -1403,10 +1403,12 @@ export default class BackgroundProgram {
         frameId: TOP_FRAME_ID,
       }
     );
-    clearUnrenderTimeout(tabState.hintsState);
-    if (tabState.hintsState.type === "Hinting") {
-      clearUpdateTimeout(tabState.hintsState.updateState);
+
+    clearUnrenderTimeout(hintsState);
+    if (hintsState.type === "Hinting") {
+      clearUpdateTimeout(hintsState.updateState);
     }
+
     tabState.hintsState = {
       type: "Collecting",
       mode,
@@ -1422,6 +1424,7 @@ export default class BackgroundProgram {
       durations: [],
       timeoutId: undefined,
     };
+
     setTimeout(() => {
       this.updateBadge(tabId);
     }, BADGE_COLLECTING_DELAY);
@@ -1439,9 +1442,11 @@ export default class BackgroundProgram {
       return;
     }
 
-    clearUnrenderTimeout(tabState.hintsState);
-    if (tabState.hintsState.type === "Hinting") {
-      clearUpdateTimeout(tabState.hintsState.updateState);
+    const { hintsState } = tabState;
+
+    clearUnrenderTimeout(hintsState);
+    if (hintsState.type === "Hinting") {
+      clearUpdateTimeout(hintsState.updateState);
     }
 
     const unrender = () => {
@@ -1503,7 +1508,6 @@ export default class BackgroundProgram {
 
   updateBadge(tabId: number) {
     const tabState = this.tabState.get(tabId);
-
     if (tabState == null) {
       return;
     }
@@ -1560,7 +1564,6 @@ export default class BackgroundProgram {
     preventOverTyping: boolean,
   |}) {
     const tabState = this.tabState.get(tabId);
-
     if (tabState == null) {
       return;
     }
