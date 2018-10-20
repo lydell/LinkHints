@@ -738,7 +738,7 @@ export default class BackgroundProgram {
         });
         return false;
 
-      case "ManyTab":
+      case "ManyTab": {
         if (url == null) {
           log(
             "error",
@@ -756,6 +756,13 @@ export default class BackgroundProgram {
           frameId: match.frame.id,
           foreground: false,
         });
+        // All matching hints should be highlighted, but the hints change below
+        // due to `assignHints` so we need to save the matched indexes first.
+        const matchedIndexes = new Set(
+          hintsState.elementsWithHints
+            .filter(element => element.hint === match.hint)
+            .map(element => element.index)
+        );
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -768,7 +775,9 @@ export default class BackgroundProgram {
               order: index,
               matchedChars: "",
               restChars: element.hint,
-              highlighted: element.hint === match.hint ? "temporarily" : "no",
+              highlighted: matchedIndexes.has(element.index)
+                ? "temporarily"
+                : "no",
               hidden: element.hidden,
             })),
             enteredTextChars: "",
@@ -777,6 +786,7 @@ export default class BackgroundProgram {
         );
         this.updateBadge(info.tabId);
         return false;
+      }
 
       case "BackgroundTab":
         if (url == null) {
