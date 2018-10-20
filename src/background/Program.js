@@ -379,9 +379,8 @@ export default class BackgroundProgram {
           match == null
             ? true
             : this.handleHintMatch({
-                hintsState,
+                tabId: info.tabId,
                 match,
-                info,
                 updates,
                 preventOverTyping,
                 shortcut: message.shortcut,
@@ -707,22 +706,26 @@ export default class BackgroundProgram {
   // implementation for updating hintsState and sending messages or not. Some
   // hint modes handle that themselves.
   handleHintMatch({
-    hintsState,
+    tabId,
     match,
     updates,
     preventOverTyping,
-    info,
     shortcut,
     timestamp,
   }: {|
-    hintsState: HintsState,
+    tabId: number,
     match: ElementWithHint,
     updates: Array<HintUpdate>,
     preventOverTyping: boolean,
-    info: MessageInfo,
     shortcut: KeyboardShortcut,
     timestamp: number,
   |}): boolean {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return true;
+    }
+
+    const { hintsState } = tabState;
     if (hintsState.type !== "Hinting") {
       return true;
     }
@@ -734,12 +737,12 @@ export default class BackgroundProgram {
 
     switch (mode) {
       case "Click":
-        this.clickElement(info.tabId, match);
+        this.clickElement(tabId, match);
         return true;
 
       case "ManyClick":
         if (match.isTextInput) {
-          this.clickElement(info.tabId, match);
+          this.clickElement(tabId, match);
           return true;
         }
 
@@ -750,7 +753,7 @@ export default class BackgroundProgram {
             trackRemoval: false,
           },
           {
-            tabId: info.tabId,
+            tabId,
             frameId: match.frame.id,
           }
         );
@@ -761,16 +764,16 @@ export default class BackgroundProgram {
             updates,
             enteredTextChars: hintsState.enteredTextChars,
           },
-          { tabId: info.tabId }
+          { tabId }
         );
 
         this.updateWorkerStateAfterHintActivation({
-          tabId: info.tabId,
+          tabId,
           preventOverTyping,
         });
 
         this.enterHintsMode({
-          tabId: info.tabId,
+          tabId,
           timestamp,
           mode: hintsState.mode,
         });
@@ -800,7 +803,7 @@ export default class BackgroundProgram {
         this.openNewTab({
           url,
           elementIndex: match.frame.index,
-          tabId: info.tabId,
+          tabId,
           frameId: match.frame.id,
           foreground: false,
         });
@@ -823,15 +826,15 @@ export default class BackgroundProgram {
             })),
             enteredTextChars: "",
           },
-          { tabId: info.tabId }
+          { tabId }
         );
 
         this.updateWorkerStateAfterHintActivation({
-          tabId: info.tabId,
+          tabId,
           preventOverTyping,
         });
 
-        this.updateBadge(info.tabId);
+        this.updateBadge(tabId);
 
         // There’s no need to clear this timeout somewhere, since it should be
         // idempotent.
@@ -840,7 +843,7 @@ export default class BackgroundProgram {
           if (hintsState.highlightedIndexes === matchedIndexes) {
             hintsState.highlightedIndexes = new Set();
           }
-          this.refreshHintsRendering(info.tabId);
+          this.refreshHintsRendering(tabId);
         }, MATCH_HIGHLIGHT_DURATION);
 
         return false;
@@ -854,7 +857,7 @@ export default class BackgroundProgram {
         this.openNewTab({
           url,
           elementIndex: match.frame.index,
-          tabId: info.tabId,
+          tabId,
           frameId: match.frame.id,
           foreground: false,
         });
@@ -868,7 +871,7 @@ export default class BackgroundProgram {
         this.openNewTab({
           url,
           elementIndex: match.frame.index,
-          tabId: info.tabId,
+          tabId,
           frameId: match.frame.id,
           foreground: true,
         });
@@ -882,7 +885,7 @@ export default class BackgroundProgram {
             trackRemoval: title != null,
           },
           {
-            tabId: info.tabId,
+            tabId,
             frameId: match.frame.id,
           }
         );
@@ -893,7 +896,7 @@ export default class BackgroundProgram {
               track: true,
             },
             {
-              tabId: info.tabId,
+              tabId,
               frameId: "all_frames",
             }
           );
