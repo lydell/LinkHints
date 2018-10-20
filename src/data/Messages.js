@@ -185,6 +185,10 @@ export type ToRenderer =
       frameId: number,
     |}
   | {|
+      type: "SetTitle",
+      title: string,
+    |}
+  | {|
       type: "Peek",
     |}
   | {|
@@ -192,10 +196,7 @@ export type ToRenderer =
     |}
   | {|
       type: "Unrender",
-      mode:
-        | {| type: "Immediate" |}
-        | {| type: "Delayed" |}
-        | {| type: "Title", title: string |},
+      keepTitle: boolean,
     |};
 
 export type FromPopup =
@@ -254,7 +255,7 @@ export type HintUpdate =
       order: number,
       matchedChars: string,
       restChars: string,
-      highlighted: "yes" | "no" | "temporarily",
+      highlighted: boolean,
       hidden: boolean,
     |}
   | {|
@@ -263,7 +264,7 @@ export type HintUpdate =
       order: number,
       hint: string,
       hintMeasurements: HintMeasurements,
-      highlighted: "yes" | "no", // "temporarily" not supported.
+      highlighted: boolean,
       hidden: boolean,
     |};
 
@@ -281,6 +282,7 @@ export type TabState = {|
 export type HintsState =
   | {|
       type: "Idle",
+      timeoutId: ?TimeoutID,
     |}
   | {|
       type: "Collecting",
@@ -300,6 +302,7 @@ export type HintsState =
       enteredHintChars: string,
       enteredTextChars: string,
       elementsWithHints: Array<ElementWithHint>,
+      highlightedIndexes: Set<number>,
       updateState: UpdateState,
     |};
 

@@ -41,7 +41,6 @@ const PEEK_CLASS = "peek";
 const HIDDEN_CLASS = "hidden";
 
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
-const UNRENDER_DELAY = 200; // ms
 
 // The minimum and maximum z-index browsers support.
 const MIN_Z_INDEX = -2147483648;
@@ -130,7 +129,6 @@ export default class RendererProgram {
   parsedCSS: ?Array<Rule>;
   hints: Array<HTMLElement>;
   rects: Map<HTMLElement, ClientRect>;
-  unrenderTimeoutId: ?TimeoutID;
   enteredTextChars: string;
   resets: Resets;
   shruggieElement: HTMLElement;
@@ -150,7 +148,6 @@ export default class RendererProgram {
     this.parsedCSS = undefined;
     this.hints = [];
     this.rects = new Map();
-    this.unrenderTimeoutId = undefined;
     this.enteredTextChars = "";
     this.resets = new Resets();
 
@@ -301,6 +298,10 @@ export default class RendererProgram {
         this.renderTextRects(message.rects, message.frameId);
         break;
 
+      case "SetTitle":
+        this.setTitle(message.title);
+        break;
+
       case "Peek":
         this.togglePeek({ peek: true });
         break;
@@ -310,18 +311,10 @@ export default class RendererProgram {
         break;
 
       case "Unrender":
-        switch (message.mode.type) {
-          case "Immediate":
-            this.unrender();
-            break;
-          case "Delayed":
-            this.unrenderDelayed();
-            break;
-          case "Title":
-            this.unrenderToTitle(message.mode.title);
-            break;
-          default:
-            unreachable(message.mode.type, message);
+        if (message.keepTitle && this.titleText.data !== "") {
+          this.unrenderHintsOnly();
+        } else {
+          this.unrender();
         }
         break;
 
@@ -549,10 +542,7 @@ export default class RendererProgram {
           emptyNode(child);
 
           child.classList.toggle(HIDDEN_CLASS, update.hidden);
-          child.classList.toggle(
-            HIGHLIGHTED_HINT_CLASS,
-            update.highlighted !== "no"
-          );
+          child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
 
           if (update.matchedChars !== "") {
             const matched = document.createElement("span");
@@ -578,31 +568,12 @@ export default class RendererProgram {
 
           child.append(document.createTextNode(update.restChars));
 
-          const { timeoutId } = child.dataset;
-          if (timeoutId != null) {
-            // $FlowIgnore: `dataset` can only store strings, but `clearTimeout` works with strings in browsers.
-            clearTimeout(timeoutId);
-            delete child.dataset.timeoutId;
-          }
-          if (update.highlighted === "temporarily") {
-            child.dataset.timeoutId = String(
-              setTimeout(() => {
-                delete child.dataset.timeoutId;
-                child.classList.remove(HIGHLIGHTED_HINT_CLASS);
-                this.maybeApplyStyles(child);
-              }, UNRENDER_DELAY)
-            );
-          }
-
           break;
         }
 
         case "UpdatePosition": {
           child.classList.toggle(HIDDEN_CLASS, update.hidden);
-          child.classList.toggle(
-            HIGHLIGHTED_HINT_CLASS,
-            update.highlighted !== "no"
-          );
+          child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
           const { styles } = getHintPosition({
             hintSize: this.hintSize,
             hint: update.hint,
@@ -697,11 +668,6 @@ export default class RendererProgram {
   }
 
   unrender() {
-    if (this.unrenderTimeoutId != null) {
-      clearTimeout(this.unrenderTimeoutId);
-      this.unrenderTimeoutId = undefined;
-    }
-
     this.hints = [];
     this.rects.clear();
 
@@ -722,33 +688,13 @@ export default class RendererProgram {
     }
   }
 
-  unrenderDelayed() {
-    if (this.unrenderTimeoutId != null) {
-      return;
+  unrenderHintsOnly() {
+    for (const element of this.hints) {
+      element.remove();
     }
-
-    this.unrenderTimeoutId = setTimeout(() => {
-      this.unrenderTimeoutId = undefined;
-      this.unrender();
-    }, UNRENDER_DELAY);
-  }
-
-  unrenderToTitle(title: string) {
-    if (this.unrenderTimeoutId != null) {
-      clearTimeout(this.unrenderTimeoutId);
-    }
-
-    this.setTitle(title);
-
-    this.unrenderTimeoutId = setTimeout(() => {
-      this.unrenderTimeoutId = undefined;
-      for (const element of this.hints) {
-        element.remove();
-      }
-      this.unrenderTextRects();
-      this.hints = [];
-      this.rects.clear();
-    }, UNRENDER_DELAY);
+    this.unrenderTextRects();
+    this.hints = [];
+    this.rects.clear();
   }
 
   unrenderTextRects(frameId?: number) {

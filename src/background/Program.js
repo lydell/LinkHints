@@ -75,6 +75,9 @@ const BADGE_COLLECTING_DELAY = 300; // ms
 const UPDATE_INTERVAL = 500; // ms
 const UPDATE_MIN_TIMEOUT = 100; // ms
 
+// How long a matched/activated hint should show as highlighted.
+const MATCH_HIGHLIGHT_DURATION = 200; // ms
+
 const SHOW_TITLE_MODES: Set<HintsMode> = new Set([
   "Click",
   "ManyClick",
@@ -332,6 +335,9 @@ export default class BackgroundProgram {
               .replace(/^\s+/, "")
               .replace(/\s+$/, " ");
 
+        // Clear last matches from ManyTab mode.
+        const highlightedIndexes = new Set();
+
         const {
           elementsWithHints,
           allElementsWithHints,
@@ -343,6 +349,7 @@ export default class BackgroundProgram {
           enteredHintChars,
           enteredTextChars,
           elementsWithHints: hintsState.elementsWithHints,
+          highlightedIndexes,
           hints: this.hints,
           matchHighlighted: isEnter,
           updateMeasurements: false,
@@ -364,28 +371,9 @@ export default class BackgroundProgram {
         hintsState.enteredHintChars = enteredHintChars;
         hintsState.enteredTextChars = enteredTextChars;
         hintsState.elementsWithHints = allElementsWithHints;
+        hintsState.highlightedIndexes = highlightedIndexes;
 
-        const indexesByFrame: Map<number, Array<number>> = new Map();
-        for (const { frame } of elementsWithHints) {
-          const previous = indexesByFrame.get(frame.id);
-          if (previous == null) {
-            indexesByFrame.set(frame.id, [frame.index]);
-          } else {
-            previous.push(frame.index);
-          }
-        }
-        for (const [frameId, indexes] of indexesByFrame) {
-          this.sendWorkerMessage(
-            {
-              type: "GetTextRects",
-              indexes,
-              // If there's a match, send an empty array of words to unrender
-              // all text rects.
-              words: match == null ? words : [],
-            },
-            { tabId: info.tabId, frameId }
-          );
-        }
+        this.getTextRects({ elementsWithHints, words, tabId: info.tabId });
 
         const shouldContinue =
           match == null
@@ -416,24 +404,40 @@ export default class BackgroundProgram {
         );
 
         if (match != null) {
+          const { title } = match;
+          const showTitle =
+            SHOW_TITLE_MODES.has(hintsState.mode) && title != null;
+
+          if (showTitle && title != null) {
+            this.sendRendererMessage(
+              {
+                type: "SetTitle",
+                title,
+              },
+              { tabId: info.tabId }
+            );
+          }
+
+          const timeoutId = setTimeout(() => {
+            unsetUnrenderTimeoutId(tabState);
+            this.sendRendererMessage(
+              {
+                type: "Unrender",
+                keepTitle: showTitle,
+              },
+              { tabId: info.tabId }
+            );
+          }, MATCH_HIGHLIGHT_DURATION);
+
           clearUpdateTimeout(hintsState.updateState);
-          tabState.hintsState = { type: "Idle" };
+          tabState.hintsState = {
+            type: "Idle",
+            timeoutId,
+          };
           this.updateWorkerStateAfterHintActivation({
             tabId: info.tabId,
             preventOverTyping,
           });
-
-          const { title } = match;
-          this.sendRendererMessage(
-            {
-              type: "Unrender",
-              mode:
-                SHOW_TITLE_MODES.has(hintsState.mode) && title != null
-                  ? { type: "Title", title }
-                  : { type: "Delayed" },
-            },
-            { tabId: info.tabId }
-          );
         }
 
         this.updateBadge(info.tabId);
@@ -545,6 +549,7 @@ export default class BackgroundProgram {
           enteredHintChars,
           enteredTextChars,
           elementsWithHints: updatedElementsWithHints,
+          highlightedIndexes: hintsState.highlightedIndexes,
           hints: this.hints,
           matchHighlighted: false,
           updateMeasurements: true,
@@ -669,6 +674,36 @@ export default class BackgroundProgram {
     }
   }
 
+  getTextRects({
+    elementsWithHints,
+    words,
+    tabId,
+  }: {|
+    elementsWithHints: Array<ElementWithHint>,
+    words: Array<string>,
+    tabId: number,
+  |}) {
+    const indexesByFrame: Map<number, Array<number>> = new Map();
+    for (const { frame } of elementsWithHints) {
+      const previous = indexesByFrame.get(frame.id);
+      if (previous == null) {
+        indexesByFrame.set(frame.id, [frame.index]);
+      } else {
+        previous.push(frame.index);
+      }
+    }
+    for (const [frameId, indexes] of indexesByFrame) {
+      this.sendWorkerMessage(
+        {
+          type: "GetTextRects",
+          indexes,
+          words,
+        },
+        { tabId, frameId }
+      );
+    }
+  }
+
   // Executes some action on the element of the matched hint. Returns whether
   // the "NonKeyboardShortcutMatched" handler should continue with its default
   // implementation for updating hintsState and sending messages or not. Some
@@ -749,6 +784,12 @@ export default class BackgroundProgram {
           );
           return true;
         }
+        const matchedIndexes = new Set(
+          hintsState.elementsWithHints
+            .filter(element => element.hint === match.hint)
+            .map(element => element.index)
+        );
+        hintsState.highlightedIndexes = matchedIndexes;
         hintsState.enteredHintChars = "";
         hintsState.enteredTextChars = "";
         this.openNewTab({
@@ -758,13 +799,6 @@ export default class BackgroundProgram {
           frameId: match.frame.id,
           foreground: false,
         });
-        // All matching hints should be highlighted, but the hints change below
-        // due to `assignHints` so we need to save the matched indexes first.
-        const matchedIndexes = new Set(
-          hintsState.elementsWithHints
-            .filter(element => element.hint === match.hint)
-            .map(element => element.index)
-        );
         this.sendRendererMessage(
           {
             type: "UpdateHints",
@@ -778,9 +812,7 @@ export default class BackgroundProgram {
               order: index,
               matchedChars: "",
               restChars: element.hint,
-              highlighted: matchedIndexes.has(element.index)
-                ? "temporarily"
-                : "no",
+              highlighted: matchedIndexes.has(element.index),
               hidden: element.hidden,
             })),
             enteredTextChars: "",
@@ -788,6 +820,15 @@ export default class BackgroundProgram {
           { tabId: info.tabId }
         );
         this.updateBadge(info.tabId);
+        // There’s no need to clear this timeout somewhere, since it should be
+        // idempotent.
+        setTimeout(() => {
+          // Ugly hack to clear the highlighted hints only if the haven’t changed.
+          if (hintsState.highlightedIndexes === matchedIndexes) {
+            hintsState.highlightedIndexes = new Set();
+          }
+          this.refreshHintsRendering(info.tabId);
+        }, MATCH_HIGHLIGHT_DURATION);
         return false;
       }
 
@@ -852,7 +893,50 @@ export default class BackgroundProgram {
     }
   }
 
+  refreshHintsRendering(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+    if (hintsState.type !== "Hinting") {
+      return;
+    }
+
+    const { elementsWithHints, updates, words } = updateHints({
+      mode: hintsState.mode,
+      enteredHintChars: hintsState.enteredHintChars,
+      enteredTextChars: hintsState.enteredTextChars,
+      elementsWithHints: hintsState.elementsWithHints,
+      highlightedIndexes: hintsState.highlightedIndexes,
+      hints: this.hints,
+      matchHighlighted: false,
+      updateMeasurements: false,
+    });
+
+    this.getTextRects({ elementsWithHints, words, tabId });
+
+    this.sendRendererMessage(
+      {
+        type: "UpdateHints",
+        updates,
+        enteredTextChars: hintsState.enteredTextChars,
+      },
+      { tabId }
+    );
+
+    this.updateBadge(tabId);
+  }
+
   removeTitle(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+
     this.sendWorkerMessage(
       {
         type: "TrackInteractions",
@@ -863,13 +947,24 @@ export default class BackgroundProgram {
         frameId: "all_frames",
       }
     );
-    this.sendRendererMessage(
-      {
-        type: "Unrender",
-        mode: { type: "Immediate" },
-      },
-      { tabId }
-    );
+
+    if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
+      this.sendRendererMessage(
+        {
+          type: "SetTitle",
+          title: "",
+        },
+        { tabId }
+      );
+    } else {
+      this.sendRendererMessage(
+        {
+          type: "Unrender",
+          keepTitle: false,
+        },
+        { tabId }
+      );
+    }
   }
 
   clickElement(tabId: number, match: ElementWithHint) {
@@ -995,6 +1090,7 @@ export default class BackgroundProgram {
       enteredHintChars: "",
       enteredTextChars: "",
       elementsWithHints,
+      highlightedIndexes: new Set(),
       updateState: {
         type: "Timeout",
         timeoutId: setTimeout(() => {
@@ -1081,6 +1177,7 @@ export default class BackgroundProgram {
       enteredHintChars,
       enteredTextChars,
       elementsWithHints: hintsState.elementsWithHints,
+      highlightedIndexes: hintsState.highlightedIndexes,
       hints: this.hints,
       matchHighlighted: false,
       updateMeasurements: false,
@@ -1302,6 +1399,7 @@ export default class BackgroundProgram {
         frameId: TOP_FRAME_ID,
       }
     );
+    clearUnrenderTimeout(tabState.hintsState);
     if (tabState.hintsState.type === "Hinting") {
       clearUpdateTimeout(tabState.hintsState.updateState);
     }
@@ -1336,21 +1434,33 @@ export default class BackgroundProgram {
     if (tabState == null) {
       return;
     }
+
+    clearUnrenderTimeout(tabState.hintsState);
     if (tabState.hintsState.type === "Hinting") {
       clearUpdateTimeout(tabState.hintsState.updateState);
     }
-    tabState.hintsState = { type: "Idle" };
+
+    const unrender = () => {
+      unsetUnrenderTimeoutId(tabState);
+      this.sendRendererMessage(
+        {
+          type: "Unrender",
+          keepTitle: false,
+        },
+        { tabId }
+      );
+    };
+
+    const timeoutId = delayed
+      ? setTimeout(unrender, MATCH_HIGHLIGHT_DURATION)
+      : unrender();
+
+    tabState.hintsState = { type: "Idle", timeoutId };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
       tabId,
       frameId: "all_frames",
     });
-    this.sendRendererMessage(
-      {
-        type: "Unrender",
-        mode: delayed ? { type: "Delayed" } : { type: "Immediate" },
-      },
-      { tabId }
-    );
+
     this.updateBadge(tabId);
   }
 
@@ -1486,7 +1596,10 @@ export default class BackgroundProgram {
 // This is a function (not a constant), because of mutation.
 function makeEmptyTabState(): TabState {
   return {
-    hintsState: { type: "Idle" },
+    hintsState: {
+      type: "Idle",
+      timeoutId: undefined,
+    },
     preventOverTypingTimeoutId: undefined,
     perf: [],
   };
@@ -1832,6 +1945,7 @@ function updateHints({
   enteredHintChars,
   enteredTextChars,
   elementsWithHints: passedElementsWithHints,
+  highlightedIndexes,
   hints,
   matchHighlighted,
   updateMeasurements,
@@ -1840,6 +1954,7 @@ function updateHints({
   enteredHintChars: string,
   enteredTextChars: string,
   elementsWithHints: Array<ElementWithHint>,
+  highlightedIndexes: Set<number>,
   hints: Hints,
   matchHighlighted: boolean,
   updateMeasurements: boolean,
@@ -1899,7 +2014,9 @@ function updateHints({
       const matches = element.hint.startsWith(enteredHintChars);
       const highlighted =
         (match != null && element.hint === match.hint) ||
-        element.hint === highlightedHint;
+        element.hint === highlightedHint ||
+        // The last matches from ManyTab mode.
+        highlightedIndexes.has(element.index);
 
       return updateMeasurements
         ? {
@@ -1909,7 +2026,7 @@ function updateHints({
             order: index,
             hint: element.hint,
             hintMeasurements: element.hintMeasurements,
-            highlighted: highlighted ? "yes" : "no",
+            highlighted,
             hidden: element.hidden || !matches,
           }
         : matches && (match == null || highlighted)
@@ -1922,7 +2039,7 @@ function updateHints({
               order: index,
               matchedChars: enteredHintChars,
               restChars: element.hint.slice(enteredHintChars.length),
-              highlighted: highlighted ? "yes" : "no",
+              highlighted,
               hidden: element.hidden || !matches,
             }
           : {
@@ -2007,6 +2124,20 @@ function mergeElements(
 
 function splitEnteredTextChars(enteredTextChars: string): Array<string> {
   return enteredTextChars.split(" ").filter(word => word !== "");
+}
+
+function unsetUnrenderTimeoutId(tabState: TabState) {
+  const { hintsState } = tabState;
+  if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
+    hintsState.timeoutId = undefined;
+  }
+}
+
+function clearUnrenderTimeout(hintsState: HintsState) {
+  if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
+    clearTimeout(hintsState.timeoutId);
+    hintsState.timeoutId = undefined;
+  }
 }
 
 function clearUpdateTimeout(updateState: UpdateState) {
