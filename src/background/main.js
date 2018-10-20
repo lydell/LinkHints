@@ -6,13 +6,13 @@ import BackgroundProgram from "./Program";
 
 const globalKeyboardShortcuts: Array<KeyboardMapping> = [
   {
-    shortcut: {
+    keypress: {
       key: "Escape",
       code: "Escape",
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: false,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: { type: "Escape" },
   },
@@ -21,13 +21,13 @@ const globalKeyboardShortcuts: Array<KeyboardMapping> = [
 const normalKeyboardShortcuts: Array<KeyboardMapping> = [
   ...globalKeyboardShortcuts,
   {
-    shortcut: {
+    keypress: {
       key: "j",
       code: "KeyJ",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -35,13 +35,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "h",
       code: "KeyH",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -49,13 +49,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "k",
       code: "KeyK",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -63,13 +63,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "t",
       code: "KeyT",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -77,13 +77,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "l",
       code: "KeyL",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -91,13 +91,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "r",
       code: "KeyR",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: {
       type: "EnterHintsMode",
@@ -105,13 +105,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "J",
       code: "KeyJ",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -119,13 +119,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "H",
       code: "KeyH",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -133,13 +133,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "K",
       code: "KeyK",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -147,13 +147,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "T",
       code: "KeyT",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -161,13 +161,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "L",
       code: "KeyL",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -175,13 +175,13 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "R",
       code: "KeyR",
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "EnterHintsMode",
@@ -189,14 +189,14 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
     },
   },
   {
-    shortcut: {
+    keypress: {
       key: "ArrowUp",
       code: "ArrowUp",
       // TODO: Use ctrl instead of alt on mac.
-      altKey: true,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: true,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: {
       type: "ReverseSelection",
@@ -207,47 +207,47 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
 const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
   ...globalKeyboardShortcuts,
   {
-    shortcut: {
+    keypress: {
       key: "Escape",
       code: "Escape",
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: false,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: { type: "ExitHintsMode" },
   },
   {
-    shortcut: {
+    keypress: {
       key: "Tab",
       code: "Tab",
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
+      alt: false,
+      cmd: false,
+      ctrl: false,
+      shift: false,
     },
     action: { type: "RotateHints", forward: true },
   },
   {
-    shortcut: {
+    keypress: {
       key: "Tab",
       code: "Tab",
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
+      alt: false,
+      cmd: false,
+      ctrl: false,
+      shift: true,
     },
     action: { type: "RotateHints", forward: false },
   },
   {
-    shortcut: {
+    keypress: {
       key: "r",
       code: "KeyR",
-      altKey: false,
+      alt: false,
       // TODO: Use cmd instead of ctrl on mac.
-      ctrlKey: true,
-      metaKey: false,
-      shiftKey: false,
+      cmd: false,
+      ctrl: true,
+      shift: false,
     },
     action: { type: "RefreshHints" },
   },
@@ -256,6 +256,8 @@ const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
 const program = new BackgroundProgram({
   normalKeyboardShortcuts,
   hintsKeyboardShortcuts,
+  // ignoreKeyboardLayout: true,
+  ignoreKeyboardLayout: false,
   hints: {
     // chars: "fjdkslaghrueiwoncmv",
     chars: "ehstirnoamupcwlfgdy",

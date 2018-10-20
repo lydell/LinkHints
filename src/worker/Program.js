@@ -11,6 +11,12 @@ import {
   log,
   unreachable,
 } from "../shared/main";
+import {
+  type KeyboardMapping,
+  type KeyboardMode,
+  keyboardEventToKeypress,
+  normalizeKeypress,
+} from "../shared/keyboard";
 import { TimeTracker } from "../shared/perf";
 import type {
   ElementReport,
@@ -23,7 +29,6 @@ import type {
   FromWorker,
   ToBackground,
 } from "../shared/messages";
-import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";
 
@@ -69,6 +74,7 @@ const MODIFIER_KEYS: Set<string> = new Set([
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
+  ignoreKeyboardLayout: boolean;
   trackInteractions: boolean;
   mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
@@ -80,6 +86,7 @@ export default class WorkerProgram {
   constructor() {
     this.keyboardShortcuts = [];
     this.keyboardMode = "Normal";
+    this.ignoreKeyboardLayout = true;
     this.trackInteractions = false;
     this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
@@ -163,6 +170,7 @@ export default class WorkerProgram {
         log.level = message.logLevel;
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.keyboardMode = message.keyboardMode;
+        this.ignoreKeyboardLayout = message.ignoreKeyboardLayout;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
 
         if (message.clearElements) {
@@ -531,16 +539,25 @@ export default class WorkerProgram {
       return;
     }
 
-    const match = this.keyboardShortcuts.find(
-      ({ shortcut }) =>
-        event.key === shortcut.key &&
-        // Disabled `.code` for now, waiting for an "Ignore keyboard layout" option.
-        // event.code === shortcut.code &&
-        event.altKey === shortcut.altKey &&
-        event.ctrlKey === shortcut.ctrlKey &&
-        event.metaKey === shortcut.metaKey &&
-        event.shiftKey === shortcut.shiftKey
-    );
+    const keypress = normalizeKeypress({
+      keypress: keyboardEventToKeypress(event),
+      ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+    });
+
+    const match = this.keyboardShortcuts.find(mapping => {
+      const mappingKeypress = normalizeKeypress({
+        keypress: mapping.keypress,
+        ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+      });
+      return (
+        keypress.key === mappingKeypress.key &&
+        keypress.alt === mappingKeypress.alt &&
+        keypress.cmd === mappingKeypress.cmd &&
+        keypress.ctrl === mappingKeypress.ctrl &&
+        (mappingKeypress.shift == null ||
+          keypress.shift === mappingKeypress.shift)
+      );
+    });
 
     const suppress =
       match != null ||
@@ -551,6 +568,8 @@ export default class WorkerProgram {
       // combined with hint chars anyway, due to some keyboard shortcuts not
       // being suppressable (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
       // ctrl+alt+t opens a terminal by default in Ubuntu).
+      // This always uses `event.key` since we are looking for _actual_ modifier
+      // key presses (keys may be rebound).
       (this.keyboardMode === "Hints" &&
         (MODIFIER_KEYS.has(event.key) || (!event.ctrlKey && !event.metaKey)));
 
@@ -594,15 +613,8 @@ export default class WorkerProgram {
       });
     } else if (this.keyboardMode === "Hints" && suppress) {
       this.sendMessage({
-        type: "NonKeyboardShortcutMatched",
-        shortcut: {
-          key: event.key,
-          code: event.code,
-          altKey: event.altKey,
-          ctrlKey: event.ctrlKey,
-          metaKey: event.metaKey,
-          shiftKey: event.shiftKey,
-        },
+        type: "NonKeyboardShortcutKeypress",
+        keypress: keyboardEventToKeypress(event),
         timestamp: performance.now(),
       });
     }
@@ -619,14 +631,7 @@ export default class WorkerProgram {
     if (this.keyboardMode === "Hints") {
       this.sendMessage({
         type: "Keyup",
-        shortcut: {
-          key: event.key,
-          code: event.code,
-          altKey: event.altKey,
-          ctrlKey: event.ctrlKey,
-          metaKey: event.metaKey,
-          shiftKey: event.shiftKey,
-        },
+        keypress: keyboardEventToKeypress(event),
       });
     }
 

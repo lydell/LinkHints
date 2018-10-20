@@ -4,6 +4,14 @@ import huffman from "n-ary-huffman";
 
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 import {
+  type HintsMode,
+  type KeyboardAction,
+  type KeyboardMapping,
+  type Keypress,
+  type NormalizedKeypress,
+  normalizeKeypress,
+} from "../shared/keyboard";
+import {
   Resets,
   addListener,
   bind,
@@ -31,12 +39,6 @@ import type {
   ToRenderer,
   ToWorker,
 } from "../shared/messages";
-import type {
-  HintsMode,
-  KeyboardAction,
-  KeyboardMapping,
-  KeyboardShortcut,
-} from "../shared/keyboard";
 
 type MessageInfo = {|
   tabId: number,
@@ -136,6 +138,7 @@ const SHOW_TITLE_MODES: Set<HintsMode> = new Set([
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
+  ignoreKeyboardLayout: boolean;
   hints: Hints;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
@@ -144,14 +147,17 @@ export default class BackgroundProgram {
   constructor({
     normalKeyboardShortcuts,
     hintsKeyboardShortcuts,
+    ignoreKeyboardLayout,
     hints,
   }: {|
     normalKeyboardShortcuts: Array<KeyboardMapping>,
     hintsKeyboardShortcuts: Array<KeyboardMapping>,
+    ignoreKeyboardLayout: boolean,
     hints: Hints,
   |}) {
     this.normalKeyboardShortcuts = normalKeyboardShortcuts;
     this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
+    this.ignoreKeyboardLayout = ignoreKeyboardLayout;
     this.hints = hints;
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
@@ -335,17 +341,21 @@ export default class BackgroundProgram {
         this.onKeyboardShortcut(message.action, info, message.timestamp);
         break;
 
-      case "NonKeyboardShortcutMatched": {
+      case "NonKeyboardShortcutKeypress": {
         const { hintsState } = tabState;
         if (hintsState.type !== "Hinting") {
           return;
         }
 
-        const { key } = message.shortcut;
+        const normalizedKeypress = normalizeKeypress({
+          keypress: message.keypress,
+          ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+        });
+        const { key } = normalizedKeypress;
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
 
-        if (isPeekKey(message.shortcut)) {
+        if (isPeekKey(message.keypress)) {
           this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
           return;
         }
@@ -437,7 +447,7 @@ export default class BackgroundProgram {
                 match,
                 updates,
                 preventOverTyping,
-                shortcut: message.shortcut,
+                keypress: normalizedKeypress,
                 timestamp: message.timestamp,
               });
 
@@ -498,7 +508,7 @@ export default class BackgroundProgram {
       }
 
       case "Keyup":
-        if (isPeekKey(message.shortcut)) {
+        if (isPeekKey(message.keypress)) {
           this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
         }
         break;
@@ -760,7 +770,7 @@ export default class BackgroundProgram {
   }
 
   // Executes some action on the element of the matched hint. Returns whether
-  // the "NonKeyboardShortcutMatched" handler should continue with its default
+  // the "NonKeyboardShortcutKeypress" handler should continue with its default
   // implementation for updating hintsState and sending messages or not. Some
   // hint modes handle that themselves.
   handleHintMatch({
@@ -768,14 +778,14 @@ export default class BackgroundProgram {
     match,
     updates,
     preventOverTyping,
-    shortcut,
+    keypress,
     timestamp,
   }: {|
     tabId: number,
     match: ElementWithHint,
     updates: Array<HintUpdate>,
     preventOverTyping: boolean,
-    shortcut: KeyboardShortcut,
+    keypress: NormalizedKeypress,
     timestamp: number,
   |}): boolean {
     const tabState = this.tabState.get(tabId);
@@ -791,7 +801,7 @@ export default class BackgroundProgram {
     const { url, title } = match;
 
     const mode: HintsMode =
-      url != null && shortcut.altKey ? "ForegroundTab" : hintsState.mode;
+      url != null && keypress.alt ? "ForegroundTab" : hintsState.mode;
 
     switch (mode) {
       case "Click":
@@ -1601,6 +1611,7 @@ export default class BackgroundProgram {
         clearElements: false,
         keyboardShortcuts: preventOverTyping ? [] : this.hintsKeyboardShortcuts,
         keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
+        ignoreKeyboardLayout: this.ignoreKeyboardLayout,
         oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       };
     }
@@ -1611,6 +1622,7 @@ export default class BackgroundProgram {
       clearElements: true,
       keyboardShortcuts: preventOverTyping ? [] : this.normalKeyboardShortcuts,
       keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
+      ignoreKeyboardLayout: this.ignoreKeyboardLayout,
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
   }
@@ -1997,10 +2009,14 @@ function assignHints(
 // Holding both ctrl and shift should work in all cases on all platforms, and is
 // reasonably easy to press (the keys are next to each other (vertically) on
 // most keyboards).
-function isPeekKey(shortcut: KeyboardShortcut): boolean {
+//
+// This uses a non-normalized keypress and always the `event.key` value since
+// the pressed keys _have_ to trigger the actual modifiers as well, so we can
+// check for `.shiftKey` and `.ctrlKey`.
+function isPeekKey(keypress: Keypress): boolean {
   return (
-    (shortcut.key === "Control" && shortcut.shiftKey) ||
-    (shortcut.key === "Shift" && shortcut.ctrlKey)
+    (keypress.key === "Control" && keypress.shift) ||
+    (keypress.key === "Shift" && keypress.ctrl)
   );
 }
 

@@ -12,7 +12,7 @@ import type {
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
-  KeyboardShortcut,
+  Keypress,
 } from "./keyboard";
 
 export type FromBackground =
@@ -56,13 +56,13 @@ export type FromWorker =
       timestamp: number,
     |}
   | {|
-      type: "NonKeyboardShortcutMatched",
-      shortcut: KeyboardShortcut,
+      type: "NonKeyboardShortcutKeypress",
+      keypress: Keypress,
       timestamp: number,
     |}
   | {|
       type: "Keyup",
-      shortcut: KeyboardShortcut,
+      keypress: Keypress,
     |}
   | {|
       type: "ReportVisibleFrame",
@@ -105,6 +105,7 @@ export type ToWorker =
       clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
       keyboardMode: KeyboardMode,
+      ignoreKeyboardLayout: boolean,
       oneTimeWindowMessageToken: string,
     |}
   | {|
