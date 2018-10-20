@@ -152,5 +152,9 @@ function makeGlobals() {
     // Note: BUILD_TIME might vary between different files.
     BUILD_TIME: JSON.stringify(Date.now()),
     PROD: JSON.stringify(PROD),
+    // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
+    // This piece of code comes from Preact. Note that this disabled the
+    // `dangerouslySetInnerHTML` feature.
+    "node.innerHTML": "node.__disabled__innerHTML",
   };
 }
