@@ -3,7 +3,6 @@
 import {
   CONTAINER_ID,
   Resets,
-  type TimeTracker,
   addEventListener,
   bind,
   getTitle,
@@ -11,6 +10,7 @@ import {
   partition,
   setStyles,
 } from "../shared/main";
+import type { TimeTracker } from "../shared/perf";
 
 import injected, {
   CLICKABLE_EVENT,

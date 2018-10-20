@@ -1,16 +1,15 @@
 // @flow
 
-// TODO: Move these types somewhere.
 import type {
   Box,
   ElementType,
   ElementTypes,
   HintMeasurements,
 } from "../worker/ElementManager";
-import type { Durations, LogLevel, TimeTracker } from "../shared/main";
+import type { Durations, Perf } from "../shared/perf";
+import type { LogLevel } from "../shared/main";
 
 import type {
-  HintsMode,
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
@@ -208,12 +207,16 @@ export type FromPopup =
     |};
 
 export type ToPopup = {|
-  type: "PopupData",
+  type: "Init",
   logLevel: LogLevel,
-  data: ?{|
-    tabId: number,
-    tabState: TabState,
-  |},
+  state:
+    | {|
+        type: "Normal",
+        perf: Perf,
+      |}
+    | {|
+        type: "Disabled",
+      |},
 |};
 
 export type ElementReport = {|
@@ -267,59 +270,3 @@ export type HintUpdate =
       highlighted: boolean,
       hidden: boolean,
     |};
-
-export type TabState = {|
-  hintsState: HintsState,
-  preventOverTypingTimeoutId: ?TimeoutID,
-  perf: Array<{|
-    timeToFirstPaint: number,
-    topDurations: Durations,
-    collectDurations: Array<{| url: string, durations: Durations |}>,
-    renderDurations: Durations,
-  |}>,
-|};
-
-export type HintsState =
-  | {|
-      type: "Idle",
-      timeoutId: ?TimeoutID,
-    |}
-  | {|
-      type: "Collecting",
-      mode: HintsMode,
-      pendingElements: PendingElements,
-      startTime: number,
-      time: TimeTracker,
-      durations: Array<{| url: string, durations: Durations |}>,
-      timeoutId: ?TimeoutID,
-    |}
-  | {|
-      type: "Hinting",
-      mode: HintsMode,
-      startTime: number,
-      time: TimeTracker,
-      durations: Array<{| url: string, durations: Durations |}>,
-      enteredHintChars: string,
-      enteredTextChars: string,
-      elementsWithHints: Array<ElementWithHint>,
-      highlightedIndexes: Set<number>,
-      updateState: UpdateState,
-    |};
-
-export type UpdateState =
-  | {|
-      type: "Waiting",
-      startTime: number,
-    |}
-  | {|
-      type: "Timeout",
-      timeoutId: TimeoutID,
-    |};
-
-export type PendingElements = {|
-  pendingFrames: {|
-    answering: number,
-    collecting: number,
-  |},
-  elements: Array<ExtendedElementReport>,
-|};

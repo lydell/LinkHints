@@ -2,9 +2,9 @@
 
 import huffman from "n-ary-huffman";
 
+import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 import {
   Resets,
-  TimeTracker,
   addListener,
   bind,
   log,
@@ -13,7 +13,6 @@ import {
   unreachable,
 } from "../shared/main";
 import iconsChecksum from "../icons/checksum";
-// TODO: Move this type somewhere.
 import type {
   ElementReport,
   ElementWithHint,
@@ -23,13 +22,10 @@ import type {
   FromRenderer,
   FromWorker,
   HintUpdate,
-  HintsState,
-  TabState,
   ToBackground,
   ToPopup,
   ToRenderer,
   ToWorker,
-  UpdateState,
 } from "../data/Messages";
 import type { ElementTypes, HintMeasurements } from "../worker/ElementManager";
 import type {
@@ -50,6 +46,57 @@ type Hints = {|
   autoActivate: boolean,
   timeout: number,
 |};
+
+type TabState = {|
+  hintsState: HintsState,
+  preventOverTypingTimeoutId: ?TimeoutID,
+  perf: Perf,
+|};
+
+type HintsState =
+  | {|
+      type: "Idle",
+      timeoutId: ?TimeoutID,
+    |}
+  | {|
+      type: "Collecting",
+      mode: HintsMode,
+      pendingElements: PendingElements,
+      startTime: number,
+      time: TimeTracker,
+      durations: Array<{| url: string, durations: Durations |}>,
+      timeoutId: ?TimeoutID,
+    |}
+  | {|
+      type: "Hinting",
+      mode: HintsMode,
+      startTime: number,
+      time: TimeTracker,
+      durations: Array<{| url: string, durations: Durations |}>,
+      enteredHintChars: string,
+      enteredTextChars: string,
+      elementsWithHints: Array<ElementWithHint>,
+      highlightedIndexes: Set<number>,
+      updateState: UpdateState,
+    |};
+
+type PendingElements = {|
+  pendingFrames: {|
+    answering: number,
+    collecting: number,
+  |},
+  elements: Array<ExtendedElementReport>,
+|};
+
+type UpdateState =
+  | {|
+      type: "Waiting",
+      startTime: number,
+    |}
+  | {|
+      type: "Timeout",
+      timeoutId: TimeoutID,
+    |};
 
 // This is the same color as the pointer in the icon.
 const BADGE_COLOR = "#323234";
@@ -1277,14 +1324,14 @@ export default class BackgroundProgram {
         const tab = await getCurrentTab();
         const tabState = this.tabState.get(tab.id);
         this.sendPopupMessage({
-          type: "PopupData",
+          type: "Init",
           logLevel: log.level,
-          data:
+          state:
             tabState == null
-              ? undefined
+              ? { type: "Disabled" }
               : {
-                  tabId: tab.id,
-                  tabState,
+                  type: "Normal",
+                  perf: tabState.perf,
                 },
         });
         break;
@@ -1299,11 +1346,11 @@ export default class BackgroundProgram {
 
         tabState.perf = [];
         this.sendPopupMessage({
-          type: "PopupData",
+          type: "Init",
           logLevel: log.level,
-          data: {
-            tabId: tab.id,
-            tabState,
+          state: {
+            type: "Normal",
+            perf: tabState.perf,
           },
         });
         break;

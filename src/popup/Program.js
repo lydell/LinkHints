@@ -1,19 +1,8 @@
 // @flow
 
-import {
-  type Durations,
-  Resets,
-  addListener,
-  bind,
-  log,
-  unreachable,
-} from "../shared/main";
-import type {
-  FromBackground,
-  FromPopup,
-  TabState,
-  ToBackground,
-} from "../data/Messages";
+import { Resets, addListener, bind, log, unreachable } from "../shared/main";
+import type { Durations, Perf } from "../shared/perf";
+import type { FromBackground, FromPopup, ToBackground } from "../data/Messages";
 
 const CONTAINER_ID = "container";
 
@@ -64,12 +53,19 @@ export default class PopupProgram {
     log("log", "PopupProgram#onMessage", message.type, message);
 
     switch (message.type) {
-      case "PopupData":
+      case "Init":
         log.level = message.logLevel;
-        if (message.data == null) {
-          this.renderDisabled();
-        } else {
-          this.render(message.data);
+        switch (message.state.type) {
+          case "Normal":
+            this.render(message.state.perf);
+            break;
+
+          case "Disabled":
+            this.renderDisabled();
+            break;
+
+          default:
+            unreachable(message.state.type, message);
         }
         break;
 
@@ -78,7 +74,7 @@ export default class PopupProgram {
     }
   }
 
-  render({ tabId, tabState }: {| tabId: number, tabState: TabState |}) {
+  render(perf: Perf) {
     const previous = document.getElementById(CONTAINER_ID);
 
     if (previous != null) {
@@ -94,10 +90,10 @@ export default class PopupProgram {
     heading.textContent = "Latest durations";
     container.append(heading);
 
-    if (tabState.perf.length > 0) {
+    if (perf.length > 0) {
       const average = document.createElement("p");
       const averageDuration = getAverage(
-        tabState.perf.map(({ timeToFirstPaint }) => timeToFirstPaint)
+        perf.map(({ timeToFirstPaint }) => timeToFirstPaint)
       );
       average.textContent = `Average: ${formatDuration(
         averageDuration
@@ -111,7 +107,7 @@ export default class PopupProgram {
         topDurations,
         collectDurations,
         renderDurations,
-      } of tabState.perf) {
+      } of perf) {
         const li = document.createElement("li");
         const details = document.createElement("details");
         const summary = document.createElement("summary");
@@ -160,11 +156,6 @@ export default class PopupProgram {
       info.style.fontStyle = "italic";
       container.append(info);
     }
-
-    const pre = document.createElement("pre");
-    pre.style.overflowX = "auto";
-    pre.textContent = `${tabId} ${JSON.stringify(tabState, undefined, 2)}`;
-    container.append(pre);
 
     if (document.body != null) {
       document.body.append(container);

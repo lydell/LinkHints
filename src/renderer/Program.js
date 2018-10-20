@@ -3,7 +3,6 @@
 import {
   CONTAINER_ID,
   Resets,
-  TimeTracker,
   type Viewport,
   addEventListener,
   addListener,
@@ -14,6 +13,7 @@ import {
   unreachable,
   waitForPaint,
 } from "../shared/main";
+import { TimeTracker } from "../shared/perf";
 import type { Box, HintMeasurements } from "../worker/ElementManager";
 import type {
   ElementWithHint,

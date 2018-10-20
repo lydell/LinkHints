@@ -2,7 +2,6 @@
 
 import {
   Resets,
-  TimeTracker,
   addEventListener,
   addListener,
   bind,
@@ -11,6 +10,7 @@ import {
   log,
   unreachable,
 } from "../shared/main";
+import { TimeTracker } from "../shared/perf";
 import type {
   ElementReport,
   FromBackground,
