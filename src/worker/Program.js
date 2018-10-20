@@ -56,6 +56,16 @@ type CurrentElements = {|
 // Tracking at most 10K should be enough for regular sites.
 const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
 
+const MODIFIER_KEYS: Set<string> = new Set([
+  "Alt",
+  "Control",
+  "Hyper",
+  "Meta",
+  "Shift",
+  "Super",
+  "OS",
+]);
+
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
@@ -539,11 +549,14 @@ export default class WorkerProgram {
     const suppress =
       match != null ||
       this.keyboardMode === "PreventOverTyping" ||
-      // Allow ctrl and cmd shortcuts in hints mode. ctrl and cmd can't safely
-      // be combined with hint chars anyway, due to some keyboard shortcuts not
+      // Allow ctrl and cmd _shortcuts_ in hints mode (but always suppress
+      // pressing modifier keys _themselves_ in case the page does unwanted
+      // things when holding down alt for example). ctrl and cmd can't safely be
+      // combined with hint chars anyway, due to some keyboard shortcuts not
       // being suppressable (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
       // ctrl+alt+t opens a terminal by default in Ubuntu).
-      (this.keyboardMode === "Hints" && !event.ctrlKey && !event.metaKey);
+      (this.keyboardMode === "Hints" &&
+        (MODIFIER_KEYS.has(event.key) || (!event.ctrlKey && !event.metaKey)));
 
     if (suppress) {
       suppressEvent(event);
@@ -583,16 +596,7 @@ export default class WorkerProgram {
         action: match.action,
         timestamp: performance.now(),
       });
-    } else if (
-      this.keyboardMode === "Hints" &&
-      (suppress ||
-        // Allow BackgroundProgram to detect modifier keys themselves being
-        // pressed. (Needed because of the above ctrl and cmd special case.)
-        event.key === "Control" ||
-        event.key === "Meta" ||
-        // Firefox's name for Meta: <bugzil.la/1232918>
-        event.key === "OS")
-    ) {
+    } else if (this.keyboardMode === "Hints" && suppress) {
       this.sendMessage({
         type: "NonKeyboardShortcutMatched",
         shortcut: {

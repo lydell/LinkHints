@@ -293,12 +293,7 @@ export default class BackgroundProgram {
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
 
-        // On Ubuntu (at least), shift+alt (but not alt+shift!) seems to
-        // generate Meta! But a Meta keyup event is only generated if you
-        // release the alt key first. This means that the peeking can get stuck
-        // depending on in which order you release modifier keys. To avoid that,
-        // don’t count a keydown as a peek start if shift already was held.
-        if (isPeekKey(message.shortcut) && !message.shortcut.shiftKey) {
+        if (isPeekKey(message.shortcut)) {
           this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
           return;
         }
@@ -1730,13 +1725,26 @@ function assignHints(
   return elements;
 }
 
+// For peeking, we need something that doesn’t trigger when:
+//
+// - pressing ctrl+r or cmd+r to refresh the hints (ctrl and cmd)
+// - using the alt key to open in a new tab (alt)
+// - typing uppercase (shift)
+// - rotating hints (tab)
+// - erasing typed characters (backspace)
+// - activating hints (enter)
+// - filtering by text (letters, numbers, symbols, space)
+//
+// Additionally, the Meta/Windows key is not safe on Windows and some Linux
+// distributions since pressing it opens the start menu or simlilar.
+//
+// Holding both ctrl and shift should work in all cases on all platforms, and is
+// reasonably easy to press (the keys are next to each other (vertically) on
+// most keyboards).
 function isPeekKey(shortcut: KeyboardShortcut): boolean {
   return (
-    // TODO: Use ctrl instead of meta/cmd on mac.
-    // shortcut.key === "Control" ||
-    shortcut.key === "Meta" ||
-    // Firefox's name for Meta: <bugzil.la/1232918>
-    shortcut.key === "OS"
+    (shortcut.key === "Control" && shortcut.shiftKey) ||
+    (shortcut.key === "Shift" && shortcut.ctrlKey)
   );
 }
 
