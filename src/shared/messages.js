@@ -1,12 +1,12 @@
 // @flow
 
 import type {
-  Box,
   ElementType,
   ElementTypes,
   HintMeasurements,
 } from "../worker/ElementManager";
 
+import type { Box, LogLevel } from "./main";
 import type { Durations, Perf } from "./perf";
 import type {
   KeyboardAction,
@@ -14,7 +14,6 @@ import type {
   KeyboardMode,
   KeyboardShortcut,
 } from "./keyboard";
-import type { LogLevel } from "./main";
 
 export type FromBackground =
   | {|

@@ -1,6 +1,7 @@
 // @flow
 
 import {
+  type Box,
   Resets,
   addEventListener,
   addListener,
@@ -21,7 +22,6 @@ import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";
 import type {
-  Box,
   ElementType,
   ElementTypes,
   VisibleElement,
@@ -176,11 +176,7 @@ export default class WorkerProgram {
         if (scrollingElement == null || oneTimeWindowMessageToken == null) {
           break;
         }
-        const viewport = {
-          x: 0,
-          y: 0,
-          ...getViewport(),
-        };
+        const viewport = getViewport();
         this.reportVisibleElements(
           message.types,
           [viewport],
@@ -195,13 +191,7 @@ export default class WorkerProgram {
           return;
         }
 
-        current.viewports = [
-          {
-            x: 0,
-            y: 0,
-            ...getViewport(),
-          },
-        ];
+        current.viewports = [getViewport()];
 
         this.updateVisibleElements({
           current,

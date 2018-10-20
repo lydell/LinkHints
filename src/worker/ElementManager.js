@@ -1,6 +1,7 @@
 // @flow
 
 import {
+  type Box,
   CONTAINER_ID,
   Resets,
   addEventListener,
@@ -60,15 +61,6 @@ const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
 export type ElementTypes = Array<ElementType> | "selectable";
 
-export type Box = {|
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-|};
-
-type Align = "left" | "right";
-
 export type HintMeasurements = {|
   x: number,
   y: number,
@@ -80,7 +72,7 @@ export type HintMeasurements = {|
 type Point = {|
   x: number,
   y: number,
-  align: Align,
+  align: "left" | "right",
 |};
 
 export type VisibleElement = {|

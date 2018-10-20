@@ -1,9 +1,9 @@
 // @flow
 
 import {
+  type Box,
   CONTAINER_ID,
   Resets,
-  type Viewport,
   addEventListener,
   addListener,
   bind,
@@ -14,7 +14,6 @@ import {
   waitForPaint,
 } from "../shared/main";
 import { TimeTracker } from "../shared/perf";
-import type { Box, HintMeasurements } from "../worker/ElementManager";
 import type {
   ElementWithHint,
   FromBackground,
@@ -22,6 +21,7 @@ import type {
   HintUpdate,
   ToBackground,
 } from "../shared/messages";
+import type { HintMeasurements } from "../worker/ElementManager";
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 
@@ -714,10 +714,7 @@ export default class RendererProgram {
     }
   }
 
-  moveInsideViewport(
-    elements: Array<HTMLElement>,
-    viewport: Viewport
-  ): boolean {
+  moveInsideViewport(elements: Array<HTMLElement>, viewport: Box): boolean {
     let moved = false;
 
     for (const element of elements) {
@@ -832,7 +829,7 @@ function getHintPosition({
   hintSize: HintSize,
   hint: string,
   hintMeasurements: HintMeasurements,
-  viewport: Viewport,
+  viewport: Box,
 |}): {| styles: { [string]: string }, maybeOutsideHorizontally: boolean |} {
   const width = Math.ceil(
     hintSize.widthBase + hintSize.widthPerLetter * hint.length

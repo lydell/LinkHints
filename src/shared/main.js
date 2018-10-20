@@ -229,15 +229,17 @@ export function getTitle(element: HTMLElement): ?string {
   return trimmed === "" ? undefined : trimmed;
 }
 
-export type Viewport = {|
+export type Box = {|
+  x: number,
+  y: number,
   width: number,
   height: number,
 |};
 
-export function getViewport(): Viewport {
+export function getViewport(): Box {
   const { scrollingElement } = document;
   if (scrollingElement == null) {
-    return { width: 0, height: 0 };
+    return { x: 0, y: 0, width: 0, height: 0 };
   }
 
   // `scrollingElement.client{Width,Height}` is the size of the viewport without
@@ -245,6 +247,8 @@ export function getViewport(): Viewport {
   // scrollbars). This works in both Firefox and Chrome, quirks and non-quirks
   // mode and with strange styling like setting a width on `<html>`.
   return {
+    x: 0,
+    y: 0,
     width: scrollingElement.clientWidth,
     height: scrollingElement.clientHeight,
   };
