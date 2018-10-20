@@ -9,7 +9,6 @@ import {
   getTitle,
   getViewport,
   log,
-  matchesText,
   unreachable,
 } from "../shared/main";
 import type {
@@ -46,6 +45,7 @@ type CurrentElements = {|
   frames: Array<HTMLIFrameElement | HTMLFrameElement>,
   viewports: Array<Box>,
   types: ElementTypes,
+  indexes: Array<number>,
   words: Array<string>,
   updating: boolean,
 |};
@@ -215,21 +215,26 @@ export default class WorkerProgram {
         if (current == null) {
           return;
         }
-        const elements = current.elements.filter((_elementData, index) =>
-          message.indexes.includes(index)
-        );
-        const { words } = message;
+
+        const { indexes, words } = message;
+        current.indexes = indexes;
         current.words = words;
+
+        const elements = current.elements.filter((_elementData, index) =>
+          indexes.includes(index)
+        );
         const wordsSet = new Set(words);
         const rects = [].concat(
           ...elements.map(elementData =>
             getTextRects(elementData.element, current.viewports, wordsSet)
           )
         );
+
         this.sendMessage({
           type: "ReportTextRects",
           rects,
         });
+
         break;
       }
 
@@ -742,6 +747,7 @@ export default class WorkerProgram {
       frames,
       viewports,
       types,
+      indexes: [],
       words: [],
       updating: false,
     };
@@ -791,10 +797,8 @@ export default class WorkerProgram {
         ? []
         : [].concat(
             ...elements
+              .filter((_elementData, index) => current.indexes.includes(index))
               .filter(Boolean)
-              .filter(({ element, type }) =>
-                matchesText(extractText(element, type), words)
-              )
               .map(({ element }) =>
                 getTextRects(element, current.viewports, wordsSet)
               )

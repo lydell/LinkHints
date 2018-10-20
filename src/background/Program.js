@@ -9,7 +9,6 @@ import {
   bind,
   log,
   makeRandomToken,
-  matchesText,
   partition,
   unreachable,
 } from "../shared/main";
@@ -373,7 +372,12 @@ export default class BackgroundProgram {
         hintsState.elementsWithHints = allElementsWithHints;
         hintsState.highlightedIndexes = highlightedIndexes;
 
-        this.getTextRects({ elementsWithHints, words, tabId: info.tabId });
+        this.getTextRects({
+          enteredHintChars,
+          elementsWithHints,
+          words,
+          tabId: info.tabId,
+        });
 
         const shouldContinue =
           match == null
@@ -672,21 +676,25 @@ export default class BackgroundProgram {
   }
 
   getTextRects({
+    enteredHintChars,
     elementsWithHints,
     words,
     tabId,
   }: {|
+    enteredHintChars: string,
     elementsWithHints: Array<ElementWithHint>,
     words: Array<string>,
     tabId: number,
   |}) {
     const indexesByFrame: Map<number, Array<number>> = new Map();
-    for (const { frame } of elementsWithHints) {
-      const previous = indexesByFrame.get(frame.id);
-      if (previous == null) {
-        indexesByFrame.set(frame.id, [frame.index]);
-      } else {
-        previous.push(frame.index);
+    for (const { hint, frame } of elementsWithHints) {
+      if (hint.startsWith(enteredHintChars)) {
+        const previous = indexesByFrame.get(frame.id);
+        if (previous == null) {
+          indexesByFrame.set(frame.id, [frame.index]);
+        } else {
+          previous.push(frame.index);
+        }
       }
     }
     for (const [frameId, indexes] of indexesByFrame) {
@@ -920,10 +928,12 @@ export default class BackgroundProgram {
       return;
     }
 
+    const { enteredHintChars, enteredTextChars } = hintsState;
+
     const { elementsWithHints, updates, words } = updateHints({
       mode: hintsState.mode,
-      enteredHintChars: hintsState.enteredHintChars,
-      enteredTextChars: hintsState.enteredTextChars,
+      enteredHintChars,
+      enteredTextChars,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
       hints: this.hints,
@@ -931,13 +941,13 @@ export default class BackgroundProgram {
       updateMeasurements: false,
     });
 
-    this.getTextRects({ elementsWithHints, words, tabId });
+    this.getTextRects({ enteredHintChars, elementsWithHints, words, tabId });
 
     this.sendRendererMessage(
       {
         type: "UpdateHints",
         updates,
-        enteredTextChars: hintsState.enteredTextChars,
+        enteredTextChars,
       },
       { tabId }
     );
@@ -2134,6 +2144,11 @@ function mergeElements(
 
 function splitEnteredTextChars(enteredTextChars: string): Array<string> {
   return enteredTextChars.split(" ").filter(word => word !== "");
+}
+
+function matchesText(passedText: string, words: Array<string>): boolean {
+  const text = passedText.toLowerCase();
+  return words.every(word => text.includes(word));
 }
 
 function unsetUnrenderTimeoutId(tabState: TabState) {
