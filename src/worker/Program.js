@@ -14,15 +14,15 @@ import {
 import { TimeTracker } from "../shared/perf";
 import type {
   ElementReport,
-  FromBackground,
-  FromWorker,
-  ToBackground,
-} from "../shared/messages";
-import type {
   ElementType,
   ElementTypes,
   VisibleElement,
 } from "../shared/hints";
+import type {
+  FromBackground,
+  FromWorker,
+  ToBackground,
+} from "../shared/messages";
 import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
 
 import ElementManager, { getVisibleBox } from "./ElementManager";

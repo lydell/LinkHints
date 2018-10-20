@@ -16,12 +16,14 @@ import {
 import { TimeTracker } from "../shared/perf";
 import type {
   ElementWithHint,
+  HintMeasurements,
+  HintUpdate,
+} from "../shared/hints";
+import type {
   FromBackground,
   FromRenderer,
-  HintUpdate,
   ToBackground,
 } from "../shared/messages";
-import type { HintMeasurements } from "../shared/hints";
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 

@@ -2,7 +2,12 @@
 
 import type { Box, LogLevel } from "./main";
 import type { Durations, Perf } from "./perf";
-import type { ElementType, ElementTypes, HintMeasurements } from "./hints";
+import type {
+  ElementReport,
+  ElementTypes,
+  ElementWithHint,
+  HintUpdate,
+} from "./hints";
 import type {
   KeyboardAction,
   KeyboardMapping,
@@ -212,55 +217,3 @@ export type ToPopup = {|
         type: "Disabled",
       |},
 |};
-
-export type ElementReport = {|
-  type: ElementType,
-  index: number,
-  hintMeasurements: HintMeasurements,
-  url: ?string,
-  title: ?string,
-  text: string,
-  textWeight: number,
-  isTextInput: boolean,
-  hasClickListener: boolean,
-|};
-
-export type ExtendedElementReport = {|
-  ...ElementReport,
-  frame: {|
-    id: number,
-    index: number,
-  |},
-  hidden: boolean,
-|};
-
-export type ElementWithHint = {|
-  ...ExtendedElementReport,
-  weight: number,
-  hint: string,
-|};
-
-export type HintUpdate =
-  | {|
-      type: "Hide",
-      index: number,
-      hidden: true,
-    |}
-  | {|
-      type: "UpdateContent",
-      index: number,
-      order: number,
-      matchedChars: string,
-      restChars: string,
-      highlighted: boolean,
-      hidden: boolean,
-    |}
-  | {|
-      type: "UpdatePosition",
-      index: number,
-      order: number,
-      hint: string,
-      hintMeasurements: HintMeasurements,
-      highlighted: boolean,
-      hidden: boolean,
-    |};

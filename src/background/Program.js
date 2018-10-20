@@ -15,19 +15,22 @@ import {
 import iconsChecksum from "../icons/checksum";
 import type {
   ElementReport,
+  ElementTypes,
   ElementWithHint,
   ExtendedElementReport,
+  HintMeasurements,
+  HintUpdate,
+} from "../shared/hints";
+import type {
   FromBackground,
   FromPopup,
   FromRenderer,
   FromWorker,
-  HintUpdate,
   ToBackground,
   ToPopup,
   ToRenderer,
   ToWorker,
 } from "../shared/messages";
-import type { ElementTypes, HintMeasurements } from "../shared/hints";
 import type {
   HintsMode,
   KeyboardAction,
