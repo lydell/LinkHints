@@ -32,7 +32,7 @@ import type {
   ToWorker,
   UpdateState,
 } from "../data/Messages";
-import type { ElementTypes } from "../worker/ElementManager";
+import type { ElementTypes, HintMeasurements } from "../worker/ElementManager";
 import type {
   HintsMode,
   KeyboardAction,
@@ -1615,6 +1615,11 @@ function compareWeights<T: { weight: number }>(a: T, b: T): number {
   return 0;
 }
 
+// Left to right, top to bottom.
+function comparePositions(a: HintMeasurements, b: HintMeasurements): number {
+  return a.x - b.x || a.y - b.y;
+}
+
 function getBadgeText(hintsState: HintsState): string {
   switch (hintsState.type) {
     case "Idle":
@@ -1698,11 +1703,23 @@ function assignHints(
       // This is set to the real thing below.
       hint: "",
     }))
-    // `hintsState.elementsWithHints` changes order as
-    // `hintsState.enteredTextChars` come and go. Sort on `.index` if weights
-    // are equal, so that elements don’t unexpectedly swap hints after erasing
-    // some text chars.
-    .sort((a, b) => compareWeights(b, a) || a.index - b.index);
+    .sort(
+      (a, b) =>
+        // Higher weights first.
+        compareWeights(b, a) ||
+        // If the weights are the same, sort by on-screen position, left to
+        // right and then top to bottom (reading order in LTR languages). If you
+        // scroll _down_ to a list of same-weight links they usually end up in
+        // the order naturally, but if you scroll _up_ to the same list the
+        // IntersectionObserver fires in a different order, so it’s important
+        // not to rely on that to get consistent hints.
+        comparePositions(a.hintMeasurements, b.hintMeasurements) ||
+        // `hintsState.elementsWithHints` changes order as
+        // `hintsState.enteredTextChars` come and go. Sort on `.index` if all other
+        // things are equal, so that elements don’t unexpectedly swap hints after
+        // erasing some text chars.
+        a.index - b.index
+    );
 
   const combined = combineByHref(elements);
 
