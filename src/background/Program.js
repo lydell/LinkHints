@@ -819,6 +819,10 @@ export default class BackgroundProgram {
           },
           { tabId: info.tabId }
         );
+        this.updateWorkerStateAfterHintActivation({
+          tabId: info.tabId,
+          preventOverTyping,
+        });
         this.updateBadge(info.tabId);
         // There’s no need to clear this timeout somewhere, since it should be
         // idempotent.
