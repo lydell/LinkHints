@@ -104,12 +104,12 @@ export function normalizeKeypress({
   const rawKey =
     // Use `.key` for numpad keys because it is too much work detecting and
     // emulating NumLock.
-    ignoreKeyboardLayout || keypress.code.startsWith("Numpad")
-      ? keypress.key
-      : codeToEnUsQwerty({
+    ignoreKeyboardLayout && !keypress.code.startsWith("Numpad")
+      ? codeToEnUsQwerty({
           code: keypress.code,
           shift: keypress.shift,
-        });
+        })
+      : keypress.key;
 
   // Consider Space a non-printable key. Easier to see and allows for shift.
   const key = rawKey === " " ? "Space" : rawKey;
