@@ -287,7 +287,6 @@ export default class ElementManager {
 
   start() {
     const { documentElement } = document;
-
     if (documentElement == null) {
       return;
     }
@@ -503,7 +502,6 @@ export default class ElementManager {
 
   onOverflowChange(event: UIEvent) {
     const element = event.target;
-
     if (!(element instanceof HTMLElement)) {
       return;
     }
@@ -571,7 +569,6 @@ export default class ElementManager {
 
   flushObservers(): Promise<void> {
     const { documentElement } = document;
-
     if (documentElement == null) {
       return Promise.resolve();
     }
@@ -1367,7 +1364,6 @@ function isWithin(point: Point, box: Box): boolean {
 
 function injectScript() {
   const { documentElement } = document;
-
   if (documentElement == null) {
     return;
   }

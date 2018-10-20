@@ -244,15 +244,18 @@ export default class WorkerProgram {
           log("error", "FocusElement: Missing element", message, this.current);
           return;
         }
+
         const { element } = elementData;
         const { activeElement } = document;
         const textInputIsFocused =
           activeElement != null && isTextInput(activeElement);
+
         // Allow opening links in new tabs without losing focus from a text
         // input.
         if (!textInputIsFocused) {
           element.focus();
         }
+
         break;
       }
 
@@ -341,8 +344,6 @@ export default class WorkerProgram {
 
       case "SelectElement": {
         const elementData = this.getElement(message.index);
-        const { trackRemoval } = message;
-
         if (elementData == null) {
           log("error", "SelectElement: Missing element", message, this.current);
           return;
@@ -350,6 +351,7 @@ export default class WorkerProgram {
 
         log("log", "WorkerProgram: SelectElement", elementData);
 
+        const { trackRemoval } = message;
         const { element } = elementData;
 
         if (trackRemoval) {
@@ -497,7 +499,6 @@ export default class WorkerProgram {
 
         case "UpdateElements": {
           const { current } = this;
-
           if (current == null) {
             return;
           }
@@ -827,7 +828,6 @@ export default class WorkerProgram {
   // don’t think it’s worth trying to detect that.
   trackRemoval(element: HTMLElement) {
     const { documentElement } = document;
-
     if (documentElement == null) {
       return;
     }

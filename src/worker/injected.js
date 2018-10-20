@@ -527,7 +527,6 @@ export default () => {
     // The element might have been inserted into another frame.
     // `element.ownerDocument` refers to the document the element exists in.
     const { documentElement } = element.ownerDocument;
-
     if (documentElement == null) {
       return;
     }

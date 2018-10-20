@@ -236,7 +236,6 @@ export type Viewport = {|
 
 export function getViewport(): Viewport {
   const { scrollingElement } = document;
-
   if (scrollingElement == null) {
     return { width: 0, height: 0 };
   }
@@ -280,7 +279,6 @@ export class TimeTracker {
 
   stop() {
     const current = this._current;
-
     if (current == null) {
       return;
     }

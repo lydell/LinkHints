@@ -395,7 +395,6 @@ export default class RendererProgram {
 
   async render(elements: Array<ElementWithHint>): Promise<void> {
     const { documentElement } = document;
-
     if (documentElement == null) {
       return;
     }
