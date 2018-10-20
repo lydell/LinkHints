@@ -87,6 +87,7 @@ export type VisibleElement = {|
   element: HTMLElement,
   type: ElementType,
   measurements: HintMeasurements,
+  hasClickListener: boolean,
 |};
 
 type QueueItem = {|
@@ -692,6 +693,7 @@ export default class ElementManager {
         element,
         type,
         measurements,
+        hasClickListener: this.elementsWithClickListeners.has(element),
       };
 
       // In selectable mode we need to be able to select `<label>` text, and

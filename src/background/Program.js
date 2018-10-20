@@ -1667,12 +1667,15 @@ function combineByHref(
   const rest: Array<ElementWithHint> = [];
 
   for (const element of elements) {
-    const { url } = element;
+    const { url, hasClickListener } = element;
     // The diff expander buttons on GitHub are links to the same fragment
     // identifier. So are Bootstrap carousel next/previous “buttons”. So it’s
-    // not safe to combine links with fragment identifiers at all. I guess they
-    // aren’t as common anyway.
-    if (url != null && !url.includes("#")) {
+    // not safe to combine links with fragment identifiers at all. (They may be
+    // powered by delegated event listeners.) I guess they aren’t as common
+    // anyway. Also don’t combine if the elements themselves have click
+    // listeners. Some sites use `<a>` as buttons with click listeners but still
+    // include an href for some reason.
+    if (url != null && !url.includes("#") && !hasClickListener) {
       const previous = map.get(url);
       if (previous != null) {
         previous.push(element);
@@ -1947,6 +1950,7 @@ function mergeElements(
       // Keep the original text weight so that hints don't change.
       textWeight: element.textWeight,
       isTextInput: update.isTextInput,
+      hasClickListener: update.hasClickListener,
       frame: element.frame,
       hidden: false,
       weight: element.weight,

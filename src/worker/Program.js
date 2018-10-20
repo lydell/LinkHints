@@ -1197,7 +1197,7 @@ function suppressEvent(event: Event) {
 }
 
 function visibleElementToElementReport(
-  { element, type, measurements }: VisibleElement,
+  { element, type, measurements, hasClickListener }: VisibleElement,
   index: number
 ): ElementReport {
   const text = extractText(element, type);
@@ -1219,6 +1219,7 @@ function visibleElementToElementReport(
     text,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),
+    hasClickListener,
     hintMeasurements: measurements,
   };
 }

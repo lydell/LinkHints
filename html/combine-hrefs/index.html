@@ -50,7 +50,7 @@
     </div>
 
     <div>
-      <p>Fragment identifier links <em>could</em> have been combined, but arent’t because of GitHub and Bootstrap:</p>
+      <p>Fragment identifier links <em>could</em> have been combined, but arent’t because of GitHub and Bootstrap (the click listeners may be delegated).</p>
       <p><a href="https://example.com/#frag"></a></p>
       <p><a href="https://example.com/#frag"></a></p>
       <p><a href="https://example.com/#FRAG"></a></p>
@@ -83,6 +83,14 @@
     </div>
 
     <div>
+      <p>These “link buttons” are powered by click listeners, but still have an href for some reason. Yes, there are sites that do this.</p>
+      <p><a href="https://example.com/events/track/" onclick="alert('Edit 1'); return false">Edit 1</a></p>
+      <p><a href="https://example.com/events/track/" id="edit2">Edit 2</a></p>
+      <p><a href="https://example.com/events/track/" id="edit3">Edit 3</a></p>
+      <p>Note: The event listeners could be delegated, but it does not seem to be as common. The solution in such cases is to focus the element and then press Enter instead.</p>
+    </div>
+
+    <div>
       <p>These “link buttons” might appear to have the same href sometimes, but should <em>not</em> get the same hint:</p>
       <p><a>no href button</a></p>
       <p><a>no href button</a></p>
@@ -112,6 +120,16 @@
       for (const element of document.querySelectorAll(".full")) {
         element.setAttribute("href", location.href + element.getAttribute("href"));
       }
+
+      edit2.addEventListener("click", event => {
+        event.preventDefault();
+        alert("Edit 2");
+      });
+
+      edit3.onclick = event => {
+        event.preventDefault();
+        alert("Edit 3");
+      };
     </script>
   </body>
 </html>

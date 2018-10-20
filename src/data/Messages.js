@@ -224,6 +224,7 @@ export type ElementReport = {|
   text: string,
   textWeight: number,
   isTextInput: boolean,
+  hasClickListener: boolean,
 |};
 
 export type ExtendedElementReport = {|
