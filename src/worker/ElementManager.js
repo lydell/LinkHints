@@ -11,6 +11,13 @@ import {
   partition,
   setStyles,
 } from "../shared/main";
+import type {
+  ElementType,
+  ElementTypes,
+  HintMeasurements,
+  Point,
+  VisibleElement,
+} from "../shared/hints";
 import type { TimeTracker } from "../shared/perf";
 
 import injected, {
@@ -40,16 +47,6 @@ const constants = {
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
-export type ElementType =
-  | "clickable"
-  | "clickable-event"
-  | "label"
-  | "link"
-  | "selectable"
-  | "scrollable"
-  | "textarea"
-  | "title";
-
 const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
 
 // Give worse hints to scrollable elements and (selectable) frames. They are
@@ -58,29 +55,6 @@ const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
 // regular click hints mode stay on top in crowded areas such as `<div
 // title="..."><a href="..."><img src="..."></a></div>`.
 const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
-
-export type ElementTypes = Array<ElementType> | "selectable";
-
-export type HintMeasurements = {|
-  x: number,
-  y: number,
-  align: "left" | "right",
-  maxX: number,
-  weight: number,
-|};
-
-type Point = {|
-  x: number,
-  y: number,
-  align: "left" | "right",
-|};
-
-export type VisibleElement = {|
-  element: HTMLElement,
-  type: ElementType,
-  measurements: HintMeasurements,
-  hasClickListener: boolean,
-|};
 
 type QueueItem = {|
   mutationType: MutationType,

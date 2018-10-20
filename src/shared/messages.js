@@ -1,13 +1,8 @@
 // @flow
 
-import type {
-  ElementType,
-  ElementTypes,
-  HintMeasurements,
-} from "../worker/ElementManager";
-
 import type { Box, LogLevel } from "./main";
 import type { Durations, Perf } from "./perf";
+import type { ElementType, ElementTypes, HintMeasurements } from "./hints";
 import type {
   KeyboardAction,
   KeyboardMapping,

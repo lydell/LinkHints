@@ -27,7 +27,7 @@ import type {
   ToRenderer,
   ToWorker,
 } from "../shared/messages";
-import type { ElementTypes, HintMeasurements } from "../worker/ElementManager";
+import type { ElementTypes, HintMeasurements } from "../shared/hints";
 import type {
   HintsMode,
   KeyboardAction,

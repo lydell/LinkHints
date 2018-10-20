@@ -18,14 +18,14 @@ import type {
   FromWorker,
   ToBackground,
 } from "../shared/messages";
-import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
-
-import ElementManager, { getVisibleBox } from "./ElementManager";
 import type {
   ElementType,
   ElementTypes,
   VisibleElement,
-} from "./ElementManager";
+} from "../shared/hints";
+import type { KeyboardMapping, KeyboardMode } from "../shared/keyboard";
+
+import ElementManager, { getVisibleBox } from "./ElementManager";
 
 type FrameMessage =
   | {|

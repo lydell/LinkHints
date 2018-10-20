@@ -21,7 +21,7 @@ import type {
   HintUpdate,
   ToBackground,
 } from "../shared/messages";
-import type { HintMeasurements } from "../worker/ElementManager";
+import type { HintMeasurements } from "../shared/hints";
 
 import { type Rule, applyStyles, parseCSS } from "./css";
 
