@@ -26,7 +26,7 @@
     "cross-spawn": "6.0.5",
     "eslint": "5.7.0",
     "eslint-config-lydell": "10.0.0",
-    "eslint-plugin-flowtype": "2.50.3",
+    "eslint-plugin-flowtype": "3.0.0",
     "eslint-plugin-flowtype-errors": "3.6.0",
     "eslint-plugin-import": "2.14.0",
     "eslint-plugin-prettier": "3.0.0",
