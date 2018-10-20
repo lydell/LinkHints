@@ -24,8 +24,12 @@ module.exports = [
   js(config.options),
   template(config.manifest),
   template(config.iconsCompilation),
-  html({ html: config.popupHtml, js: config.popup.output }),
-  html({ html: config.optionsHtml, js: config.options.output }),
+  html({ html: config.popupHtml, js: [config.popup.output] }),
+  html({
+    html: config.optionsHtml,
+    // Content scripts don’t run in the options page, so manually include them.
+    js: [config.worker.output, config.renderer.output, config.options.output],
+  }),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
   .filter(Boolean)
@@ -104,7 +108,7 @@ function template(
   };
 }
 
-function html(files /*: {| html: string, js: string |} */) {
+function html(files /*: {| html: string, js: Array<string> |} */) {
   return template({
     input: "html.js",
     output: files.html,
@@ -112,7 +116,7 @@ function html(files /*: {| html: string, js: string |} */) {
       polyfill: config.needsPolyfill
         ? path.relative(path.dirname(files.html), config.polyfill.output)
         : undefined,
-      js: path.relative(path.dirname(files.html), files.js),
+      js: files.js.map(src => path.relative(path.dirname(files.html), src)),
     },
   });
 }

@@ -1,6 +1,12 @@
 // @flow strict-local
 
-module.exports = ({ polyfill, js }: {| polyfill: ?string, js: string |}) =>
+module.exports = ({
+  polyfill,
+  js,
+}: {|
+  polyfill: ?string,
+  js: Array<string>,
+|}) =>
   `
 <!DOCTYPE html>
 <html lang="en">
@@ -10,7 +16,7 @@ module.exports = ({ polyfill, js }: {| polyfill: ?string, js: string |}) =>
   </head>
   <body>
     ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}
-    <script src="${js}"></script>
+    ${js.map(src => `<script src="${src}"></script>`).join("\n    ")}
   </body>
 </html>
   `.trim();
