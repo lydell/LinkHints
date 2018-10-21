@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 const optionalRequire = require("optional-require")(require);
 

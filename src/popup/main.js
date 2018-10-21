@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 import PopupProgram from "./Program";
 

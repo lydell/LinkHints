@@ -884,7 +884,7 @@ function parseTypes(rawTypes: mixed): ElementTypes {
     return rawTypes;
   }
 
-  // Don’t bother stricyly checking the contents of the array. It doesn’t matter
+  // Don’t bother strictly checking the contents of the array. It doesn’t matter
   // if there’s invalid types in there, because we only check if certain types
   // exist in the array or not (`types.includes(type)`).
   return (parseArrayOfStrings(rawTypes): Array<any>);

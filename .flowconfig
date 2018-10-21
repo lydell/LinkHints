@@ -5,6 +5,17 @@ suppress_comment= \\(.\\|\n\\)*\\$FlowIgnore
 all=error
 unclear-type=warn
 
+[strict]
+sketchy-null
+sketchy-number
+untyped-type-import
+untyped-import
+unclear-type
+unsafe-getters-setters
+nonstrict-import
+unnecessary-optional-chain
+unnecessary-invariant
+
 [ignore]
 <PROJECT_ROOT>/\..*
 <PROJECT_ROOT>/node_modules/.*

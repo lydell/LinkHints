@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 const fs = require("fs");
 const path = require("path");
@@ -57,7 +57,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
       resolve(),
       commonjs(),
     ].filter(Boolean),
-    onwarn: (warning /*: any */) => {
+    onwarn: (warning /*: mixed */) => {
       throw warning;
     },
   };
@@ -77,7 +77,7 @@ function template(
   } /*: {|
     input: string,
     output: string,
-    data?: any,
+    data?: mixed,
   |} */
 ) {
   let content = "";

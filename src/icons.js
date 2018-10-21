@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 // NOTE: If you make changes in this file you need to save twice for the changes
 // to appear in Firefox when running `npm start` due to a hacky cache busting
@@ -318,7 +318,7 @@ function checksum(string: string): string {
 }
 
 function makeChecksumFile(hash: string): string {
-  return `// @flow
+  return `// @flow strict-local
 export default ${JSON.stringify(hash)};
 `;
 }

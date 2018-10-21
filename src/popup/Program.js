@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 import { Resets, addListener, bind, log, unreachable } from "../shared/main";
 import type { Durations, Perf } from "../shared/perf";

@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 module.exports = ({ polyfill, js }: {| polyfill: ?string, js: string |}) =>
   `

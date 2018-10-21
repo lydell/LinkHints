@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 declare module "n-ary-huffman" {
   declare class BranchPoint<T> {

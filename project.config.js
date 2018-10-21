@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 const currentBrowser = getBrowser();
 

@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 import type { Icons } from "./icons";
 
@@ -59,7 +59,7 @@ module.exports = () =>
     ],
   });
 
-function toJSON(obj: any): string {
+function toJSON(obj: mixed): string {
   return JSON.stringify(obj, undefined, 2);
 }
 

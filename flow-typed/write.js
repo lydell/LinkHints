@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 declare module "write" {
   declare module.exports: {

@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 // This file contains a light-weight good-enough (but in no way spec-compliant)
 // CSS parser, used as a workaround for Firefox's over-eager CSP implementation.

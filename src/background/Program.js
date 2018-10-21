@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 import huffman from "n-ary-huffman";
 
@@ -1764,7 +1764,7 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   return url != null && (!url.includes("#") && !hasClickListener);
 }
 
-function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<any>>> {
+function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
   const manifest = browser.runtime.getManifest();
 
   const detailsList = [].concat(
