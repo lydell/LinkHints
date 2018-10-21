@@ -709,6 +709,16 @@ export default class WorkerProgram {
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
   ): Promise<void> {
+    // In ManyClick mode and when refreshing hints we enter hints mode anew
+    // without exiting the “previous” hints mode. Make sure that any update
+    // polling (or the update from `onTrackedElementsMutation`) don’t interfere
+    // with this report. The `observerProbeCallback` thing in ElementManager is
+    // a bit hacky and can’t handle two `getVisibleElements` requests at the
+    // same time.
+    if (this.current != null) {
+      this.current.updating = true;
+    }
+
     const time = new TimeTracker();
 
     const elementsWithNulls: Array<?VisibleElement> = await this.elementManager.getVisibleElements(
