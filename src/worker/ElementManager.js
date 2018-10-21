@@ -203,6 +203,7 @@ export default class ElementManager {
   resets: Resets;
   probe: HTMLElement;
   observerProbeCallback: ?() => void;
+  flushObserversPromise: ?Promise<void>;
 
   constructor({
     maxIntersectionObservedElements,
@@ -242,6 +243,7 @@ export default class ElementManager {
     setStyles(probe, PROBE_STYLES);
     this.probe = probe;
     this.observerProbeCallback = undefined;
+    this.flushObserversPromise = undefined;
 
     bind(this, [
       this.onClickableElement,
@@ -539,7 +541,12 @@ export default class ElementManager {
       return Promise.resolve();
     }
 
-    return new Promise(resolve => {
+    // Another `.getVisibleElements` is already pending and waiting for observers.
+    if (this.flushObserversPromise != null) {
+      return this.flushObserversPromise;
+    }
+
+    const flushObserversPromise = new Promise(resolve => {
       const intersectionCallback = () => {
         this.observerProbeCallback = undefined;
         this.intersectionObserver.unobserve(this.probe);
@@ -558,6 +565,13 @@ export default class ElementManager {
       this.observerProbeCallback = mutationCallback;
       documentElement.append(this.probe);
     });
+
+    this.flushObserversPromise = flushObserversPromise;
+    flushObserversPromise.finally(() => {
+      this.flushObserversPromise = undefined;
+    });
+
+    return flushObserversPromise;
   }
 
   async getVisibleElements(

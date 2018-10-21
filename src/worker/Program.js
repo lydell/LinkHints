@@ -712,9 +712,7 @@ export default class WorkerProgram {
     // In ManyClick mode and when refreshing hints we enter hints mode anew
     // without exiting the “previous” hints mode. Make sure that any update
     // polling (or the update from `onTrackedElementsMutation`) don’t interfere
-    // with this report. The `observerProbeCallback` thing in ElementManager is
-    // a bit hacky and can’t handle two `getVisibleElements` requests at the
-    // same time.
+    // with this report.
     if (this.current != null) {
       this.current.updating = true;
     }
