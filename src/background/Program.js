@@ -1844,30 +1844,6 @@ function getIcons(type: IconType): { [string]: string } {
   );
 }
 
-// If there are a bunch boxes next to each other with seemingly the same size
-// (and no other clickable elements around) the first box should get the first
-// hint chars as a hint, the second should get the second hint char, and so on.
-// However, the sizes of the boxes can differ ever so slightly (usually by less
-// than 1px). If two elements have too little difference in size for a human to
-// detect, consider their areas equal. These tiny size differences seem to
-// result in weights that differ by less than 0.1.
-const MIN_WEIGHT_DIFF = 0.1;
-
-function compareWeights<T: { weight: number }>(a: T, b: T): number {
-  const diff = a.weight - b.weight;
-  if (a instanceof huffman.BranchPoint || b instanceof huffman.BranchPoint) {
-    return diff;
-  }
-  if (diff <= -MIN_WEIGHT_DIFF) {
-    return -1;
-  }
-  if (diff >= MIN_WEIGHT_DIFF) {
-    return +1;
-  }
-
-  return 0;
-}
-
 // Left to right, top to bottom.
 function comparePositions(a: HintMeasurements, b: HintMeasurements): number {
   return a.x - b.x || a.y - b.y;
@@ -1957,7 +1933,7 @@ function assignHints(
     .sort(
       (a, b) =>
         // Higher weights first.
-        compareWeights(b, a) ||
+        b.weight - a.weight ||
         // If the weights are the same, sort by on-screen position, left to
         // right and then top to bottom (reading order in LTR languages). If you
         // scroll _down_ to a list of same-weight links they usually end up in
@@ -1977,7 +1953,6 @@ function assignHints(
   const tree = huffman.createTree(combined, hintChars.length, {
     // Even though we sorted `elements` above, `combined` might not be sorted.
     sorted: false,
-    compare: compareWeights,
   });
 
   tree.assignCodeWords(hintChars, (item, codeWord) => {

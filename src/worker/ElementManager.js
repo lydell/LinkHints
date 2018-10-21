@@ -1486,9 +1486,16 @@ function hintWeight(
   // as the other.) A multiline link gets the height of one of its lines as
   // weight. But use the width as weight if it is smaller so that very tall but
   // not very wide elements aren’t over powered.
-  const weight = Math.min(
-    Math.max(...visibleBoxes.map(box => box.width)),
-    Math.max(...visibleBoxes.map(box => box.height))
+  // If there are a bunch boxes next to each other with seemingly the same size
+  // (and no other clickable elements around) the first box should get the first
+  // hint chars as a hint, the second should get the second hint char, and so
+  // on. However, the sizes of the boxes can differ ever so slightly (by less
+  // than 1px). So round the weight to make the order more predictable.
+  const weight = Math.round(
+    Math.min(
+      Math.max(...visibleBoxes.map(box => box.width)),
+      Math.max(...visibleBoxes.map(box => box.height))
+    )
   );
 
   // Use logarithms too make the difference between small and large elements
