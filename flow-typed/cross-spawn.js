@@ -1,4 +1,4 @@
-// @flow strict-local
+// @flow
 
 declare module "cross-spawn" {
   declare module.exports: {

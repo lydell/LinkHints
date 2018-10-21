@@ -1,4 +1,4 @@
-// @flow strict-local
+// @flow
 
 declare module "rollup-plugin-commonjs" {
   declare module.exports: Function;

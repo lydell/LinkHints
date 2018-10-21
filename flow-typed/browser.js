@@ -1,4 +1,4 @@
-// @flow strict-local
+// @flow
 
 declare type ConnectInfo = {|
   name?: string,
