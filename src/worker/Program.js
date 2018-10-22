@@ -12,18 +12,20 @@ import {
   unreachable,
 } from "../shared/main";
 import {
+  type ElementReport,
+  type ElementType,
+  type ElementTypes,
+  type VisibleElement,
+  decodeElementType,
+  decodeElementTypes,
+} from "../shared/hints";
+import {
   type KeyboardMapping,
   type KeyboardMode,
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import { TimeTracker } from "../shared/perf";
-import type {
-  ElementReport,
-  ElementType,
-  ElementTypes,
-  VisibleElement,
-} from "../shared/hints";
 import type {
   FromBackground,
   FromWorker,
@@ -888,28 +890,33 @@ function parseFrameMessage(data: Object): FrameMessage {
 }
 
 function parseTypes(rawTypes: mixed): ElementTypes {
-  if (rawTypes === "selectable") {
-    return rawTypes;
+  if (typeof rawTypes === "string") {
+    const type = decodeElementTypes(rawTypes);
+
+    if (type == null) {
+      throw new Error(`Expected ElementTypes, but got: ${rawTypes}`);
+    }
+
+    return type;
   }
 
-  // Don’t bother strictly checking the contents of the array. It doesn’t matter
-  // if there’s invalid types in there, because we only check if certain types
-  // exist in the array or not (`types.includes(type)`).
-  return (parseArrayOfStrings(rawTypes): Array<any>);
+  return parseArrayOfTypes(rawTypes);
 }
 
-function parseArrayOfStrings(rawArray: mixed): Array<string> {
+function parseArrayOfTypes(rawArray: mixed): Array<ElementType> {
   if (!Array.isArray(rawArray)) {
     throw new Error(`Expected an array, but got: ${typeof rawArray}`);
   }
 
   const valid = rawArray
-    .map(item => (typeof item === "string" ? item : undefined))
+    .map(
+      item => (typeof item === "string" ? decodeElementType(item) : undefined)
+    )
     .filter(Boolean);
 
   if (valid.length !== rawArray.length) {
     throw new Error(
-      `Expected an array of strings, but got: [${rawArray.join(", ")}]`
+      `Expected an array of ElementType, but got: [${rawArray.join(", ")}]`
     );
   }
 

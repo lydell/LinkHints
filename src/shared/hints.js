@@ -1,5 +1,6 @@
 // @flow strict-local
 
+// Remember to keep `decodeElementType` below in sync.
 export type ElementType =
   | "clickable"
   | "clickable-event"
@@ -10,7 +11,33 @@ export type ElementType =
   | "textarea"
   | "title";
 
+// Remember to keep `decodeElementTypes` below in sync.
 export type ElementTypes = Array<ElementType> | "selectable";
+
+export function decodeElementType(type: string): ?ElementType {
+  switch (type) {
+    case "clickable":
+    case "clickable-event":
+    case "label":
+    case "link":
+    case "selectable":
+    case "scrollable":
+    case "textarea":
+    case "title":
+      return type;
+    default:
+      return undefined;
+  }
+}
+
+export function decodeElementTypes(type: string): ?ElementTypes {
+  switch (type) {
+    case "selectable":
+      return type;
+    default:
+      return undefined;
+  }
+}
 
 export type Point = {|
   x: number,
