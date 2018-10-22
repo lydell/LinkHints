@@ -1,4 +1,4 @@
-// @flow
+// @flow strict-local
 
 import {
   type Box,
@@ -867,7 +867,7 @@ function wrapMessage(message: FromWorker): ToBackground {
   };
 }
 
-function parseFrameMessage(data: Object): FrameMessage {
+function parseFrameMessage(data: { [string]: mixed }): FrameMessage {
   switch (data.type) {
     case "FindElements":
       return {
@@ -885,7 +885,7 @@ function parseFrameMessage(data: Object): FrameMessage {
       };
 
     default:
-      throw new Error(`Unknown FrameMessage type: ${data.type}`);
+      throw new Error(`Unknown FrameMessage type: ${String(data.type)}`);
   }
 }
 

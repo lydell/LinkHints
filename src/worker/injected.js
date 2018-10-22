@@ -113,7 +113,11 @@ export default () => {
     //    linked issues and PRs).
     // 2. We don't want developers to see strange things in the console when
     //    they debug stuff.
-    hookInto(obj: Object, name: string, hook: ?Function = undefined) {
+    hookInto(
+      obj: { [string]: mixed },
+      name: string,
+      hook: ?Function = undefined
+    ) {
       const desc = getOwnPropertyDescriptor(obj, name);
 
       // Chrome doesn't support `toSource`.
@@ -198,7 +202,7 @@ export default () => {
     }
   }
 
-  function logHookError(error: Error, obj: Object, name: string) {
+  function logHookError(error: Error, obj: { [string]: mixed }, name: string) {
     logError(`[synth]: Failed to run hook for ${name} on`, obj, error);
   }
 

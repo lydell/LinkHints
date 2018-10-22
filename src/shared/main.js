@@ -78,7 +78,7 @@ Example:
     }
 */
 export function bind(
-  object: Object,
+  object: { [string]: mixed },
   methods: Array<Method | [Method, {| log?: boolean, catch?: boolean |}]>
 ) {
   for (const item of methods) {
@@ -130,7 +130,7 @@ export function addEventListener(
   target: EventTarget,
   eventName: string,
   listener: Function,
-  options: Object = {}
+  options: { [string]: mixed } = {}
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
   target.addEventListener(eventName, listener, fullOptions);

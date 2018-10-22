@@ -32,7 +32,7 @@ declare type OnEvent<Listener, Options = void> = {|
 
 declare type Port = {|
   disconnect(): void,
-  error: ?Object,
+  error: ?{ message: string },
   name: string,
   onDisconnect: OnEvent<(Port) => void>,
   onMessage: OnEvent<(any) => void>,
