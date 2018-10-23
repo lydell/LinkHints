@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
+    "tiny-decoders": "1.0.0",
     "webextension-polyfill": "0.3.1"
   },
   "devDependencies": {

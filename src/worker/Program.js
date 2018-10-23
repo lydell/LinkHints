@@ -16,8 +16,6 @@ import {
   type ElementType,
   type ElementTypes,
   type VisibleElement,
-  decodeElementType,
-  decodeElementTypes,
 } from "../shared/hints";
 import {
   type KeyboardMapping,
@@ -32,20 +30,8 @@ import type {
   ToBackground,
 } from "../shared/messages";
 
+import { type FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager, { getVisibleBox } from "./ElementManager";
-
-type FrameMessage =
-  | {|
-      type: "FindElements",
-      token: string,
-      types: ElementTypes,
-      viewports: Array<Box>,
-    |}
-  | {|
-      type: "UpdateElements",
-      token: string,
-      viewports: Array<Box>,
-    |};
 
 type CurrentElements = {|
   elements: Array<VisibleElement>,
@@ -472,7 +458,7 @@ export default class WorkerProgram {
     ) {
       let message = undefined;
       try {
-        message = parseFrameMessage(event.data);
+        message = decodeFrameMessage(event.data);
       } catch (error) {
         log(
           "warn",
@@ -865,92 +851,6 @@ function wrapMessage(message: FromWorker): ToBackground {
     type: "FromWorker",
     message,
   };
-}
-
-function parseFrameMessage(data: { [string]: mixed }): FrameMessage {
-  switch (data.type) {
-    case "FindElements":
-      return {
-        type: "FindElements",
-        token: "",
-        types: parseTypes(data.types),
-        viewports: parseViewports(data.viewports),
-      };
-
-    case "UpdateElements":
-      return {
-        type: "UpdateElements",
-        token: "",
-        viewports: parseViewports(data.viewports),
-      };
-
-    default:
-      throw new Error(`Unknown FrameMessage type: ${String(data.type)}`);
-  }
-}
-
-function parseTypes(rawTypes: mixed): ElementTypes {
-  if (typeof rawTypes === "string") {
-    const type = decodeElementTypes(rawTypes);
-
-    if (type == null) {
-      throw new Error(`Expected ElementTypes, but got: ${rawTypes}`);
-    }
-
-    return type;
-  }
-
-  return parseArrayOfTypes(rawTypes);
-}
-
-function parseArrayOfTypes(rawArray: mixed): Array<ElementType> {
-  if (!Array.isArray(rawArray)) {
-    throw new Error(`Expected an array, but got: ${typeof rawArray}`);
-  }
-
-  const valid = rawArray
-    .map(
-      item => (typeof item === "string" ? decodeElementType(item) : undefined)
-    )
-    .filter(Boolean);
-
-  if (valid.length !== rawArray.length) {
-    throw new Error(
-      `Expected an array of ElementType, but got: [${rawArray.join(", ")}]`
-    );
-  }
-
-  return valid;
-}
-
-function parseViewports(rawViewports: mixed): Array<Box> {
-  if (!Array.isArray(rawViewports)) {
-    throw new Error(`Expected an array, but got: ${typeof rawViewports}`);
-  }
-
-  return rawViewports.map(viewport => {
-    if (
-      viewport == null ||
-      typeof viewport !== "object" ||
-      Array.isArray(viewport)
-    ) {
-      throw new Error(`Expected an object, but got: ${typeof viewport}`);
-    }
-    return {
-      x: getNumber(viewport, "x"),
-      y: getNumber(viewport, "y"),
-      width: getNumber(viewport, "width"),
-      height: getNumber(viewport, "height"),
-    };
-  });
-}
-
-function getNumber(arg: { [string]: mixed }, property: string): number {
-  const value = arg[property];
-  if (!(typeof value === "number" && Number.isFinite(value))) {
-    throw new Error(`Invalid '${property}': ${String(value)}`);
-  }
-  return value;
 }
 
 function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {

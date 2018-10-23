@@ -1,5 +1,7 @@
 // @flow strict-local
 
+import { array, either, map, repr, string } from "tiny-decoders";
+
 // Remember to keep `decodeElementType` below in sync.
 export type ElementType =
   | "clickable"
@@ -11,10 +13,10 @@ export type ElementType =
   | "textarea"
   | "title";
 
-// Remember to keep `decodeElementTypes` below in sync.
+// Remember to keep `decodeElementTypesConstants` below in sync.
 export type ElementTypes = Array<ElementType> | "selectable";
 
-export function decodeElementType(type: string): ?ElementType {
+export function decodeElementType(type: string): ElementType {
   switch (type) {
     case "clickable":
     case "clickable-event":
@@ -26,18 +28,23 @@ export function decodeElementType(type: string): ?ElementType {
     case "title":
       return type;
     default:
-      return undefined;
+      throw new TypeError(`Invalid ElementType: ${repr(type)}`);
   }
 }
 
-export function decodeElementTypes(type: string): ?ElementTypes {
+export function decodeElementTypesConstants(type: string): ElementTypes {
   switch (type) {
     case "selectable":
       return type;
     default:
-      return undefined;
+      throw new TypeError(`Invalid ElementTypes constant: ${repr(type)}`);
   }
 }
+
+export const decodeElementTypes: mixed => ElementTypes = either(
+  map(string, decodeElementTypesConstants),
+  array(map(string, decodeElementType))
+);
 
 export type Point = {|
   x: number,
