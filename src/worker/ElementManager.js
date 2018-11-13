@@ -626,10 +626,10 @@ export default class ElementManager {
       passedCandidates != null
         ? passedCandidates
         : types === "selectable"
-          ? document.querySelectorAll("*")
-          : this.bailed
-            ? this.elements.keys()
-            : this.visibleElements;
+        ? document.querySelectorAll("*")
+        : this.bailed
+        ? this.elements.keys()
+        : this.visibleElements;
     const range = document.createRange();
     const deduper = new Deduper();
 
@@ -686,8 +686,8 @@ export default class ElementManager {
     });
 
     time.start("filter");
-    return maybeResults.map(
-      result => (result == null || deduper.rejects(result) ? undefined : result)
+    return maybeResults.map(result =>
+      result == null || deduper.rejects(result) ? undefined : result
     );
   }
 
@@ -1429,12 +1429,11 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   // use `.hasAttribute` instead. That works, except in rare edge cases
   // where `.onclick = null` is set afterwards (the attribute string
   // will remain but the listener will be gone).
-  return CLICKABLE_EVENT_PROPS.some(
-    prop =>
-      BROWSER === "chrome"
-        ? element.hasAttribute(prop)
-        : // $FlowIgnore: I _do_ want to dynamically read properties here.
-          typeof element[prop] === "function"
+  return CLICKABLE_EVENT_PROPS.some(prop =>
+    BROWSER === "chrome"
+      ? element.hasAttribute(prop)
+      : // $FlowIgnore: I _do_ want to dynamically read properties here.
+        typeof element[prop] === "function"
   );
 }
 

@@ -230,10 +230,10 @@ export function getTitle(element: HTMLElement): ?string {
 }
 
 export type Box = {|
-  x: number,
-  y: number,
-  width: number,
-  height: number,
+  +x: number,
+  +y: number,
+  +width: number,
+  +height: number,
 |};
 
 export function getViewport(): Box {

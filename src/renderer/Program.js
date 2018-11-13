@@ -344,7 +344,7 @@ export default class RendererProgram {
     this.updateContainer(getViewport());
   }
 
-  updateContainer(viewport: { width: number, height: number }) {
+  updateContainer(viewport: { +width: number, +height: number }) {
     const container = this.container.element;
 
     setStyles(container, {

@@ -381,8 +381,8 @@ export default class BackgroundProgram {
         const newChars = isBackspace
           ? chars.slice(0, -1)
           : isEnter
-            ? chars
-            : `${chars}${key}`;
+          ? chars
+          : `${chars}${key}`;
         const enteredHintChars = isHintKey
           ? newChars
           : hintsState.enteredHintChars;
@@ -2091,24 +2091,24 @@ function updateHints({
             hidden: element.hidden || !matches,
           }
         : matches && (match == null || highlighted)
-          ? {
-              // Update the hint (which can change based on text filtering),
-              // which part of the hint has been matched and whether it
-              // should be marked as highlighted/matched.
-              type: "UpdateContent",
-              index: element.index,
-              order: index,
-              matchedChars: enteredHintChars,
-              restChars: element.hint.slice(enteredHintChars.length),
-              highlighted,
-              hidden: element.hidden || !matches,
-            }
-          : {
-              // Hide hints that don’t match the entered hint chars.
-              type: "Hide",
-              index: element.index,
-              hidden: true,
-            };
+        ? {
+            // Update the hint (which can change based on text filtering),
+            // which part of the hint has been matched and whether it
+            // should be marked as highlighted/matched.
+            type: "UpdateContent",
+            index: element.index,
+            order: index,
+            matchedChars: enteredHintChars,
+            restChars: element.hint.slice(enteredHintChars.length),
+            highlighted,
+            hidden: element.hidden || !matches,
+          }
+        : {
+            // Hide hints that don’t match the entered hint chars.
+            type: "Hide",
+            index: element.index,
+            hidden: true,
+          };
     })
     .concat(
       nonMatching.map(element => ({
