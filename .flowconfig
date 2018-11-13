@@ -1,9 +1,10 @@
 [options]
 suppress_comment= \\(.\\|\n\\)*\\$FlowIgnore
+include_warnings=true
 
 [lints]
 all=error
-unclear-type=warn
+unclear-type=off
 
 [strict]
 sketchy-null
