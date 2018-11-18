@@ -1,6 +1,7 @@
 const baseRules = require("eslint-config-lydell");
 
 module.exports = {
+  root: true,
   parser: "babel-eslint",
   plugins: [
     "flowtype",
