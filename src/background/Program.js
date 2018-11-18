@@ -1,26 +1,5 @@
 // @flow strict-local
 
-import huffman from "n-ary-huffman";
-
-import { type Durations, type Perf, TimeTracker } from "../shared/perf";
-import {
-  type HintsMode,
-  type KeyboardAction,
-  type KeyboardMapping,
-  type Keypress,
-  type NormalizedKeypress,
-  normalizeKeypress,
-} from "../shared/keyboard";
-import {
-  Resets,
-  addListener,
-  bind,
-  log,
-  makeRandomToken,
-  partition,
-  unreachable,
-} from "../shared/main";
-import iconsChecksum from "../icons/checksum";
 import type {
   ElementReport,
   ElementTypes,
@@ -39,6 +18,28 @@ import type {
   ToRenderer,
   ToWorker,
 } from "../shared/messages";
+
+import huffman from "n-ary-huffman";
+
+import iconsChecksum from "../icons/checksum";
+import {
+  type HintsMode,
+  type KeyboardAction,
+  type KeyboardMapping,
+  type Keypress,
+  type NormalizedKeypress,
+  normalizeKeypress,
+} from "../shared/keyboard";
+import {
+  Resets,
+  addListener,
+  bind,
+  log,
+  makeRandomToken,
+  partition,
+  unreachable,
+} from "../shared/main";
+import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 
 type MessageInfo = {|
   tabId: number,

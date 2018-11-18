@@ -1,5 +1,7 @@
 // @flow strict-local
 
+import type { Box } from "../shared/main";
+
 import {
   array,
   constant,
@@ -12,7 +14,6 @@ import {
 } from "tiny-decoders";
 
 import { type ElementTypes, decodeElementTypes } from "../shared/hints";
-import type { Box } from "../shared/main";
 
 export type FrameMessage =
   | {|

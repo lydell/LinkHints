@@ -1,16 +1,11 @@
 // @flow strict-local
 
-import {
-  type Box,
-  Resets,
-  addEventListener,
-  addListener,
-  bind,
-  getTitle,
-  getViewport,
-  log,
-  unreachable,
-} from "../shared/main";
+import type {
+  FromBackground,
+  FromWorker,
+  ToBackground,
+} from "../shared/messages";
+
 import {
   type ElementReport,
   type ElementType,
@@ -23,15 +18,20 @@ import {
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
+import {
+  type Box,
+  Resets,
+  addEventListener,
+  addListener,
+  bind,
+  getTitle,
+  getViewport,
+  log,
+  unreachable,
+} from "../shared/main";
 import { TimeTracker } from "../shared/perf";
-import type {
-  FromBackground,
-  FromWorker,
-  ToBackground,
-} from "../shared/messages";
-
-import { type FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager, { getVisibleBox } from "./ElementManager";
+import { type FrameMessage, decodeFrameMessage } from "./decoders";
 
 type CurrentElements = {|
   elements: Array<VisibleElement>,

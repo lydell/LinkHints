@@ -1,5 +1,16 @@
 // @flow strict-local
 
+import type {
+  ElementWithHint,
+  HintMeasurements,
+  HintUpdate,
+} from "../shared/hints";
+import type {
+  FromBackground,
+  FromRenderer,
+  ToBackground,
+} from "../shared/messages";
+
 import {
   type Box,
   CONTAINER_ID,
@@ -14,17 +25,6 @@ import {
   waitForPaint,
 } from "../shared/main";
 import { TimeTracker } from "../shared/perf";
-import type {
-  ElementWithHint,
-  HintMeasurements,
-  HintUpdate,
-} from "../shared/hints";
-import type {
-  FromBackground,
-  FromRenderer,
-  ToBackground,
-} from "../shared/messages";
-
 import { type Rule, applyStyles, parseCSS } from "./css";
 
 type HintSize = {|

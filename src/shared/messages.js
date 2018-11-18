@@ -1,7 +1,5 @@
 // @flow strict-local
 
-import type { Box, LogLevel } from "./main";
-import type { Durations, Perf } from "./perf";
 import type {
   ElementReport,
   ElementTypes,
@@ -14,6 +12,8 @@ import type {
   KeyboardMode,
   Keypress,
 } from "./keyboard";
+import type { Box, LogLevel } from "./main";
+import type { Durations, Perf } from "./perf";
 
 export type FromBackground =
   | {|

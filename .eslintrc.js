@@ -7,7 +7,7 @@ module.exports = {
     "flowtype-errors",
     "import",
     "prettier",
-    "sort-imports-es6-autofix",
+    "simple-import-sort",
   ],
   env: {
     es6: true,
@@ -32,7 +32,6 @@ module.exports = {
     "no-script-url": "off",
     "prettier/prettier": "error",
     "require-await": "error",
-    "sort-imports-es6-autofix/sort-imports-es6": "error",
   }),
   overrides: [
     {
@@ -41,6 +40,7 @@ module.exports = {
         "flowtype/require-parameter-type": "off",
         "flowtype/require-return-type": "off",
         "flowtype/require-valid-file-annotation": "off",
+        "import/order": ["error", { "newlines-between": "always" }],
       },
     },
     {
@@ -55,6 +55,9 @@ module.exports = {
         PROD: false,
         browser: false,
       }),
+      rules: {
+        "simple-import-sort/sort": "error",
+      },
     },
   ],
 };
