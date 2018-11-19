@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>remove on click</title>
+    <style>
+      body {
+        width: 500px;
+        margin: 20px auto;
+        min-height: 120vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      body > * {
+        margin-bottom: 30px;
+      }
+
+      .box {
+        border: 1px solid;
+        padding: 30px;
+      }
+
+      .end {
+        margin-top: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Click a “View” button, then try to scroll with Space.</p>
+    <p>Firefox keeps focus on elements with "display:none", effectively disabling Space. But the click listeners are not triggered.</p>
+
+    <div class="box">
+      <div class="hide">
+        <button>View (hide parent)</button>
+      </div>
+      <div class="content" hidden>
+        Content<br>text
+      </div>
+    </div>
+
+    <div class="box">
+      <div>
+        <button class="hide">View (hide self)</button>
+      </div>
+      <div class="content" hidden>
+        Content<br>text
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="remove">
+        <button>View (remove parent)</button>
+      </div>
+      <div class="content" hidden>
+        Content<br>text
+      </div>
+    </div>
+
+    <div class="box">
+      <div>
+        <button class="remove">View (remove self)</button>
+      </div>
+      <div class="content" hidden>
+        Content<br>text
+      </div>
+    </div>
+
+    <div class="box">
+      <button>No-op button, just for focusing</button>
+    </div>
+
+    <p class="end">End!</p>
+
+    <script>
+      document.addEventListener("keydown", event => {
+        console.log(event, document.activeElement);
+      }, true);
+      document.addEventListener("focus", event => {
+        console.log(event, document.activeElement);
+      }, true);
+
+      for (const button of document.querySelectorAll("button")) {
+        button.addEventListener("click", () => {
+          console.log("Click!", button);
+
+          const box = button.closest(".box");
+          const hide = box.querySelector(".hide");
+          const remove = box.querySelector(".remove");
+          const content = box.querySelector(".content");
+
+          if (hide) {
+            hide.style.display = "none";
+          }
+          if (remove) {
+            remove.remove();
+          }
+          content.removeAttribute("hidden");
+        });
+      }
+    </script>
+  </body>
+</html>
