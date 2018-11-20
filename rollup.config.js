@@ -141,7 +141,7 @@ function makeGlobals() {
   return {
     BROWSER:
       config.browser == null
-        ? `(window.sidebar ? "firefox" : "chrome")`
+        ? `(navigator.userAgent.includes("Firefox") ? "firefox" : "chrome")`
         : JSON.stringify(config.browser),
     // Note: BUILD_TIME might vary between different files.
     BUILD_TIME: JSON.stringify(Date.now()),
