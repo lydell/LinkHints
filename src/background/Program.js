@@ -1443,6 +1443,13 @@ export default class BackgroundProgram {
         );
         break;
 
+      case "ClickFocusedElement":
+        this.sendWorkerMessage(
+          { type: "ClickFocusedElement" },
+          { tabId: info.tabId, frameId: "all_frames" }
+        );
+        break;
+
       default:
         unreachable(action.type, action);
     }

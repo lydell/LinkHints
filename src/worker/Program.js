@@ -275,67 +275,10 @@ export default class WorkerProgram {
           this.trackRemoval(element);
         }
 
-        // Programmatically clicking on an `<a href="..." target="_blank">`
-        // causes the popup blocker to block the new tab/window from opening.
-        // That's really annoying, so temporarily remove the `target`. The user
-        // can use the commands for opening links in new tabs instead if they
-        // want a new tab.
-        let target = undefined;
-        if (
-          element instanceof HTMLAnchorElement &&
-          element.target.toLowerCase() === "_blank"
-        ) {
-          ({ target } = element);
-          element.target = "";
-        }
-
-        if (element instanceof HTMLMediaElement) {
-          element.focus();
-          if (element.paused) {
-            element.play();
-          } else {
-            element.pause();
-          }
-          return;
-        }
-
-        const rect = element.getBoundingClientRect();
-        const options = {
-          // Mimic real events as closely as possible.
-          bubbles: true,
-          cancelable: true,
-          composed: true,
-          detail: 1,
-          view: window,
-          // These seem to automatically set `x`, `y`, `pageX` and `pageY` as
-          // well. There’s also `screenX` and `screenY`, but we can’t know
-          // those.
-          clientX: Math.round(rect.left),
-          clientY: Math.round(rect.top + rect.height / 2),
-        };
-
-        // When clicking a link for real the focus happens between the mousedown
-        // and the mouseup, but moving this line between those two
-        // `.dispatchEvent` calls below causes dropdowns in gmail not to be
-        // triggered anymore.
-        element.focus();
-
-        // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
-        // requires the full mousedown+mouseup+click event sequence.
-        element.dispatchEvent(
-          new MouseEvent("mousedown", { ...options, buttons: 1 })
-        );
-        element.dispatchEvent(new MouseEvent("mouseup", options));
-        const defaultNotPrevented = element.dispatchEvent(
-          new MouseEvent("click", options)
-        );
+        const defaultNotPrevented = clickElement(element);
 
         if (defaultNotPrevented && elementData.type === "link") {
           this.sendMessage({ type: "ClickedLinkNavigatingToOtherPage" });
-        }
-
-        if (element instanceof HTMLAnchorElement && target != null) {
-          element.target = target;
         }
 
         break;
@@ -449,6 +392,14 @@ export default class WorkerProgram {
         const selection: Selection | null = window.getSelection();
         if (selection != null) {
           reverseSelection(selection);
+        }
+        break;
+      }
+
+      case "ClickFocusedElement": {
+        const { activeElement } = document;
+        if (activeElement != null) {
+          clickElement(activeElement);
         }
         break;
       }
@@ -1183,4 +1134,64 @@ function extractText(element: HTMLElement, type: ElementType): string {
   return type === "scrollable" || type === "textarea"
     ? ""
     : element.textContent;
+}
+
+function clickElement(element: HTMLElement): boolean {
+  if (element instanceof HTMLMediaElement) {
+    element.focus();
+    if (element.paused) {
+      element.play();
+    } else {
+      element.pause();
+    }
+    return false;
+  }
+
+  // Programmatically clicking on an `<a href="..." target="_blank">` causes the
+  // popup blocker to block the new tab/window from opening. That's really
+  // annoying, so temporarily remove the `target`. The user can use the commands
+  // for opening links in new tabs instead if they want a new tab.
+  let target = undefined;
+  if (
+    element instanceof HTMLAnchorElement &&
+    element.target.toLowerCase() === "_blank"
+  ) {
+    ({ target } = element);
+    element.target = "";
+  }
+
+  const rect = element.getBoundingClientRect();
+  const options = {
+    // Mimic real events as closely as possible.
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    detail: 1,
+    view: window,
+    // These seem to automatically set `x`, `y`, `pageX` and `pageY` as well.
+    // There’s also `screenX` and `screenY`, but we can’t know those.
+    clientX: Math.round(rect.left),
+    clientY: Math.round(rect.top + rect.height / 2),
+  };
+
+  // When clicking a link for real the focus happens between the mousedown and
+  // the mouseup, but moving this line between those two `.dispatchEvent` calls
+  // below causes dropdowns in gmail not to be triggered anymore.
+  element.focus();
+
+  // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
+  // requires the full mousedown+mouseup+click event sequence.
+  element.dispatchEvent(
+    new MouseEvent("mousedown", { ...options, buttons: 1 })
+  );
+  element.dispatchEvent(new MouseEvent("mouseup", options));
+  const defaultNotPrevented = element.dispatchEvent(
+    new MouseEvent("click", options)
+  );
+
+  if (element instanceof HTMLAnchorElement && target != null) {
+    element.target = target;
+  }
+
+  return defaultNotPrevented;
 }

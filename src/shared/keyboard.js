@@ -20,6 +20,9 @@ export type KeyboardAction =
     |}
   | {|
       type: "ReverseSelection",
+    |}
+  | {|
+      type: "ClickFocusedElement",
     |};
 
 // Raw values from a `KeyboardEvent` that we care about.

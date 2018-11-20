@@ -202,6 +202,20 @@ const normalKeyboardShortcuts: Array<KeyboardMapping> = [
       type: "ReverseSelection",
     },
   },
+  {
+    keypress: {
+      key: " ",
+      code: "Space",
+      alt: true,
+      cmd: false,
+      // TODO: Use cmd instead of ctrl on mac?
+      ctrl: true,
+      shift: false,
+    },
+    action: {
+      type: "ClickFocusedElement",
+    },
+  },
 ];
 
 const hintsKeyboardShortcuts: Array<KeyboardMapping> = [
