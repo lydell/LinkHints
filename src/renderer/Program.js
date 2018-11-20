@@ -160,6 +160,7 @@ export default class RendererProgram {
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
       this.onIntersection,
+      this.onPageshow,
       this.onResize,
     ]);
 
@@ -213,7 +214,10 @@ export default class RendererProgram {
     // starts.
     this.unrender();
 
-    this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+    this.resets.add(
+      addListener(browser.runtime.onMessage, this.onMessage),
+      addEventListener(window, "pageshow", this.onPageshow)
+    );
 
     try {
       // Don’t use `this.sendMessage` since it automatically catches and logs
@@ -342,6 +346,17 @@ export default class RendererProgram {
 
   onResize() {
     this.updateContainer(getViewport());
+  }
+
+  // In Firefox, when clicking a link to a JSON file using hints and then
+  // pressing the back button, the matched hint for the JSON link is still on
+  // screen, and never disappears. So unrender when coming to a page via the
+  // back button.
+  onPageshow(event: Event) {
+    // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
+    if (event.persisted) {
+      this.unrender();
+    }
   }
 
   updateContainer(viewport: { +width: number, +height: number }) {
