@@ -59,6 +59,19 @@ const MODIFIER_KEYS: Set<string> = new Set([
   "OS",
 ]);
 
+// All `<input type="…"`> values that look like a button by default, and can be
+// activated by pressing space and as such prevent _scrolling_ by pressing space
+// when focused. Note: Blurring `<input type="file">` when pressing space does
+// not result in a page scroll on Firefox (but all the others do).
+const BUTTON_INPUT_TYPES: Set<string> = new Set([
+  "button",
+  "color",
+  "file",
+  "image",
+  "reset",
+  "submit",
+]);
+
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
@@ -525,6 +538,28 @@ export default class WorkerProgram {
     // the rest. Don't log this since it results in a _lot_ of logs.
     if (event.repeat) {
       return;
+    }
+
+    const { activeElement } = document;
+
+    // Scroll the page when pressing space while a button is focused, rather
+    // than activating the button. The button can still be activated by pressing
+    // Enter (or sometimes ctrl+space or similar).
+    // TODO: Should this be part of Synth? If so, put it behind an option.
+    if (
+      this.keyboardMode === "Normal" &&
+      event.key === " " &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      // `event.shiftKey` scrolls backwards.
+      activeElement != null &&
+      (activeElement instanceof HTMLButtonElement ||
+        (activeElement instanceof HTMLInputElement &&
+          BUTTON_INPUT_TYPES.has(activeElement.type)) ||
+        activeElement.nodeName === "SUMMARY")
+    ) {
+      activeElement.blur();
     }
 
     const keypress = normalizeKeypress({
