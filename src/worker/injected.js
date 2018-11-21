@@ -339,7 +339,6 @@ export default () => {
           timesUp = true;
           this.queue = this.queue.slice(index + 1);
           this.requestIdleCallback();
-          return;
         }
       }
 
