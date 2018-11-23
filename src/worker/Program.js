@@ -180,9 +180,9 @@ export default class WorkerProgram {
         break;
 
       case "StartFindElements": {
-        const { scrollingElement } = document;
         const { oneTimeWindowMessageToken } = this;
-        if (scrollingElement == null || oneTimeWindowMessageToken == null) {
+        if (oneTimeWindowMessageToken == null) {
+          log("error", "missing oneTimeWindowMessageToken", message);
           break;
         }
         const viewport = getViewport();

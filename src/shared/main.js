@@ -237,7 +237,11 @@ export type Box = {|
 |};
 
 export function getViewport(): Box {
-  const { scrollingElement } = document;
+  // In `<frameset>` documents `.scrollingElement` is null so fall back to
+  // `.documentElement`.
+  const scrollingElement =
+    document.scrollingElement || document.documentElement;
+
   if (scrollingElement == null) {
     return { x: 0, y: 0, width: 0, height: 0 };
   }
