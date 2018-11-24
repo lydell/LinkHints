@@ -30,6 +30,24 @@ declare type OnEvent<Listener, Options = void> = {|
   hasListener: Listener => boolean,
 |};
 
+declare type PlatformArch = "arm" | "x86-32" | "x86-64";
+
+declare type PlatformInfo = {|
+  os: PlatformOs,
+  arch: PlatformArch,
+  nacl_arch: PlatformNaclArch,
+|};
+
+declare type PlatformNaclArch = "arm" | "x86-32" | "x86-64";
+
+declare type PlatformOs =
+  | "android"
+  | "cros"
+  | "linux"
+  | "mac"
+  | "openbds"
+  | "win";
+
 declare type Port = {|
   disconnect(): void,
   error: ?{ message: string },
@@ -112,6 +130,7 @@ declare var browser: {|
       (ConnectInfo => Port) &
       ((extensionId: string, ConnectInfo) => Port),
     getManifest(): any,
+    getPlatformInfo(): Promise<PlatformInfo>,
     openOptionsPage(): Promise<void>,
     sendMessage(message: any): Promise<any>,
     onConnect: OnEvent<(Port) => void>,

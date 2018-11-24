@@ -14,7 +14,6 @@ import type {
 import {
   type HintsMode,
   type KeyboardAction,
-  type KeyboardMapping,
   type Keypress,
   type NormalizedKeypress,
   normalizeKeypress,
@@ -39,17 +38,12 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
+import getDefaults, { type Options } from "./defaults";
 
 type MessageInfo = {|
   tabId: number,
   frameId: number,
   url: ?string,
-|};
-
-type Hints = {|
-  chars: string,
-  autoActivate: boolean,
-  timeout: number,
 |};
 
 type TabState = {|
@@ -136,29 +130,15 @@ const SHOW_TITLE_MODES: Set<HintsMode> = new Set([
 ]);
 
 export default class BackgroundProgram {
-  normalKeyboardShortcuts: Array<KeyboardMapping>;
-  hintsKeyboardShortcuts: Array<KeyboardMapping>;
-  ignoreKeyboardLayout: boolean;
-  hints: Hints;
+  options: Options;
+  optionsUpdate: Promise<void>;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
 
-  constructor({
-    normalKeyboardShortcuts,
-    hintsKeyboardShortcuts,
-    ignoreKeyboardLayout,
-    hints,
-  }: {|
-    normalKeyboardShortcuts: Array<KeyboardMapping>,
-    hintsKeyboardShortcuts: Array<KeyboardMapping>,
-    ignoreKeyboardLayout: boolean,
-    hints: Hints,
-  |}) {
-    this.normalKeyboardShortcuts = normalKeyboardShortcuts;
-    this.hintsKeyboardShortcuts = hintsKeyboardShortcuts;
-    this.ignoreKeyboardLayout = ignoreKeyboardLayout;
-    this.hints = hints;
+  constructor() {
+    this.options = getDefaults({ mac: true });
+    this.optionsUpdate = Promise.resolve();
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
@@ -187,6 +167,8 @@ export default class BackgroundProgram {
 
   async start(): Promise<void> {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
+
+    this.optionsUpdate = this.updateOptions();
 
     const tabs = await browser.tabs.query({});
 
@@ -322,9 +304,14 @@ export default class BackgroundProgram {
     });
   }
 
-  onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
+  async onWorkerMessage(
+    message: FromWorker,
+    info: MessageInfo,
+    tabState: TabState
+  ): Promise<void> {
     switch (message.type) {
       case "WorkerScriptAdded":
+        await this.optionsUpdate;
         this.sendWorkerMessage(
           // Make sure that the added worker script gets the same token as all
           // other frames in the page. Otherwise the first hints mode won't
@@ -349,7 +336,7 @@ export default class BackgroundProgram {
 
         const normalizedKeypress = normalizeKeypress({
           keypress: message.keypress,
-          ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
         });
         const rawKey = normalizedKeypress.key;
         const key = rawKey === "Space" ? " " : rawKey;
@@ -367,7 +354,7 @@ export default class BackgroundProgram {
         }
 
         const isHintKey =
-          this.hints.chars.includes(key) ||
+          this.options.hintsChars.includes(key) ||
           (isBackspace && hintsState.enteredHintChars !== "");
 
         // Disallow filtering by text after having started entering hint chars.
@@ -409,7 +396,8 @@ export default class BackgroundProgram {
           enteredTextChars,
           elementsWithHints: hintsState.elementsWithHints,
           highlightedIndexes,
-          hints: this.hints,
+          hintsChars: this.options.hintsChars,
+          hintsAutoActivate: this.options.hintsAutoActivate,
           matchHighlighted: isEnter,
           updateMeasurements: false,
         });
@@ -611,7 +599,8 @@ export default class BackgroundProgram {
           enteredTextChars,
           elementsWithHints: updatedElementsWithHints,
           highlightedIndexes: hintsState.highlightedIndexes,
-          hints: this.hints,
+          hintsChars: this.options.hintsChars,
+          hintsAutoActivate: this.options.hintsAutoActivate,
           matchHighlighted: false,
           updateMeasurements: true,
         });
@@ -878,7 +867,7 @@ export default class BackgroundProgram {
             type: "UpdateHints",
             updates: assignHints(hintsState.elementsWithHints, {
               mode: "ManyTab",
-              hintChars: this.hints.chars,
+              hintsChars: this.options.hintsChars,
               hasEnteredTextChars: false,
             }).map((element, index) => ({
               type: "UpdateContent",
@@ -993,7 +982,8 @@ export default class BackgroundProgram {
       enteredTextChars,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      hints: this.hints,
+      hintsChars: this.options.hintsChars,
+      hintsAutoActivate: this.options.hintsAutoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
@@ -1156,7 +1146,7 @@ export default class BackgroundProgram {
       })),
       {
         mode: hintsState.mode,
-        hintChars: this.hints.chars,
+        hintsChars: this.options.hintsChars,
         hasEnteredTextChars: false,
       }
       // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
@@ -1258,7 +1248,8 @@ export default class BackgroundProgram {
       enteredTextChars,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      hints: this.hints,
+      hintsChars: this.options.hintsChars,
+      hintsAutoActivate: this.options.hintsAutoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
@@ -1286,13 +1277,14 @@ export default class BackgroundProgram {
     this.updateBadge(info.tabId);
   }
 
-  onRendererMessage(
+  async onRendererMessage(
     message: FromRenderer,
     info: MessageInfo,
     tabState: TabState
-  ) {
+  ): Promise<void> {
     switch (message.type) {
       case "RendererScriptAdded":
+        await this.optionsUpdate;
         this.sendRendererMessage(
           {
             type: "StateSync",
@@ -1597,6 +1589,15 @@ export default class BackgroundProgram {
     });
   }
 
+  async updateOptions(): Promise<void> {
+    try {
+      const info = await browser.runtime.getPlatformInfo();
+      this.options = getDefaults({ mac: info.os === "mac" });
+    } catch (error) {
+      log("error", "BackgroundProgram#updateOptions", error);
+    }
+  }
+
   makeWorkerState(
     hintsState: HintsState,
     {
@@ -1613,9 +1614,14 @@ export default class BackgroundProgram {
         type: "StateSync",
         logLevel: log.level,
         clearElements: false,
-        keyboardShortcuts: preventOverTyping ? [] : this.hintsKeyboardShortcuts,
+        keyboardShortcuts: preventOverTyping
+          ? []
+          : [
+              ...this.options.globalKeyboardShortcuts,
+              ...this.options.hintsKeyboardShortcuts,
+            ],
         keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
-        ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+        ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
         oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       };
     }
@@ -1624,9 +1630,14 @@ export default class BackgroundProgram {
       type: "StateSync",
       logLevel: log.level,
       clearElements: true,
-      keyboardShortcuts: preventOverTyping ? [] : this.normalKeyboardShortcuts,
+      keyboardShortcuts: preventOverTyping
+        ? []
+        : [
+            ...this.options.globalKeyboardShortcuts,
+            ...this.options.normalKeyboardShortcuts,
+          ],
       keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
-      ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+      ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
   }
@@ -1674,7 +1685,7 @@ export default class BackgroundProgram {
           tabId,
           frameId: "all_frames",
         });
-      }, this.hints.timeout);
+      }, this.options.hintsTimeout);
     }
   }
 }
@@ -1913,9 +1924,9 @@ function assignHints(
   passedElements: Array<ElementWithHint>,
   {
     mode,
-    hintChars,
+    hintsChars,
     hasEnteredTextChars,
-  }: {| mode: HintsMode, hintChars: string, hasEnteredTextChars: boolean |}
+  }: {| mode: HintsMode, hintsChars: string, hasEnteredTextChars: boolean |}
 ): Array<ElementWithHint> {
   const largestTextWeight = hasEnteredTextChars
     ? Math.max(1, ...passedElements.map(element => element.textWeight))
@@ -1954,12 +1965,12 @@ function assignHints(
 
   const combined = combineByHref(elements, mode);
 
-  const tree = huffman.createTree(combined, hintChars.length, {
+  const tree = huffman.createTree(combined, hintsChars.length, {
     // Even though we sorted `elements` above, `combined` might not be sorted.
     sorted: false,
   });
 
-  tree.assignCodeWords(hintChars, (item, codeWord) => {
+  tree.assignCodeWords(hintsChars, (item, codeWord) => {
     if (item instanceof Combined) {
       for (const child of item.children) {
         child.hint = codeWord;
@@ -2011,7 +2022,8 @@ function updateHints({
   enteredTextChars,
   elementsWithHints: passedElementsWithHints,
   highlightedIndexes,
-  hints,
+  hintsChars,
+  hintsAutoActivate,
   matchHighlighted,
   updateMeasurements,
 }: {|
@@ -2020,7 +2032,8 @@ function updateHints({
   enteredTextChars: string,
   elementsWithHints: Array<ElementWithHint>,
   highlightedIndexes: Set<number>,
-  hints: Hints,
+  hintsChars: string,
+  hintsAutoActivate: boolean,
   matchHighlighted: boolean,
   updateMeasurements: boolean,
 |}): {|
@@ -2043,7 +2056,7 @@ function updateHints({
   // Update the hints after the above filtering.
   const elementsWithHintsAndMaybeHidden = assignHints(matching, {
     mode,
-    hintChars: hints.chars,
+    hintsChars,
     hasEnteredTextChars,
   });
 
@@ -2061,7 +2074,7 @@ function updateHints({
     .map(element => element.hint)
     .filter(hint => hint.startsWith(enteredHintChars));
   const matchingHints = allHints.filter(hint => hint === enteredHintChars);
-  const autoActivate = hasEnteredTextCharsOnly && hints.autoActivate;
+  const autoActivate = hasEnteredTextCharsOnly && hintsAutoActivate;
   const matchingHintsSet = autoActivate
     ? new Set(allHints)
     : new Set(matchingHints);
