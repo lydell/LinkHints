@@ -1,5 +1,15 @@
 // @flow strict-local
 
+import {
+  boolean,
+  constant,
+  fieldAndThen,
+  map,
+  record,
+  repr,
+  string,
+} from "tiny-decoders";
+
 export type KeyboardAction =
   | {|
       type: "EnterHintsMode",
@@ -25,6 +35,46 @@ export type KeyboardAction =
       type: "ClickFocusedElement",
     |};
 
+const decodeKeyboardAction: mixed => KeyboardAction = fieldAndThen(
+  "type",
+  string,
+  getKeyboardActionDecoder
+);
+
+function getKeyboardActionDecoder(type: string): mixed => KeyboardAction {
+  switch (type) {
+    case "EnterHintsMode":
+      return record({
+        type: constant(type),
+        mode: map(string, decodeHintsMode),
+      });
+
+    case "ExitHintsMode":
+      return () => ({ type: "ExitHintsMode" });
+
+    case "RotateHints":
+      return record({
+        type: constant(type),
+        forward: boolean,
+      });
+
+    case "RefreshHints":
+      return () => ({ type: "RefreshHints" });
+
+    case "Escape":
+      return () => ({ type: "Escape" });
+
+    case "ReverseSelection":
+      return () => ({ type: "ReverseSelection" });
+
+    case "ClickFocusedElement":
+      return () => ({ type: "ClickFocusedElement" });
+
+    default:
+      throw new TypeError(`Invalid KeyboardAction type: ${repr(type)}`);
+  }
+}
+
 // Raw values from a `KeyboardEvent` that we care about.
 export type Keypress = {|
   key: string,
@@ -34,6 +84,15 @@ export type Keypress = {|
   ctrl: boolean,
   shift: boolean,
 |};
+
+const decodeKeypress: mixed => Keypress = record({
+  key: string,
+  code: string,
+  alt: boolean,
+  cmd: boolean,
+  ctrl: boolean,
+  shift: boolean,
+});
 
 // A `Keypress` after taking “Ignore keyboard layout” into account.
 export type NormalizedKeypress = {|
@@ -52,6 +111,11 @@ export type KeyboardMapping = {|
   action: KeyboardAction,
 |};
 
+export const decodeKeyboardMapping: mixed => KeyboardMapping = record({
+  keypress: decodeKeypress,
+  action: decodeKeyboardAction,
+});
+
 export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping";
 
 export type HintsMode =
@@ -61,6 +125,20 @@ export type HintsMode =
   | "BackgroundTab"
   | "ForegroundTab"
   | "Select";
+
+export function decodeHintsMode(type: string): HintsMode {
+  switch (type) {
+    case "Click":
+    case "ManyClick":
+    case "ManyTab":
+    case "BackgroundTab":
+    case "ForegroundTab":
+    case "Select":
+      return type;
+    default:
+      throw new TypeError(`Invalid HintsMode: ${repr(type)}`);
+  }
+}
 
 const EN_US_QWERTY_TRANSLATIONS: Map<string, [string, string]> = new Map([
   ["Backquote", ["`", "~"]],

@@ -21,6 +21,8 @@ module.exports = () =>
       // and for checking if tabs are allowed to run content scripts at all (so
       // that the toolbar button can update).
       "<all_urls>",
+      // Needed to store options.
+      "storage",
     ],
     browser_action: {
       browser_style: true,

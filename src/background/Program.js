@@ -38,7 +38,7 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
-import getDefaults, { type Options } from "./defaults";
+import { type Options, decodeOptions, getDefaults } from "./options";
 
 type MessageInfo = {|
   tabId: number,
@@ -1592,7 +1592,9 @@ export default class BackgroundProgram {
   async updateOptions(): Promise<void> {
     try {
       const info = await browser.runtime.getPlatformInfo();
-      this.options = getDefaults({ mac: info.os === "mac" });
+      const defaults = getDefaults({ mac: info.os === "mac" });
+      const rawOptions = await browser.storage.sync.get(defaults);
+      this.options = decodeOptions(rawOptions, defaults);
     } catch (error) {
       log("error", "BackgroundProgram#updateOptions", error);
     }

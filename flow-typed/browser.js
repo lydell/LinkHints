@@ -58,6 +58,22 @@ declare type Port = {|
   sender: ?MessageSender,
 |};
 
+declare type StorageArea = {|
+  get: ((
+    keys?: null | string | Array<string>
+  ) => Promise<{ [string]: mixed }>) &
+    (<T: { [string]: any }>(T) => Promise<{ [$Keys<T>]: mixed }>),
+  getBytesInUse(keys?: null | string | Array<string>): Promise<number>,
+  set({ [string]: mixed }): Promise<void>,
+  remove(string | Array<string>): Promise<void>,
+  clear(): Promise<void>,
+|};
+
+declare type StorageChange = {|
+  oldValue?: mixed,
+  newValue?: mixed,
+|};
+
 declare type Tab = {|
   active: boolean,
   audible?: boolean,
@@ -135,6 +151,14 @@ declare var browser: {|
     sendMessage(message: any): Promise<any>,
     onConnect: OnEvent<(Port) => void>,
     onMessage: OnEvent<(any, MessageSender) => Promise<any> | void>,
+  |},
+  storage: {|
+    local: StorageArea,
+    managed: StorageArea,
+    onChanged: OnEvent<
+      ({ [string]: StorageChange }, "local" | "managed" | "sync") => void
+    >,
+    sync: StorageArea,
   |},
   tabs: {|
     create(createProperties: {|

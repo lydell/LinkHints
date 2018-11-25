@@ -1,6 +1,12 @@
 // @flow strict-local
 
-import type { KeyboardMapping } from "../shared/keyboard";
+import { array, boolean, number, record, string } from "tiny-decoders";
+
+import {
+  type KeyboardMapping,
+  decodeKeyboardMapping,
+} from "../shared/keyboard";
+import { log } from "../shared/main";
 
 export type Options = {|
   ignoreKeyboardLayout: boolean,
@@ -12,7 +18,45 @@ export type Options = {|
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
 |};
 
-export default function getDefaults({ mac }: {| mac: boolean |}): Options {
+function makeOptionsDecoder(defaults: Options): mixed => Options {
+  return record({
+    ignoreKeyboardLayout: tryWithDefault(
+      boolean,
+      defaults.ignoreKeyboardLayout
+    ),
+    hintsChars: tryWithDefault(string, defaults.hintsChars),
+    hintsAutoActivate: tryWithDefault(boolean, defaults.hintsAutoActivate),
+    hintsTimeout: tryWithDefault(number, defaults.hintsTimeout),
+    globalKeyboardShortcuts: tryWithDefault(
+      array(decodeKeyboardMapping),
+      defaults.globalKeyboardShortcuts
+    ),
+    normalKeyboardShortcuts: tryWithDefault(
+      array(decodeKeyboardMapping),
+      defaults.normalKeyboardShortcuts
+    ),
+    hintsKeyboardShortcuts: tryWithDefault(
+      array(decodeKeyboardMapping),
+      defaults.hintsKeyboardShortcuts
+    ),
+  });
+}
+
+function tryWithDefault<T, U>(
+  decoder: mixed => T,
+  defaultValue: U
+): mixed => T | U {
+  return function tryWithDefaultDecoder(value: mixed): T | U {
+    try {
+      return decoder(value);
+    } catch (error) {
+      log("error", "Failed to decode option", error);
+      return defaultValue;
+    }
+  };
+}
+
+export function getDefaults({ mac }: {| mac: boolean |}): Options {
   return {
     ignoreKeyboardLayout: true,
     hintsChars: "fjdkslaghrueiwoncmv",
@@ -191,4 +235,9 @@ export default function getDefaults({ mac }: {| mac: boolean |}): Options {
       },
     ],
   };
+}
+
+export function decodeOptions(value: mixed, defaults: Options): Options {
+  const decoder = makeOptionsDecoder(defaults);
+  return decoder(value);
 }
