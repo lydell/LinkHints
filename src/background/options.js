@@ -1,12 +1,11 @@
 // @flow strict-local
 
-import { array, boolean, number, record, string } from "tiny-decoders";
+import { array, boolean, mixedDict, number, string } from "tiny-decoders";
 
 import {
   type KeyboardMapping,
   decodeKeyboardMapping,
 } from "../shared/keyboard";
-import { log } from "../shared/main";
 
 export type Options = {|
   ignoreKeyboardLayout: boolean,
@@ -18,43 +17,20 @@ export type Options = {|
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
 |};
 
-function makeOptionsDecoder(defaults: Options): mixed => Options {
-  return record({
-    ignoreKeyboardLayout: tryWithDefault(
-      boolean,
-      defaults.ignoreKeyboardLayout
-    ),
-    hintsChars: tryWithDefault(string, defaults.hintsChars),
-    hintsAutoActivate: tryWithDefault(boolean, defaults.hintsAutoActivate),
-    hintsTimeout: tryWithDefault(number, defaults.hintsTimeout),
-    globalKeyboardShortcuts: tryWithDefault(
-      array(decodeKeyboardMapping),
-      defaults.globalKeyboardShortcuts
-    ),
-    normalKeyboardShortcuts: tryWithDefault(
-      array(decodeKeyboardMapping),
-      defaults.normalKeyboardShortcuts
-    ),
-    hintsKeyboardShortcuts: tryWithDefault(
-      array(decodeKeyboardMapping),
-      defaults.hintsKeyboardShortcuts
-    ),
-  });
-}
-
-function tryWithDefault<T, U>(
-  decoder: mixed => T,
-  defaultValue: U
-): mixed => T | U {
-  return function tryWithDefaultDecoder(value: mixed): T | U {
-    try {
-      return decoder(value);
-    } catch (error) {
-      log("error", "Failed to decode option", error);
-      return defaultValue;
-    }
-  };
-}
+export const makeOptionsDecoder: (
+  defaults: Options
+) => mixed => [
+  Options,
+  Array<[string, Error]>,
+] = recordWithDefaultsAndErrors.bind(undefined, {
+  ignoreKeyboardLayout: boolean,
+  hintsChars: string,
+  hintsAutoActivate: boolean,
+  hintsTimeout: number,
+  globalKeyboardShortcuts: array(decodeKeyboardMapping),
+  normalKeyboardShortcuts: array(decodeKeyboardMapping),
+  hintsKeyboardShortcuts: array(decodeKeyboardMapping),
+});
 
 export function getDefaults({ mac }: {| mac: boolean |}): Options {
   return {
@@ -237,7 +213,29 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
   };
 }
 
-export function decodeOptions(value: mixed, defaults: Options): Options {
-  const decoder = makeOptionsDecoder(defaults);
-  return decoder(value);
+type ExtractDecoderType = <T, U>((mixed) => T | U) => T | U;
+
+export function recordWithDefaultsAndErrors<T: {}>(
+  mapping: T,
+  defaults: $ObjMap<T, ExtractDecoderType>
+): mixed => [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
+  return function recordWithDefaultsAndErrorsDecoder(
+    value: mixed
+  ): [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
+    const obj = mixedDict(value);
+    const keys = Object.keys(mapping);
+    const result = {};
+    const errors = [];
+    for (let index = 0; index < keys.length; index++) {
+      const key = keys[index];
+      const decoder = mapping[key];
+      try {
+        result[key] = decoder(obj[key]);
+      } catch (error) {
+        result[key] = defaults[key];
+        errors.push([key, error]);
+      }
+    }
+    return [result, errors];
+  };
 }

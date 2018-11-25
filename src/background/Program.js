@@ -1,6 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
+import { repr } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import type {
@@ -38,7 +39,7 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
-import { type Options, decodeOptions, getDefaults } from "./options";
+import { type Options, getDefaults, makeOptionsDecoder } from "./options";
 
 type MessageInfo = {|
   tabId: number,
@@ -1594,7 +1595,18 @@ export default class BackgroundProgram {
       const info = await browser.runtime.getPlatformInfo();
       const defaults = getDefaults({ mac: info.os === "mac" });
       const rawOptions = await browser.storage.sync.get(defaults);
-      this.options = decodeOptions(rawOptions, defaults);
+      const decoder = makeOptionsDecoder(defaults);
+      const [options, errors] = decoder(rawOptions);
+      this.options = options;
+      for (const [key, error] of errors) {
+        log(
+          "error",
+          `BackgroundProgram#updateOptions: Decode error for option ${repr(
+            key
+          )}`,
+          error
+        );
+      }
     } catch (error) {
       log("error", "BackgroundProgram#updateOptions", error);
     }
