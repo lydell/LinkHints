@@ -159,6 +159,7 @@ export default class BackgroundProgram {
       [this.start, { catch: true }],
       [this.stop, { log: true, catch: true }],
       [this.updateIcon, { catch: true }],
+      [this.updateOptions, { catch: true }],
       this.onConnect,
       this.onTabCreated,
       this.onTabUpdated,
@@ -1591,24 +1592,20 @@ export default class BackgroundProgram {
   }
 
   async updateOptions(): Promise<void> {
-    try {
-      const info = await browser.runtime.getPlatformInfo();
-      const defaults = getDefaults({ mac: info.os === "mac" });
-      const rawOptions = await browser.storage.sync.get(defaults);
-      const decoder = makeOptionsDecoder(defaults);
-      const [options, errors] = decoder(rawOptions);
-      this.options = options;
-      for (const [key, error] of errors) {
-        log(
-          "error",
-          `BackgroundProgram#updateOptions: Decode error for option ${repr(
-            key
-          )}`,
-          error
-        );
-      }
-    } catch (error) {
-      log("error", "BackgroundProgram#updateOptions", error);
+    const info = await browser.runtime.getPlatformInfo();
+    const defaults = getDefaults({ mac: info.os === "mac" });
+    const rawOptions = await browser.storage.sync.get(defaults);
+    const decoder = makeOptionsDecoder(defaults);
+    const [options, errors] = decoder(rawOptions);
+
+    this.options = options;
+
+    for (const [key, error] of errors) {
+      log(
+        "error",
+        `BackgroundProgram#updateOptions: Decode error for option ${repr(key)}`,
+        error
+      );
     }
   }
 
