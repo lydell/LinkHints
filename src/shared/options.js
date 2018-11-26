@@ -2,10 +2,7 @@
 
 import { array, boolean, mixedDict, number, string } from "tiny-decoders";
 
-import {
-  type KeyboardMapping,
-  decodeKeyboardMapping,
-} from "../shared/keyboard";
+import { type KeyboardMapping, decodeKeyboardMapping } from "./keyboard";
 
 export type Options = {|
   ignoreKeyboardLayout: boolean,

@@ -72,6 +72,7 @@ function makeRestrictedPathsZones(dirs) {
     ...dirs.map(dir => {
       const otherDirs = dirs.filter(dir2 => dir2 !== dir);
       return otherDirs.map(dir2 => ({ target: dir, from: dir2 }));
-    })
+    }),
+    ...dirs.map(dir => ({ target: "shared", from: dir }))
   );
 }

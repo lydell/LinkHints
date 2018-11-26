@@ -30,16 +30,22 @@ import {
 } from "../shared/main";
 import type {
   FromBackground,
+  FromOptions,
   FromPopup,
   FromRenderer,
   FromWorker,
   ToBackground,
+  ToOptions,
   ToPopup,
   ToRenderer,
   ToWorker,
 } from "../shared/messages";
+import {
+  type Options,
+  getDefaults,
+  makeOptionsDecoder,
+} from "../shared/options";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
-import { type Options, getDefaults, makeOptionsDecoder } from "./options";
 
 type MessageInfo = {|
   tabId: number,
@@ -147,6 +153,7 @@ export default class BackgroundProgram {
     bind(this, [
       [this.onKeyboardShortcut, { catch: true }],
       [this.onMessage, { catch: true }],
+      [this.onOptionsMessage, { log: true, catch: true }],
       [this.onPopupMessage, { log: true, catch: true }],
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
@@ -243,6 +250,10 @@ export default class BackgroundProgram {
     await this.sendBackgroundMessage({ type: "ToPopup", message });
   }
 
+  async sendOptionsMessage(message: ToOptions): Promise<void> {
+    await this.sendBackgroundMessage({ type: "ToOptions", message });
+  }
+
   // This might seem like sending a message to oneself, but
   // `browser.runtime.sendMessage` seems to only send messages to *other*
   // background scripts, such as the popup script.
@@ -288,6 +299,10 @@ export default class BackgroundProgram {
 
       case "FromPopup":
         this.onPopupMessage(message.message);
+        break;
+
+      case "FromOptions":
+        this.onOptionsMessage(message.message);
         break;
 
       default:
@@ -1359,6 +1374,25 @@ export default class BackgroundProgram {
         });
         break;
       }
+
+      default:
+        unreachable(message.type, message);
+    }
+  }
+
+  onOptionsMessage(message: FromOptions) {
+    switch (message.type) {
+      case "OptionsScriptAdded":
+        this.sendOptionsMessage({
+          type: "Init",
+          logLevel: log.level,
+          options: this.options,
+        });
+        break;
+
+      case "Test":
+        log("log", "Options TEST", message.value);
+        break;
 
       default:
         unreachable(message.type, message);

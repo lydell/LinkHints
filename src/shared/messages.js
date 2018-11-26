@@ -13,6 +13,7 @@ import type {
   Keypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
+import type { Options } from "./options";
 import type { Durations, Perf } from "./perf";
 
 export type FromBackground =
@@ -27,6 +28,10 @@ export type FromBackground =
   | {|
       type: "ToPopup",
       message: ToPopup,
+    |}
+  | {|
+      type: "ToOptions",
+      message: ToOptions,
     |}
   | {|
       type: "FirefoxWorkaround",
@@ -44,6 +49,10 @@ export type ToBackground =
   | {|
       type: "FromPopup",
       message: FromPopup,
+    |}
+  | {|
+      type: "FromOptions",
+      message: FromOptions,
     |};
 
 export type FromWorker =
@@ -220,4 +229,19 @@ export type ToPopup = {|
     | {|
         type: "Disabled",
       |},
+|};
+
+export type FromOptions =
+  | {|
+      type: "OptionsScriptAdded",
+    |}
+  | {|
+      type: "Test",
+      value: string,
+    |};
+
+export type ToOptions = {|
+  type: "Init",
+  logLevel: LogLevel,
+  options: Options,
 |};
