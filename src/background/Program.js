@@ -352,7 +352,8 @@ export default class BackgroundProgram {
           keypress: message.keypress,
           ignoreKeyboardLayout: this.ignoreKeyboardLayout,
         });
-        const { key } = normalizedKeypress;
+        const rawKey = normalizedKeypress.key;
+        const key = rawKey === "Space" ? " " : rawKey;
         const isBackspace = key === "Backspace";
         const isEnter = key === "Enter";
 
