@@ -317,6 +317,15 @@ export default class BackgroundProgram {
         // A frame was removed. If in hints mode, hide all hints for elements in
         // that frame.
         this.hideElements(info);
+
+        // Clear the tab state when navigating to another page. This is
+        // especially useful when changing the URL of a tab to one where
+        // WebExtensions aren't allowed to run. In that case we don't want to
+        // leave behind unnecessary tab state, making it look like Synth is
+        // running in that tab.
+        if (info.frameId === TOP_FRAME_ID) {
+          this.tabState.delete(info.tabId);
+        }
       }
     });
   }
@@ -1593,16 +1602,23 @@ export default class BackgroundProgram {
   }
 
   async updateIcon(tabId: number): Promise<void> {
-    let enabled = true;
+    // If there's a `tabState` for this tab, Synth is enabled for sure.
+    let enabled = this.tabState.has(tabId);
 
-    // Check if we’re allowed to execute content scripts on this page.
-    try {
-      await browser.tabs.executeScript(tabId, {
-        code: "",
-        runAt: "document_start",
-      });
-    } catch (_error) {
-      enabled = false;
+    // If not, check if we’re allowed to execute content scripts on this page.
+    // The `tabState` might not have had a chance to be created yet. In Chrome
+    // this check fails for the Synth Options page, making the above tab state
+    // check required.
+    if (!enabled) {
+      try {
+        await browser.tabs.executeScript(tabId, {
+          code: "",
+          runAt: "document_start",
+        });
+        enabled = true;
+      } catch (_error) {
+        enabled = false;
+      }
     }
 
     const type: IconType = enabled ? "normal" : "disabled";
