@@ -72,15 +72,15 @@ function toJSON(obj: mixed): string {
 
 function getApplications(browser: ?Browser): mixed {
   switch (browser) {
-    case "firefox":
-      return {
-        gecko: {
-          id: "synth@github.com",
-        },
-      };
+    case "chrome":
+      return undefined;
 
     default:
-      return undefined;
+      return {
+        gecko: {
+          id: "synth@lydell.github.io",
+        },
+      };
   }
 }
 
