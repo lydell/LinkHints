@@ -24,8 +24,13 @@ module.exports = [
   js(config.options),
   template(config.manifest),
   template(config.iconsCompilation),
-  html({ html: config.popupHtml, js: [config.popup.output] }),
   html({
+    title: "Synth Popup",
+    html: config.popupHtml,
+    js: [config.popup.output],
+  }),
+  html({
+    title: "Synth Options",
     html: config.optionsHtml,
     // Content scripts don’t run in the options page, so manually include them.
     js: [config.worker.output, config.renderer.output, config.options.output],
@@ -108,11 +113,14 @@ function template(
   };
 }
 
-function html(files /*: {| html: string, js: Array<string> |} */) {
+function html(
+  files /*: {| title: string, html: string, js: Array<string> |} */
+) {
   return template({
     input: "html.js",
     output: files.html,
     data: {
+      title: files.title,
       polyfill: config.needsPolyfill
         ? path.relative(path.dirname(files.html), config.polyfill.output)
         : undefined,

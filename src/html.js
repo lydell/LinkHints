@@ -1,9 +1,11 @@
 // @flow strict-local
 
 module.exports = ({
+  title,
   polyfill,
   js,
 }: {|
+  title: string,
   polyfill: ?string,
   js: Array<string>,
 |}) =>
@@ -12,7 +14,7 @@ module.exports = ({
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Synth</title>
+    <title>${title}</title>
   </head>
   <body>
     ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}
