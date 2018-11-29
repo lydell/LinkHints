@@ -1,13 +1,16 @@
 const baseRules = require("eslint-config-lydell");
 
+// The Prettier and Flow plugins are disabled (at least for now) because of
+// performance issues. You need to run them separately.
+
 module.exports = {
   root: true,
   parser: "babel-eslint",
   plugins: [
     "flowtype",
-    "flowtype-errors",
+    // "flowtype-errors",
     "import",
-    "prettier",
+    // "prettier",
     "simple-import-sort",
   ],
   env: {
@@ -15,7 +18,7 @@ module.exports = {
     node: true,
   },
   rules: Object.assign({}, baseRules({ flow: true, import: true }), {
-    "flowtype-errors/show-errors": "error",
+    // "flowtype-errors/show-errors": "error",
     "import/no-restricted-paths": [
       "error",
       {
@@ -31,7 +34,7 @@ module.exports = {
     ],
     "no-console": "error",
     "no-script-url": "off",
-    "prettier/prettier": "error",
+    // "prettier/prettier": "error",
     "require-await": "error",
   }),
   overrides: [

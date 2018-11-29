@@ -1,0 +1,4 @@
+/.*
+!/.eslintrc.js
+*.custom.js
+/src/compiled/

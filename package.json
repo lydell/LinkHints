@@ -12,9 +12,12 @@
     "rollup": "flow-node node_modules/.bin/rollup",
     "web-ext": "flow-node node_modules/.bin/web-ext",
     "flow": "flow",
+    "flow:check": "flow check",
     "eslint": "eslint .",
     "eslint:fix": "npm run eslint -- --fix",
-    "test": "run-s eslint build:chrome build:firefox"
+    "prettier": "prettier --list-different \"*.md\" \"**/*.js\"",
+    "prettier:fix": "prettier --write \"*.md\" \"**/*.js\"",
+    "test": "run-s eslint prettier flow:check build:chrome build:firefox"
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
