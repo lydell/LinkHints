@@ -350,7 +350,10 @@ export default class RendererProgram {
   // In Firefox, when clicking a link to a JSON file using hints and then
   // pressing the back button, the matched hint for the JSON link is still on
   // screen, and never disappears. So unrender when coming to a page via the
-  // back button.
+  // back button. Hints can also be left behind on screen if the user clicks a
+  // link while in hints mode. That case _is_ handled in `BackgroundProgram`,
+  // but it can be too late to send an unrender message at that point, so the
+  // unrender is handled here in the pageshow event instead.
   onPageshow(event: Event) {
     // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
     if (event.persisted) {

@@ -723,12 +723,15 @@ export default class BackgroundProgram {
       case "PageLeave":
         // If the user clicks a link while hints mode is active, exit it.
         // Otherwise you’ll end up in hints mode on the new page (it is still
-        // the tab, after all) but with no hints. Also, in Firefox, when
+        // the same tab, after all) but with no hints. Also, in Firefox, when
         // clicking the back button the content scripts aren’t re-run but
-        // instead pick up from where they where when leaving the page. Exiting
-        // hints mode before leaving makes sure that there are no left-over
-        // hints shown when navigating back.
-        this.exitHintsMode({ tabId: info.tabId });
+        // instead pick up from where they where when leaving the page. However,
+        // if changing the address bar of the tab to for example
+        // `about:preferences` it is too late to send an unrender message
+        // (“Error: Receiving end does not exist”). So don’t send an unrender
+        // message, and let `RendererProgram` take care of leftover hints in the
+        // pageshow event instead.
+        this.exitHintsMode({ tabId: info.tabId, unrender: false });
         break;
 
       // If the user used a ctrl or cmd (Windows key) shortcut to switch tabs or
@@ -1547,9 +1550,11 @@ export default class BackgroundProgram {
   exitHintsMode({
     tabId,
     delayed = false,
+    unrender = true,
   }: {|
     tabId: number,
     delayed?: boolean,
+    unrender?: boolean,
   |}) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
@@ -1563,7 +1568,7 @@ export default class BackgroundProgram {
       clearUpdateTimeout(hintsState.updateState);
     }
 
-    const unrender = () => {
+    const unrenderCallback = () => {
       unsetUnrenderTimeoutId(tabState);
       this.sendRendererMessage(
         {
@@ -1574,9 +1579,11 @@ export default class BackgroundProgram {
       );
     };
 
-    const timeoutId = delayed
-      ? setTimeout(unrender, MATCH_HIGHLIGHT_DURATION)
-      : unrender();
+    const timeoutId = !unrender
+      ? undefined
+      : delayed
+      ? setTimeout(unrenderCallback, MATCH_HIGHLIGHT_DURATION)
+      : unrenderCallback();
 
     tabState.hintsState = { type: "Idle", timeoutId };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
