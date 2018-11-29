@@ -324,7 +324,7 @@ export default class BackgroundProgram {
         // leave behind unnecessary tab state, making it look like Synth is
         // running in that tab.
         if (info.frameId === TOP_FRAME_ID) {
-          this.tabState.delete(info.tabId);
+          this.deleteTabState(info.tabId);
         }
       }
     });
@@ -1605,6 +1605,22 @@ export default class BackgroundProgram {
   }
 
   onTabRemoved(tabId: number) {
+    this.deleteTabState(tabId);
+  }
+
+  deleteTabState(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+
+    clearUnrenderTimeout(hintsState);
+    if (hintsState.type === "Hinting") {
+      clearUpdateTimeout(hintsState.updateState);
+    }
+
     this.tabState.delete(tabId);
   }
 
