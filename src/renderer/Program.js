@@ -5,12 +5,6 @@ import type {
   HintMeasurements,
   HintUpdate,
 } from "../shared/hints";
-import type {
-  FromBackground,
-  FromRenderer,
-  ToBackground,
-} from "../shared/messages";
-
 import {
   type Box,
   CONTAINER_ID,
@@ -24,6 +18,11 @@ import {
   unreachable,
   waitForPaint,
 } from "../shared/main";
+import type {
+  FromBackground,
+  FromRenderer,
+  ToBackground,
+} from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import { type Rule, applyStyles, parseCSS } from "./css";
 

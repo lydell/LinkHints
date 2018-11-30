@@ -1,5 +1,8 @@
 // @flow strict-local
 
+import huffman from "n-ary-huffman";
+
+import iconsChecksum from "../icons/checksum";
 import type {
   ElementReport,
   ElementTypes,
@@ -8,20 +11,6 @@ import type {
   HintMeasurements,
   HintUpdate,
 } from "../shared/hints";
-import type {
-  FromBackground,
-  FromPopup,
-  FromRenderer,
-  FromWorker,
-  ToBackground,
-  ToPopup,
-  ToRenderer,
-  ToWorker,
-} from "../shared/messages";
-
-import huffman from "n-ary-huffman";
-
-import iconsChecksum from "../icons/checksum";
 import {
   type HintsMode,
   type KeyboardAction,
@@ -39,6 +28,16 @@ import {
   partition,
   unreachable,
 } from "../shared/main";
+import type {
+  FromBackground,
+  FromPopup,
+  FromRenderer,
+  FromWorker,
+  ToBackground,
+  ToPopup,
+  ToRenderer,
+  ToWorker,
+} from "../shared/messages";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 
 type MessageInfo = {|

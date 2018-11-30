@@ -1,7 +1,6 @@
 // @flow strict-local
 
 import type { KeyboardMapping } from "../shared/keyboard";
-
 import BackgroundProgram from "./Program";
 
 const globalKeyboardShortcuts: Array<KeyboardMapping> = [

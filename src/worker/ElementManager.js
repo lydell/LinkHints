@@ -7,8 +7,6 @@ import type {
   Point,
   VisibleElement,
 } from "../shared/hints";
-import type { TimeTracker } from "../shared/perf";
-
 import {
   type Box,
   CONTAINER_ID,
@@ -20,6 +18,7 @@ import {
   partition,
   setStyles,
 } from "../shared/main";
+import type { TimeTracker } from "../shared/perf";
 import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,

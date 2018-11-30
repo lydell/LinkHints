@@ -1,11 +1,5 @@
 // @flow strict-local
 
-import type {
-  FromBackground,
-  FromWorker,
-  ToBackground,
-} from "../shared/messages";
-
 import {
   type ElementReport,
   type ElementType,
@@ -29,6 +23,11 @@ import {
   log,
   unreachable,
 } from "../shared/main";
+import type {
+  FromBackground,
+  FromWorker,
+  ToBackground,
+} from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import ElementManager, { getVisibleBox } from "./ElementManager";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
