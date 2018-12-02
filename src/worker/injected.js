@@ -30,8 +30,10 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // `BUILD_TIME` rather than `makeRandomToken()` so that all frames share the
 // same event name. Clickable elements created in this frame but inserted into
 // another frame need to dispatch an event in their parent window rather than
-// this one.
-const prefix = `__SynthWebExt_${BUILD_TIME}_`;
+// this one. Finally, the `\uffff` is there to make the events sort last in the
+// element inspector in Firefox when clicking the “event” button next to the
+// `<html>` element, making it easier for developers to find their own events.
+const prefix = `\uffff__SynthWebExt_${BUILD_TIME}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
