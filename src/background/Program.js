@@ -908,7 +908,7 @@ export default class BackgroundProgram {
         // There’s no need to clear this timeout somewhere, since it should be
         // idempotent.
         setTimeout(() => {
-          // Ugly hack to clear the highlighted hints only if the haven’t changed.
+          // Ugly hack to clear the highlighted hints only if they haven’t changed.
           if (hintsState.highlightedIndexes === matchedIndexes) {
             hintsState.highlightedIndexes = new Set();
           }
