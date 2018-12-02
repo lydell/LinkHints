@@ -17,6 +17,7 @@ import {
   log,
   partition,
   setStyles,
+  unreachable,
 } from "../shared/main";
 import type { TimeTracker } from "../shared/perf";
 import injected, {
@@ -334,7 +335,31 @@ export default class ElementManager {
   queueItemAndChildren(item: QueueItem) {
     const elements = [item.element, ...item.element.querySelectorAll("*")];
     for (const element of elements) {
-      this.queueItem({ mutationType: item.mutationType, element });
+      if (
+        element instanceof HTMLIFrameElement ||
+        element instanceof HTMLFrameElement
+      ) {
+        switch (item.mutationType) {
+          case "added":
+            // In theory, this can lead to more than
+            // `maxIntersectionObservedElements` frames being tracked by the
+            // intersection observer, but in practice there are never that many
+            // frames. YAGNI.
+            this.frameIntersectionObserver.observe(element);
+            break;
+          case "removed":
+            this.frameIntersectionObserver.unobserve(element);
+            this.visibleFrames.delete(element); // Just to be sure.
+            break;
+          case "changed":
+            // Do nothing.
+            break;
+          default:
+            unreachable(item.mutationType, item);
+        }
+      } else {
+        this.queueItem({ mutationType: item.mutationType, element });
+      }
     }
   }
 
@@ -389,15 +414,6 @@ export default class ElementManager {
       for (const node of record.addedNodes) {
         if (node === this.probe) {
           probed = true;
-        } else if (
-          node instanceof HTMLIFrameElement ||
-          node instanceof HTMLFrameElement
-        ) {
-          // In theory, this can lead to more than
-          // `maxIntersectionObservedElements` frames being tracked by the
-          // intersection observer, but in practice there are never that many
-          // frames. YAGNI.
-          this.frameIntersectionObserver.observe(node);
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
           this.queueItemAndChildren({ mutationType: "added", element: node });
           changed = true;
@@ -407,12 +423,6 @@ export default class ElementManager {
       for (const node of record.removedNodes) {
         if (node === this.probe) {
           probed = true;
-        } else if (
-          node instanceof HTMLIFrameElement ||
-          node instanceof HTMLFrameElement
-        ) {
-          this.frameIntersectionObserver.unobserve(node);
-          this.visibleFrames.delete(node); // Just to be sure.
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
           this.queueItemAndChildren({ mutationType: "removed", element: node });
           changed = true;
@@ -693,6 +703,9 @@ export default class ElementManager {
   getVisibleFrames(
     viewports: Array<Box>
   ): Array<HTMLIFrameElement | HTMLFrameElement> {
+    // In theory this might need flushing, but in practice this method is always
+    // called _after_ `getVisibleElements`, so everything should already be
+    // flushed.
     return Array.from(this.visibleFrames, element => {
       if (
         // Needed on reddit.com. There's a Google Ads iframe where
