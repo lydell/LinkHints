@@ -399,7 +399,6 @@ export default class BackgroundProgram {
         const highlightedIndexes = new Set();
 
         const {
-          elementsWithHints,
           allElementsWithHints,
           match: actualMatch,
           updates,
@@ -435,7 +434,7 @@ export default class BackgroundProgram {
 
         this.getTextRects({
           enteredHintChars,
-          elementsWithHints,
+          allElementsWithHints,
           words,
           tabId: info.tabId,
         });
@@ -738,24 +737,21 @@ export default class BackgroundProgram {
 
   getTextRects({
     enteredHintChars,
-    elementsWithHints,
+    allElementsWithHints,
     words,
     tabId,
   }: {|
     enteredHintChars: string,
-    elementsWithHints: Array<ElementWithHint>,
+    allElementsWithHints: Array<ElementWithHint>,
     words: Array<string>,
     tabId: number,
   |}) {
     const indexesByFrame: Map<number, Array<number>> = new Map();
-    for (const { hint, frame } of elementsWithHints) {
-      if (hint.startsWith(enteredHintChars)) {
-        const previous = indexesByFrame.get(frame.id);
-        if (previous == null) {
-          indexesByFrame.set(frame.id, [frame.index]);
-        } else {
-          previous.push(frame.index);
-        }
+    for (const { text, hint, frame } of allElementsWithHints) {
+      const previous = indexesByFrame.get(frame.id) || [];
+      indexesByFrame.set(frame.id, previous);
+      if (matchesText(text, words) && hint.startsWith(enteredHintChars)) {
+        previous.push(frame.index);
       }
     }
     for (const [frameId, indexes] of indexesByFrame) {
@@ -991,7 +987,7 @@ export default class BackgroundProgram {
 
     const { enteredHintChars, enteredTextChars } = hintsState;
 
-    const { elementsWithHints, updates, words } = updateHints({
+    const { allElementsWithHints, updates, words } = updateHints({
       mode: hintsState.mode,
       enteredHintChars,
       enteredTextChars,
@@ -1002,7 +998,7 @@ export default class BackgroundProgram {
       updateMeasurements: false,
     });
 
-    this.getTextRects({ enteredHintChars, elementsWithHints, words, tabId });
+    this.getTextRects({ enteredHintChars, allElementsWithHints, words, tabId });
 
     this.sendRendererMessage(
       {
