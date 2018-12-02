@@ -1056,6 +1056,11 @@ function getTextRects(
     index = nextIndex;
   }
 
+  const [offsetX, offsetY] = viewports.reduceRight(
+    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
+    [0, 0]
+  );
+
   return [].concat(
     ...ranges.map(({ range }) => {
       const rects = range.getClientRects();
@@ -1065,8 +1070,8 @@ function getTextRects(
           return undefined;
         }
         const elementAtPoint = document.elementFromPoint(
-          Math.round(box.x + box.width / 2),
-          Math.round(box.y + box.height / 2)
+          Math.round(box.x + box.width / 2 - offsetX),
+          Math.round(box.y + box.height / 2 - offsetY)
         );
         return elementAtPoint != null && element.contains(elementAtPoint)
           ? box
