@@ -1532,7 +1532,7 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
     // Always consider the following elements as selectable, regardless of their
     // children, since they have special context menu items. A
     // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
-    // an be skipped otherwise. Making frames selectable also allows Chrome
+    // and be skipped otherwise. Making frames selectable also allows Chrome
     // users to scroll frames using the arrow keys. It would be convenient to
     // give frames hints during regular click hints mode for that reason, but
     // unfortunately for example Twitter uses iframes for many of its little
