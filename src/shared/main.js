@@ -103,12 +103,14 @@ export function bind(
                   log("error", prefix, error, ...args);
                 });
               }
+              return result;
             } catch (error) {
               log("error", prefix, error, ...args);
             }
           } else {
             method.apply(object, args);
           }
+          return undefined;
         },
         "name",
         { value: method.name }

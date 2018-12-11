@@ -13,7 +13,7 @@ import type {
   Keypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
-import type { Options } from "./options";
+import type { Options, PartialOptions } from "./options";
 import type { Durations, Perf } from "./perf";
 
 export type FromBackground =
@@ -236,12 +236,12 @@ export type FromOptions =
       type: "OptionsScriptAdded",
     |}
   | {|
-      type: "Test",
-      value: string,
+      type: "SaveOptions",
+      partialOptions: PartialOptions,
     |};
 
 export type ToOptions = {|
-  type: "Init",
+  type: "StateSync",
   logLevel: LogLevel,
   options: Options,
 |};

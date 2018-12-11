@@ -14,6 +14,8 @@ export type Options = {|
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
 |};
 
+export type PartialOptions = $Shape<Options>;
+
 export const makeOptionsDecoder: (
   defaults: Options
 ) => mixed => [

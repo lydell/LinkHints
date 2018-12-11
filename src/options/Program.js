@@ -8,17 +8,20 @@ import type {
   FromOptions,
   ToBackground,
 } from "../shared/messages";
-import { type Options, getDefaults } from "../shared/options";
+import {
+  type Options,
+  type PartialOptions,
+  getDefaults,
+} from "../shared/options";
+import { TextInput } from "./TextInput";
 
 const h = createElement;
 const makeElement = tag => (...rest) => h(tag, ...rest);
 
-const br = makeElement("br");
 const div = makeElement("div");
-const input = makeElement("input");
 const label = makeElement("label");
 
-type Props = {| placeholder: string |};
+type Props = {||};
 
 type State = {| options: Options |};
 
@@ -75,7 +78,7 @@ export default class OptionsProgram extends Component<Props, State> {
     log("log", "OptionsProgram#onMessage", message.type, message);
 
     switch (message.type) {
-      case "Init":
+      case "StateSync":
         log.level = message.logLevel;
         this.setState({ options: message.options });
         break;
@@ -85,9 +88,29 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
+  saveOptions(partialOptions: PartialOptions) {
+    this.sendMessage({
+      type: "SaveOptions",
+      partialOptions,
+    });
+  }
+
   render() {
-    const { placeholder } = this.props;
-    return div(label({}, "Test:", br(), input({ type: "text", placeholder })));
+    const { options } = this.state;
+
+    return div(
+      label(
+        {},
+        "Hint chars:",
+        h(TextInput, {
+          savedValue: options.hintsChars,
+          normalize: removeDuplicateChars,
+          save: value => {
+            this.saveOptions({ hintsChars: value });
+          },
+        })
+      )
+    );
   }
 }
 
@@ -96,4 +119,8 @@ function wrapMessage(message: FromOptions): ToBackground {
     type: "FromOptions",
     message,
   };
+}
+
+function removeDuplicateChars(string: string): string {
+  return Array.from(new Set(Array.from(string))).join("");
 }

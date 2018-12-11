@@ -42,6 +42,7 @@ import type {
 } from "../shared/messages";
 import {
   type Options,
+  type PartialOptions,
   getDefaults,
   makeOptionsDecoder,
 } from "../shared/options";
@@ -158,7 +159,8 @@ export default class BackgroundProgram {
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
       [this.openNewTab, { catch: true }],
-      [this.sendBackgroundMessage, { catch: true }],
+      [this.saveOptions, { catch: true }],
+      [this.sendBackgroundMessage, { log: true, catch: true }],
       [this.sendContentMessage, { catch: true }],
       [this.sendPopupMessage, { log: true, catch: true }],
       [this.sendRendererMessage, { log: true, catch: true }],
@@ -1392,19 +1394,26 @@ export default class BackgroundProgram {
     }
   }
 
-  onOptionsMessage(message: FromOptions) {
+  async onOptionsMessage(message: FromOptions): Promise<void> {
     switch (message.type) {
       case "OptionsScriptAdded":
         this.sendOptionsMessage({
-          type: "Init",
+          type: "StateSync",
           logLevel: log.level,
           options: this.options,
         });
         break;
 
-      case "Test":
-        log("log", "Options TEST", message.value);
+      case "SaveOptions": {
+        await this.saveOptions(message.partialOptions);
+        // TODO: Also update all workers and renderers.
+        this.sendOptionsMessage({
+          type: "StateSync",
+          logLevel: log.level,
+          options: this.options,
+        });
         break;
+      }
 
       default:
         unreachable(message.type, message);
@@ -1671,6 +1680,11 @@ export default class BackgroundProgram {
     const decoder = makeOptionsDecoder(defaults);
     const [options, errors] = decoder(rawOptions);
 
+    log("log", "BackgroundProgram#updateOptions", {
+      defaults,
+      rawOptions,
+      options,
+    });
     this.options = options;
 
     for (const [key, error] of errors) {
@@ -1680,6 +1694,12 @@ export default class BackgroundProgram {
         error
       );
     }
+  }
+
+  async saveOptions(partialOptions: PartialOptions): Promise<void> {
+    await browser.storage.sync.set(partialOptions);
+    this.optionsUpdate = this.updateOptions();
+    await this.optionsUpdate;
   }
 
   makeWorkerState(

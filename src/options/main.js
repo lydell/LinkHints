@@ -10,7 +10,16 @@ function start() {
     return;
   }
 
-  render(createElement(OptionsProgram, { placeholder: "placeholder" }), body);
+  render(
+    createElement(OptionsProgram, {
+      ref: program => {
+        // Attach the instance to `window` for debugging in the regular Web
+        // Console.
+        window.optionsProgram = program;
+      },
+    }),
+    body
+  );
 }
 
 start();
