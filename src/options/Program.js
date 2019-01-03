@@ -8,11 +8,7 @@ import type {
   FromOptions,
   ToBackground,
 } from "../shared/messages";
-import {
-  type Options,
-  type PartialOptions,
-  getDefaults,
-} from "../shared/options";
+import { type Options, type PartialOptions } from "../shared/options";
 import { TextInput } from "./TextInput";
 
 const h = createElement;
@@ -23,7 +19,7 @@ const label = makeElement("label");
 
 type Props = {||};
 
-type State = {| options: Options |};
+type State = {| options: ?Options |};
 
 export default class OptionsProgram extends Component<Props, State> {
   resets: Resets;
@@ -34,7 +30,7 @@ export default class OptionsProgram extends Component<Props, State> {
     this.resets = new Resets();
 
     this.state = {
-      options: getDefaults({ mac: false }),
+      options: undefined,
     };
 
     bind(this, [
@@ -97,6 +93,10 @@ export default class OptionsProgram extends Component<Props, State> {
 
   render() {
     const { options } = this.state;
+
+    if (options == null) {
+      return null;
+    }
 
     return div(
       label(
