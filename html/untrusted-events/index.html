@@ -27,7 +27,6 @@
 
     <p>
       <a id="link" href="#">link</a>
-      <abbr title="some title text">title</abbr>
     </p>
 
     <div id="wrapper">
@@ -41,9 +40,6 @@
         "blur": () => {
           window.dispatchEvent(new FocusEvent("blur"));
           link.dispatchEvent(new FocusEvent("blur"));
-        },
-        "click": () => {
-          document.body.dispatchEvent(new MouseEvent("click"));
         },
         "keydown": () => {
           window.dispatchEvent(new KeyboardEvent("keydown", {
@@ -75,8 +71,7 @@
               "label",
               "link",
               "scrollable",
-              "textarea",
-              "title"
+              "textarea"
             ],
             "viewports": [
               {

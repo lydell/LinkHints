@@ -143,13 +143,6 @@
     </div>
 
     <div>
-      <p>Changing title:</p>
-      <p>
-        <span id="changingTitle" title="title">initial title</span> (ctrl+f to change)
-      </p>
-    </div>
-
-    <div>
       <p style="margin-top: 80vh;">Always-moving element:</p>
       <a href="#" class="moving">link</a>
     </div>
@@ -196,18 +189,6 @@
             } else {
               changingHref.textContent === "example.com";
               changingHref.href = "https://example.com";
-            }
-            break;
-          case "f":
-            if (changingTitle.title === "title") {
-              changingTitle.title = "changed";
-              changingTitle.textContent = "changed title";
-            } else if (changingTitle.title === "changed") {
-              changingTitle.title = "";
-              changingTitle.textContent = "no title";
-            } else {
-              changingTitle.title = "title";
-              changingTitle.textContent = "initial title";
             }
             break;
           default:

@@ -129,12 +129,6 @@ const UPDATE_MIN_TIMEOUT = 100; // ms
 // How long a matched/activated hint should show as highlighted.
 const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
-const SHOW_TITLE_MODES: Set<HintsMode> = new Set([
-  "Click",
-  "ManyClick",
-  "Select",
-]);
-
 export default class BackgroundProgram {
   normalKeyboardShortcuts: Array<KeyboardMapping>;
   hintsKeyboardShortcuts: Array<KeyboardMapping>;
@@ -467,27 +461,10 @@ export default class BackgroundProgram {
         );
 
         if (match != null) {
-          const { title } = match;
-          const showTitle =
-            SHOW_TITLE_MODES.has(hintsState.mode) && title != null;
-
-          if (showTitle && title != null) {
-            this.sendRendererMessage(
-              {
-                type: "SetTitle",
-                title,
-              },
-              { tabId: info.tabId }
-            );
-          }
-
           const timeoutId = setTimeout(() => {
             unsetUnrenderTimeoutId(tabState);
             this.sendRendererMessage(
-              {
-                type: "Unrender",
-                keepTitle: showTitle,
-              },
+              { type: "Unrender", },
               { tabId: info.tabId }
             );
           }, MATCH_HIGHLIGHT_DURATION);
@@ -681,14 +658,6 @@ export default class BackgroundProgram {
         );
         break;
 
-      case "Interaction":
-        this.removeTitle(info.tabId);
-        break;
-
-      case "ClickedElementRemoved":
-        this.removeTitle(info.tabId);
-        break;
-
       // When clicking a link using Synth that causes a page load (no
       // `.preventDefault()`, no internal fragment identifier, no `javascript:`
       // protocol, etc), exit hints mode. This is especially nice for the
@@ -795,19 +764,37 @@ export default class BackgroundProgram {
       return true;
     }
 
-    const { url, title } = match;
+    const { url } = match;
 
     const mode: HintsMode =
       url != null && keypress.alt ? "ForegroundTab" : hintsState.mode;
 
     switch (mode) {
       case "Click":
-        this.clickElement(tabId, match);
+    this.sendWorkerMessage(
+      {
+        type: "ClickElement",
+        index: match.frame.index,
+      },
+      {
+        tabId,
+        frameId: match.frame.id,
+      }
+    );
         return true;
 
       case "ManyClick":
         if (match.isTextInput) {
-          this.clickElement(tabId, match);
+    this.sendWorkerMessage(
+      {
+        type: "ClickElement",
+        index: match.frame.index,
+      },
+      {
+        tabId,
+        frameId: match.frame.id,
+      }
+    );
           return true;
         }
 
@@ -815,7 +802,6 @@ export default class BackgroundProgram {
           {
             type: "ClickElement",
             index: match.frame.index,
-            trackRemoval: false,
           },
           {
             tabId,
@@ -947,25 +933,12 @@ export default class BackgroundProgram {
           {
             type: "SelectElement",
             index: match.frame.index,
-            trackRemoval: title != null,
           },
           {
             tabId,
             frameId: match.frame.id,
           }
         );
-        if (title != null) {
-          this.sendWorkerMessage(
-            {
-              type: "TrackInteractions",
-              track: true,
-            },
-            {
-              tabId,
-              frameId: "all_frames",
-            }
-          );
-        }
         return true;
 
       default:
@@ -1010,70 +983,6 @@ export default class BackgroundProgram {
     );
 
     this.updateBadge(tabId);
-  }
-
-  removeTitle(tabId: number) {
-    const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
-      return;
-    }
-
-    const { hintsState } = tabState;
-
-    this.sendWorkerMessage(
-      {
-        type: "TrackInteractions",
-        track: false,
-      },
-      {
-        tabId,
-        frameId: "all_frames",
-      }
-    );
-
-    if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
-      this.sendRendererMessage(
-        {
-          type: "SetTitle",
-          title: "",
-        },
-        { tabId }
-      );
-    } else {
-      this.sendRendererMessage(
-        {
-          type: "Unrender",
-          keepTitle: false,
-        },
-        { tabId }
-      );
-    }
-  }
-
-  clickElement(tabId: number, match: ElementWithHint) {
-    this.sendWorkerMessage(
-      {
-        type: "ClickElement",
-        index: match.frame.index,
-        trackRemoval: match.title != null,
-      },
-      {
-        tabId,
-        frameId: match.frame.id,
-      }
-    );
-    if (match.title != null) {
-      this.sendWorkerMessage(
-        {
-          type: "TrackInteractions",
-          track: true,
-        },
-        {
-          tabId,
-          frameId: "all_frames",
-        }
-      );
-    }
   }
 
   async openNewTab({
@@ -1529,10 +1438,7 @@ export default class BackgroundProgram {
     const unrender = () => {
       unsetUnrenderTimeoutId(tabState);
       this.sendRendererMessage(
-        {
-          type: "Unrender",
-          keepTitle: false,
-        },
+        { type: "Unrender", },
         { tabId }
       );
     };
@@ -1698,7 +1604,6 @@ const CLICK_TYPES: ElementTypes = [
   "link",
   "scrollable",
   "textarea",
-  "title",
 ];
 
 const TAB_TYPES: ElementTypes = ["link"];
@@ -2173,7 +2078,6 @@ function mergeElements(
         weight: element.hintMeasurements.weight,
       },
       url: update.url,
-      title: update.title,
       text: update.text,
       // Keep the original text weight so that hints don't change.
       textWeight: element.textWeight,

@@ -18,7 +18,6 @@ import {
   addEventListener,
   addListener,
   bind,
-  getTitle,
   getViewport,
   log,
   unreachable,
@@ -75,8 +74,6 @@ export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
   ignoreKeyboardLayout: boolean;
-  trackInteractions: boolean;
-  mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
   current: ?CurrentElements;
   oneTimeWindowMessageToken: ?string;
@@ -87,8 +84,6 @@ export default class WorkerProgram {
     this.keyboardShortcuts = [];
     this.keyboardMode = "Normal";
     this.ignoreKeyboardLayout = true;
-    this.trackInteractions = false;
-    this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
       onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
@@ -100,7 +95,6 @@ export default class WorkerProgram {
 
     bind(this, [
       [this.onBlur, { catch: true }],
-      [this.onClick, { catch: true }],
       [this.onKeydown, { catch: true }],
       [this.onKeyup, { catch: true }],
       [this.onMessage, { catch: true }],
@@ -117,7 +111,6 @@ export default class WorkerProgram {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "blur", this.onBlur),
-      addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "keyup", this.onKeyup, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage),
@@ -259,7 +252,6 @@ export default class WorkerProgram {
 
       case "ClickElement": {
         const elementData = this.getElement(message.index);
-        const { trackRemoval } = message;
 
         if (elementData == null) {
           log("error", "ClickElement: Missing element", message, this.current);
@@ -269,10 +261,6 @@ export default class WorkerProgram {
         log("log", "WorkerProgram: ClickElement", elementData);
 
         const { element } = elementData;
-
-        if (trackRemoval) {
-          this.trackRemoval(element);
-        }
 
         const defaultNotPrevented = clickElement(element);
 
@@ -292,12 +280,7 @@ export default class WorkerProgram {
 
         log("log", "WorkerProgram: SelectElement", elementData);
 
-        const { trackRemoval } = message;
         const { element } = elementData;
-
-        if (trackRemoval) {
-          this.trackRemoval(element);
-        }
 
         if (
           element instanceof HTMLInputElement ||
@@ -378,14 +361,6 @@ export default class WorkerProgram {
         }
         break;
       }
-
-      case "TrackInteractions":
-        this.trackInteractions = message.track;
-        if (!this.trackInteractions && this.mutationObserver != null) {
-          this.mutationObserver.disconnect();
-          this.mutationObserver = undefined;
-        }
-        break;
 
       case "ReverseSelection": {
         const selection: Selection | null = window.getSelection();
@@ -567,17 +542,6 @@ export default class WorkerProgram {
       });
     }
 
-    if (
-      this.trackInteractions &&
-      // If the key press is suppressed and doesn’t trigger anything, it’s not
-      // really an interaction. This allows showing title attributes when
-      // overtyping after filtering hints by text. Otherwise the extra key
-      // presses would cause the title to immediately disappear.
-      !(suppress && match == null)
-    ) {
-      this.sendMessage({ type: "Interaction" });
-    }
-
     if (match != null) {
       this.sendMessage({
         type: "KeyboardShortcutMatched",
@@ -630,17 +594,6 @@ export default class WorkerProgram {
 
     if (event.target === window) {
       this.sendMessage({ type: "WindowBlur" });
-    }
-  }
-
-  onClick(event: MouseEvent) {
-    if (!event.isTrusted) {
-      log("log", "WorkerProgram#onClick", "ignoring untrusted event", event);
-      return;
-    }
-
-    if (this.trackInteractions) {
-      this.sendMessage({ type: "Interaction" });
     }
   }
 
@@ -796,38 +749,6 @@ export default class WorkerProgram {
         .filter(Boolean),
       rects,
     });
-  }
-
-  // Track if the element (or any of its parents) is removed. This is used to
-  // hide the title popup if its element is removed. If the element is in a
-  // frame, it could also be removed by removing one of its parent frames, but I
-  // don’t think it’s worth trying to detect that.
-  trackRemoval(element: HTMLElement) {
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return;
-    }
-
-    if (this.mutationObserver != null) {
-      this.mutationObserver.disconnect();
-    }
-
-    const mutationObserver = new MutationObserver(records => {
-      const nodesWereRemoved = records.some(
-        record => record.removedNodes.length > 0
-      );
-      if (nodesWereRemoved && !documentElement.contains(element)) {
-        mutationObserver.disconnect();
-        this.sendMessage({ type: "ClickedElementRemoved" });
-      }
-    });
-
-    mutationObserver.observe(documentElement, {
-      childList: true,
-      subtree: true,
-    });
-
-    this.mutationObserver = mutationObserver;
   }
 }
 
@@ -1105,7 +1026,6 @@ function visibleElementToElementReport(
   index: number
 ): ElementReport {
   const text = extractText(element, type);
-  const title = getTitle(element);
   return {
     type,
     index,
@@ -1113,13 +1033,6 @@ function visibleElementToElementReport(
       type === "link" && element instanceof HTMLAnchorElement
         ? element.href
         : undefined,
-    // Links to files and notifications on GitHub often have the the title
-    // attribute set to the element text. That does not provide any new
-    // information and is only annoying. So ignore the title if it is the same
-    // as the element text – and the element is clickable for some other reason
-    // than for having a title. Gmail attachments have equal title and element
-    // text, but having a title is the only thing marking them as clickable.
-    title: text.trim() === title && type !== "title" ? undefined : title,
     text,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),

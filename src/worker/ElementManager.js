@@ -13,7 +13,6 @@ import {
   Resets,
   addEventListener,
   bind,
-  getTitle,
   log,
   partition,
   setStyles,
@@ -47,13 +46,10 @@ const constants = {
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
-const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
+const LOW_QUALITY_TYPES: Set<ElementType> = new Set(["clickable-event"]);
 
 // Give worse hints to scrollable elements and (selectable) frames. They are
-// usually very large by nature, but not that commonly used. Give all selectable
-// elements worse hints than links and buttons, so that the elements found in
-// regular click hints mode stay on top in crowded areas such as `<div
-// title="..."><a href="..."><img src="..."></a></div>`.
+// usually very large by nature, but not that commonly used.
 const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
 type QueueItem = {|
@@ -150,16 +146,17 @@ const CLICKABLE_ATTRIBUTES = [
   "aria-selected",
   // Bootstrap.
   "data-dismiss",
-  // Twitter
+  // Twitter.
   "data-permalink-path",
   "data-image-url",
+  // Gmail.
+  "jsaction",
 ];
 
 const MUTATION_ATTRIBUTES = [
   "contenteditable",
   "href",
   "role",
-  "title",
   ...CLICKABLE_EVENT_PROPS,
   ...CLICKABLE_ATTRIBUTES,
 ];
@@ -666,12 +663,6 @@ export default class ElementManager {
         return undefined;
       }
 
-      // Ignore elements with title inside links and buttons. They most likely
-      // cause duplicate hints.
-      if (type === "title" && element.closest("a, button") != null) {
-        return undefined;
-      }
-
       const measurements = getMeasurements(element, type, viewports, range);
 
       if (measurements == null) {
@@ -780,10 +771,6 @@ export default class ElementManager {
 
         if (CLICKABLE_ROLES.has(element.getAttribute("role"))) {
           return "clickable";
-        }
-
-        if (getTitle(element) != null) {
-          return "title";
         }
 
         if (
@@ -1561,11 +1548,6 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
       // elements with text without having to iterate through all child text
       // nodes.
       if (element.childElementCount === 0) {
-        return "selectable";
-      }
-
-      // Allow showing the title attribute without clicking on the element.
-      if (getTitle(element) != null) {
         return "selectable";
       }
 

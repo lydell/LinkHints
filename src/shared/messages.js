@@ -83,12 +83,6 @@ export type FromWorker =
       rects: Array<Box>,
     |}
   | {|
-      type: "Interaction",
-    |}
-  | {|
-      type: "ClickedElementRemoved",
-    |}
-  | {|
       type: "ClickedLinkNavigatingToOtherPage",
     |}
   | {|
@@ -127,12 +121,10 @@ export type ToWorker =
   | {|
       type: "ClickElement",
       index: number,
-      trackRemoval: boolean,
     |}
   | {|
       type: "SelectElement",
       index: number,
-      trackRemoval: boolean,
     |}
   | {|
       type: "OpenNewTab",
@@ -141,10 +133,6 @@ export type ToWorker =
     |}
   | {|
       type: "Escape",
-    |}
-  | {|
-      type: "TrackInteractions",
-      track: boolean,
     |}
   | {|
       type: "ReverseSelection",
@@ -187,10 +175,6 @@ export type ToRenderer =
       frameId: number,
     |}
   | {|
-      type: "SetTitle",
-      title: string,
-    |}
-  | {|
       type: "Peek",
     |}
   | {|
@@ -198,7 +182,6 @@ export type ToRenderer =
     |}
   | {|
       type: "Unrender",
-      keepTitle: boolean,
     |};
 
 export type FromPopup =

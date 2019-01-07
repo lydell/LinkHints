@@ -216,19 +216,6 @@ export function makeRandomToken(): string {
   return array.join("");
 }
 
-export function getTitle(element: HTMLElement): ?string {
-  const { title } = element;
-
-  // `.title` is undefined for SVG elements.
-  if (title == null) {
-    return undefined;
-  }
-
-  const trimmed = title.trim();
-
-  return trimmed === "" ? undefined : trimmed;
-}
-
 export type Box = {|
   +x: number,
   +y: number,
