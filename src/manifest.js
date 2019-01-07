@@ -68,7 +68,7 @@ function getBrowserSpecificSettings(browser: ?Browser): mixed {
     case "firefox":
       return {
         gecko: {
-          id: "synth@github.com",
+          id: "synth@lydell.github.io",
         },
       };
 
