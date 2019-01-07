@@ -465,28 +465,6 @@ export default class WorkerProgram {
       return;
     }
 
-    const { activeElement } = document;
-
-    // Scroll the page when pressing space while a button is focused, rather
-    // than activating the button. The button can still be activated by pressing
-    // Enter (or sometimes ctrl+space or similar).
-    // TODO: Should this be part of Synth? If so, put it behind an option.
-    if (
-      this.keyboardMode === "Normal" &&
-      event.key === " " &&
-      !event.altKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      // `event.shiftKey` scrolls backwards.
-      activeElement != null &&
-      (activeElement instanceof HTMLButtonElement ||
-        (activeElement instanceof HTMLInputElement &&
-          BUTTON_INPUT_TYPES.has(activeElement.type)) ||
-        activeElement.nodeName === "SUMMARY")
-    ) {
-      activeElement.blur();
-    }
-
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       ignoreKeyboardLayout: this.ignoreKeyboardLayout,
