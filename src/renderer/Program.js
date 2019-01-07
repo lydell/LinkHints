@@ -53,7 +53,6 @@ const PURPLE = "#ef0fff";
 // The yellow used in Chrome for findbar matches.
 const YELLOW = "#f6ff00";
 
-
 const CONTAINER_STYLES = {
   all: "unset",
   position: "fixed",

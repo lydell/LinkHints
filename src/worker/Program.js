@@ -57,19 +57,6 @@ const MODIFIER_KEYS: Set<string> = new Set([
   "OS",
 ]);
 
-// All `<input type="…"`> values that look like a button by default, and can be
-// activated by pressing space and as such prevent _scrolling_ by pressing space
-// when focused. Note: Blurring `<input type="file">` when pressing space does
-// not result in a page scroll on Firefox (but all the others do).
-const BUTTON_INPUT_TYPES: Set<string> = new Set([
-  "button",
-  "color",
-  "file",
-  "image",
-  "reset",
-  "submit",
-]);
-
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;

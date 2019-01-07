@@ -464,7 +464,7 @@ export default class BackgroundProgram {
           const timeoutId = setTimeout(() => {
             unsetUnrenderTimeoutId(tabState);
             this.sendRendererMessage(
-              { type: "Unrender", },
+              { type: "Unrender" },
               { tabId: info.tabId }
             );
           }, MATCH_HIGHLIGHT_DURATION);
@@ -771,30 +771,30 @@ export default class BackgroundProgram {
 
     switch (mode) {
       case "Click":
-    this.sendWorkerMessage(
-      {
-        type: "ClickElement",
-        index: match.frame.index,
-      },
-      {
-        tabId,
-        frameId: match.frame.id,
-      }
-    );
+        this.sendWorkerMessage(
+          {
+            type: "ClickElement",
+            index: match.frame.index,
+          },
+          {
+            tabId,
+            frameId: match.frame.id,
+          }
+        );
         return true;
 
       case "ManyClick":
         if (match.isTextInput) {
-    this.sendWorkerMessage(
-      {
-        type: "ClickElement",
-        index: match.frame.index,
-      },
-      {
-        tabId,
-        frameId: match.frame.id,
-      }
-    );
+          this.sendWorkerMessage(
+            {
+              type: "ClickElement",
+              index: match.frame.index,
+            },
+            {
+              tabId,
+              frameId: match.frame.id,
+            }
+          );
           return true;
         }
 
@@ -1437,10 +1437,7 @@ export default class BackgroundProgram {
 
     const unrender = () => {
       unsetUnrenderTimeoutId(tabState);
-      this.sendRendererMessage(
-        { type: "Unrender", },
-        { tabId }
-      );
+      this.sendRendererMessage({ type: "Unrender" }, { tabId });
     };
 
     const timeoutId = delayed

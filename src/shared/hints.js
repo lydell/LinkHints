@@ -10,7 +10,7 @@ export type ElementType =
   | "link"
   | "selectable"
   | "scrollable"
-  | "textarea"
+  | "textarea";
 
 // Remember to keep `decodeElementTypesConstants` below in sync.
 export type ElementTypes = Array<ElementType> | "selectable";
