@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>intersection-observer-flush</title>
   </head>
   <body>
@@ -40,17 +40,29 @@
 
       const entriesStart = obs.takeRecords();
       handleEntries(entriesStart);
-      console.log("takeRecords start", entriesStart.length, Array.from(visibleElements));
+      console.log(
+        "takeRecords start",
+        entriesStart.length,
+        Array.from(visibleElements)
+      );
 
       requestAnimationFrame(() => {
         const entriesFrame = obs.takeRecords();
         handleEntries(entriesFrame);
-        console.log("takeRecords frame", entriesFrame.length, Array.from(visibleElements));
+        console.log(
+          "takeRecords frame",
+          entriesFrame.length,
+          Array.from(visibleElements)
+        );
 
         requestAnimationFrame(() => {
           const entriesFrame2 = obs.takeRecords();
           handleEntries(entriesFrame2);
-          console.log("takeRecords frame2", entriesFrame2.length, Array.from(visibleElements));
+          console.log(
+            "takeRecords frame2",
+            entriesFrame2.length,
+            Array.from(visibleElements)
+          );
         });
       });
 

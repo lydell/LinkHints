@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>scroll</title>
     <style>
       body > div {
@@ -16,17 +16,29 @@
     </style>
 
     <script>
-      window.addEventListener("overflow", event => {
-        console.log("overflow", event.target, event);
-      }, true);
+      window.addEventListener(
+        "overflow",
+        event => {
+          console.log("overflow", event.target, event);
+        },
+        true
+      );
 
-      window.addEventListener("underflow", event => {
-        console.log("underflow", event.target, event);
-      }, true);
+      window.addEventListener(
+        "underflow",
+        event => {
+          console.log("underflow", event.target, event);
+        },
+        true
+      );
     </script>
   </head>
   <body>
-    <p>Tests for scrollable and almost-seemingly scrollable elements. The boxes are resizable so that switching between scrollable and unscrollable can be tested.</p>
+    <p>
+      Tests for scrollable and almost-seemingly scrollable elements. The boxes
+      are resizable so that switching between scrollable and unscrollable can be
+      tested.
+    </p>
 
     <div style="width: 300px; height: 300px; overflow: auto;">
       <div style="height: 500px;">
@@ -46,7 +58,9 @@
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow-x: hidden; overflow-y: auto;">
+    <div
+      style="width: 300px; height: 300px; overflow-x: hidden; overflow-y: auto;"
+    >
       <div style="width: 500px; height: 500px;">
         one scroll, one clipped
       </div>
@@ -70,22 +84,28 @@
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow: visible; margin-bottom: 100px;">
+    <div
+      style="width: 300px; height: 300px; overflow: visible; margin-bottom: 100px;"
+    >
       <div style="height: 350px;">
         overflow but no scrollbars
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow-x: hidden; overflow-y: auto;">
+    <div
+      style="width: 300px; height: 300px; overflow-x: hidden; overflow-y: auto;"
+    >
       <div style="width: 500px; height: 280px;">
-        hidden overflow-x<br>
+        hidden overflow-x<br />
         auto overflow-y but no scrollbar
       </div>
     </div>
 
-    <div style="width: 300px; height: 300px; overflow-x: auto; overflow-y: hidden;">
+    <div
+      style="width: 300px; height: 300px; overflow-x: auto; overflow-y: hidden;"
+    >
       <div style="width: 280px; height: 500px;">
-        auto overflow-x but no scrollbar<br>
+        auto overflow-x but no scrollbar<br />
         hidden overflow-y
       </div>
     </div>

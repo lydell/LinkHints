@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>all onclick</title>
   </head>
   <body>
@@ -11,7 +11,7 @@
       {
         const p = document.createElement("p");
         p.textContent = ".onclick = ...";
-        p.onclick = () => console.log('.onclick = ...');
+        p.onclick = () => console.log(".onclick = ...");
         document.currentScript.replaceWith(p);
       }
     </script>
@@ -19,7 +19,9 @@
       {
         const p = document.createElement("p");
         p.textContent = `.addEventListener("click", ...)`;
-        p.addEventListener("click", () => console.log('.addEventListener("click", ...)'));
+        p.addEventListener("click", () =>
+          console.log('.addEventListener("click", ...)')
+        );
         document.currentScript.replaceWith(p);
       }
     </script>
@@ -27,7 +29,9 @@
       {
         const p = document.createElement("p");
         p.textContent = `.addEventListener("mousedown", ...)`;
-        p.addEventListener("mousedown", () => console.log('.addEventListener("mousedown", ...)'));
+        p.addEventListener("mousedown", () =>
+          console.log('.addEventListener("mousedown", ...)')
+        );
         document.currentScript.replaceWith(p);
       }
     </script>

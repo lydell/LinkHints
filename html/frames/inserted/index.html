@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>inserted iframe</title>
   </head>
   <body>
-    <p>This iframe is indirectly insterted into the DOM by JavaScript. This should not fool the MutationObserver.</p>
+    <p>
+      This iframe is indirectly insterted into the DOM by JavaScript. This
+      should not fool the MutationObserver.
+    </p>
     <script>
       const div = document.createElement("div");
       const iframe = document.createElement("iframe");

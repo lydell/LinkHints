@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>combined href</title>
     <style>
       body {
@@ -17,13 +17,15 @@
       }
 
       a[target]::after {
-        content: "[target=" attr(target) "]: " attr(href) ;
+        content: "[target=" attr(target) "]: " attr(href);
       }
     </style>
   </head>
   <body>
     <div>
-      <p>All of these links go to the same place and should get the same hint:</p>
+      <p>
+        All of these links go to the same place and should get the same hint:
+      </p>
       <p><a href="https://example.com"></a></p>
       <p><a href="https://example.com"></a></p>
       <p><a href="https://example.com/"></a></p>
@@ -39,7 +41,10 @@
     </div>
 
     <div>
-      <p>The following links should <em>not</em> get the same hint as any of the above:</p>
+      <p>
+        The following links should <em>not</em> get the same hint as any of the
+        above:
+      </p>
       <p><a href="http://example.com"></a></p>
       <p><a href="example.com"></a></p>
       <p><a href="https://example.com/path"></a></p>
@@ -50,7 +55,11 @@
     </div>
 
     <div>
-      <p>Fragment identifier links <em>could</em> have been combined, but arent’t because of GitHub and Bootstrap (the click listeners may be delegated). They are still combined when opening in a new tab.</p>
+      <p>
+        Fragment identifier links <em>could</em> have been combined, but arent’t
+        because of GitHub and Bootstrap (the click listeners may be delegated).
+        They are still combined when opening in a new tab.
+      </p>
       <p><a href="https://example.com/#frag"></a></p>
       <p><a href="https://example.com/#frag"></a></p>
       <p><a href="https://example.com/#FRAG"></a></p>
@@ -58,40 +67,112 @@
       <p><a href="#frag"></a></p>
       <p><a href="#frag"></a></p>
       <p><a href="#frag" class="full"></a></p>
-      <p>Bootstrap carousel previous/next buttons are typically links with the same fragment identifier:</p>
       <p>
-        <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+        Bootstrap carousel previous/next buttons are typically links with the
+        same fragment identifier:
+      </p>
+      <p>
+        <a
+          class="carousel-control-prev"
+          href="#carouselExampleControls"
+          role="button"
+          data-slide="prev"
+        >
           <span class="carousel-control-prev-icon" aria-hidden="true"></span>
           <span class="sr-only">Previous</span>
         </a>
-        <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+        <a
+          class="carousel-control-next"
+          href="#carouselExampleControls"
+          role="button"
+          data-slide="next"
+        >
           <span class="carousel-control-next-icon" aria-hidden="true"></span>
           <span class="sr-only">Next</span>
         </a>
       </p>
-      <p>GitHub diff expand buttons are links with the same fragment identifier:</p>
       <p>
-        <a href="#diff-99535f42d1769b756e7ada5a77d5103f" class="diff-expander js-expand" title="Expand" aria-label="Expand" data-url="/lydell/synth/blob_excerpt/c69a40565a5f3511874425fcb4d3f2864ba6482a?diff=split&amp;in_wiki_context=&amp;left_hunk_size=6&amp;mode=100644&amp;next_line_num_left=17&amp;next_line_num_right=17&amp;path=html%2Fhint-position%2Findex.html&amp;prev_line_num_left=&amp;prev_line_num_right=&amp;right_hunk_size=18" data-left-range="1-16" data-right-range="1-16">
-          <svg class="octicon octicon-unfold" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.5 7.5L14 10c0 .55-.45 1-1 1H9v-1h3.5l-2-2h-7l-2 2H5v1H1c-.55 0-1-.45-1-1l2.5-2.5L0 5c0-.55.45-1 1-1h4v1H1.5l2 2h7l2-2H9V4h4c.55 0 1 .45 1 1l-2.5 2.5zM6 6h2V3h2L7 0 4 3h2v3zm2 3H6v3H4l3 3 3-3H8V9z"></path></svg>
+        GitHub diff expand buttons are links with the same fragment identifier:
+      </p>
+      <p>
+        <a
+          href="#diff-99535f42d1769b756e7ada5a77d5103f"
+          class="diff-expander js-expand"
+          title="Expand"
+          aria-label="Expand"
+          data-url="/lydell/synth/blob_excerpt/c69a40565a5f3511874425fcb4d3f2864ba6482a?diff=split&amp;in_wiki_context=&amp;left_hunk_size=6&amp;mode=100644&amp;next_line_num_left=17&amp;next_line_num_right=17&amp;path=html%2Fhint-position%2Findex.html&amp;prev_line_num_left=&amp;prev_line_num_right=&amp;right_hunk_size=18"
+          data-left-range="1-16"
+          data-right-range="1-16"
+        >
+          <svg
+            class="octicon octicon-unfold"
+            viewBox="0 0 14 16"
+            version="1.1"
+            width="14"
+            height="16"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M11.5 7.5L14 10c0 .55-.45 1-1 1H9v-1h3.5l-2-2h-7l-2 2H5v1H1c-.55 0-1-.45-1-1l2.5-2.5L0 5c0-.55.45-1 1-1h4v1H1.5l2 2h7l2-2H9V4h4c.55 0 1 .45 1 1l-2.5 2.5zM6 6h2V3h2L7 0 4 3h2v3zm2 3H6v3H4l3 3 3-3H8V9z"
+            ></path>
+          </svg>
         </a>
       </p>
       <p>
-        <a href="#diff-99535f42d1769b756e7ada5a77d5103f" class="diff-expander js-expand" title="Expand" aria-label="Expand" data-url="/lydell/synth/blob_excerpt/c69a40565a5f3511874425fcb4d3f2864ba6482a?diff=split&amp;in_wiki_context=&amp;left_hunk_size=6&amp;mode=100644&amp;next_line_num_left=17&amp;next_line_num_right=17&amp;path=html%2Fhint-position%2Findex.html&amp;prev_line_num_left=&amp;prev_line_num_right=&amp;right_hunk_size=18" data-left-range="1-16" data-right-range="1-16">
-          <svg class="octicon octicon-unfold" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.5 7.5L14 10c0 .55-.45 1-1 1H9v-1h3.5l-2-2h-7l-2 2H5v1H1c-.55 0-1-.45-1-1l2.5-2.5L0 5c0-.55.45-1 1-1h4v1H1.5l2 2h7l2-2H9V4h4c.55 0 1 .45 1 1l-2.5 2.5zM6 6h2V3h2L7 0 4 3h2v3zm2 3H6v3H4l3 3 3-3H8V9z"></path></svg>
+        <a
+          href="#diff-99535f42d1769b756e7ada5a77d5103f"
+          class="diff-expander js-expand"
+          title="Expand"
+          aria-label="Expand"
+          data-url="/lydell/synth/blob_excerpt/c69a40565a5f3511874425fcb4d3f2864ba6482a?diff=split&amp;in_wiki_context=&amp;left_hunk_size=6&amp;mode=100644&amp;next_line_num_left=17&amp;next_line_num_right=17&amp;path=html%2Fhint-position%2Findex.html&amp;prev_line_num_left=&amp;prev_line_num_right=&amp;right_hunk_size=18"
+          data-left-range="1-16"
+          data-right-range="1-16"
+        >
+          <svg
+            class="octicon octicon-unfold"
+            viewBox="0 0 14 16"
+            version="1.1"
+            width="14"
+            height="16"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M11.5 7.5L14 10c0 .55-.45 1-1 1H9v-1h3.5l-2-2h-7l-2 2H5v1H1c-.55 0-1-.45-1-1l2.5-2.5L0 5c0-.55.45-1 1-1h4v1H1.5l2 2h7l2-2H9V4h4c.55 0 1 .45 1 1l-2.5 2.5zM6 6h2V3h2L7 0 4 3h2v3zm2 3H6v3H4l3 3 3-3H8V9z"
+            ></path>
+          </svg>
         </a>
       </p>
     </div>
 
     <div>
-      <p>These “link buttons” are powered by click listeners, but still have an href for some reason. Yes, there are sites that do this. They are still combined when opening in a new tab.</p>
-      <p><a href="https://example.com/events/track/" onclick="alert('Edit 1'); return false">Edit 1</a></p>
+      <p>
+        These “link buttons” are powered by click listeners, but still have an
+        href for some reason. Yes, there are sites that do this. They are still
+        combined when opening in a new tab.
+      </p>
+      <p>
+        <a
+          href="https://example.com/events/track/"
+          onclick="alert('Edit 1'); return false"
+          >Edit 1</a
+        >
+      </p>
       <p><a href="https://example.com/events/track/" id="edit2">Edit 2</a></p>
       <p><a href="https://example.com/events/track/" id="edit3">Edit 3</a></p>
-      <p>Note: The event listeners could be delegated, but it does not seem to be as common. The solution in such cases is to focus the element and then press Enter instead.</p>
+      <p>
+        Note: The event listeners could be delegated, but it does not seem to be
+        as common. The solution in such cases is to focus the element and then
+        press Enter instead.
+      </p>
     </div>
 
     <div>
-      <p>These “link buttons” might appear to have the same href sometimes, but should <em>not</em> get the same hint:</p>
+      <p>
+        These “link buttons” might appear to have the same href sometimes, but
+        should <em>not</em> get the same hint:
+      </p>
       <p><a>no href button</a></p>
       <p><a>no href button</a></p>
       <p><a href="">empty href button</a></p>
@@ -118,7 +199,10 @@
 
     <script>
       for (const element of document.querySelectorAll(".full")) {
-        element.setAttribute("href", location.href + element.getAttribute("href"));
+        element.setAttribute(
+          "href",
+          location.href + element.getAttribute("href")
+        );
       }
 
       edit2.addEventListener("click", event => {

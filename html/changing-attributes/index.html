@@ -1,20 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>changing attributes</title>
   </head>
   <body>
-    <p>Links should always get hints, but can only be opened in new tabs if they have a proper href.</p>
+    <p>
+      Links should always get hints, but can only be opened in new tabs if they
+      have a proper href.
+    </p>
 
     <a id="a">&lt;a&gt;</a>
     <button onclick="a.removeAttribute('href')">no href</button>
     <button onclick="a.setAttribute('href', '')">empty href</button>
     <button onclick="a.setAttribute('href', '#')">empty hash href</button>
     <button onclick="a.setAttribute('href', '#test')">hash link</button>
-    <button onclick="a.setAttribute('href', 'https://example.com')">external link</button>
+    <button onclick="a.setAttribute('href', 'https://example.com')">
+      external link
+    </button>
 
-    <p>The span should change between clickable and unclickable as the role attribute changes.</p>
+    <p>
+      The span should change between clickable and unclickable as the role
+      attribute changes.
+    </p>
 
     <span id="span">&lt;span role&gt;</span>
     <button onclick="span.removeAttribute('role')">no role</button>

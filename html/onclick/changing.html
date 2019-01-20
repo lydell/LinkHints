@@ -1,28 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>changing onclick</title>
   </head>
   <body>
-    <p id="p">This text should change between clickable and unclickable as it goes to and from 0 click listeners.</p>
-    <p>
-      <button onclick="p.setAttribute('onclick', 'console.log(`onclick=&quot;...&quot;`)')">set onclick="..."</button>
-      <button onclick="p.removeAttribute('onclick')">remove onclick="..."</button>
+    <p id="p">
+      This text should change between clickable and unclickable as it goes to
+      and from 0 click listeners.
     </p>
     <p>
-      <button onmousedown="p.setAttribute('onmousedown', 'console.log(`onmousedown=&quot;...&quot;`)')">set onmousedown="..."</button>
-      <button onmousedown="p.removeAttribute('onmousedown')">remove onmousedown="..."</button>
+      <button
+        onclick="p.setAttribute('onclick', 'console.log(`onclick=&quot;...&quot;`)')"
+      >
+        set onclick="..."
+      </button>
+      <button onclick="p.removeAttribute('onclick')">
+        remove onclick="..."
+      </button>
     </p>
     <p>
-      <button onclick="p.onclick = () => console.log(`.onclick = () => ...`)">.onclick = () => ...</button>
+      <button
+        onmousedown="p.setAttribute('onmousedown', 'console.log(`onmousedown=&quot;...&quot;`)')"
+      >
+        set onmousedown="..."
+      </button>
+      <button onmousedown="p.removeAttribute('onmousedown')">
+        remove onmousedown="..."
+      </button>
+    </p>
+    <p>
+      <button onclick="p.onclick = () => console.log(`.onclick = () => ...`)">
+        .onclick = () => ...
+      </button>
       <button onclick="p.onclick = null">.onclick = null</button>
       <button onclick="p.onclick = new Date">.onclick = new Date</button>
     </p>
     <p>
-      <button onmousedown="p.onmousedown = () => console.log(`.onmousedown = () => ...`)">.onmousedown = () => ...</button>
+      <button
+        onmousedown="p.onmousedown = () => console.log(`.onmousedown = () => ...`)"
+      >
+        .onmousedown = () => ...
+      </button>
       <button onmousedown="p.onmousedown = null">.onmousedown = null</button>
-      <button onmousedown="p.onmousedown = new Date">.onmousedown = new Date</button>
+      <button onmousedown="p.onmousedown = new Date">
+        .onmousedown = new Date
+      </button>
     </p>
     <script>
       function f() {
@@ -33,43 +56,87 @@
       }
       const handleEvent = {
         handleEvent() {
-          console.log('.addEventListener("click", {handleEvent() {...}})')
-        }
+          console.log('.addEventListener("click", {handleEvent() {...}})');
+        },
       };
       const date = new Date();
       date.capture = false;
     </script>
     <p>
-      <button onclick="p.addEventListener('click', f)">.addEventListener("click", f)</button>
-      <button onclick="p.addEventListener('mousedown', f)">.addEventListener("mousedown", f)</button>
-      <button onclick="p.addEventListener('focus', () => console.log('focus'))">.addEventListener("focus", () => ...)</button>
-      <button onclick="p.addEventListener('click', handleEvent)">.addEventListener("click", {handleEvent() {...}})</button>
+      <button onclick="p.addEventListener('click', f)">
+        .addEventListener("click", f)
+      </button>
+      <button onclick="p.addEventListener('mousedown', f)">
+        .addEventListener("mousedown", f)
+      </button>
+      <button onclick="p.addEventListener('focus', () => console.log('focus'))">
+        .addEventListener("focus", () => ...)
+      </button>
+      <button onclick="p.addEventListener('click', handleEvent)">
+        .addEventListener("click", {handleEvent() {...}})
+      </button>
     </p>
     <p>
-      <button onclick="p.removeEventListener('click', f)">.removeEventListener("click", f)</button>
-      <button onclick="p.removeEventListener('mousedown', f)">.removeEventListener("mousedown", f)</button>
-      <button onclick="p.removeEventListener('focus', () => console.log('focus'))">.removeEventListener("focus", () => ...)</button>
-      <button onclick="p.removeEventListener('click', handleEvent)">.removeEventListener("click", {handleEvent() {...}})</button>
+      <button onclick="p.removeEventListener('click', f)">
+        .removeEventListener("click", f)
+      </button>
+      <button onclick="p.removeEventListener('mousedown', f)">
+        .removeEventListener("mousedown", f)
+      </button>
+      <button
+        onclick="p.removeEventListener('focus', () => console.log('focus'))"
+      >
+        .removeEventListener("focus", () => ...)
+      </button>
+      <button onclick="p.removeEventListener('click', handleEvent)">
+        .removeEventListener("click", {handleEvent() {...}})
+      </button>
     </p>
     <p>
-      <button onclick="p.addEventListener('click', f, true)">.addEventListener("click", f, true)</button>
-      <button onclick="p.addEventListener('click', f, {capture: false, passive: true})">.addEventListener("click", f, {capture: false, passive: true})</button>
-      <button onclick="p.addEventListener('click', f, date)">.addEventListener("click", f, date)</button>
+      <button onclick="p.addEventListener('click', f, true)">
+        .addEventListener("click", f, true)
+      </button>
+      <button
+        onclick="p.addEventListener('click', f, {capture: false, passive: true})"
+      >
+        .addEventListener("click", f, {capture: false, passive: true})
+      </button>
+      <button onclick="p.addEventListener('click', f, date)">
+        .addEventListener("click", f, date)
+      </button>
     </p>
     <p>
-      <button onclick="p.removeEventListener('click', f, {capture: true, passive: false})">.removeEventListener("click", f, {capture: true, passive: false})</button>
-      <button onclick="p.removeEventListener('click', f, {capture: false, passive: true})">.removeEventListener("click", f, {passive: true})</button>
-      <button onclick="p.removeEventListener('click', f, date)">.removeEventListener("click", f, false)</button>
+      <button
+        onclick="p.removeEventListener('click', f, {capture: true, passive: false})"
+      >
+        .removeEventListener("click", f, {capture: true, passive: false})
+      </button>
+      <button
+        onclick="p.removeEventListener('click', f, {capture: false, passive: true})"
+      >
+        .removeEventListener("click", f, {passive: true})
+      </button>
+      <button onclick="p.removeEventListener('click', f, date)">
+        .removeEventListener("click", f, false)
+      </button>
     </p>
     <p>
-      <button onclick="p.addEventListener('click', g)">p.addEventListener("click", g)</button>
-      <button onclick="p.removeEventListener('click', g, false)">p.removeEventListener("click", g, false)</button>
+      <button onclick="p.addEventListener('click', g)">
+        p.addEventListener("click", g)
+      </button>
+      <button onclick="p.removeEventListener('click', g, false)">
+        p.removeEventListener("click", g, false)
+      </button>
     </p>
     <p>
-      <button onclick="p.addEventListener('click', f, {once: true})">p.addEventListener('click', f, {once: true})</button>
+      <button onclick="p.addEventListener('click', f, {once: true})">
+        p.addEventListener('click', f, {once: true})
+      </button>
     </p>
     <p>
-      <button onclick="p.setAttribute('role', 'button')">set role="button"</button>
+      <button onclick="p.setAttribute('role', 'button')">
+        set role="button"
+      </button>
       <button onclick="p.removeAttribute('role')">remove role="button"</button>
     </p>
   </body>

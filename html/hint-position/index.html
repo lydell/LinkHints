@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>hint-position</title>
     <style>
       body {
@@ -105,7 +105,7 @@
 
       .visually-hidden {
         border: 0 !important;
-        clip: rect(1px,1px,1px,1px) !important;
+        clip: rect(1px, 1px, 1px, 1px) !important;
         font-size: 1px !important;
         height: 1px !important;
         overflow: hidden !important;
@@ -404,7 +404,10 @@
     </p>
 
     <h2>Line-wrapped link</h2>
-    <p>The hint should be at the "w". If "w" is scrolled outside the viewport, center the hint vertically.</p>
+    <p>
+      The hint should be at the "w". If "w" is scrolled outside the viewport,
+      center the hint vertically.
+    </p>
     <p style="width: 200px;">
       some text <a href="#">wrapped link text text text text text text text</a>
     </p>
@@ -413,49 +416,87 @@
     <p><a href="#">starts with no whitespace</a></p>
     <p><a href="#"> starts with regular space (invisible)</a></p>
     <p><a href="#">&nbsp;starts with non-breaking space</a></p>
-    <p><a href="#"><svg width="15" height="15"><rect x="0" y="0" width="15" height="15" /></svg> starts with svg icon</a></p>
-    <p><a href="#"><span style="display: inline-block; width: 15px; height: 15px; background-color: black;"></span> starts with span</a></p>
+    <p>
+      <a href="#"
+        ><svg width="15" height="15">
+          <rect x="0" y="0" width="15" height="15" />
+        </svg>
+        starts with svg icon</a
+      >
+    </p>
+    <p>
+      <a href="#"
+        ><span
+          style="display: inline-block; width: 15px; height: 15px; background-color: black;"
+        ></span>
+        starts with span</a
+      >
+    </p>
 
     <h2>CSS content</h2>
-    <p>The position of CSS content cannot be queried, so even if these look like a regular links the hint might not end up in the expected position:</p>
+    <p>
+      The position of CSS content cannot be queried, so even if these look like
+      a regular links the hint might not end up in the expected position:
+    </p>
     <p><a href="#" class="content-only"></a></p>
     <p><a href="#" class="content-before">HTML text</a></p>
     <p><a href="#" class="content-after">HTML text</a></p>
 
     <h2>&lt;input type="button"&gt;, &lt;input type="text"&gt; and similar</h2>
-    <p>These don't have real text nodes, but reading border and padding many times give a good enough result.</p>
     <p>
-      <input type="button" value="button" class="button">
+      These don't have real text nodes, but reading border and padding many
+      times give a good enough result.
     </p>
     <p>
-      <input type="button" value="button" class="button" style="width: 300px;">
+      <input type="button" value="button" class="button" />
     </p>
     <p>
-      <input type="button" value="button" class="button" style="width: 300px; text-align: left;">
+      <input
+        type="button"
+        value="button"
+        class="button"
+        style="width: 300px;"
+      />
     </p>
     <p>
-      <input type="text" class="input">
+      <input
+        type="button"
+        value="button"
+        class="button"
+        style="width: 300px; text-align: left;"
+      />
     </p>
     <p>
-      <input type="text" placeholder="placeholder" class="input">
+      <input type="text" class="input" />
     </p>
     <p>
-      <input type="text" value="value" class="input">
+      <input type="text" placeholder="placeholder" class="input" />
     </p>
     <p>
-      <input type="text" value="value" class="input" style="text-align: center;">
+      <input type="text" value="value" class="input" />
+    </p>
+    <p>
+      <input
+        type="text"
+        value="value"
+        class="input"
+        style="text-align: center;"
+      />
     </p>
     <p>
       <span class="input">
-        <input type="text" value="value" style="padding: 0; border: none;">
+        <input type="text" value="value" style="padding: 0; border: none;" />
       </span>
     </p>
 
     <h2>Tricky search fields</h2>
     <p>This one has unnecessary click handlers. (From Twitter.)</p>
     <form class="search" onclick="console.log('track clicks on form')">
-      <input type="search" placeholder="placeholder" class="input">
-      <span class="search-icon" onclick="console.log('unnecessary click handler on span')">
+      <input type="search" placeholder="placeholder" class="input" />
+      <span
+        class="search-icon"
+        onclick="console.log('unnecessary click handler on span')"
+      >
         <button type="submit" class="Icon">
           <span class="visually-hidden">Search</span>
         </button>
@@ -464,7 +505,7 @@
     <p>This one is fully covered by the search icon to the left. (From MDN.)</p>
     <p class="search2">
       <span>🔍</span>
-      <input type="text" placeholder="Search">
+      <input type="text" placeholder="Search" />
     </p>
 
     <h2>&lt;details&gt; with unnecessary click handler (GitHub)</h2>
@@ -477,14 +518,26 @@
     <p>&lt;img&gt;</p>
     <p>
       <button class="icon-button">
-        <img src="image.svg">
+        <img src="image.svg" />
       </button>
     </p>
     <p>&lt;svg&gt;</p>
     <p>
       <button class="icon-button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="24" height="24">
-          <circle cx="48" cy="48" r="36" stroke="#000" stroke-width="8" fill="none" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 96 96"
+          width="24"
+          height="24"
+        >
+          <circle
+            cx="48"
+            cy="48"
+            r="36"
+            stroke="#000"
+            stroke-width="8"
+            fill="none"
+          />
         </svg>
       </button>
     </p>
@@ -492,14 +545,14 @@
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
-        <img src="image.svg">
+        <img src="image.svg" />
       </button>
     </p>
     <p>Visually-hidden text and badge.</p>
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
-        <img src="image.svg">
+        <img src="image.svg" />
         5
       </button>
     </p>
@@ -507,7 +560,7 @@
     <p>
       <button class="icon-button">
         <span class="visually-hidden2">Vote</span>
-        <img src="image.svg">
+        <img src="image.svg" />
         5
       </button>
     </p>
@@ -515,14 +568,14 @@
     <p>
       <button class="icon-button" style="width: 200px;">
         <span class="visually-hidden">Vote</span>
-        <img src="image.svg">
+        <img src="image.svg" />
         Strawberries
       </button>
     </p>
     <p>padded &lt;img&gt;</p>
     <p>
       <button class="icon-button">
-        <img src="image.svg" style="padding: 7px;">
+        <img src="image.svg" style="padding: 7px;" />
       </button>
     </p>
 
@@ -530,20 +583,25 @@
     <div style="margin-left: calc(100vw - 80px);">
       <p>
         <button class="icon-button" style="width: 200px;">
-          <img src="image.svg">
+          <img src="image.svg" />
         </button>
       </p>
       <p>
-        <input type="button" value="button" style="padding: 5px 60px;">
+        <input type="button" value="button" style="padding: 5px 60px;" />
       </p>
     </div>
 
     <h2>Tricky special buttons</h2>
-    <p>&lt;input type="file"&gt; in disguise. (<a href="https://blueimp.github.io/jQuery-File-Upload/">jQuery File Upload</a>.)</p>
+    <p>
+      &lt;input type="file"&gt; in disguise. (<a
+        href="https://blueimp.github.io/jQuery-File-Upload/"
+        >jQuery File Upload</a
+      >.)
+    </p>
     <div>
       <div class="upload">
         Upload file
-        <input type="file">
+        <input type="file" />
       </div>
     </div>
     <p>Text outside the element (clipped). (Mozilla.)</p>
@@ -558,7 +616,7 @@
       <li role="tab" style="z-index: 99;">Tab 1</li>
       <li role="tab" style="z-index: 98;">Tab 2</li>
       <li role="tab" style="z-index: 97;">
-        <img src="image.svg" style="vertical-align: -5px;">
+        <img src="image.svg" style="vertical-align: -5px;" />
       </li>
       <li role="tab" style="z-index: 96;">Tab 4</li>
     </ul>
@@ -609,7 +667,10 @@
       </a>
     </div>
 
-    <p>Twitter-style icons with badges. Here it's nice placing the hints at the icon, not the text.</p>
+    <p>
+      Twitter-style icons with badges. Here it's nice placing the hints at the
+      icon, not the text.
+    </p>
     <div class="stats">
       <a href="#">
         <span class="Icon" data-icon="💬">8</span>
@@ -630,12 +691,20 @@
 
     <p>These links should not be mistaken as badges.</p>
     <p>
-      <a href="#" style="font-size: 1.2em;">10h</a> and <a href="#"><strong>100 %</strong></a>
+      <a href="#" style="font-size: 1.2em;">10h</a> and
+      <a href="#"><strong>100 %</strong></a>
     </p>
 
-    <p>This link technically has several text nodes. The hint should be at "99" (which is not a badge).</p>
     <p>
-      <a href="#">99 <!-- React comment --> bottles of beer</a>
+      This link technically has several text nodes. The hint should be at "99"
+      (which is not a badge).
+    </p>
+    <p>
+      <a href="#"
+        >99
+        <!-- React comment -->
+        bottles of beer</a
+      >
     </p>
 
     <p>A "large" card. The hint should be placed at the left edge.</p>
@@ -670,7 +739,7 @@
       </p>
       <p>
         <a href="#">
-          <img src="image.svg" style="float: left;">
+          <img src="image.svg" style="float: left;" />
         </a>
       </p>
       <p>
@@ -687,34 +756,49 @@
       </p>
       <p>
         <a href="#" style="position: relative; float: left;">
-          <span style="position: absolute; top: 0; left: 0; white-space: nowrap;">float-positioned</span>
+          <span
+            style="position: absolute; top: 0; left: 0; white-space: nowrap;"
+            >float-positioned</span
+          >
         </a>
       </p>
     </div>
-    <p>Here, the right-aligned text comes first in DOM order because of how floats work.</p>
     <p>
-      <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
+      Here, the right-aligned text comes first in DOM order because of how
+      floats work.
+    </p>
+    <p>
+      <a
+        href="#"
+        style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;"
+      >
         <span style="float: right;">5</span>
         Notifications
       </a>
     </p>
     <p>
-      <a href="#" style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;">
+      <a
+        href="#"
+        style="display: inline-block; width: 200px; border: 1px solid black; padding: 5px;"
+      >
         <small style="float: right;">(all)</small>
         Notifications
       </a>
     </p>
 
     <h2>Images taller than their link</h2>
-    <p>The hint should be in the middle of the image, even though the link technically isn't that tall.</p>
+    <p>
+      The hint should be in the middle of the image, even though the link
+      technically isn't that tall.
+    </p>
     <p>
       <a href="#">
-        <img src="image.svg" alt="" height="100">
+        <img src="image.svg" alt="" height="100" />
       </a>
     </p>
     <p>
       <a href="#">
-        <img src="image.svg" alt="" height="150">
+        <img src="image.svg" alt="" height="150" />
       </a>
     </p>
 

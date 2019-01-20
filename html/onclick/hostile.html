@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>hostile onclick</title>
   </head>
   <body>
-    <p id="p">Detecting this element as clickable should work despite the below script.</p>
+    <p id="p">
+      Detecting this element as clickable should work despite the below script.
+    </p>
     <script style="display: block; white-space: pre;">
-      window.CustomEvent = function () {
+      window.CustomEvent = function() {
         throw new Error("buggy CustomEvent implementation");
       };
-      Reflect.apply = function () {
+      Reflect.apply = function() {
         throw new Error("buggy Reflect.apply implementation");
       };
-      EventTarget.prototype.dispatchEvent = function () {
-        throw new Error("buggy EventTarget.prototype.dispatchEvent implementation");
+      EventTarget.prototype.dispatchEvent = function() {
+        throw new Error(
+          "buggy EventTarget.prototype.dispatchEvent implementation"
+        );
       };
       p.addEventListener("click", () => console.log("click"));
     </script>

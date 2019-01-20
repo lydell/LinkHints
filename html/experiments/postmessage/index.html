@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>postMessage</title>
   </head>
   <body>
@@ -9,7 +9,7 @@
     <script>
       // Messaging is fast once the browser is done rendering the page and stuff.
       const timeout = 100; // ms
-      window.setTimeout(() =>  {
+      window.setTimeout(() => {
         console.time("pingpong");
         iframe.contentWindow.postMessage("ping", "*");
       }, timeout);

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>area-decimals</title>
     <style>
       #grid {
@@ -24,7 +24,9 @@
     </style>
   </head>
   <body>
-    <p>All boxes are supposed to have the same area but differ ever so slightly:</p>
+    <p>
+      All boxes are supposed to have the same area but differ ever so slightly:
+    </p>
     <pre id="pre"></pre>
     <div id="grid">
       <a href="#">link</a>
@@ -55,16 +57,22 @@
       <a href="#">link</a>
     </div>
     <script>
-      const rects = Array.from(grid.querySelectorAll("a"), a => a.getBoundingClientRect());
+      const rects = Array.from(grid.querySelectorAll("a"), a =>
+        a.getBoundingClientRect()
+      );
       const areas = new Set(rects.map(rect => rect.width * rect.height));
       const widths = new Set(rects.map(rect => rect.width));
       const heights = new Set(rects.map(rect => rect.height));
 
-      pre.textContent = JSON.stringify({
-        areas: Array.from(areas),
-        widths: Array.from(widths),
-        heights: Array.from(heights),
-      }, undefined, 2);
+      pre.textContent = JSON.stringify(
+        {
+          areas: Array.from(areas),
+          widths: Array.from(widths),
+          heights: Array.from(heights),
+        },
+        undefined,
+        2
+      );
 
       function area(element) {
         const rect = element.getBoundingClientRect();
