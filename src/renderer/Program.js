@@ -207,7 +207,7 @@ export default class RendererProgram {
     };
   }
 
-  async start(): Promise<void> {
+  async start() {
     // This is useful during development. If reloading the extension during
     // hints mode, the old hints will be removed as soon as the new version
     // starts.
@@ -260,7 +260,7 @@ export default class RendererProgram {
     this.unrender();
   }
 
-  async sendMessage(message: FromRenderer): Promise<void> {
+  async sendMessage(message: FromRenderer) {
     log("log", "RendererProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
@@ -401,7 +401,7 @@ export default class RendererProgram {
     };
   }
 
-  async render(elements: Array<ElementWithHint>): Promise<void> {
+  async render(elements: Array<ElementWithHint>) {
     const { documentElement } = document;
     if (documentElement == null) {
       return;

@@ -34,7 +34,7 @@ export default class PopupProgram {
     this.resets.reset();
   }
 
-  async sendMessage(message: FromPopup): Promise<void> {
+  async sendMessage(message: FromPopup) {
     log("log", "PopupProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }

@@ -94,7 +94,7 @@ export default class WorkerProgram {
     ]);
   }
 
-  async start(): Promise<void> {
+  async start() {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "blur", this.onBlur),
@@ -125,7 +125,7 @@ export default class WorkerProgram {
     this.suppressNextKeyup = undefined;
   }
 
-  async sendMessage(message: FromWorker): Promise<void> {
+  async sendMessage(message: FromWorker) {
     log("log", "WorkerProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
@@ -599,7 +599,7 @@ export default class WorkerProgram {
     types: ElementTypes,
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
-  ): Promise<void> {
+  ) {
     // In ManyClick mode and when refreshing hints we enter hints mode anew
     // without exiting the “previous” hints mode. Make sure that any update
     // polling (or the update from `onTrackedElementsMutation`) don’t interfere
@@ -654,7 +654,7 @@ export default class WorkerProgram {
   }: {|
     current: CurrentElements,
     oneTimeWindowMessageToken: ?string,
-  |}): Promise<void> {
+  |}) {
     if (current.updating) {
       return;
     }

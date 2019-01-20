@@ -179,7 +179,7 @@ export default class BackgroundProgram {
     ]);
   }
 
-  async start(): Promise<void> {
+  async start() {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
     const tabs = await browser.tabs.query({});
@@ -221,7 +221,7 @@ export default class BackgroundProgram {
   async sendWorkerMessage(
     message: ToWorker,
     { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
-  ): Promise<void> {
+  ) {
     const tabState = this.tabState.get(tabId);
 
     if (
@@ -242,28 +242,28 @@ export default class BackgroundProgram {
   async sendRendererMessage(
     message: ToRenderer,
     { tabId }: {| tabId: number |}
-  ): Promise<void> {
+  ) {
     await this.sendContentMessage(
       { type: "ToRenderer", message },
       { tabId, frameId: TOP_FRAME_ID }
     );
   }
 
-  async sendPopupMessage(message: ToPopup): Promise<void> {
+  async sendPopupMessage(message: ToPopup) {
     await this.sendBackgroundMessage({ type: "ToPopup", message });
   }
 
   // This might seem like sending a message to oneself, but
   // `browser.runtime.sendMessage` seems to only send messages to *other*
   // background scripts, such as the popup script.
-  async sendBackgroundMessage(message: FromBackground): Promise<void> {
+  async sendBackgroundMessage(message: FromBackground) {
     await browser.runtime.sendMessage(message);
   }
 
   async sendContentMessage(
     message: FromBackground,
     { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
-  ): Promise<void> {
+  ) {
     await (frameId === "all_frames"
       ? browser.tabs.sendMessage(tabId, message)
       : browser.tabs.sendMessage(tabId, message, { frameId }));
@@ -997,7 +997,7 @@ export default class BackgroundProgram {
     tabId: number,
     frameId: number,
     foreground: boolean,
-  |}): Promise<void> {
+  |}) {
     this.sendWorkerMessage(
       {
         type: "FocusElement",
@@ -1237,7 +1237,7 @@ export default class BackgroundProgram {
     }
   }
 
-  async onPopupMessage(message: FromPopup): Promise<void> {
+  async onPopupMessage(message: FromPopup) {
     switch (message.type) {
       case "PopupScriptAdded": {
         const tab = await getCurrentTab();
@@ -1467,7 +1467,7 @@ export default class BackgroundProgram {
     this.tabState.delete(tabId);
   }
 
-  async updateIcon(tabId: number): Promise<void> {
+  async updateIcon(tabId: number) {
     let enabled = true;
 
     // Check if we’re allowed to execute content scripts on this page.
