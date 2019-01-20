@@ -23,6 +23,7 @@ import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
+  EVENT_ATTRIBUTE,
   INJECTED_VAR,
   INJECTED_VAR_PATTERN,
   MESSAGE_FLUSH,
@@ -37,6 +38,7 @@ const constants = {
   CLICKABLE_EVENT: JSON.stringify(CLICKABLE_EVENT),
   CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
   CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
+  EVENT_ATTRIBUTE: JSON.stringify(EVENT_ATTRIBUTE),
   INJECTED_VAR: JSON.stringify(INJECTED_VAR),
   INJECTED_VAR_PATTERN: INJECTED_VAR_PATTERN.toString(),
   MESSAGE_FLUSH: JSON.stringify(MESSAGE_FLUSH),
@@ -409,6 +411,7 @@ export default class ElementManager {
 
     for (const record of records) {
       for (const node of record.addedNodes) {
+        this.consumeEventAttribute(node);
         if (node === this.probe) {
           probed = true;
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
@@ -418,6 +421,7 @@ export default class ElementManager {
       }
 
       for (const node of record.removedNodes) {
+        this.consumeEventAttribute(node);
         if (node === this.probe) {
           probed = true;
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
@@ -457,6 +461,23 @@ export default class ElementManager {
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.delete(element);
       this.queueItem({ mutationType: "changed", element });
+    }
+  }
+
+  consumeEventAttribute(node: Node) {
+    if (node instanceof HTMLElement) {
+      const value = node.getAttribute(EVENT_ATTRIBUTE);
+      switch (value) {
+        case CLICKABLE_EVENT:
+          this.elementsWithClickListeners.add(node);
+          break;
+        case UNCLICKABLE_EVENT:
+          this.elementsWithClickListeners.delete(node);
+          break;
+        default:
+          return;
+      }
+      node.removeAttribute(EVENT_ATTRIBUTE);
     }
   }
 

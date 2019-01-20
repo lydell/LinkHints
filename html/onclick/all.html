@@ -35,5 +35,32 @@
         document.currentScript.replaceWith(p);
       }
     </script>
+    <p>
+      An element with a click listener has been created in the background. Use
+      the button to insert it into the DOM.
+    </p>
+    <script>
+      function makeP() {
+        const p = document.createElement("p");
+        p.textContent =
+          "Click to remove click listener and replace with another element";
+        const p2 = document.createElement("p");
+        p2.textContent = "Click to bring back the previous element";
+        const listener = () => {
+          p.replaceWith(p2);
+          p.removeEventListener("click", listener);
+        };
+        p.addEventListener("click", listener);
+        p2.onclick = () => {
+          p.textContent = "This element is no longer clicklable";
+          p2.replaceWith(p);
+        };
+        return p;
+      }
+      let backgroundP = makeP();
+    </script>
+    <button onclick="this.after(backgroundP); backgroundP = makeP();">
+      Insert element
+    </button>
   </body>
 </html>

@@ -42,6 +42,13 @@ export const CLICKABLE_EVENT = `${prefix}Clickable`;
 export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
 export const QUEUE_EVENT = `${prefix}Queue`;
 
+// If an element is not inserted into the DOM, events can’t be fired on it.
+// Instead, this attribute is added with the event name as value. If/when the
+// element _is_ inserted into the DOM, the MutationObserver can find the
+// attribute (and remove it) and as such receive the event. Remove the `\uffff`
+// since it is not valid in attribute names.
+export const EVENT_ATTRIBUTE = `data-${prefix.replace(/\W/g, "")}Event`;
+
 // Name of the global variable created by the injected script. The `\0` prevents
 // it from turning up in autocomplete when typing `window.` in the Chrome
 // console. Firefox still shows it, but accepting the autocomplete causes a
@@ -76,6 +83,7 @@ export default () => {
   const HTMLElement2 = HTMLElement;
   // Don't use the usual `log` function here, too keep this file small.
   const { error: logError } = console;
+  const { setAttribute } = Element.prototype;
   const { dispatchEvent } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
@@ -536,19 +544,15 @@ export default () => {
       return;
     }
 
-    // The element might not be inserted into the DOM (yet/anymore), which
-    // causes the event not to fire, so  temporarily insert the element into the
-    // DOM if needed.
-    const isDetached = !documentElement.contains(element);
-
-    if (isDetached) {
-      documentElement.append(element);
-    }
-
-    apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
-
-    if (isDetached) {
-      element.remove();
+    if (documentElement.contains(element)) {
+      apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
+    } else {
+      // The element is not be inserted into the DOM (yet/anymore), which causes
+      // the event not to fire. If so, add a temporary attribute to it so it can
+      // be recognized when added to the DOM (if at all). We used to temporarily
+      // insert the element into the DOM and send the event here, but that
+      // causes video titles to sometimes go missing on YouTube.
+      apply(setAttribute, element, [EVENT_ATTRIBUTE, eventName]);
     }
   }
 
