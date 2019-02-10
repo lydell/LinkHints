@@ -1476,7 +1476,7 @@ export default class BackgroundProgram {
         code: "",
         runAt: "document_start",
       });
-    } catch (_error) {
+    } catch {
       enabled = false;
     }
 
@@ -1692,7 +1692,7 @@ function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
         detailsList.map(async details => {
           try {
             return await browser.tabs.executeScript(tab.id, details);
-          } catch (_error) {
+          } catch {
             // If `executeScript` fails it means that the extension is not
             // allowed to run content scripts in the tab. Example: most
             // `chrome://*` pages. We don’t need to do anything in that case.

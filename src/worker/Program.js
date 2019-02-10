@@ -111,7 +111,7 @@ export default class WorkerProgram {
       await browser.runtime.sendMessage(
         wrapMessage({ type: "WorkerScriptAdded" })
       );
-    } catch (_error) {
+    } catch {
       return;
     }
     browser.runtime.connect().onDisconnect.addListener(() => {

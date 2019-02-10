@@ -224,7 +224,7 @@ export default class RendererProgram {
       await browser.runtime.sendMessage(
         wrapMessage({ type: "RendererScriptAdded" })
       );
-    } catch (_error) {
+    } catch {
       // In Firefox, content scripts are loaded automatically in already
       // existing tabs. (Chrome only automatically loads content scripts into
       // _new_ tabs.) The content scripts run before the background scripts, so

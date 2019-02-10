@@ -1456,7 +1456,7 @@ function injectScript() {
       // it is run in the _page_ context.
       window["ev".concat("al")](code);
       return;
-    } catch (_error) {
+    } catch {
       // However, the `window.eval` can fail if the page has a Content Security
       // Policy. In such a case we have to resort to injecting a `<script
       // src="...">`. Script tags with URLs injected by a web extension seems to
