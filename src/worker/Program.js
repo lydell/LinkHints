@@ -21,6 +21,7 @@ import {
   getViewport,
   log,
   unreachable,
+  walkTextNodes,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -965,16 +966,6 @@ function getTextRects(
       }).filter(Boolean);
     })
   );
-}
-
-function* walkTextNodes(element: HTMLElement): Generator<Text, void, void> {
-  for (const node of element.childNodes) {
-    if (node instanceof Text) {
-      yield node;
-    } else if (node instanceof HTMLElement) {
-      yield* walkTextNodes(node);
-    }
-  }
 }
 
 function suppressEvent(event: Event) {

@@ -305,6 +305,20 @@
         margin-right: 5px;
       }
 
+      .card-wrapper {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      /* Show the extra rects on hover. */
+      .card-wrapper:hover {
+        outline: 1px solid magenta;
+      }
+
+      .card-wrapper:hover + pre {
+        color: magenta;
+      }
+
       .card {
         display: flex;
         width: 500px;
@@ -367,16 +381,46 @@
 
       .small-card p {
         margin: 0;
-      }
-
-      .small-card p:first-child {
         font-size: 16px;
         font-weight: bold;
       }
 
-      .small-card p:last-child {
+      .small-card p.sub {
+        font-size: 12px;
+        font-weight: normal;
+        color: #ccc;
+      }
+
+      .small-card .price {
+        display: block;
+        margin-top: 10px;
+        font-size: 20px;
+      }
+
+      .timetable {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 10px;
+        border: 1px solid black;
+        border-radius: 0;
+        background: white;
+        cursor: pointer;
+      }
+
+      .timetable > * + * {
+        margin-left: 15px;
+      }
+
+      .timetable > :nth-child(1),
+      .timetable > :nth-child(3) {
         font-size: 12px;
         color: #ccc;
+      }
+
+      .timetable > :nth-child(2),
+      .timetable > :nth-child(4) {
+        font-size: 20px;
       }
 
       .floats > * {
@@ -658,11 +702,11 @@
         Today’s offer
       </a>
       <a href="#" data-icon="👍">
-        <span>1.3K</span>
+        <span>1,300</span>
         Likes
       </a>
       <a href="#" data-icon="👎">
-        <span>1,300</span>
+        <span>1.3K</span>
         Dislikes
       </a>
     </div>
@@ -679,13 +723,13 @@
         <span class="glyphicon" data-icon="🔁">24</span>
       </a>
       <a href="#">
-        <span class="fa" data-icon="❤️">140</span>
+        <span class="other-class fa" data-icon="❤️">140</span>
       </a>
       <a href="#">
         <span class="fa-thumbs-up" data-icon="👍">1.4K</span>
       </a>
       <a href="#">
-        <span class="fa-thumbs-up" data-icon="👍">1.41 tn</span>
+        <span class="other-class fa-thumbs-up" data-icon="👍">1.41 tn</span>
       </a>
     </div>
 
@@ -720,14 +764,83 @@
       </div>
     </a>
 
+    <p>
+      A "large" card, where the wrapping link itself is still inline with
+      several rects (some width 0 width).
+    </p>
+    <a href="#" class="card-wrapper">
+      <div class="card">
+        <div class="img">
+          <span>50% off</span>
+        </div>
+        <div>
+          <p>Light saber</p>
+          <p>Fully functioning light saber cheese knife.</p>
+          <p>May the roquefort be with you.</p>
+          <p>$199 <del>$399</del></p>
+        </div>
+      </div>
+    </a>
+    <script>
+      {
+        const script = document.currentScript;
+        const link = script.previousElementSibling;
+        const pre = document.createElement("pre");
+        pre.textContent = Array.from(link.getClientRects(), rect =>
+          JSON.stringify(rect)
+        ).join("\n");
+        script.replaceWith(pre);
+      }
+    </script>
+
     <p>A "small" card. The hint should be placed at the text.</p>
     <a href="#" class="small-card">
       <div class="img"></div>
       <div>
         <p>Computers & Phones</p>
-        <p>1473 products</p>
+        <p class="sub">1473 products</p>
       </div>
     </a>
+
+    <p>Another "small" card. The taller text is preferred.</p>
+    <a href="#" class="small-card">
+      <div class="img"></div>
+      <div>
+        <p class="sub">HTML STORIES S1 &bull; E9</p>
+        <p>The tags of the past</p>
+      </div>
+    </a>
+
+    <p>
+      Yet another "small" card. Ideally, the title would get the hint, but the
+      price is taller. The price is still close, so the hint shouldn't be too
+      hard to find.
+    </p>
+    <a href="#" class="small-card">
+      <div class="img"></div>
+      <div>
+        <p>Light saber</p>
+        <p class="sub">Fully functioning light saber cheese knife.</p>
+        <strong class="price">$199</strong>
+      </div>
+    </a>
+
+    <p>
+      The text to the right is taller, but it is more natural to place the hint
+      at the start of the line:
+    </p>
+    <p>
+      <a href="#"><small>(free)</small> Pizza for everyone!</a>
+    </p>
+
+    <p>Same thing here:</p>
+    <button class="timetable">
+      <div>Monday</div>
+      <div>14:42</div>
+      <div>03:13</div>
+      <div>17:55</div>
+      <div>$29</div>
+    </button>
 
     <h2>Floats</h2>
     <p>Links which have 0 height due to floated children.</p>
@@ -806,6 +919,30 @@
     <p>The hint should be placed at the edge, not at children text.</p>
     <div class="scroll">
       <p>Scrollable element</p>
+    </div>
+
+    <h2>Selectable elements</h2>
+    <div style="max-width: 500px;">
+      <p>
+        Even if paragraph is really tall, it's still nice to place the hint at
+        the start of it, if possible.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet consectetur adipiscing elit, eu porta
+        sollicitudin suscipit nullam quis a, metus fames taciti est ac et. Ante
+        fames suscipit montes hac non quisque lectus vulputate tellus a,
+        condimentum rhoncus dignissim lacinia taciti sociosqu suspendisse urna
+        class risus metus, parturient duis lacus fusce malesuada augue cubilia
+        mollis scelerisque. Quis suscipit ut sociosqu nec est per iaculis,
+        pellentesque dictum laoreet sapien libero phasellus duis tincidunt, cras
+        fermentum proin neque class mattis. Lacus tempus condimentum faucibus
+        penatibus maecenas urna donec odio convallis platea montes, et dapibus
+        cum magna fermentum imperdiet pharetra erat elementum tellus.
+      </p>
+      <p>
+        <em>When</em> a paragraph starts with an inline element, both should be
+        selectable (no deduping).
+      </p>
     </div>
   </body>
 </html>

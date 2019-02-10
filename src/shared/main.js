@@ -251,3 +251,15 @@ export function setStyles(element: HTMLElement, styles: { [string]: string }) {
     element.style.setProperty(property, value, "important");
   }
 }
+
+export function* walkTextNodes(
+  element: HTMLElement
+): Generator<Text, void, void> {
+  for (const node of element.childNodes) {
+    if (node instanceof Text) {
+      yield node;
+    } else if (node instanceof HTMLElement) {
+      yield* walkTextNodes(node);
+    }
+  }
+}
