@@ -35,6 +35,7 @@
     "eslint-plugin-flowtype-errors": "3.6.0",
     "eslint-plugin-import": "2.16.0",
     "eslint-plugin-prettier": "3.0.1",
+    "eslint-plugin-react": "7.12.4",
     "eslint-plugin-simple-import-sort": "3.0.0",
     "flow-bin": "0.92.1",
     "mkdirp": "0.5.1",

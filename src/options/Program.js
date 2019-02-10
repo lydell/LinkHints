@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { Component, createElement } from "preact";
+import * as React from "preact";
 
 import { Resets, addListener, bind, log, unreachable } from "../shared/main";
 import type {
@@ -11,17 +11,11 @@ import type {
 import { type Options, type PartialOptions } from "../shared/options";
 import { TextInput } from "./TextInput";
 
-const h = createElement;
-const makeElement = tag => (...rest) => h(tag, ...rest);
-
-const div = makeElement("div");
-const label = makeElement("label");
-
 type Props = {||};
 
 type State = {| options: ?Options |};
 
-export default class OptionsProgram extends Component<Props, State> {
+export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets;
 
   constructor(props: Props) {
@@ -98,18 +92,19 @@ export default class OptionsProgram extends Component<Props, State> {
       return null;
     }
 
-    return div(
-      label(
-        {},
-        "Hint chars:",
-        h(TextInput, {
-          savedValue: options.hintsChars,
-          normalize: removeDuplicateChars,
-          save: value => {
-            this.saveOptions({ hintsChars: value });
-          },
-        })
-      )
+    return (
+      <div>
+        <label>
+          Hint chars:
+          <TextInput
+            savedValue={options.hintsChars}
+            normalize={removeDuplicateChars}
+            save={value => {
+              this.saveOptions({ hintsChars: value });
+            }}
+          />
+        </label>
+      </div>
     );
   }
 }

@@ -65,7 +65,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
     plugins: [
       sucrase({
         exclude: ["node_modules/**"],
-        transforms: ["flow"],
+        transforms: ["flow", "jsx"],
       }),
       replace(makeGlobals()),
       resolve(),

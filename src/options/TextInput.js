@@ -1,11 +1,6 @@
 // @flow
 
-import { Component, createElement } from "preact";
-
-const h = createElement;
-const makeElement = tag => (...rest) => h(tag, ...rest);
-
-const input = makeElement("input");
+import * as React from "preact";
 
 const SAVE_TIMEOUT = 200; // ms
 
@@ -20,7 +15,7 @@ type State = {|
   focused: boolean,
 |};
 
-export class TextInput extends Component<Props, State> {
+export class TextInput extends React.Component<Props, State> {
   timeoutId: ?TimeoutID;
 
   constructor(props: Props) {
@@ -64,31 +59,33 @@ export class TextInput extends Component<Props, State> {
     const { savedValue, normalize } = this.props;
     const { value } = this.state;
 
-    return input({
-      type: "text",
-      value,
-      onInput: event => {
-        const newValue = event.target.value;
-        const normalizedValue = normalize(newValue);
-        this.setState({ value: newValue });
-        if (normalizedValue !== savedValue) {
-          this.saveThrottled(normalizedValue);
-        }
-      },
-      onFocus: () => {
-        this.setState({ focused: true });
-      },
-      onBlur: () => {
-        const normalizedValue = normalize(value);
-        this.setState({ focused: false, value: normalizedValue });
-        if (normalizedValue !== savedValue) {
-          if (this.timeoutId != null) {
-            clearTimeout(this.timeoutId);
-            this.timeoutId = undefined;
+    return (
+      <input
+        type="text"
+        value={value}
+        onInput={event => {
+          const newValue = event.target.value;
+          const normalizedValue = normalize(newValue);
+          this.setState({ value: newValue });
+          if (normalizedValue !== savedValue) {
+            this.saveThrottled(normalizedValue);
           }
-          this.save(normalizedValue);
-        }
-      },
-    });
+        }}
+        onFocus={() => {
+          this.setState({ focused: true });
+        }}
+        onBlur={() => {
+          const normalizedValue = normalize(value);
+          this.setState({ focused: false, value: normalizedValue });
+          if (normalizedValue !== savedValue) {
+            if (this.timeoutId != null) {
+              clearTimeout(this.timeoutId);
+              this.timeoutId = undefined;
+            }
+            this.save(normalizedValue);
+          }
+        }}
+      />
+    );
   }
 }

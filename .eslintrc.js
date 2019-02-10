@@ -11,33 +11,38 @@ module.exports = {
     // "flowtype-errors",
     "import",
     // "prettier",
+    "react",
     "simple-import-sort",
   ],
   env: {
     es6: true,
     node: true,
   },
-  rules: Object.assign({}, baseRules({ flow: true, import: true }), {
-    // "flowtype-errors/show-errors": "error",
-    "import/no-restricted-paths": [
-      "error",
-      {
-        basePath: "src",
-        // Disallow these dirs from importing from each other.
-        zones: makeRestrictedPathsZones([
-          "background",
-          "options",
-          "popup",
-          "renderer",
-          "worker",
-        ]),
-      },
-    ],
-    "no-console": "error",
-    "no-script-url": "off",
-    // "prettier/prettier": "error",
-    "require-await": "error",
-  }),
+  rules: Object.assign(
+    {},
+    baseRules({ flow: true, import: true, react: true }),
+    {
+      // "flowtype-errors/show-errors": "error",
+      "import/no-restricted-paths": [
+        "error",
+        {
+          basePath: "src",
+          // Disallow these dirs from importing from each other.
+          zones: makeRestrictedPathsZones([
+            "background",
+            "options",
+            "popup",
+            "renderer",
+            "worker",
+          ]),
+        },
+      ],
+      "no-console": "error",
+      "no-script-url": "off",
+      // "prettier/prettier": "error",
+      "require-await": "error",
+    }
+  ),
   overrides: [
     {
       files: [".*.js", "*.config.js", "web-ext-*.js"],
@@ -65,6 +70,11 @@ module.exports = {
       },
     },
   ],
+  settings: {
+    react: {
+      version: "16",
+    },
+  },
 };
 
 function makeRestrictedPathsZones(dirs) {
