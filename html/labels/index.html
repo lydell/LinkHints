@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>labels</title>
     <style>
       body {
@@ -44,12 +44,16 @@
     </style>
   </head>
   <body>
-    <p>&lt;label&gt; elements should only get hints if their control isn't visible, or if has no control but is clickable some other way. (Scroll down.)</p>
+    <p>
+      &lt;label&gt; elements should only get hints if their control isn't
+      visible, or if has no control but is clickable some other way. (Scroll
+      down.)
+    </p>
 
     <div>
       <label>
-        label with nested control<br>
-        <input>
+        label with nested control<br />
+        <input />
       </label>
     </div>
 
@@ -57,43 +61,46 @@
       <label for="input">
         label with id
       </label>
-      <br>
-      <input id="input">
+      <br />
+      <input id="input" />
     </div>
 
     <div>
       <label>
-        label with textarea<br>
+        label with textarea<br />
         <textarea></textarea>
       </label>
     </div>
 
     <div>
       <label>
-        label with select<br>
-        <select><option>option 1</option><option>option 2</option></select>
+        label with select<br />
+        <select
+          ><option>option 1</option
+          ><option>option 2</option></select
+        >
       </label>
     </div>
 
     <div>
       <label>
-        label with button<br>
+        label with button<br />
         <button onclick="console.log('button!')">button</button>
       </label>
     </div>
 
     <div>
       <label>
-        input with several labels<br>
-        <input id="several">
+        input with several labels<br />
+        <input id="several" />
       </label>
-      <br>
+      <br />
       <label for="several">second label</label>
     </div>
 
     <div>
       <label class="checkbox">
-        <input type="checkbox">
+        <input type="checkbox" />
         <span></span>
         custom checkbox
       </label>

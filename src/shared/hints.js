@@ -10,8 +10,7 @@ export type ElementType =
   | "link"
   | "selectable"
   | "scrollable"
-  | "textarea"
-  | "title";
+  | "textarea";
 
 // Remember to keep `decodeElementTypesConstants` below in sync.
 export type ElementTypes = Array<ElementType> | "selectable";
@@ -25,7 +24,6 @@ export function decodeElementType(type: string): ElementType {
     case "selectable":
     case "scrollable":
     case "textarea":
-    case "title":
       return type;
     default:
       throw new TypeError(`Invalid ElementType: ${repr(type)}`);
@@ -70,7 +68,6 @@ export type ElementReport = {|
   index: number,
   hintMeasurements: HintMeasurements,
   url: ?string,
-  title: ?string,
   text: string,
   textWeight: number,
   isTextInput: boolean,

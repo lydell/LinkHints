@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>keydown</title>
   </head>
   <body>
-    <p>This page should not report any keydown events when triggering Synth shortcuts.</p>
+    <p>
+      This page should not report any keydown events when triggering Synth
+      shortcuts.
+    </p>
     <p><a href="#">link</a></p>
 
     <p>Global keydown listener:</p>
@@ -22,15 +25,19 @@
       const variants = [
         { target: window, events: globalEvents, pre: preGlobal },
         { target: preElement, events: elementEvents, pre: preElement },
-      ]
+      ];
 
       for (const { target, events, pre } of variants) {
         for (const eventName of eventNames) {
           events[eventName] = null;
-          target.addEventListener(eventName, event => {
-            events[eventName] = extractEvent(event);
-            pre.textContent = JSON.stringify(events, undefined, 2);
-          }, true);
+          target.addEventListener(
+            eventName,
+            event => {
+              events[eventName] = extractEvent(event);
+              pre.textContent = JSON.stringify(events, undefined, 2);
+            },
+            true
+          );
         }
       }
 

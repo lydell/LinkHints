@@ -7,7 +7,7 @@ const resolve = require("rollup-plugin-node-resolve");
 const commonjs = require("rollup-plugin-commonjs");
 const replace = require("rollup-plugin-replace");
 const rimraf = require("rimraf");
-const flow = require("rollup-plugin-flow");
+const sucrase = require("rollup-plugin-sucrase");
 
 const config = require("./project.config");
 
@@ -63,7 +63,10 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
       sourcemap: !PROD,
     },
     plugins: [
-      flow({ pretty: true }),
+      sucrase({
+        exclude: ["node_modules/**"],
+        transforms: ["flow"],
+      }),
       replace(makeGlobals()),
       resolve(),
       commonjs(),

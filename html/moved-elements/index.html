@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>(re-)moved elements</title>
     <style>
       body > * + * {
@@ -49,22 +49,36 @@
     <h1>Tests for moved and removed elements</h1>
     <ul>
       <li>If an element disappears for any reason, its hint should too.</li>
-      <li>If an element moves (relative to the screen) for any reason, its hint should too.</li>
+      <li>
+        If an element moves (relative to the screen) for any reason, its hint
+        should too.
+      </li>
       <li>Matched text should also be shown/hidden and moved like hints.</li>
       <li>Hints should not change when other hints are hidden or re-shown.</li>
-      <li>Hints should not be auto-matched by text if others disappear, or by backspacing.</li>
-      <li>The highlighted hint should update when elements filtered by text appear/disappear.</li>
+      <li>
+        Hints should not be auto-matched by text if others disappear, or by
+        backspacing.
+      </li>
+      <li>
+        The highlighted hint should update when elements filtered by text
+        appear/disappear.
+      </li>
     </ul>
 
     <div>
-      <p>Try scrolling and removing these frames in different orders in hints mode.</p>
+      <p>
+        Try scrolling and removing these frames in different orders in hints
+        mode.
+      </p>
       <div id="iframeContainer">
         <iframe src="iframe1.html" width="500" height="400"></iframe>
       </div>
     </div>
 
     <div>
-      <p>Elements can come and go. Unlike iframes, they get their hints back.</p>
+      <p>
+        Elements can come and go. Unlike iframes, they get their hints back.
+      </p>
       <p id="linkContainer">
         <a href="#">link</a>
         (ctrl+c to toggle)
@@ -73,10 +87,14 @@
 
     <div>
       <p>Scroll:</p>
-      <div style="border: 1px solid; width: 500px; height: 150px; padding: 10px; overflow: auto;">
+      <div
+        style="border: 1px solid; width: 500px; height: 150px; padding: 10px; overflow: auto;"
+      >
         <p><a href="#">link</a></p>
 
-        <div style="border: 1px solid; width: 300px; height: 50px; padding: 10px; overflow: auto;">
+        <div
+          style="border: 1px solid; width: 300px; height: 50px; padding: 10px; overflow: auto;"
+        >
           <p><a href="#">link</a></p>
           <p style="margin-top: 100px;"><a href="#">link</a></p>
         </div>
@@ -86,19 +104,32 @@
     </div>
 
     <div>
-      <p>Filter by “keyboa” and then press ctrl+d. The hint should not be auto-matched. Then backspace to “key”. Backspacing does not trigger the hint. The first link should stay highlighted (the text weight don’t update).</p>
+      <p>
+        Filter by “keyboa” and then press ctrl+d. The hint should not be
+        auto-matched. Then backspace to “key”. Backspacing does not trigger the
+        hint. The first link should stay highlighted (the text weight don’t
+        update).
+      </p>
       <p><a href="#">keyboard</a></p>
-      <p id="textContainer"><a href="#">keyboard layout</a> (ctrl+d to change text)</p>
+      <p id="textContainer">
+        <a href="#">keyboard layout</a> (ctrl+d to change text)
+      </p>
     </div>
 
     <div>
-      <p>Lots of links to test partly matching hints and scrolling some of the out of view, in different orders. Also test expanding elements to move/hide some of them.</p>
+      <p>
+        Lots of links to test partly matching hints and scrolling some of the
+        out of view, in different orders. Also test expanding elements to
+        move/hide some of them.
+      </p>
       <details>
         <p><a href="#">link</a></p>
         <summary>Expand (details/summary)</summary>
       </details>
       <div class="expand" style="margin: 10px 0;">
-        <button onclick="this.parentElement.classList.toggle('expanded');">Expand (custom)</button>
+        <button onclick="this.parentElement.classList.toggle('expanded');">
+          Expand (custom)
+        </button>
         <p><a href="#">link</a></p>
       </div>
       <details class="menu">
@@ -139,13 +170,9 @@
 
     <div>
       <p>Changing href:</p>
-      <p><a id="changingHref" href="https://example.com">example.com</a> (ctrl+e to change)</p>
-    </div>
-
-    <div>
-      <p>Changing title:</p>
       <p>
-        <span id="changingTitle" title="title">initial title</span> (ctrl+f to change)
+        <a id="changingHref" href="https://example.com">example.com</a> (ctrl+e
+        to change)
       </p>
     </div>
 
@@ -196,18 +223,6 @@
             } else {
               changingHref.textContent === "example.com";
               changingHref.href = "https://example.com";
-            }
-            break;
-          case "f":
-            if (changingTitle.title === "title") {
-              changingTitle.title = "changed";
-              changingTitle.textContent = "changed title";
-            } else if (changingTitle.title === "changed") {
-              changingTitle.title = "";
-              changingTitle.textContent = "no title";
-            } else {
-              changingTitle.title = "title";
-              changingTitle.textContent = "initial title";
             }
             break;
           default:

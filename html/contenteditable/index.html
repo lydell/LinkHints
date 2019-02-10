@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>contenteditable</title>
   </head>
   <body>
-    <p>Elements which the browser recognizes at contenteditable have a green outline. Those should get hints.</p>
+    <p>
+      Elements which the browser recognizes at contenteditable have a green
+      outline. Those should get hints.
+    </p>
     <p>Number of elments green outlines: <span id="numRoots"></span></p>
-    <p>Number of elments where element.isContentEditable: <span id="numEditables"></span> (nested elements are considered contenteditable as well)</p>
+    <p>
+      Number of elments where element.isContentEditable:
+      <span id="numEditables"></span> (nested elements are considered
+      contenteditable as well)
+    </p>
 
     <p>:not([contenteditable])</p>
     <p contenteditable>[contenteditable]</p>
@@ -52,7 +59,13 @@
       </div>
     </div>
 
-    <p style="width: 200px;">Some text before <span contenteditable="">some content editable text that wraps several lines</span> and some text after.</p>
+    <p style="width: 200px;">
+      Some text before
+      <span contenteditable=""
+        >some content editable text that wraps several lines</span
+      >
+      and some text after.
+    </p>
 
     <p contenteditable="true" tabindex="1">[tabindex="1"]</p>
     <p contenteditable="true" tabindex="-1">[tabindex="-1"]</p>
@@ -63,9 +76,10 @@
     <script>
       const elements = Array.from(document.querySelectorAll("*"));
 
-      const roots = elements.filter(element =>
-        element.contentEditable !== "false" &&
-        element.contentEditable !== "inherit"
+      const roots = elements.filter(
+        element =>
+          element.contentEditable !== "false" &&
+          element.contentEditable !== "inherit"
       );
       const editables = elements.filter(element => element.isContentEditable);
 

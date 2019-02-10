@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>link in shadow dom</title>
   </head>
   <body>
     <a href="#">normal link</a>
     <script>
       const div = document.createElement("div");
-      const root = div.attachShadow({mode: "open"});
+      const root = div.attachShadow({ mode: "open" });
       const a = document.createElement("a");
       a.href = "#";
       a.textContent = "link in shadow dom";

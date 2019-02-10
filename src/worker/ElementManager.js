@@ -13,17 +13,18 @@ import {
   Resets,
   addEventListener,
   bind,
-  getTitle,
   log,
   partition,
   setStyles,
   unreachable,
+  walkTextNodes,
 } from "../shared/main";
 import type { TimeTracker } from "../shared/perf";
 import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
+  EVENT_ATTRIBUTE,
   INJECTED_VAR,
   INJECTED_VAR_PATTERN,
   MESSAGE_FLUSH,
@@ -38,6 +39,7 @@ const constants = {
   CLICKABLE_EVENT: JSON.stringify(CLICKABLE_EVENT),
   CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
   CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
+  EVENT_ATTRIBUTE: JSON.stringify(EVENT_ATTRIBUTE),
   INJECTED_VAR: JSON.stringify(INJECTED_VAR),
   INJECTED_VAR_PATTERN: INJECTED_VAR_PATTERN.toString(),
   MESSAGE_FLUSH: JSON.stringify(MESSAGE_FLUSH),
@@ -47,13 +49,10 @@ const constants = {
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
-const LOW_QUALITY_TYPES = new Set(["clickable-event", "title"]);
+const LOW_QUALITY_TYPES: Set<ElementType> = new Set(["clickable-event"]);
 
 // Give worse hints to scrollable elements and (selectable) frames. They are
-// usually very large by nature, but not that commonly used. Give all selectable
-// elements worse hints than links and buttons, so that the elements found in
-// regular click hints mode stay on top in crowded areas such as `<div
-// title="..."><a href="..."><img src="..."></a></div>`.
+// usually very large by nature, but not that commonly used.
 const WORSE_HINT_TYPES = new Set(["scrollable", "selectable"]);
 
 type QueueItem = {|
@@ -80,10 +79,7 @@ const MAX_HINT_X_PERCENTAGE_OF_WIDTH = 0.75;
 const MAX_CLICKABLE_EVENT_AREA = 1e6; // px
 
 const NON_WHITESPACE = /\S/;
-
-// Matches common “badge” text, such as “5“, “100+”, “12:56”, “50 %”, “1.3K” and
-// “1,300”.
-const BADGE_TEXT = /^\s*[\d+%:.,\s]+[a-z]?\s*$/i;
+const LAST_NON_WHITESPACE = /\S\s*$/;
 
 const LINK_PROTOCOLS = new Set(
   [
@@ -141,6 +137,7 @@ const SCROLLABLE_OVERFLOW_VALUES = new Set(["auto", "scroll"]);
 
 const FRAME_MIN_SIZE = 6; // px
 const TEXT_RECT_MIN_SIZE = 2; // px
+const ICON_MIN_SIZE = 10; // px
 
 const CLICKABLE_ATTRIBUTES = [
   // These are supposed to be used with a `role` attribute. In some GitHub
@@ -150,23 +147,25 @@ const CLICKABLE_ATTRIBUTES = [
   "aria-selected",
   // Bootstrap.
   "data-dismiss",
-  // Twitter
+  // Twitter.
   "data-permalink-path",
   "data-image-url",
+  // Gmail.
+  "jsaction",
 ];
 
 const MUTATION_ATTRIBUTES = [
   "contenteditable",
   "href",
   "role",
-  "title",
   ...CLICKABLE_EVENT_PROPS,
   ...CLICKABLE_ATTRIBUTES,
 ];
 
 // Find actual images as well as icon font images. Matches for example “Icon”,
 // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
-const IMAGE_SELECTOR = "img, svg, [class*='icon' i], [class|='fa']";
+const IMAGE_SELECTOR =
+  "img, svg, [class*='icon' i], [class~='fa'], [class^='fa-'], [class*=' fa-']";
 
 // If the `<html>` element has for example `transform: translate(-10px, -10px);`
 // it can cause the probe to be off-screen, but both Firefox and Chrome seem to
@@ -412,6 +411,7 @@ export default class ElementManager {
 
     for (const record of records) {
       for (const node of record.addedNodes) {
+        this.consumeEventAttribute(node);
         if (node === this.probe) {
           probed = true;
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
@@ -421,6 +421,7 @@ export default class ElementManager {
       }
 
       for (const node of record.removedNodes) {
+        this.consumeEventAttribute(node);
         if (node === this.probe) {
           probed = true;
         } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
@@ -460,6 +461,23 @@ export default class ElementManager {
     if (element instanceof HTMLElement) {
       this.elementsWithClickListeners.delete(element);
       this.queueItem({ mutationType: "changed", element });
+    }
+  }
+
+  consumeEventAttribute(node: Node) {
+    if (node instanceof HTMLElement) {
+      const value = node.getAttribute(EVENT_ATTRIBUTE);
+      switch (value) {
+        case CLICKABLE_EVENT:
+          this.elementsWithClickListeners.add(node);
+          break;
+        case UNCLICKABLE_EVENT:
+          this.elementsWithClickListeners.delete(node);
+          break;
+        default:
+          return;
+      }
+      node.removeAttribute(EVENT_ATTRIBUTE);
     }
   }
 
@@ -666,12 +684,6 @@ export default class ElementManager {
         return undefined;
       }
 
-      // Ignore elements with title inside links and buttons. They most likely
-      // cause duplicate hints.
-      if (type === "title" && element.closest("a, button") != null) {
-        return undefined;
-      }
-
       const measurements = getMeasurements(element, type, viewports, range);
 
       if (measurements == null) {
@@ -687,6 +699,8 @@ export default class ElementManager {
 
       // In selectable mode we need to be able to select `<label>` text, and
       // click listeners aren't taken into account at all, so skip the deduping.
+      // Also, a paragraph starting with an inline element shouldn't be deduped
+      // away – both should be selectable.
       if (types !== "selectable") {
         deduper.add(visibleElement);
       }
@@ -782,10 +796,6 @@ export default class ElementManager {
           return "clickable";
         }
 
-        if (getTitle(element) != null) {
-          return "title";
-        }
-
         if (
           hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element) ||
@@ -879,7 +889,19 @@ function getMeasurements(
   // creating a new one for every element candidate.
   range: Range
 ): ?HintMeasurements {
-  const rects = element.getClientRects();
+  // If an inline `<a>` wraps a block `<div>`, the link gets three rects. The
+  // first and last have 0 width. The middle is the "real" one. Remove the
+  // "empty" ones, so that the link is considered a "card" and not a
+  // line-wrapped text link.
+  const allRects = Array.from(element.getClientRects());
+  const filteredRects = allRects.filter(
+    rect =>
+      rect.width >= TEXT_RECT_MIN_SIZE && rect.height >= TEXT_RECT_MIN_SIZE
+  );
+  // For links with only floated children _all_ rects might have 0 width/height.
+  // In that case, use the "empty" ones after all. Floated children is handled
+  // further below.
+  const rects = filteredRects.length > 0 ? filteredRects : allRects;
 
   // Ignore elements with only click listeners that are really large. These are
   // most likely not clickable, and only used for event delegation.
@@ -939,7 +961,7 @@ function getMeasurements(
           viewports,
           range,
         })
-      : getMultiRectPoint({ element, visibleBoxes, range });
+      : getMultiRectPoint({ element, visibleBoxes, viewports, range });
 
   const maxX = Math.max(...visibleBoxes.map(box => box.x + box.width));
 
@@ -1017,16 +1039,27 @@ function getSingleRectPoint({
   viewports: Array<Box>,
   range: Range,
 |}): Point {
-  // Scrollable elements and very tall elements.
+  // Scrollbars are usually on the right side, so put the hint there, making it
+  // easier to see that the hint is for scrolling and reducing overlap.
+  if (elementType === "scrollable") {
+    return {
+      ...getXY(visibleBox),
+      x: visibleBox.x + visibleBox.width - 1,
+      align: "right",
+    };
+  }
+
+  // Always put hints for "tall" elements at the left-center edge – except in
+  // selectable mode (long paragraphs). Then it is nicer to put the marker at
+  // the start of the text.
   // Also do not look for text nodes or images in `<textarea>` (which does have
   // hidden text nodes) and `contenteditable` elements, since it looks nicer
   // always placing the hint at the edge for such elements. Usually they are
   // tall enough to have their hint end up there. This ensures the hint is
   // _always_ placed there for consistency.
   if (
-    elementType === "scrollable" ||
     elementType === "textarea" ||
-    rect.height >= BOX_MIN_HEIGHT
+    (elementType !== "selectable" && rect.height >= BOX_MIN_HEIGHT)
   ) {
     return {
       ...getXY(visibleBox),
@@ -1038,18 +1071,20 @@ function getSingleRectPoint({
     return isWithin(point, visibleBox);
   }
 
-  // Try to place the hint at the first character of the element.
+  // Try to place the hint at the text of the element.
   // Don’t try to look for text nodes in `<select>` elements. There
   // _are_ text nodes inside the `<option>` elements and their rects _can_ be
   // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
   // will fail. An example is the signup form at <https://www.facebook.com/>.
   if (!(element instanceof HTMLSelectElement)) {
-    const textPoint = getFirstNonEmptyTextPoint(
+    const textPoint = getBestNonEmptyTextPoint({
       element,
-      rect,
+      elementRect: rect,
+      viewports,
       isAcceptable,
-      range
-    );
+      preferTextStart: elementType === "selectable",
+      range,
+    });
     if (textPoint != null) {
       return textPoint;
     }
@@ -1106,22 +1141,26 @@ function getSingleRectPoint({
 function getMultiRectPoint({
   element,
   visibleBoxes,
+  viewports,
   range,
 }: {|
   element: HTMLElement,
   visibleBoxes: Array<Box>,
+  viewports: Array<Box>,
   range: Range,
 |}): Point {
   function isAcceptable(point: Point): boolean {
     return visibleBoxes.some(box => isWithin(point, box));
   }
 
-  const textPoint = getFirstNonEmptyTextPoint(
+  const textPoint = getBestNonEmptyTextPoint({
     element,
-    element.getBoundingClientRect(),
+    elementRect: element.getBoundingClientRect(),
+    viewports,
     isAcceptable,
-    range
-  );
+    preferTextStart: true,
+    range,
+  });
   if (textPoint != null) {
     return textPoint;
   }
@@ -1282,67 +1321,109 @@ export function getVisibleBox(
       };
 }
 
-// Try to place the hint just before the first relevant letter inside `element`,
-// if any. One would think that `range.selectNodeContents(element)` would do
-// essentially the same thing here, but it takes padding and such of child
-// elements into account. Also, it would count leading visible whitespace as the
-// first character.
-function getFirstNonEmptyTextPoint(
+// Try to find the best piece of text to place the hint at. This is difficult,
+// since lots of types of elements end up here: Everything from simple text
+// links to "cards" with titles, subtitles, badges and price tags. See the
+// inline comments for more details.
+function getBestNonEmptyTextPoint({
+  element,
+  elementRect,
+  viewports,
+  isAcceptable,
+  preferTextStart = false,
+  range,
+}: {|
   element: HTMLElement,
   elementRect: ClientRect,
+  viewports: Array<Box>,
   isAcceptable: Point => boolean,
+  preferTextStart: boolean,
   range: Range,
-  passedSingle: boolean = true
-): ?Point {
-  if (
-    // Exclude screen reader only text.
-    elementRect.width < TEXT_RECT_MIN_SIZE &&
-    elementRect.height < TEXT_RECT_MIN_SIZE
-  ) {
+|}): ?Point {
+  const align = "right";
+
+  // This goes through _all_ text nodes inside the element. That sounds
+  // expensive, but in reality I have not noticed this to slow things down. Note
+  // that `range.selectNodeContents(element); range.getClientRects()` might seem
+  // easier to use, but it takes padding and such of child elements into
+  // account. Also, it would count leading visible whitespace as the first
+  // character.
+  const rects = [].concat(
+    ...Array.from(walkTextNodes(element), textNode => {
+      const start = textNode.data.search(NON_WHITESPACE);
+      const end = textNode.data.search(LAST_NON_WHITESPACE);
+      if (start >= 0 && end >= 0) {
+        range.setStart(textNode, start);
+        range.setEnd(textNode, end + 1);
+        return Array.from(range.getClientRects(), rect => {
+          const point = { ...getXY(rect), align };
+          return (
+            // Exclude screen reader only text.
+            rect.width >= TEXT_RECT_MIN_SIZE &&
+              rect.height >= TEXT_RECT_MIN_SIZE &&
+              // Make sure that the text is inside the element.
+              isAcceptable(point)
+              ? rect
+              : undefined
+          );
+        }).filter(Boolean);
+      }
+      return [];
+    })
+  );
+
+  if (rects.length === 0) {
     return undefined;
   }
 
-  // If a text node is the _only_ text node of an element, skip the “badge”
-  // check to improve hint positioning for a link with the text “10h” for
-  // example.
-  const single = passedSingle && element.childNodes.length === 1;
+  // In selectable mode, prefer placing the hint at the start of the text
+  // (visually) rather than at the most eye-catching text. Also used for
+  // line-wrapped links, where the hint should be at the start of the link (if
+  // possible), not at the left-most part of it:
+  //
+  //     text text text [F]link
+  //     link text text
+  //
+  if (preferTextStart) {
+    // Prefer the top-most part of the line. In case of a tie, prefer the
+    // left-most one.
+    const leftMostRect = rects.reduce((a, b) =>
+      b.top < a.top ? b : b.top === a.top && b.left < a.left ? b : a
+    );
+    return { ...getXY(leftMostRect), align };
+  }
 
-  for (const node of element.childNodes) {
-    if (node instanceof Text) {
-      const index = node.data.search(NON_WHITESPACE);
-      if (index >= 0 && (single || !BADGE_TEXT.test(node.data))) {
-        range.setStart(node, index);
-        range.setEnd(node, index + 1);
-        const rect = range.getBoundingClientRect();
-        const point = {
-          ...getXY(rect),
-          align: "right",
-        };
+  // Prefer the tallest one. In case of a tie, prefer the widest one.
+  const largestRect = rects.reduce((a, b) =>
+    b.height > a.height ? b : b.height === a.height && b.width > a.width ? b : a
+  );
 
-        if (
-          // Exclude screen reader only text.
-          rect.width >= TEXT_RECT_MIN_SIZE &&
-          rect.height >= TEXT_RECT_MIN_SIZE &&
-          // Make sure that the text is inside the element.
-          isAcceptable(point)
-        ) {
-          return point;
-        }
-      }
-    } else if (node instanceof HTMLElement) {
-      const result = getFirstNonEmptyTextPoint(
-        node,
-        node.getBoundingClientRect(),
-        isAcceptable,
-        range,
-        single
-      );
-      if (result != null) {
-        return result;
-      }
+  // There could be smaller text just to the left of the tallest text. It feels
+  // more natural to be looking for the tallest _line_ rather than the tallest
+  // piece of text and place the hint at the beginning of the line.
+  const sameLineRects = rects.filter(
+    rect => rect.top < largestRect.bottom && rect.bottom > largestRect.top
+  );
+
+  // Prefer the left-most part of the line. In case of a tie, prefer the
+  // top-most one.
+  const leftMostRect = sameLineRects.reduce((a, b) =>
+    b.left < a.left ? b : b.left === a.left && b.top < a.top ? b : a
+  );
+
+  // If the text of the element is a single line and there's room to the left of
+  // the text for an icon, look for an icon (image) and place the hint there
+  // instead. It is common to have a little icon before the text of buttons.
+  // This avoids covering the icon with the hint.
+  const isSingleLine = sameLineRects.length === rects.length;
+  if (isSingleLine && leftMostRect.left >= elementRect.left + ICON_MIN_SIZE) {
+    const imagePoint = getFirstImagePoint(element, viewports);
+    if (imagePoint != null && isAcceptable(imagePoint.point)) {
+      return imagePoint.point;
     }
   }
-  return undefined;
+
+  return { ...getXY(leftMostRect), align };
 }
 
 function isWithin(point: Point, box: Box): boolean {
@@ -1375,7 +1456,7 @@ function injectScript() {
       // it is run in the _page_ context.
       window["ev".concat("al")](code);
       return;
-    } catch (_error) {
+    } catch {
       // However, the `window.eval` can fail if the page has a Content Security
       // Policy. In such a case we have to resort to injecting a `<script
       // src="...">`. Script tags with URLs injected by a web extension seems to
@@ -1532,7 +1613,7 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
     // Always consider the following elements as selectable, regardless of their
     // children, since they have special context menu items. A
     // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
-    // an be skipped otherwise. Making frames selectable also allows Chrome
+    // and be skipped otherwise. Making frames selectable also allows Chrome
     // users to scroll frames using the arrow keys. It would be convenient to
     // give frames hints during regular click hints mode for that reason, but
     // unfortunately for example Twitter uses iframes for many of its little
@@ -1561,11 +1642,6 @@ function getElementTypeSelectable(element: HTMLElement): ?ElementType {
       // elements with text without having to iterate through all child text
       // nodes.
       if (element.childElementCount === 0) {
-        return "selectable";
-      }
-
-      // Allow showing the title attribute without clicking on the element.
-      if (getTitle(element) != null) {
         return "selectable";
       }
 

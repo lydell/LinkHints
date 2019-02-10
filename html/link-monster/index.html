@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>link monster</title>
     <style>
       html {
@@ -25,7 +25,8 @@
         font-size: 16px;
       }
 
-      header > a, header > button {
+      header > a,
+      header > button {
         margin: 0;
         padding: 30px;
         border: none;
@@ -220,8 +221,7 @@
 
     <div class="container">
       <div class="wrapper">
-        <div class="wrapper-inner" id="mainContainer">
-        </div>
+        <div class="wrapper-inner" id="mainContainer"></div>
       </div>
     </div>
 
@@ -244,7 +244,34 @@
         }
       }
 
-      const words = ["bacon", "whale", "grass", "tree", "window", "chair", "sea", "the", "you", "organization", "aggregation", "backwards", "splendid", "otherwise", "cow", "furhter", "increasingly", "valid", "spherical", "key", "at", "I", "number", "marketplace", "spinnach", "severity"];
+      const words = [
+        "bacon",
+        "whale",
+        "grass",
+        "tree",
+        "window",
+        "chair",
+        "sea",
+        "the",
+        "you",
+        "organization",
+        "aggregation",
+        "backwards",
+        "splendid",
+        "otherwise",
+        "cow",
+        "furhter",
+        "increasingly",
+        "valid",
+        "spherical",
+        "key",
+        "at",
+        "I",
+        "number",
+        "marketplace",
+        "spinnach",
+        "severity",
+      ];
 
       const main = document.createElement("main");
       const rng = new RNG(1337);
@@ -253,11 +280,13 @@
         const a = document.createElement("a");
         a.href = "#";
         a.textContent = Array.from(
-          { length: rng.next() % 3 + 1 },
+          { length: (rng.next() % 3) + 1 },
           () => words[rng.next() % words.length]
         ).join(" ");
 
-        const t = document.createTextNode(rng.next() % 10 === 0 ? " and " : ", ");
+        const t = document.createTextNode(
+          rng.next() % 10 === 0 ? " and " : ", "
+        );
 
         const s = document.createElement("span");
         s.append(a);

@@ -37,7 +37,7 @@ const HINT_CLASS = "hint";
 const HIGHLIGHTED_HINT_CLASS = "highlighted";
 const MATCHED_CHARS_CLASS = "matchedChars";
 const TEXT_RECT_CLASS = "matchedText";
-const TITLE_CLASS = "title";
+const STATUS_CLASS = "status";
 const PEEK_CLASS = "peek";
 const HIDDEN_CLASS = "hidden";
 
@@ -46,6 +46,12 @@ const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 // The minimum and maximum z-index browsers support.
 const MIN_Z_INDEX = -2147483648;
 const MAX_Z_INDEX = 2147483647;
+
+const GREEN = "lime";
+// The purple used in Firefox for findbar "Highlight all" matches.
+const PURPLE = "#ef0fff";
+// The yellow used in Chrome for findbar matches.
+const YELLOW = "#f6ff00";
 
 const CONTAINER_STYLES = {
   all: "unset",
@@ -67,10 +73,7 @@ const CSS = `
   box-sizing: border-box;
   padding: 2px;
   border: solid 1px rgba(0, 0, 0, 0.5);
-  ${
-    "" // This is the yellow used in Chrome for findbar matches.
-  }
-  background-color: #f6ff00;
+  background-color: ${YELLOW};
   color: black;
   font-size: 12px;
   line-height: 1;
@@ -81,7 +84,7 @@ const CSS = `
 }
 
 .${HIGHLIGHTED_HINT_CLASS} {
-  background-color: lime;
+  background-color: ${GREEN};
 }
 
 .${MATCHED_CHARS_CLASS} {
@@ -92,13 +95,10 @@ const CSS = `
   position: absolute;
   z-index: ${MIN_Z_INDEX};
   box-sizing: border-box;
-  ${
-    "" // This is the purple used in Firefox for findbar "Highlight all" matches.
-  }
-  border-bottom: 2px solid #ef0fff;
+  border-bottom: 2px solid ${PURPLE};
 }
 
-.${TITLE_CLASS} {
+.${STATUS_CLASS} {
   box-sizing: border-box;
   position: absolute;
   z-index: ${MAX_Z_INDEX};
@@ -133,8 +133,8 @@ export default class RendererProgram {
   enteredTextChars: string;
   resets: Resets;
   shruggieElement: HTMLElement;
-  titleElement: HTMLElement;
-  titleText: Text;
+  statusElement: HTMLElement;
+  statusText: Text;
   hintSize: HintSize;
   container: {|
     element: HTMLElement,
@@ -172,10 +172,10 @@ export default class RendererProgram {
       "z-index": String(MAX_Z_INDEX),
     });
 
-    this.titleElement = document.createElement("div");
-    this.titleElement.classList.add(TITLE_CLASS, HIDDEN_CLASS);
-    this.titleText = document.createTextNode("");
-    this.titleElement.append(this.titleText);
+    this.statusElement = document.createElement("div");
+    this.statusElement.classList.add(STATUS_CLASS, HIDDEN_CLASS);
+    this.statusText = document.createTextNode("");
+    this.statusElement.append(this.statusText);
 
     this.hintSize = {
       widthBase: 0,
@@ -207,7 +207,7 @@ export default class RendererProgram {
     };
   }
 
-  async start(): Promise<void> {
+  async start() {
     // This is useful during development. If reloading the extension during
     // hints mode, the old hints will be removed as soon as the new version
     // starts.
@@ -224,7 +224,7 @@ export default class RendererProgram {
       await browser.runtime.sendMessage(
         wrapMessage({ type: "RendererScriptAdded" })
       );
-    } catch (_error) {
+    } catch {
       // In Firefox, content scripts are loaded automatically in already
       // existing tabs. (Chrome only automatically loads content scripts into
       // _new_ tabs.) The content scripts run before the background scripts, so
@@ -260,7 +260,7 @@ export default class RendererProgram {
     this.unrender();
   }
 
-  async sendMessage(message: FromRenderer): Promise<void> {
+  async sendMessage(message: FromRenderer) {
     log("log", "RendererProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
@@ -303,10 +303,6 @@ export default class RendererProgram {
         this.renderTextRects(message.rects, message.frameId);
         break;
 
-      case "SetTitle":
-        this.setTitle(message.title);
-        break;
-
       case "Peek":
         this.togglePeek({ peek: true });
         break;
@@ -316,11 +312,7 @@ export default class RendererProgram {
         break;
 
       case "Unrender":
-        if (message.keepTitle && this.titleText.data !== "") {
-          this.unrenderHintsOnly();
-        } else {
-          this.unrender();
-        }
+        this.unrender();
         break;
 
       default:
@@ -412,7 +404,7 @@ export default class RendererProgram {
     };
   }
 
-  async render(elements: Array<ElementWithHint>): Promise<void> {
+  async render(elements: Array<ElementWithHint>) {
     const { documentElement } = document;
     if (documentElement == null) {
       return;
@@ -452,7 +444,7 @@ export default class RendererProgram {
     }
 
     root.append(this.shruggieElement);
-    root.append(this.titleElement);
+    root.append(this.statusElement);
     shadowRoot.append(root);
     this.maybeApplyStyles(root);
     this.updateContainer(viewport);
@@ -484,7 +476,7 @@ export default class RendererProgram {
       });
       setStyles(element, {
         ...styles,
-        // Remove 1 so that all hints stay below the title.
+        // Remove 1 so that all hints stay below the status.
         "z-index": String(MAX_Z_INDEX - index - 1),
       });
 
@@ -622,7 +614,7 @@ export default class RendererProgram {
       updates.filter(update => update.hidden).length === this.hints.length;
     this.toggleShruggie({ visible: allHidden });
 
-    this.setTitle(enteredTextChars.replace(/\s/g, "\u00a0"));
+    this.setStatus(enteredTextChars.replace(/\s/g, "\u00a0"));
 
     if (maybeNeedsMoveInsideViewport.length > 0) {
       this.moveInsideViewport(maybeNeedsMoveInsideViewport, viewport);
@@ -670,13 +662,13 @@ export default class RendererProgram {
     this.maybeApplyStyles(this.shruggieElement);
   }
 
-  setTitle(title: string) {
+  setStatus(status: string) {
     // Avoid unnecessary flashing in the devtools when inspecting the hints.
-    if (this.titleText.data !== title) {
-      this.titleText.data = title;
+    if (this.statusText.data !== status) {
+      this.statusText.data = status;
     }
-    this.titleElement.classList.toggle(HIDDEN_CLASS, title === "");
-    this.maybeApplyStyles(this.titleElement);
+    this.statusElement.classList.toggle(HIDDEN_CLASS, status === "");
+    this.maybeApplyStyles(this.statusElement);
   }
 
   togglePeek({ peek }: {| peek: boolean |}) {
@@ -692,7 +684,7 @@ export default class RendererProgram {
     this.container.element.remove();
     this.container.root.classList.remove(PEEK_CLASS);
     this.toggleShruggie({ visible: false });
-    this.setTitle("");
+    this.setStatus("");
     emptyNode(this.container.root);
     emptyNode(this.container.shadowRoot);
     this.container.resets.reset();
@@ -704,15 +696,6 @@ export default class RendererProgram {
     for (const container of containers) {
       container.remove();
     }
-  }
-
-  unrenderHintsOnly() {
-    for (const element of this.hints) {
-      element.remove();
-    }
-    this.unrenderTextRects();
-    this.hints = [];
-    this.rects.clear();
   }
 
   unrenderTextRects(frameId?: number) {

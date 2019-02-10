@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>click</title>
     <style>
       body {
@@ -14,12 +14,7 @@
     <button id="trigger">trigger</button>
     <button id="compare">compare</button>
     <script>
-      const events = [
-        "mousedown",
-        "mouseup",
-        "click",
-        "focus",
-      ];
+      const events = ["mousedown", "mouseup", "click", "focus"];
 
       const props = [
         "altKey",
@@ -115,7 +110,13 @@
           }
           for (const prop of props) {
             if (trustedEvent[prop] !== notTrustedEvent[prop]) {
-              console.log(prop, trustedEvent[prop], notTrustedEvent[prop], trustedEvent, notTrustedEvent);
+              console.log(
+                prop,
+                trustedEvent[prop],
+                notTrustedEvent[prop],
+                trustedEvent,
+                notTrustedEvent
+              );
             }
           }
         }

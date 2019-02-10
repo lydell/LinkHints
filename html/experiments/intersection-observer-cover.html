@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>intersection-observer-cover</title>
     <style>
       html {
@@ -83,7 +83,8 @@
         const { documentElement } = document;
         const rect = documentElement.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(documentElement);
-        const isStatic = computedStyle.getPropertyValue("position") === "static";
+        const isStatic =
+          computedStyle.getPropertyValue("position") === "static";
         const left =
           rect.left +
           (isStatic

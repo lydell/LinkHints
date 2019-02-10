@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>untrusted events</title>
     <style>
       body {
@@ -23,11 +23,12 @@
     </style>
   </head>
   <body>
-    <p>Untrusted events dispatched by the page should not trigger Synth actions.</p>
+    <p>
+      Untrusted events dispatched by the page should not trigger Synth actions.
+    </p>
 
     <p>
       <a id="link" href="#">link</a>
-      <abbr title="some title text">title</abbr>
     </p>
 
     <div id="wrapper">
@@ -38,60 +39,60 @@
 
     <script>
       const events = {
-        "blur": () => {
+        blur: () => {
           window.dispatchEvent(new FocusEvent("blur"));
           link.dispatchEvent(new FocusEvent("blur"));
         },
-        "click": () => {
-          document.body.dispatchEvent(new MouseEvent("click"));
+        keydown: () => {
+          window.dispatchEvent(
+            new KeyboardEvent("keydown", {
+              key: "j",
+              code: "KeyJ",
+              altKey: true,
+            })
+          );
         },
-        "keydown": () => {
-          window.dispatchEvent(new KeyboardEvent("keydown", {
-            key: "j",
-            code: "KeyJ",
-            altKey: true,
-          }));
-        },
-        "keyup": () => {
-          window.dispatchEvent(new KeyboardEvent("keyup", {
-            key: "Meta",
-            code: "MetaLeft",
-          }));
+        keyup: () => {
+          window.dispatchEvent(
+            new KeyboardEvent("keyup", {
+              key: "Meta",
+              code: "MetaLeft",
+            })
+          );
           window.dispatchEvent(new KeyboardEvent("keyup"), {
             key: "Control",
             code: "ControlLeft",
           });
         },
-        "pagehide": () => {
+        pagehide: () => {
           window.dispatchEvent(new PageTransitionEvent("pagehide"));
         },
-        "message": () => {
+        message: () => {
           const message = {
-            "type": "FindElements",
-            "token": "49515842341949434181808946120",
-            "types": [
+            type: "FindElements",
+            token: "49515842341949434181808946120",
+            types: [
               "clickable",
               "clickable-event",
               "label",
               "link",
               "scrollable",
               "textarea",
-              "title"
             ],
-            "viewports": [
+            viewports: [
               {
-                "x": 0,
-                "y": 0,
-                "width": 1600,
-                "height": 625
+                x: 0,
+                y: 0,
+                width: 1600,
+                height: 625,
               },
               {
-                "x": 880,
-                "y": 137,
-                "width": 710,
-                "height": 434
-              }
-            ]
+                x: 880,
+                y: 137,
+                width: 710,
+                height: 434,
+              },
+            ],
           };
           iframe.contentWindow.postMessage(message, "*");
         },
@@ -112,9 +113,13 @@
         };
         actions.append(button2);
 
-        window.addEventListener(eventName, event => {
-          console.log(eventName, event.isTrusted, event);
-        }, true);
+        window.addEventListener(
+          eventName,
+          event => {
+            console.log(eventName, event.isTrusted, event);
+          },
+          true
+        );
       }
     </script>
   </body>

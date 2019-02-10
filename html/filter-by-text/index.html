@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>filter by text</title>
     <style>
       .boxes {
@@ -24,17 +24,30 @@
     <ul>
       <li>The shortest text should get the best hint.</li>
       <li>The updated hints should not be off-screen.</li>
-      <li>The highlighting should work nested elements and separate text nodes.</li>
+      <li>
+        The highlighting should work nested elements and separate text nodes.
+      </li>
       <li>The button badge count should update.</li>
     </ul>
     <p>Don’t forget to try backspacing.</p>
 
     <p><a href="#">Case insensitve text!</a></p>
     <p><a href="#">Case Insensitve TEXT! (different case)</a></p>
-    <p><a href="#">Case <em>in</em>sensitve TEXT! (nested element)</a></p>
-    <p><a href="#">Case <em>i<!-- comment -->n</em>sensitve TE<!-- comment -->XT!
-      (nested element and separate text nodes)</a></p>
-    <p><a href="#">Case <small>in</small>sensitve T<sup>E</sup><sub>X</sub>T! (different text sizes)</a></p>
+    <p>
+      <a href="#">Case <em>in</em>sensitve TEXT! (nested element)</a>
+    </p>
+    <p>
+      <a href="#"
+        >Case <em>i<!-- comment -->n</em>sensitve TE<!-- comment -->XT! (nested
+        element and separate text nodes)</a
+      >
+    </p>
+    <p>
+      <a href="#"
+        >Case <small>in</small>sensitve T<sup>E</sup><sub>X</sub>T! (different
+        text sizes)</a
+      >
+    </p>
 
     <iframe src="iframe.html"></iframe>
 
@@ -52,15 +65,16 @@
 
     <p><a href="https://example.com">example.com</a></p>
     <p>
-      <textarea rows="5" cols="90">Focus this textarea and open the above link in a new tab to try the overtyping prevention.
-Also, it should not be possible to match this textarea by this default text.</textarea>
+      <textarea rows="5" cols="90">
+Focus this textarea and open the above link in a new tab to try the overtyping prevention.
+Also, it should not be possible to match this textarea by this default text.</textarea
+      >
     </p>
-    <p>Also try overtyping to show the title of this abbreviation: <abbr title="Cascading Style Sheets">CSS</abbr></p>
 
     <p>Overlapping hints. The best hint should be on top.</p>
     <p style="line-height: 0.5;">
       <a href="#">text longer and larger</a>
-      <br>
+      <br />
       <small><a href="#">text</a></small>
     </p>
   </body>

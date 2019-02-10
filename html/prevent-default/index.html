@@ -1,17 +1,36 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>preventDefault links</title>
   </head>
   <body>
-    <p>Clicking a link without preventDefault should exit the "ManyClick" hints mode.</p>
+    <p>
+      Clicking a link without preventDefault should exit the "ManyClick" hints
+      mode.
+    </p>
 
     <p><a href="https://example.com/?no">no prevent</a></p>
-    <p><a id="mousedown" href="https://example.com/?mousedown">prevent mousedown (not enough)</a></p>
-    <p><a id="mouseup" href="https://example.com/?mouseup">prevent mouseup (not enough)</a></p>
-    <p><a id="click" href="https://example.com/?click">prevent click (prevents page load)</a></p>
-    <p><a href="https://example.com/?onclick" onclick="return false">onclick (prevents page load)</a></p>
+    <p>
+      <a id="mousedown" href="https://example.com/?mousedown"
+        >prevent mousedown (not enough)</a
+      >
+    </p>
+    <p>
+      <a id="mouseup" href="https://example.com/?mouseup"
+        >prevent mouseup (not enough)</a
+      >
+    </p>
+    <p>
+      <a id="click" href="https://example.com/?click"
+        >prevent click (prevents page load)</a
+      >
+    </p>
+    <p>
+      <a href="https://example.com/?onclick" onclick="return false"
+        >onclick (prevents page load)</a
+      >
+    </p>
     <p><a href="#hash">internal fragment identifier</a></p>
     <p><a href="javascript:alert(1)">javascript link</a></p>
 

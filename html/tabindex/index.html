@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>focus</title>
     <style>
       *:focus {
@@ -53,7 +53,7 @@
 
         element.addEventListener("click", event => {
           element.focus();
-        })
+        });
 
         element.addEventListener("keydown", event => {
           setTimeout(() => {
@@ -71,14 +71,16 @@
                 i++;
                 break;
               default:
-                // Do nothing.
+              // Do nothing.
             }
           }, 2000);
         });
       }
 
       function update(element) {
-        element.textContent = `[tabindex=${JSON.stringify(element.getAttribute("tabindex"))}] .tabIndex===${JSON.stringify(element.tabIndex)}`;
+        element.textContent = `[tabindex=${JSON.stringify(
+          element.getAttribute("tabindex")
+        )}] .tabIndex===${JSON.stringify(element.tabIndex)}`;
       }
     </script>
   </body>

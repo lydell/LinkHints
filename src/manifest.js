@@ -14,7 +14,7 @@ module.exports = () =>
     author: "Simon Lydell",
     description: "Click things on the web using the keyboard.",
     homepage_url: "https://github.com/lydell/synth",
-    applications: getApplications(config.browser),
+    browser_specific_settings: getBrowserSpecificSettings(config.browser),
     icons: getIcons(config.icons, config.browser),
     permissions: [
       // Needed for injecting content scripts in already open tabs on install,
@@ -70,7 +70,7 @@ function toJSON(obj: mixed): string {
   return JSON.stringify(obj, undefined, 2);
 }
 
-function getApplications(browser: ?Browser): mixed {
+function getBrowserSpecificSettings(browser: ?Browser): mixed {
   switch (browser) {
     case "chrome":
       return undefined;

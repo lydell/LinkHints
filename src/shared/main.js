@@ -218,19 +218,6 @@ export function makeRandomToken(): string {
   return array.join("");
 }
 
-export function getTitle(element: HTMLElement): ?string {
-  const { title } = element;
-
-  // `.title` is undefined for SVG elements.
-  if (title == null) {
-    return undefined;
-  }
-
-  const trimmed = title.trim();
-
-  return trimmed === "" ? undefined : trimmed;
-}
-
 export type Box = {|
   +x: number,
   +y: number,
@@ -264,5 +251,17 @@ export function setStyles(element: HTMLElement, styles: { [string]: string }) {
   for (const [property, value] of Object.entries(styles)) {
     // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
+  }
+}
+
+export function* walkTextNodes(
+  element: HTMLElement
+): Generator<Text, void, void> {
+  for (const node of element.childNodes) {
+    if (node instanceof Text) {
+      yield node;
+    } else if (node instanceof HTMLElement) {
+      yield* walkTextNodes(node);
+    }
   }
 }

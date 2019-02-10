@@ -18,10 +18,10 @@ import {
   addEventListener,
   addListener,
   bind,
-  getTitle,
   getViewport,
   log,
   unreachable,
+  walkTextNodes,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -58,25 +58,10 @@ const MODIFIER_KEYS: Set<string> = new Set([
   "OS",
 ]);
 
-// All `<input type="…"`> values that look like a button by default, and can be
-// activated by pressing space and as such prevent _scrolling_ by pressing space
-// when focused. Note: Blurring `<input type="file">` when pressing space does
-// not result in a page scroll on Firefox (but all the others do).
-const BUTTON_INPUT_TYPES: Set<string> = new Set([
-  "button",
-  "color",
-  "file",
-  "image",
-  "reset",
-  "submit",
-]);
-
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
   ignoreKeyboardLayout: boolean;
-  trackInteractions: boolean;
-  mutationObserver: ?MutationObserver;
   elementManager: ElementManager;
   current: ?CurrentElements;
   oneTimeWindowMessageToken: ?string;
@@ -87,8 +72,6 @@ export default class WorkerProgram {
     this.keyboardShortcuts = [];
     this.keyboardMode = "Normal";
     this.ignoreKeyboardLayout = true;
-    this.trackInteractions = false;
-    this.mutationObserver = undefined;
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
       onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
@@ -100,7 +83,6 @@ export default class WorkerProgram {
 
     bind(this, [
       [this.onBlur, { catch: true }],
-      [this.onClick, { catch: true }],
       [this.onKeydown, { catch: true }],
       [this.onKeyup, { catch: true }],
       [this.onMessage, { catch: true }],
@@ -113,11 +95,10 @@ export default class WorkerProgram {
     ]);
   }
 
-  async start(): Promise<void> {
+  async start() {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "blur", this.onBlur),
-      addEventListener(window, "click", this.onClick),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "keyup", this.onKeyup, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage),
@@ -130,7 +111,7 @@ export default class WorkerProgram {
       await browser.runtime.sendMessage(
         wrapMessage({ type: "WorkerScriptAdded" })
       );
-    } catch (_error) {
+    } catch {
       return;
     }
     browser.runtime.connect().onDisconnect.addListener(() => {
@@ -145,7 +126,7 @@ export default class WorkerProgram {
     this.suppressNextKeyup = undefined;
   }
 
-  async sendMessage(message: FromWorker): Promise<void> {
+  async sendMessage(message: FromWorker) {
     log("log", "WorkerProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
@@ -259,7 +240,6 @@ export default class WorkerProgram {
 
       case "ClickElement": {
         const elementData = this.getElement(message.index);
-        const { trackRemoval } = message;
 
         if (elementData == null) {
           log("error", "ClickElement: Missing element", message, this.current);
@@ -269,10 +249,6 @@ export default class WorkerProgram {
         log("log", "WorkerProgram: ClickElement", elementData);
 
         const { element } = elementData;
-
-        if (trackRemoval) {
-          this.trackRemoval(element);
-        }
 
         const defaultNotPrevented = clickElement(element);
 
@@ -292,12 +268,7 @@ export default class WorkerProgram {
 
         log("log", "WorkerProgram: SelectElement", elementData);
 
-        const { trackRemoval } = message;
         const { element } = elementData;
-
-        if (trackRemoval) {
-          this.trackRemoval(element);
-        }
 
         if (
           element instanceof HTMLInputElement ||
@@ -378,14 +349,6 @@ export default class WorkerProgram {
         }
         break;
       }
-
-      case "TrackInteractions":
-        this.trackInteractions = message.track;
-        if (!this.trackInteractions && this.mutationObserver != null) {
-          this.mutationObserver.disconnect();
-          this.mutationObserver = undefined;
-        }
-        break;
 
       case "ReverseSelection": {
         const selection: Selection | null = window.getSelection();
@@ -490,28 +453,6 @@ export default class WorkerProgram {
       return;
     }
 
-    const { activeElement } = document;
-
-    // Scroll the page when pressing space while a button is focused, rather
-    // than activating the button. The button can still be activated by pressing
-    // Enter (or sometimes ctrl+space or similar).
-    // TODO: Should this be part of Synth? If so, put it behind an option.
-    if (
-      this.keyboardMode === "Normal" &&
-      event.key === " " &&
-      !event.altKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      // `event.shiftKey` scrolls backwards.
-      activeElement != null &&
-      (activeElement instanceof HTMLButtonElement ||
-        (activeElement instanceof HTMLInputElement &&
-          BUTTON_INPUT_TYPES.has(activeElement.type)) ||
-        activeElement.nodeName === "SUMMARY")
-    ) {
-      activeElement.blur();
-    }
-
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       ignoreKeyboardLayout: this.ignoreKeyboardLayout,
@@ -565,17 +506,6 @@ export default class WorkerProgram {
         keyboardMode: this.keyboardMode,
         suppressNextKeyup: this.suppressNextKeyup,
       });
-    }
-
-    if (
-      this.trackInteractions &&
-      // If the key press is suppressed and doesn’t trigger anything, it’s not
-      // really an interaction. This allows showing title attributes when
-      // overtyping after filtering hints by text. Otherwise the extra key
-      // presses would cause the title to immediately disappear.
-      !(suppress && match == null)
-    ) {
-      this.sendMessage({ type: "Interaction" });
     }
 
     if (match != null) {
@@ -633,17 +563,6 @@ export default class WorkerProgram {
     }
   }
 
-  onClick(event: MouseEvent) {
-    if (!event.isTrusted) {
-      log("log", "WorkerProgram#onClick", "ignoring untrusted event", event);
-      return;
-    }
-
-    if (this.trackInteractions) {
-      this.sendMessage({ type: "Interaction" });
-    }
-  }
-
   onTrackedElementsMutation() {
     const { current } = this;
     if (current == null) {
@@ -681,7 +600,7 @@ export default class WorkerProgram {
     types: ElementTypes,
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
-  ): Promise<void> {
+  ) {
     // In ManyClick mode and when refreshing hints we enter hints mode anew
     // without exiting the “previous” hints mode. Make sure that any update
     // polling (or the update from `onTrackedElementsMutation`) don’t interfere
@@ -736,7 +655,7 @@ export default class WorkerProgram {
   }: {|
     current: CurrentElements,
     oneTimeWindowMessageToken: ?string,
-  |}): Promise<void> {
+  |}) {
     if (current.updating) {
       return;
     }
@@ -796,38 +715,6 @@ export default class WorkerProgram {
         .filter(Boolean),
       rects,
     });
-  }
-
-  // Track if the element (or any of its parents) is removed. This is used to
-  // hide the title popup if its element is removed. If the element is in a
-  // frame, it could also be removed by removing one of its parent frames, but I
-  // don’t think it’s worth trying to detect that.
-  trackRemoval(element: HTMLElement) {
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return;
-    }
-
-    if (this.mutationObserver != null) {
-      this.mutationObserver.disconnect();
-    }
-
-    const mutationObserver = new MutationObserver(records => {
-      const nodesWereRemoved = records.some(
-        record => record.removedNodes.length > 0
-      );
-      if (nodesWereRemoved && !documentElement.contains(element)) {
-        mutationObserver.disconnect();
-        this.sendMessage({ type: "ClickedElementRemoved" });
-      }
-    });
-
-    mutationObserver.observe(documentElement, {
-      childList: true,
-      subtree: true,
-    });
-
-    this.mutationObserver = mutationObserver;
   }
 }
 
@@ -1081,16 +968,6 @@ function getTextRects(
   );
 }
 
-function* walkTextNodes(element: HTMLElement): Generator<Text, void, void> {
-  for (const node of element.childNodes) {
-    if (node instanceof Text) {
-      yield node;
-    } else if (node instanceof HTMLElement) {
-      yield* walkTextNodes(node);
-    }
-  }
-}
-
 function suppressEvent(event: Event) {
   event.preventDefault();
   // `event.stopPropagation()` prevents the event from propagating further
@@ -1105,7 +982,6 @@ function visibleElementToElementReport(
   index: number
 ): ElementReport {
   const text = extractText(element, type);
-  const title = getTitle(element);
   return {
     type,
     index,
@@ -1113,13 +989,6 @@ function visibleElementToElementReport(
       type === "link" && element instanceof HTMLAnchorElement
         ? element.href
         : undefined,
-    // Links to files and notifications on GitHub often have the the title
-    // attribute set to the element text. That does not provide any new
-    // information and is only annoying. So ignore the title if it is the same
-    // as the element text – and the element is clickable for some other reason
-    // than for having a title. Gmail attachments have equal title and element
-    // text, but having a title is the only thing marking them as clickable.
-    title: text.trim() === title && type !== "title" ? undefined : title,
     text,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),

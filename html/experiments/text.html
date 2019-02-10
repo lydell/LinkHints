@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>text</title>
     <style media="screen">
       .hidden {
@@ -18,20 +18,25 @@
     </style>
   </head>
   <body>
+    <!-- prettier-ignore -->
     <p id="p">
       <span style="display: none;">hidden1</span>
-      some    text
+      some     text
       <span class="hidden">hidden2</span>
     </p>
     <pre id="pre"></pre>
     <script>
       const range = document.createRange();
       range.selectNodeContents(p);
-      pre.textContent = JSON.stringify({
-        textContent: p.textContent,
-        innerText: p.innerText,
-        selectNodeContents: range.toString(),
-      }, undefined, 2);
+      pre.textContent = JSON.stringify(
+        {
+          textContent: p.textContent,
+          innerText: p.innerText,
+          selectNodeContents: range.toString(),
+        },
+        undefined,
+        2
+      );
     </script>
   </body>
 </html>

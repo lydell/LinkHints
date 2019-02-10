@@ -59,7 +59,7 @@ export default class OptionsProgram extends Component<Props, State> {
     this.stop();
   }
 
-  async sendMessage(message: FromOptions): Promise<void> {
+  async sendMessage(message: FromOptions) {
     log("log", "OptionsProgram#sendMessage", message.type, message);
     await browser.runtime.sendMessage(wrapMessage(message));
   }

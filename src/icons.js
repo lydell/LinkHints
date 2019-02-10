@@ -328,7 +328,7 @@ function writeFileIfNeeded(filepath: string, content: string) {
   try {
     const previous = fs.readFileSync(filepath, "utf8");
     needed = previous !== content;
-  } catch (_error) {
+  } catch {
     needed = true;
   }
   if (needed) {
