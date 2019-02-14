@@ -731,6 +731,14 @@
       <a href="#">
         <span class="other-class fa-thumbs-up" data-icon="👍">1.41 tn</span>
       </a>
+      <a
+        href="#"
+        onclick="[].forEach.call(this.children, element => element.toggleAttribute('hidden')); return false"
+      >
+        <span hidden class="other-class fa-check" data-icon="☑️"></span>
+        <span class="other-class fa-check-filled" data-icon="✅"></span>
+        one hidden icon
+      </a>
     </div>
 
     <p>Icons should not be preferred if further to the right.</p>
