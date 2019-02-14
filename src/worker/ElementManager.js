@@ -1418,7 +1418,11 @@ function getBestNonEmptyTextPoint({
   const isSingleLine = sameLineRects.length === rects.length;
   if (isSingleLine && leftMostRect.left >= elementRect.left + ICON_MIN_SIZE) {
     const imagePoint = getFirstImagePoint(element, viewports);
-    if (imagePoint != null && isAcceptable(imagePoint.point)) {
+    if (
+      imagePoint != null &&
+      imagePoint.point.x < leftMostRect.left &&
+      isAcceptable(imagePoint.point)
+    ) {
       return imagePoint.point;
     }
   }
