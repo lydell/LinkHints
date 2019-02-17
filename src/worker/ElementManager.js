@@ -145,6 +145,8 @@ const CLICKABLE_ATTRIBUTES = [
   // clickable, though.
   "aria-checked",
   "aria-selected",
+  // Ember.
+  "data-ember-action",
   // Bootstrap.
   "data-dismiss",
   // Twitter.
@@ -223,13 +225,11 @@ export default class ElementManager {
     this.elementsWithScrollbars = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
-      this.onIntersection.bind(this),
-      {}
+      this.onIntersection.bind(this)
     );
 
     this.frameIntersectionObserver = new IntersectionObserver(
-      this.onFrameIntersection.bind(this),
-      {}
+      this.onFrameIntersection.bind(this)
     );
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
@@ -929,8 +929,8 @@ function getMeasurements(
     // been made to “contain” the floats). For example, a link in a menu could
     // contain a span of text floated to the left and an icon floated to the
     // right. Those are still clickable. So return the measurements of one of
-    // the children instead. For now we just pick the first (in DOM order), but
-    // there might be a more clever way of doing it.
+    // the children instead. At least for now we just pick the first (in DOM
+    // order), but there might be a more clever way of doing it.
     if (rects.length === 1) {
       const rect = rects[0];
       if (rect.width === 0) {
@@ -1179,40 +1179,38 @@ function getFirstImagePoint(
   element: HTMLElement,
   viewports: Array<Box>
 ): ?{| point: Point, rect: ClientRect |} {
-  // First try to find an image _child._ For example, <button
-  // class="icon-button"><img></button>`. (This button should get the hint at
-  // the image, not at the edge of the button.)
-  const imageChild = element.querySelector(IMAGE_SELECTOR);
+  const images = [
+    // First try to find an image _child._ For example, <button
+    // class="icon-button"><img></button>`. (This button should get the hint at
+    // the image, not at the edge of the button.)
+    ...element.querySelectorAll(IMAGE_SELECTOR),
+    // Then, see if the element itself is an image. For example, `<button
+    // class="Icon Icon-search"></button>`. The element itself can also be an
+    // `<img>` due to the `float` case in `getMeasurements`.
+    ...(element.matches(IMAGE_SELECTOR) ? [element] : []),
+  ];
 
-  // Then, see if the element itself is an image. For example, `<button
-  // class="Icon Icon-search"></button>`. The element itself can also be an
-  // `<img>` due to the `float` case in `getMeasurements`.
-  const image =
-    imageChild == null
-      ? element.matches(IMAGE_SELECTOR)
-        ? element
-        : undefined
-      : imageChild;
+  // Some buttons on Twitter have two icons inside – one shown, one hidden (and
+  // it toggles between them based on if the button is active or not). At least
+  // for now we just pick the first image (in DOM order) that gets a
+  // `visibleBox`, but there might be a more clever way of doing it.
+  for (const image of images) {
+    const rect = image.getBoundingClientRect();
+    const visibleBox = getVisibleBox(rect, viewports);
 
-  if (image == null) {
-    return undefined;
+    if (visibleBox != null) {
+      return {
+        point: {
+          // The image might have padding around it.
+          ...getBorderAndPaddingPoint(image, rect, visibleBox),
+          align: rect.height >= BOX_MIN_HEIGHT ? "left" : "right",
+        },
+        rect,
+      };
+    }
   }
 
-  const rect = image.getBoundingClientRect();
-  const visibleBox = getVisibleBox(rect, viewports);
-
-  if (visibleBox == null) {
-    return undefined;
-  }
-
-  return {
-    point: {
-      // The image might have padding around it.
-      ...getBorderAndPaddingPoint(image, rect, visibleBox),
-      align: rect.height >= BOX_MIN_HEIGHT ? "left" : "right",
-    },
-    rect,
-  };
+  return undefined;
 }
 
 function getBorderAndPaddingPoint(
@@ -1418,7 +1416,11 @@ function getBestNonEmptyTextPoint({
   const isSingleLine = sameLineRects.length === rects.length;
   if (isSingleLine && leftMostRect.left >= elementRect.left + ICON_MIN_SIZE) {
     const imagePoint = getFirstImagePoint(element, viewports);
-    if (imagePoint != null && isAcceptable(imagePoint.point)) {
+    if (
+      imagePoint != null &&
+      imagePoint.point.x < leftMostRect.left &&
+      isAcceptable(imagePoint.point)
+    ) {
       return imagePoint.point;
     }
   }
