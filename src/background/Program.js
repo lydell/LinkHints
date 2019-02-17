@@ -1616,37 +1616,35 @@ export default class BackgroundProgram {
       this.oneTimeWindowMessageToken = makeRandomToken();
     }
 
-    if (hintsState.type === "Hinting") {
-      return {
-        type: "StateSync",
-        logLevel: log.level,
-        clearElements: false,
-        keyboardShortcuts: preventOverTyping
-          ? []
-          : [
-              ...this.options.globalKeyboardShortcuts,
-              ...this.options.hintsKeyboardShortcuts,
-            ],
-        keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
-        ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
-        oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
-      };
-    }
-
-    return {
-      type: "StateSync",
-      logLevel: log.level,
-      clearElements: true,
-      keyboardShortcuts: preventOverTyping
-        ? []
-        : [
-            ...this.options.globalKeyboardShortcuts,
-            ...this.options.normalKeyboardShortcuts,
-          ],
-      keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
-      ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
-      oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
-    };
+    return hintsState.type === "Hinting"
+      ? {
+          type: "StateSync",
+          logLevel: log.level,
+          clearElements: false,
+          keyboardShortcuts: preventOverTyping
+            ? []
+            : [
+                ...this.options.globalKeyboardShortcuts,
+                ...this.options.hintsKeyboardShortcuts,
+              ],
+          keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
+          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
+          oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+        }
+      : {
+          type: "StateSync",
+          logLevel: log.level,
+          clearElements: true,
+          keyboardShortcuts: preventOverTyping
+            ? []
+            : [
+                ...this.options.globalKeyboardShortcuts,
+                ...this.options.normalKeyboardShortcuts,
+              ],
+          keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
+          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
+          oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+        };
   }
 
   // Send a "StateSync" message to WorkerProgram. If a hint was auto-activated
