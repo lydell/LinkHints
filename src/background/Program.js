@@ -133,14 +133,12 @@ const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
 export default class BackgroundProgram {
   options: Options;
-  optionsUpdate: Promise<void>;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
 
   constructor() {
     this.options = getDefaults({ mac: true });
-    this.optionsUpdate = Promise.resolve();
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
@@ -173,7 +171,7 @@ export default class BackgroundProgram {
   async start() {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
-    this.optionsUpdate = this.updateOptions();
+    await this.updateOptions();
 
     const tabs = await browser.tabs.query({});
 
@@ -326,14 +324,13 @@ export default class BackgroundProgram {
     });
   }
 
-  async onWorkerMessage(
+  onWorkerMessage(
     message: FromWorker,
     info: MessageInfo,
     tabState: TabState
   ) {
     switch (message.type) {
       case "WorkerScriptAdded":
-        await this.optionsUpdate;
         this.sendWorkerMessage(
           // Make sure that the added worker script gets the same token as all
           // other frames in the page. Otherwise the first hints mode won't
@@ -1217,14 +1214,13 @@ export default class BackgroundProgram {
     this.updateBadge(info.tabId);
   }
 
-  async onRendererMessage(
+  onRendererMessage(
     message: FromRenderer,
     info: MessageInfo,
     tabState: TabState
-  ): Promise<void> {
+  ) {
     switch (message.type) {
       case "RendererScriptAdded":
-        await this.optionsUpdate;
         this.sendRendererMessage(
           {
             type: "StateSync",
@@ -1612,8 +1608,7 @@ export default class BackgroundProgram {
 
   async saveOptions(partialOptions: PartialOptions) {
     await browser.storage.sync.set(partialOptions);
-    this.optionsUpdate = this.updateOptions();
-    await this.optionsUpdate;
+    await this.updateOptions();
   }
 
   makeWorkerState(
