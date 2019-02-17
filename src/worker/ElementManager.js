@@ -225,13 +225,11 @@ export default class ElementManager {
     this.elementsWithScrollbars = new WeakSet();
 
     this.intersectionObserver = new IntersectionObserver(
-      this.onIntersection.bind(this),
-      {}
+      this.onIntersection.bind(this)
     );
 
     this.frameIntersectionObserver = new IntersectionObserver(
-      this.onFrameIntersection.bind(this),
-      {}
+      this.onFrameIntersection.bind(this)
     );
 
     this.mutationObserver = new MutationObserver(this.onMutation.bind(this));

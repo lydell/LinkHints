@@ -4,6 +4,7 @@ include_warnings=true
 
 [lints]
 all=error
+dynamic-export=off
 unclear-type=off
 
 [strict]
