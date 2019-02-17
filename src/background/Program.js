@@ -133,12 +133,14 @@ const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
 export default class BackgroundProgram {
   options: Options;
+  optionsErrors: Array<string>;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
 
   constructor() {
     this.options = getDefaults({ mac: true });
+    this.optionsErrors = [];
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
@@ -151,7 +153,6 @@ export default class BackgroundProgram {
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
       [this.openNewTab, { catch: true }],
-      [this.saveOptions, { catch: true }],
       [this.sendBackgroundMessage, { log: true, catch: true }],
       [this.sendContentMessage, { catch: true }],
       [this.sendPopupMessage, { log: true, catch: true }],
@@ -171,7 +172,11 @@ export default class BackgroundProgram {
   async start() {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
-    await this.updateOptions();
+    try {
+      await this.updateOptions();
+    } catch (error) {
+      this.optionsErrors = [error.message];
+    }
 
     const tabs = await browser.tabs.query({});
 
@@ -324,11 +329,7 @@ export default class BackgroundProgram {
     });
   }
 
-  onWorkerMessage(
-    message: FromWorker,
-    info: MessageInfo,
-    tabState: TabState
-  ) {
+  onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
     switch (message.type) {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(
@@ -1306,6 +1307,7 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
+          optionsErrors: this.optionsErrors,
         });
         break;
 
@@ -1315,6 +1317,7 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
+          optionsErrors: this.optionsErrors,
         });
         const tabs = await browser.tabs.query({});
         for (const tab of tabs) {
@@ -1594,21 +1597,22 @@ export default class BackgroundProgram {
       defaults,
       rawOptions,
       options,
+      errors,
     });
-    this.options = options;
 
-    for (const [key, error] of errors) {
-      log(
-        "error",
-        `BackgroundProgram#updateOptions: Decode error for option ${repr(key)}`,
-        error
-      );
-    }
+    this.options = options;
+    this.optionsErrors = errors.map(
+      ([key, error]) => `Decode error for option ${repr(key)}: ${error.message}`
+    );
   }
 
   async saveOptions(partialOptions: PartialOptions) {
-    await browser.storage.sync.set(partialOptions);
-    await this.updateOptions();
+    try {
+      await browser.storage.sync.set(partialOptions);
+      await this.updateOptions();
+    } catch (error) {
+      this.optionsErrors = [error.message];
+    }
   }
 
   makeWorkerState(

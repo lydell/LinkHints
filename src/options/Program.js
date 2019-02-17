@@ -13,7 +13,11 @@ import { TextInput } from "./TextInput";
 
 type Props = {||};
 
-type State = {| options: ?Options |};
+type State = {|
+  options: ?Options,
+  optionsErrors: Array<string>,
+  hasSaved: boolean,
+|};
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets;
@@ -25,6 +29,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     this.state = {
       options: undefined,
+      optionsErrors: [],
+      hasSaved: false,
     };
 
     bind(this, [
@@ -70,7 +76,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
     switch (message.type) {
       case "StateSync":
         log.level = message.logLevel;
-        this.setState({ options: message.options });
+        this.setState({
+          options: message.options,
+          optionsErrors: message.optionsErrors,
+        });
         break;
 
       default:
@@ -79,6 +88,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   saveOptions(partialOptions: PartialOptions) {
+    this.setState({ optionsErrors: [], hasSaved: true });
     this.sendMessage({
       type: "SaveOptions",
       partialOptions,
@@ -86,7 +96,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const { options } = this.state;
+    const { options, optionsErrors, hasSaved } = this.state;
 
     if (options == null) {
       return null;
@@ -104,6 +114,21 @@ export default class OptionsProgram extends React.Component<Props, State> {
             }}
           />
         </label>
+
+        {optionsErrors.length > 0 && (
+          <div>
+            {hasSaved ? (
+              <p>Errors were encountered while saving yours options:</p>
+            ) : (
+              <p>Errors were encountered while reading your saved options:</p>
+            )}
+            <ul>
+              {optionsErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     );
   }
