@@ -1315,12 +1315,23 @@ export default class BackgroundProgram {
 
       case "SaveOptions": {
         await this.saveOptions(message.partialOptions);
-        // TODO: Also update all workers and renderers.
         this.sendOptionsMessage({
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
         });
+        const tabs = await browser.tabs.query({});
+        for (const tab of tabs) {
+          // This also does a "StateSync" for all workers.
+          this.exitHintsMode({ tabId: tab.id });
+          this.sendRendererMessage(
+            {
+              type: "StateSync",
+              logLevel: log.level,
+            },
+            { tabId: tab.id }
+          );
+        }
         break;
       }
 
