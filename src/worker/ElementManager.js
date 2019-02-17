@@ -145,6 +145,8 @@ const CLICKABLE_ATTRIBUTES = [
   // clickable, though.
   "aria-checked",
   "aria-selected",
+  // Ember.
+  "data-ember-action",
   // Bootstrap.
   "data-dismiss",
   // Twitter.
