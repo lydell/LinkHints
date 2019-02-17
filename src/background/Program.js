@@ -1225,6 +1225,7 @@ export default class BackgroundProgram {
         this.sendRendererMessage(
           {
             type: "StateSync",
+            css: this.options.css,
             logLevel: log.level,
           },
           { tabId: info.tabId }
@@ -1326,6 +1327,7 @@ export default class BackgroundProgram {
           this.sendRendererMessage(
             {
               type: "StateSync",
+              css: this.options.css,
               logLevel: log.level,
             },
             { tabId: tab.id }
@@ -1604,6 +1606,8 @@ export default class BackgroundProgram {
     this.optionsErrors = errors.map(
       ([key, error]) => `Decode error for option ${repr(key)}: ${error.message}`
     );
+
+    log.level = options.logLevel;
   }
 
   async saveOptions(partialOptions: PartialOptions) {

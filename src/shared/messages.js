@@ -163,6 +163,7 @@ export type FromRenderer =
 export type ToRenderer =
   | {|
       type: "StateSync",
+      css: string,
       logLevel: LogLevel,
     |}
   | {|

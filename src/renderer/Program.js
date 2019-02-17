@@ -283,7 +283,11 @@ export default class RendererProgram {
 
     switch (message.type) {
       case "StateSync":
+        this.css = `${CSS}\n\n${message.css}`;
         log.level = message.logLevel;
+        if (BROWSER === "firefox" && this.parsedCSS != null) {
+          this.parsedCSS = parseCSS(this.css);
+        }
         break;
 
       case "Render":

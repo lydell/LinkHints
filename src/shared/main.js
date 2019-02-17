@@ -1,5 +1,7 @@
 // @flow
 
+import { repr } from "tiny-decoders";
+
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known. Also, RendererProgram and
@@ -8,12 +10,26 @@ export const CONTAINER_ID = "__SynthWebExt";
 
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
+export function decodeLogLevel(logLevel: string): LogLevel {
+  switch (logLevel) {
+    case "error":
+    case "warn":
+    case "log":
+    case "debug":
+      return logLevel;
+    default:
+      throw new TypeError(`Invalid LogLevel: ${repr(logLevel)}`);
+  }
+}
+
 const LOG_LEVELS = {
   error: 0,
   warn: 1,
   log: 2,
   debug: 3,
 };
+
+export const DEFAULT_LOG_LEVEL = ((PROD ? "error" : "log"): LogLevel);
 
 export function log(level: LogLevel, ...args: Array<any>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
@@ -35,7 +51,7 @@ export function log(level: LogLevel, ...args: Array<any>) {
 
 // The main `Program` for each entrypoint modifies this property. A little ugly,
 // but very convenient.
-log.level = ((PROD ? "error" : "log"): LogLevel);
+log.level = DEFAULT_LOG_LEVEL;
 
 /* eslint-disable no-console */
 function getLogMethod(level: LogLevel): Function {

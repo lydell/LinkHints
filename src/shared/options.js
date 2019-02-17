@@ -1,14 +1,17 @@
 // @flow strict-local
 
-import { array, boolean, mixedDict, number, string } from "tiny-decoders";
+import { array, boolean, map, mixedDict, number, string } from "tiny-decoders";
 
 import { type KeyboardMapping, decodeKeyboardMapping } from "./keyboard";
+import { type LogLevel, DEFAULT_LOG_LEVEL,decodeLogLevel } from "./main";
 
 export type Options = {|
   ignoreKeyboardLayout: boolean,
   hintsChars: string,
   hintsAutoActivate: boolean,
   hintsTimeout: number,
+  css: string,
+  logLevel: LogLevel,
   globalKeyboardShortcuts: Array<KeyboardMapping>,
   normalKeyboardShortcuts: Array<KeyboardMapping>,
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
@@ -26,6 +29,8 @@ export const makeOptionsDecoder: (
   hintsChars: string,
   hintsAutoActivate: boolean,
   hintsTimeout: number,
+  css: string,
+  logLevel: map(string, decodeLogLevel),
   globalKeyboardShortcuts: array(decodeKeyboardMapping),
   normalKeyboardShortcuts: array(decodeKeyboardMapping),
   hintsKeyboardShortcuts: array(decodeKeyboardMapping),
@@ -38,6 +43,8 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
     hintsAutoActivate: true,
     // This is the "prevent overtyping" timeout from VimFx.
     hintsTimeout: 400, // ms
+    css: "",
+    logLevel: DEFAULT_LOG_LEVEL,
     globalKeyboardShortcuts: [
       {
         keypress: {
