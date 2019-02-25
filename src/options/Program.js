@@ -9,13 +9,18 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { type Options, type PartialOptions } from "../shared/options";
-import { TextInput } from "./TextInput";
+import Field from "./Field";
+import Select from "./Select";
+import TextInput from "./TextInput";
 
 type Props = {||};
 
 type State = {|
-  options: ?Options,
-  optionsErrors: Array<string>,
+  optionsData: ?{|
+    options: Options,
+    defaults: Options,
+    errors: Array<string>,
+  |},
   hasSaved: boolean,
 |};
 
@@ -28,8 +33,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.resets = new Resets();
 
     this.state = {
-      options: undefined,
-      optionsErrors: [],
+      optionsData: undefined,
       hasSaved: false,
     };
 
@@ -43,6 +47,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   start() {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+
+    const { documentElement } = document;
+    if (documentElement != null) {
+      documentElement.classList.add(BROWSER);
+    }
 
     this.sendMessage({ type: "OptionsScriptAdded" });
   }
@@ -77,8 +86,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
       case "StateSync":
         log.level = message.logLevel;
         this.setState({
-          options: message.options,
-          optionsErrors: message.optionsErrors,
+          optionsData: {
+            options: message.options,
+            defaults: message.defaults,
+            errors: message.errors,
+          },
         });
         break;
 
@@ -88,7 +100,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   saveOptions(partialOptions: PartialOptions) {
-    this.setState({ optionsErrors: [], hasSaved: true });
+    this.setState(state => ({
+      optionsData: {
+        ...state.optionsData,
+        errors: [],
+      },
+      hasSaved: true,
+    }));
     this.sendMessage({
       type: "SaveOptions",
       partialOptions,
@@ -96,26 +114,45 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const { options, optionsErrors, hasSaved } = this.state;
+    const { optionsData, hasSaved } = this.state;
 
-    if (options == null) {
+    if (optionsData == null) {
       return null;
     }
 
+    const { options, defaults, errors } = optionsData;
+
     return (
       <div>
-        <label>
-          Hint chars:
-          <TextInput
-            savedValue={options.hintsChars}
-            normalize={removeDuplicateChars}
-            save={value => {
-              this.saveOptions({ hintsChars: value });
-            }}
-          />
-        </label>
+        <Field
+          id="hintsChars"
+          label="Hint chars"
+          topDescription={null}
+          bottomDescription={null}
+          changed={options.hintsChars !== defaults.hintsChars}
+          render={({ id }) => (
+            <div>
+              <Select
+                id={id}
+                onChange={event => {
+                  console.log("CH", event.currentTarget.value);
+                }}
+              >
+                <option>One</option>
+                <option>Two</option>
+              </Select>
+              <TextInput
+                savedValue={options.hintsChars}
+                normalize={removeDuplicateChars}
+                save={value => {
+                  this.saveOptions({ hintsChars: value });
+                }}
+              />
+            </div>
+          )}
+        />
 
-        {optionsErrors.length > 0 && (
+        {errors.length > 0 && (
           <div>
             {hasSaved ? (
               <p>Errors were encountered while saving yours options:</p>
@@ -123,7 +160,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
               <p>Errors were encountered while reading your saved options:</p>
             )}
             <ul>
-              {optionsErrors.map((error, index) => (
+              {errors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
             </ul>

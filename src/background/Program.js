@@ -132,6 +132,7 @@ const UPDATE_MIN_TIMEOUT = 100; // ms
 const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
 export default class BackgroundProgram {
+  defaults: Options;
   options: Options;
   optionsErrors: Array<string>;
   tabState: Map<number, TabState>;
@@ -139,7 +140,8 @@ export default class BackgroundProgram {
   resets: Resets;
 
   constructor() {
-    this.options = getDefaults({ mac: true });
+    this.defaults = getDefaults({ mac: true });
+    this.options = this.options;
     this.optionsErrors = [];
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
@@ -1308,7 +1310,8 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
-          optionsErrors: this.optionsErrors,
+          errors: this.optionsErrors,
+          defaults: this.defaults,
         });
         break;
 
@@ -1318,7 +1321,8 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
-          optionsErrors: this.optionsErrors,
+          errors: this.optionsErrors,
+          defaults: this.defaults,
         });
         const tabs = await browser.tabs.query({});
         for (const tab of tabs) {
@@ -1602,6 +1606,7 @@ export default class BackgroundProgram {
       errors,
     });
 
+    this.defaults = defaults;
     this.options = options;
     this.optionsErrors = errors.map(
       ([key, error]) => `Decode error for option ${repr(key)}: ${error.message}`

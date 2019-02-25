@@ -28,12 +28,14 @@ module.exports = [
     title: "Synth Popup",
     html: config.popupHtml,
     js: [config.popup.output],
+    css: [],
   }),
   html({
     title: "Synth Options",
     html: config.optionsHtml,
     // Content scripts don’t run in the options page, so manually include them.
     js: [config.worker.output, config.renderer.output, config.options.output],
+    css: config.optionsCss,
   }),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
@@ -117,7 +119,12 @@ function template(
 }
 
 function html(
-  files /*: {| title: string, html: string, js: Array<string> |} */
+  files /*: {|
+    title: string,
+    html: string,
+    js: Array<string>,
+    css: Array<string>,
+  |} */
 ) {
   return template({
     input: "html.js",
@@ -128,6 +135,7 @@ function html(
         ? path.relative(path.dirname(files.html), config.polyfill.output)
         : undefined,
       js: files.js.map(src => path.relative(path.dirname(files.html), src)),
+      css: files.css.map(href => path.relative(path.dirname(files.html), href)),
     },
   });
 }
@@ -164,7 +172,7 @@ function makeGlobals() {
     BUILD_TIME: JSON.stringify(Date.now()),
     PROD: JSON.stringify(PROD),
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
-    // This piece of code comes from Preact. Note that this disabled the
+    // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.
     "node.innerHTML": "node.__disabled__innerHTML",
   };

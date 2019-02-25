@@ -32,7 +32,6 @@ module.exports = () =>
     options_ui: {
       page: config.optionsHtml,
       open_in_tab: true,
-      chrome_style: true,
     },
     commands: {
       _execute_browser_action: {

@@ -4,10 +4,12 @@ module.exports = ({
   title,
   polyfill,
   js,
+  css,
 }: {|
   title: string,
   polyfill: ?string,
   js: Array<string>,
+  css: Array<string>,
 |}) =>
   `
 <!DOCTYPE html>
@@ -15,6 +17,9 @@ module.exports = ({
   <head>
     <meta charset="utf-8">
     <title>${title}</title>
+    ${css
+      .map(href => `<link rel="stylesheet" href="${href}">`)
+      .join("\n    ")}
   </head>
   <body>
     ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}

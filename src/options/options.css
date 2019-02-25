@@ -1,0 +1,90 @@
+:root {
+  --grey-leia: #fafafa;
+  --grey-luke: #eee;
+  --blue: #2b4eed;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+}
+
+html {
+  background-color: var(--grey-leia);
+  color: black;
+  font-family: system-ui;
+}
+
+html.firefox {
+  font: menu;
+}
+
+body {
+  max-width: 800px;
+  margin: 50px auto;
+  background-color: white;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.5);
+  font-size: 16px;
+}
+
+input,
+button,
+select,
+textarea {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+textarea {
+  width: 100%;
+}
+
+*::placeholder {
+  opacity: 0.3;
+  color: inherit;
+}
+
+label {
+  margin: 0;
+  font-weight: inherit;
+}
+
+.Field {
+  border-top: 1px solid var(--grey-luke);
+  border-left: 4px solid transparent;
+  padding: 10px;
+  transition: border-color 200ms;
+}
+
+.Field:first-child {
+  border-top: none;
+}
+
+.Field.is-changed {
+  border-left-color: var(--blue);
+}
+
+.Field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}

@@ -15,7 +15,7 @@ type State = {|
   focused: boolean,
 |};
 
-export class TextInput extends React.Component<Props, State> {
+export default class TextInput extends React.Component<Props, State> {
   timeoutId: ?TimeoutID;
 
   constructor(props: Props) {

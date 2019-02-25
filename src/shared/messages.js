@@ -228,5 +228,6 @@ export type ToOptions = {|
   type: "StateSync",
   logLevel: LogLevel,
   options: Options,
-  optionsErrors: Array<string>,
+  defaults: Options,
+  errors: Array<string>,
 |};

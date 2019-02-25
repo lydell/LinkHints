@@ -281,3 +281,19 @@ export function* walkTextNodes(
     }
   }
 }
+
+export function classlist(
+  ...args: Array<string | { [string]: boolean }>
+): string {
+  return []
+    .concat(
+      ...args.map(arg =>
+        typeof arg === "string"
+          ? arg
+          : Object.entries(arg)
+              .filter(([, enabled]) => enabled)
+              .map(([className]) => className)
+      )
+    )
+    .join(" ");
+}
