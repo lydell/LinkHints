@@ -103,10 +103,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   saveOptions(partialOptions: PartialOptions) {
     this.setState(state => ({
-      optionsData: {
-        ...state.optionsData,
-        errors: [],
-      },
+      optionsData:
+        state.optionsData == null
+          ? undefined
+          : {
+              ...state.optionsData,
+              options: {
+                ...state.optionsData.options,
+                ...partialOptions,
+              },
+              errors: [],
+            },
       hasSaved: true,
     }));
     this.sendMessage({
