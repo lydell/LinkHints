@@ -4,10 +4,12 @@ import * as React from "preact";
 
 const SAVE_TIMEOUT = 200; // ms
 
+type Reason = "input" | "blur"
+
 type Props = {|
   savedValue: string,
   normalize: string => string,
-  save: string => void,
+  save: (string, Reason) => void,
 |};
 
 type State = {|
@@ -39,9 +41,9 @@ export default class TextInput extends React.Component<Props, State> {
     }
   }
 
-  save(value: string) {
+  save(value: string, reason: Reason) {
     const { save } = this.props;
-    save(value);
+    save(value, reason);
   }
 
   saveThrottled(value: string) {
@@ -51,7 +53,7 @@ export default class TextInput extends React.Component<Props, State> {
 
     this.timeoutId = setTimeout(() => {
       this.timeoutId = undefined;
-      this.save(value);
+      this.save(value, "input");
     }, SAVE_TIMEOUT);
   }
 
@@ -83,7 +85,7 @@ export default class TextInput extends React.Component<Props, State> {
               clearTimeout(this.timeoutId);
               this.timeoutId = undefined;
             }
-            this.save(normalizedValue);
+            this.save(normalizedValue, "blur");
           }
         }}
       />

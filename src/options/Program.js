@@ -22,6 +22,7 @@ type State = {|
     errors: Array<string>,
   |},
   hasSaved: boolean,
+  customHintsChars: string,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -35,6 +36,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.state = {
       optionsData: undefined,
       hasSaved: false,
+      customHintsChars: "",
     };
 
     bind(this, [
@@ -114,7 +116,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const { optionsData, hasSaved } = this.state;
+    const { optionsData, hasSaved, customHintsChars } = this.state;
 
     if (optionsData == null) {
       return null;
@@ -152,22 +154,21 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     {name}
                   </option>
                 ))}
-                <option
-                  value={
-                    hintsCharsPresets.some(
-                      ({ value }) => value === options.hintsChars
-                    )
-                      ? ""
-                      : options.hintsChars
-                  }
-                >
-                  Custom
-                </option>
+                <option value={customHintsChars}>Custom</option>
               </Select>
               <TextInput
                 savedValue={options.hintsChars}
                 normalize={removeDuplicateChars}
-                save={value => {
+                save={(value, reason) => {
+                  if (reason === "input") {
+                    this.setState({
+                      customHintsChars: hintsCharsPresets.some(
+                        preset => preset.value === value
+                      )
+                        ? ""
+                        : value,
+                    });
+                  }
                   this.saveOptions({ hintsChars: value });
                 }}
               />
