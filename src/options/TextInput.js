@@ -63,6 +63,7 @@ export default class TextInput extends React.Component<Props, State> {
       <input
         type="text"
         value={value}
+        spellCheck="false"
         onInput={event => {
           const newValue = event.target.value;
           const normalizedValue = normalize(newValue);

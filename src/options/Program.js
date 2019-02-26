@@ -122,6 +122,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const { options, defaults, errors } = optionsData;
 
+    const hintsCharsPresets = [
+      { name: "Default", value: defaults.hintsChars },
+      { name: "Uppercase", value: defaults.hintsChars.toUpperCase() },
+      { name: "Vimium", value: "sadfjklewcmpgh" },
+    ];
+
     return (
       <div>
         <Field
@@ -134,12 +140,29 @@ export default class OptionsProgram extends React.Component<Props, State> {
             <div>
               <Select
                 id={id}
-                onChange={event => {
-                  console.log("CH", event.currentTarget.value);
+                value={options.hintsChars}
+                onChange={value => {
+                  if (value !== "") {
+                    this.saveOptions({ hintsChars: value });
+                  }
                 }}
               >
-                <option>One</option>
-                <option>Two</option>
+                {hintsCharsPresets.map(({ name, value }) => (
+                  <option key={name} value={value}>
+                    {name}
+                  </option>
+                ))}
+                <option
+                  value={
+                    hintsCharsPresets.some(
+                      ({ value }) => value === options.hintsChars
+                    )
+                      ? ""
+                      : options.hintsChars
+                  }
+                >
+                  Custom
+                </option>
               </Select>
               <TextInput
                 savedValue={options.hintsChars}
