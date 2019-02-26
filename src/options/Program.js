@@ -22,7 +22,7 @@ type State = {|
     errors: Array<string>,
   |},
   hasSaved: boolean,
-  customHintsChars: string,
+  customHintsChars: ?string,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -36,7 +36,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.state = {
       optionsData: undefined,
       hasSaved: false,
-      customHintsChars: "",
+      customHintsChars: undefined,
     };
 
     bind(this, [
@@ -123,7 +123,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const { optionsData, hasSaved, customHintsChars } = this.state;
+    const {
+      optionsData,
+      hasSaved,
+      customHintsChars: rawCustomHintsChars,
+    } = this.state;
 
     if (optionsData == null) {
       return null;
@@ -136,6 +140,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
       { name: "Uppercase", value: defaults.hintsChars.toUpperCase() },
       { name: "Vimium", value: "sadfjklewcmpgh" },
     ];
+
+    const customHintsChars = hintsCharsPresets.some(
+      preset => preset.value === rawCustomHintsChars
+    )
+      ? ""
+      : rawCustomHintsChars != null
+      ? rawCustomHintsChars
+      : options.hintsChars;
 
     return (
       <div>
@@ -168,13 +180,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 normalize={removeDuplicateChars}
                 save={(value, reason) => {
                   if (reason === "input") {
-                    this.setState({
-                      customHintsChars: hintsCharsPresets.some(
-                        preset => preset.value === value
-                      )
-                        ? ""
-                        : value,
-                    });
+                    this.setState({ customHintsChars: value });
                   }
                   this.saveOptions({ hintsChars: value });
                 }}
