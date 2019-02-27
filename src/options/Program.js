@@ -13,6 +13,8 @@ import Field from "./Field";
 import Select from "./Select";
 import TextInput from "./TextInput";
 
+const MIN_HINTS_CHARS = 2;
+
 type Props = {||};
 
 type State = {|
@@ -177,7 +179,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
               </Select>
               <TextInput
                 savedValue={options.hintsChars}
-                normalize={removeDuplicateChars}
+                normalize={value => {
+                  const unique = removeDuplicateChars(value);
+                  return unique.length >= MIN_HINTS_CHARS
+                    ? unique
+                    : removeDuplicateChars(unique + defaults.hintsChars).slice(
+                        0,
+                        MIN_HINTS_CHARS
+                      );
+                }}
                 save={(value, reason) => {
                   if (reason === "input") {
                     this.setState({ customHintsChars: value });
