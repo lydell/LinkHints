@@ -23,7 +23,9 @@ export default function Field({
 }: Props) {
   return (
     <div className={classlist("Field", { "is-changed": changed })}>
-      <label htmlFor={id} className="Field-label">{label}</label>
+      <label htmlFor={id} className="Field-label">
+        {label}
+      </label>
       {topDescription}
       {render({ id })}
       {bottomDescription}

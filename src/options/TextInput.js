@@ -4,13 +4,14 @@ import * as React from "preact";
 
 const SAVE_TIMEOUT = 200; // ms
 
-type Reason = "input" | "blur"
+type Reason = "input" | "blur";
 
-type Props = {|
+type Props = {
   savedValue: string,
   normalize: string => string,
   save: (string, Reason) => void,
-|};
+  // ...restProps
+};
 
 type State = {|
   value: string,
@@ -58,11 +59,12 @@ export default class TextInput extends React.Component<Props, State> {
   }
 
   render() {
-    const { savedValue, normalize } = this.props;
+    const { savedValue, normalize, ...restProps } = this.props;
     const { value } = this.state;
 
     return (
       <input
+        {...restProps}
         type="text"
         value={value}
         spellCheck="false"

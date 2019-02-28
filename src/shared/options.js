@@ -3,7 +3,7 @@
 import { array, boolean, map, mixedDict, number, string } from "tiny-decoders";
 
 import { type KeyboardMapping, decodeKeyboardMapping } from "./keyboard";
-import { type LogLevel, DEFAULT_LOG_LEVEL,decodeLogLevel } from "./main";
+import { type LogLevel, DEFAULT_LOG_LEVEL, decodeLogLevel } from "./main";
 
 export type Options = {|
   ignoreKeyboardLayout: boolean,

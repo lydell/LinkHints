@@ -17,9 +17,7 @@ module.exports = ({
   <head>
     <meta charset="utf-8">
     <title>${title}</title>
-    ${css
-      .map(href => `<link rel="stylesheet" href="${href}">`)
-      .join("\n    ")}
+    ${css.map(href => `<link rel="stylesheet" href="${href}">`).join("\n    ")}
   </head>
   <body>
     ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}

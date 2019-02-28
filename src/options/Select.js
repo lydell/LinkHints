@@ -4,7 +4,7 @@ import React from "preact";
 
 type Props = {
   children: React.Node,
-  onChange: string => void,
+  onChange: (string, number) => void,
   // ...restProps
 };
 
@@ -13,7 +13,7 @@ export default function Select({ children, onChange, ...restProps }: Props) {
     <select
       {...restProps}
       onChange={event => {
-        onChange(event.currentTarget.value);
+        onChange(event.currentTarget.value, event.currentTarget.selectedIndex);
       }}
     >
       {children}

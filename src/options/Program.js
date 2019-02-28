@@ -9,6 +9,7 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { type Options, type PartialOptions } from "../shared/options";
+import ExtraLabel from "./ExtraLabel";
 import Field from "./Field";
 import Select from "./Select";
 import TextInput from "./TextInput";
@@ -24,7 +25,7 @@ type State = {|
     errors: Array<string>,
   |},
   hasSaved: boolean,
-  customHintsChars: ?string,
+  customHintsChars: string,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -38,7 +39,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.state = {
       optionsData: undefined,
       hasSaved: false,
-      customHintsChars: undefined,
+      customHintsChars: "",
     };
 
     bind(this, [
@@ -89,13 +90,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
     switch (message.type) {
       case "StateSync":
         log.level = message.logLevel;
-        this.setState({
+        this.setState(state => ({
           optionsData: {
             options: message.options,
             defaults: message.defaults,
             errors: message.errors,
           },
-        });
+          customHintsChars:
+            state.optionsData == null
+              ? message.options.hintsChars
+              : state.customHintsChars,
+        }));
         break;
 
       default:
@@ -125,11 +130,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const {
-      optionsData,
-      hasSaved,
-      customHintsChars: rawCustomHintsChars,
-    } = this.state;
+    const { optionsData, hasSaved, customHintsChars } = this.state;
 
     if (optionsData == null) {
       return null;
@@ -143,13 +144,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
       { name: "Vimium", value: "sadfjklewcmpgh" },
     ];
 
-    const customHintsChars = hintsCharsPresets.some(
-      preset => preset.value === rawCustomHintsChars
-    )
-      ? ""
-      : rawCustomHintsChars != null
-      ? rawCustomHintsChars
-      : options.hintsChars;
+    const customIndex = hintsCharsPresets.length;
+
+    const rawSelectedIndex = hintsCharsPresets.findIndex(
+      preset => preset.value === options.hintsChars
+    );
+    const selectedIndex =
+      rawSelectedIndex >= 0 ? rawSelectedIndex : customIndex;
 
     return (
       <div>
@@ -160,30 +161,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
           bottomDescription={null}
           changed={options.hintsChars !== defaults.hintsChars}
           render={({ id }) => (
-            <div>
-              <Select
-                id={id}
-                value={options.hintsChars}
-                onChange={value => {
-                  if (value !== "") {
-                    this.saveOptions({ hintsChars: value });
-                  }
-                }}
-              >
-                {hintsCharsPresets.map(({ name, value }) => (
-                  <option key={name} value={value}>
-                    {name}
-                  </option>
-                ))}
-                <option value={customHintsChars}>Custom</option>
-              </Select>
+            <div className="Spaced">
               <TextInput
+                id={id}
                 savedValue={options.hintsChars}
                 normalize={value => {
-                  const unique = removeDuplicateChars(value);
+                  const unique = pruneHintsChars(value);
                   return unique.length >= MIN_HINTS_CHARS
                     ? unique
-                    : removeDuplicateChars(unique + defaults.hintsChars).slice(
+                    : pruneHintsChars(unique + defaults.hintsChars).slice(
                         0,
                         MIN_HINTS_CHARS
                       );
@@ -195,6 +181,29 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   this.saveOptions({ hintsChars: value });
                 }}
               />
+
+              <ExtraLabel label="Presets">
+                <Select
+                  value={selectedIndex}
+                  onChange={value => {
+                    const index = Number(value);
+                    const chars =
+                      index >= 0 && index < hintsCharsPresets.length
+                        ? hintsCharsPresets[index].value
+                        : customHintsChars;
+                    this.saveOptions({ hintsChars: chars });
+                  }}
+                >
+                  {hintsCharsPresets.map(({ name }, index) => (
+                    <option key={name} value={index}>
+                      {name}
+                    </option>
+                  ))}
+                  {hintsCharsPresets.every(
+                    preset => preset.value !== customHintsChars
+                  ) && <option value={customIndex}>Custom</option>}
+                </Select>
+              </ExtraLabel>
             </div>
           )}
         />
@@ -225,6 +234,6 @@ function wrapMessage(message: FromOptions): ToBackground {
   };
 }
 
-function removeDuplicateChars(string: string): string {
-  return Array.from(new Set(Array.from(string))).join("");
+function pruneHintsChars(string: string): string {
+  return Array.from(new Set(Array.from(string.replace(/\s/g, "")))).join("");
 }
