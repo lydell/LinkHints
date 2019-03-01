@@ -39,7 +39,7 @@ export const makeOptionsDecoder: (
 export function getDefaults({ mac }: {| mac: boolean |}): Options {
   return {
     ignoreKeyboardLayout: true,
-    hintsChars: "fjdkslaghrueiwoncmv",
+    hintsChars: "fjdkslaurieowhgmvcn",
     hintsAutoActivate: true,
     // This is the "prevent overtyping" timeout from VimFx.
     hintsTimeout: 400, // ms

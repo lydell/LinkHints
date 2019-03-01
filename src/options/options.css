@@ -27,13 +27,14 @@ body {
   background-color: white;
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.5);
   font-size: 16px;
+  line-heigth: 1.2;
 }
 
 input,
 button,
 select,
 textarea {
-  margin: 0;
+  padding: 2px 4px;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
@@ -41,26 +42,8 @@ textarea {
   line-height: inherit;
 }
 
-button {
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: none;
-  color: inherit;
-  font-style: inherit;
-  font-weight: inherit;
-  cursor: pointer;
-  appearance: none;
-}
-
 textarea {
   width: 100%;
-}
-
-*::placeholder {
-  opacity: 0.3;
-  color: inherit;
 }
 
 label {
@@ -90,7 +73,7 @@ label {
 }
 
 .ExtraLabel {
-  display: inline-block;
+  display: inline-flex;
   position: relative;
 }
 
@@ -107,5 +90,5 @@ label {
 }
 
 .Spaced > * + * {
-  margin-left: 15px;
+  margin-left: 10px;
 }

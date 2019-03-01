@@ -11,7 +11,6 @@ import type {
 import { type Options, type PartialOptions } from "../shared/options";
 import ExtraLabel from "./ExtraLabel";
 import Field from "./Field";
-import Select from "./Select";
 import TextInput from "./TextInput";
 
 const MIN_HINTS_CHARS = 2;
@@ -139,9 +138,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
     const { options, defaults, errors } = optionsData;
 
     const hintsCharsPresets = [
-      { name: "Default", value: defaults.hintsChars },
-      { name: "Uppercase", value: defaults.hintsChars.toUpperCase() },
-      { name: "Vimium", value: "sadfjklewcmpgh" },
+      { name: "QWERTY (default)", value: defaults.hintsChars },
+      { name: "Dvorak", value: "hutenogacpridkmjw" },
+      { name: "Colemak", value: "tnseriaoplfuwydhvmck" },
     ];
 
     const customIndex = hintsCharsPresets.length;
@@ -151,6 +150,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
     );
     const selectedIndex =
       rawSelectedIndex >= 0 ? rawSelectedIndex : customIndex;
+
+    const isLowerCase = options.hintsChars === options.hintsChars.toLowerCase();
 
     return (
       <div>
@@ -164,6 +165,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             <div className="Spaced">
               <TextInput
                 id={id}
+                style={{ flex: "1 1 50%" }}
                 savedValue={options.hintsChars}
                 normalize={value => {
                   const unique = pruneHintsChars(value);
@@ -182,11 +184,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 }}
               />
 
-              <ExtraLabel label="Presets">
-                <Select
+              <ExtraLabel label="Presets" style={{ flex: "1 1 25%" }}>
+                <select
+                  style={{ flexGrow: 1 }}
                   value={selectedIndex}
-                  onChange={value => {
-                    const index = Number(value);
+                  onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
+                    const index = Number(event.currentTarget.value);
                     const chars =
                       index >= 0 && index < hintsCharsPresets.length
                         ? hintsCharsPresets[index].value
@@ -202,8 +205,22 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   {hintsCharsPresets.every(
                     preset => preset.value !== customHintsChars
                   ) && <option value={customIndex}>Custom</option>}
-                </Select>
+                </select>
               </ExtraLabel>
+
+              <button
+                type="button"
+                style={{ flex: "1 1 25%" }}
+                onClick={() => {
+                  const chars = isLowerCase
+                    ? options.hintsChars.toUpperCase()
+                    : options.hintsChars.toLowerCase();
+                  this.setState({ customHintsChars: chars });
+                  this.saveOptions({ hintsChars: chars });
+                }}
+              >
+                {isLowerCase ? "→ UPPERCASE" : "→ lowercase"}
+              </button>
             </div>
           )}
         />
