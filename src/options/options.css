@@ -1,6 +1,6 @@
 :root {
   --grey-leia: #fafafa;
-  --grey-luke: #eee;
+  --grey-luke: #ddd;
   --blue: #2b4eed;
 }
 
@@ -34,12 +34,20 @@ input,
 button,
 select,
 textarea {
+  min-width: 0;
+  margin: 0;
   padding: 2px 4px;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
   letter-spacing: inherit;
   line-height: inherit;
+}
+
+input[type="checkbox"] {
+  --size: 1em;
+  width: var(--size);
+  height: var(--size);
 }
 
 textarea {
@@ -51,25 +59,80 @@ label {
   font-weight: inherit;
 }
 
+p {
+  margin: 0;
+}
+
+p + p {
+  margin-top: 5px;
+}
+
+kbd {
+  padding: 0 4px;
+  border: 2px solid var(--grey-luke);
+  border-radius: 3px;
+  font-size: 0.8em;
+  font-family: inherit;
+}
+
 .Field {
-  border-top: 1px solid var(--grey-luke);
-  border-left: 4px solid transparent;
-  padding: 10px;
-  transition: border-color 200ms;
+  --border-width: 1px;
+  border-top: var(--border-width) solid var(--grey-luke);
+  padding: 18px 22px;
+  position: relative;
 }
 
 .Field:first-child {
   border-top: none;
 }
 
-.Field.is-changed {
-  border-left-color: var(--blue);
+.Field::before,
+.Field::after {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--border-width));
+  bottom: calc(-1 * var(--border-width));
+  left: 0;
+  width: 4px;
+  background-color: var(--blue);
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+.Field::after {
+  left: auto;
+  right: 0;
+}
+
+.Field:first-child::before,
+.Field:first-child::after {
+  top: 0;
+}
+
+.Field:last-child::before,
+.Field:last-child::after {
+  bottom: 0;
+}
+
+.Field.is-changed,
+.Field.is-changedRight {
+  z-index: 1;
+}
+
+.Field.is-changed::before,
+.Field.is-changedRight::after {
+  opacity: 1;
 }
 
 .Field-label {
   display: block;
   margin-bottom: 4px;
   font-weight: bold;
+}
+
+.Field-description {
+  margin-top: 10px;
+  font-size: 14px;
 }
 
 .ExtraLabel {
@@ -86,9 +149,14 @@ label {
 }
 
 .Spaced {
+  --spacing: 10px;
   display: flex;
 }
 
 .Spaced > * + * {
-  margin-left: 10px;
+  margin-left: var(--spacing);
+}
+
+.Spaced--center {
+  align-items: center;
 }

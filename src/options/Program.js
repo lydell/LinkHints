@@ -157,9 +157,24 @@ export default class OptionsProgram extends React.Component<Props, State> {
       <div>
         <Field
           id="hintsChars"
-          label="Hint chars"
-          topDescription={null}
-          bottomDescription={null}
+          label="Hint characters"
+          description={
+            <div>
+              <p>
+                Use the characters you find the easiest to type. Put the best
+                ones further to the left. All <em>other</em> characters are used
+                to match elements by their <em>text.</em> Lowercase vs uppercase
+                matters when typing <em>hint characters</em>, but not when{" "}
+                <em>matching by text.</em>
+              </p>
+              {isLowerCase && (
+                <p>
+                  <strong>Note:</strong> The hints are <em>displayed</em>{" "}
+                  uppercase because it looks nicer. 😎
+                </p>
+              )}
+            </div>
+          }
           changed={options.hintsChars !== defaults.hintsChars}
           render={({ id }) => (
             <div className="Spaced">
@@ -171,6 +186,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   const unique = pruneHintsChars(value);
                   return unique.length >= MIN_HINTS_CHARS
                     ? unique
+                    : unique.length === 0
+                    ? defaults.hintsChars
                     : pruneHintsChars(unique + defaults.hintsChars).slice(
                         0,
                         MIN_HINTS_CHARS
@@ -184,43 +201,112 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 }}
               />
 
-              <ExtraLabel label="Presets" style={{ flex: "1 1 25%" }}>
-                <select
-                  style={{ flexGrow: 1 }}
-                  value={selectedIndex}
-                  onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
-                    const index = Number(event.currentTarget.value);
-                    const chars =
-                      index >= 0 && index < hintsCharsPresets.length
-                        ? hintsCharsPresets[index].value
-                        : customHintsChars;
-                    this.saveOptions({ hintsChars: chars });
+              <div className="Spaced" style={{ flex: "1 1 50%" }}>
+                <ExtraLabel label="Presets" style={{ flex: "1 1 50%" }}>
+                  <select
+                    style={{ flexGrow: 1 }}
+                    value={selectedIndex}
+                    onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
+                      const index = Number(event.currentTarget.value);
+                      const chars =
+                        index >= 0 && index < hintsCharsPresets.length
+                          ? hintsCharsPresets[index].value
+                          : customHintsChars;
+                      this.saveOptions({ hintsChars: chars });
+                    }}
+                  >
+                    {hintsCharsPresets.map(({ name }, index) => (
+                      <option key={name} value={index}>
+                        {name}
+                      </option>
+                    ))}
+                    {hintsCharsPresets.every(
+                      preset => preset.value !== customHintsChars
+                    ) && <option value={customIndex}>Custom</option>}
+                  </select>
+                </ExtraLabel>
+
+                <button
+                  type="button"
+                  style={{ flex: "1 1 50%" }}
+                  onClick={() => {
+                    const chars = isLowerCase
+                      ? options.hintsChars.toUpperCase()
+                      : options.hintsChars.toLowerCase();
+                    const unique = pruneHintsChars(chars);
+                    this.setState({ customHintsChars: unique });
+                    this.saveOptions({ hintsChars: unique });
                   }}
                 >
-                  {hintsCharsPresets.map(({ name }, index) => (
-                    <option key={name} value={index}>
-                      {name}
-                    </option>
-                  ))}
-                  {hintsCharsPresets.every(
-                    preset => preset.value !== customHintsChars
-                  ) && <option value={customIndex}>Custom</option>}
-                </select>
-              </ExtraLabel>
+                  {isLowerCase ? "→ UPPERCASE" : "→ lowercase"}
+                </button>
+              </div>
+            </div>
+          )}
+        />
 
-              <button
-                type="button"
-                style={{ flex: "1 1 25%" }}
-                onClick={() => {
-                  const chars = isLowerCase
-                    ? options.hintsChars.toUpperCase()
-                    : options.hintsChars.toLowerCase();
-                  this.setState({ customHintsChars: chars });
-                  this.saveOptions({ hintsChars: chars });
-                }}
+        <Field
+          id="hintsAutoActivate"
+          label="Auto activate when matching by text"
+          description={
+            <p>
+              When <em>matching by text</em> you can press <kbd>Enter</kbd> to
+              activate the matched hint (highlighted in green). With this option
+              enabled, the matched hint is automatically activated if it is the
+              only match. Many times one might type a few extra characters
+              before realizing that a hint was automatically activated, so your
+              key strokes are suppressed for a short period just after
+              activation.
+            </p>
+          }
+          changed={options.hintsAutoActivate !== defaults.hintsAutoActivate}
+          changedRight={options.hintsTimeout !== defaults.hintsTimeout}
+          render={({ id }) => (
+            <div className="Spaced">
+              <label
+                className="Spaced Spaced--center"
+                style={{ flex: "1 1 50%" }}
               >
-                {isLowerCase ? "→ UPPERCASE" : "→ lowercase"}
-              </button>
+                <input
+                  type="checkbox"
+                  id={id}
+                  checked={options.hintsAutoActivate}
+                  onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                    this.saveOptions({
+                      hintsAutoActivate: event.currentTarget.checked,
+                    });
+                  }}
+                />
+                <span>Enabled</span>
+              </label>
+
+              <ExtraLabel
+                label={`Over-typing duration (default: ${
+                  defaults.hintsTimeout
+                })`}
+                style={{ flex: "1 1 50%" }}
+              >
+                <div
+                  className="Spaced Spaced--center"
+                  style={{ flex: "1 1 100%" }}
+                >
+                  <TextInput
+                    style={{ flex: "1 1 50%" }}
+                    disabled={!options.hintsAutoActivate}
+                    savedValue={String(options.hintsTimeout)}
+                    normalize={value => {
+                      const number = Math.max(0, Math.round(parseFloat(value)));
+                      return String(
+                        Number.isFinite(number) ? number : defaults.hintsTimeout
+                      );
+                    }}
+                    save={value => {
+                      this.saveOptions({ hintsTimeout: Number(value) });
+                    }}
+                  />
+                  <span style={{ flex: "1 1 50%" }}>milliseconds</span>
+                </div>
+              </ExtraLabel>
             </div>
           )}
         />

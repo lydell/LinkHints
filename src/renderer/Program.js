@@ -35,6 +35,7 @@ type HintSize = {|
 const ROOT_CLASS = "root";
 const HINT_CLASS = "hint";
 const HIGHLIGHTED_HINT_CLASS = "highlighted";
+const MIXED_CASE_CLASS = "mixedCase";
 const MATCHED_CHARS_CLASS = "matchedChars";
 const TEXT_RECT_CLASS = "matchedText";
 const STATUS_CLASS = "status";
@@ -81,6 +82,10 @@ const CSS = `
   white-space: nowrap;
   text-align: center;
   text-transform: uppercase;
+}
+
+.${MIXED_CASE_CLASS} {
+  text-transform: none;
 }
 
 .${HIGHLIGHTED_HINT_CLASS} {
@@ -291,7 +296,7 @@ export default class RendererProgram {
         break;
 
       case "Render":
-        this.render(message.elements);
+        this.render(message.elements, { mixedCase: message.mixedCase });
         break;
 
       case "UpdateHints":
@@ -408,7 +413,10 @@ export default class RendererProgram {
     };
   }
 
-  async render(elements: Array<ElementWithHint>) {
+  async render(
+    elements: Array<ElementWithHint>,
+    { mixedCase }: {| mixedCase: boolean |}
+  ) {
     const { documentElement } = document;
     if (documentElement == null) {
       return;
@@ -471,6 +479,9 @@ export default class RendererProgram {
     time.start("loop");
     for (const [index, { hintMeasurements, hint }] of elements.entries()) {
       const element = createHintElement(hint);
+      if (mixedCase) {
+        element.classList.add(MIXED_CASE_CLASS);
+      }
 
       const { styles, maybeOutsideHorizontally } = getHintPosition({
         hintSize: this.hintSize,

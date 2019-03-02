@@ -1120,6 +1120,7 @@ export default class BackgroundProgram {
       {
         type: "Render",
         elements: elementsWithHints,
+        mixedCase: isMixedCase(this.options.hintsChars),
       },
       { tabId }
     );
@@ -2249,4 +2250,8 @@ function clearUpdateTimeout(updateState: UpdateState) {
   if (updateState.type === "Timeout") {
     clearTimeout(updateState.timeoutId);
   }
+}
+
+function isMixedCase(string: string): boolean {
+  return string.toLowerCase() !== string && string.toUpperCase() !== string;
 }

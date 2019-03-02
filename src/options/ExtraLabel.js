@@ -10,9 +10,9 @@ type Props = {
 
 export default function ExtraLabel({ label, children, ...restProps }: Props) {
   return (
-    <span {...restProps} className="ExtraLabel">
+    <label {...restProps} className="ExtraLabel">
       <span className="ExtraLabel-label">{label}</span>
       {children}
-    </span>
+    </label>
   );
 }

@@ -169,6 +169,7 @@ export type ToRenderer =
   | {|
       type: "Render",
       elements: Array<ElementWithHint>,
+      mixedCase: boolean,
     |}
   | {|
       type: "UpdateHints",
