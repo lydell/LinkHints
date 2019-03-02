@@ -1438,6 +1438,13 @@ function isWithin(point: Point, box: Box): boolean {
 }
 
 function injectScript() {
+  // Neither Chrome nor Firefox allow inline scripts in the options page. It's
+  // not needed there anyway.
+  const { protocol } = window.location;
+  if (protocol === "chrome-extension:" || protocol === "moz-extension:") {
+    return;
+  }
+
   const { documentElement } = document;
   if (documentElement == null) {
     return;
