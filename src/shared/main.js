@@ -241,6 +241,41 @@ export type Box = {|
   +height: number,
 |};
 
+// Turn a `ClientRect` into a `Box` using the coordinates of the topmost
+// viewport. Only the part of the `ClientRect` visible through all viewports end
+// up in the `Box`.
+export function getVisibleBox(
+  passedRect: ClientRect,
+  viewports: Array<Box>
+): ?Box {
+  // No shortcuts (such as summing up viewport x:s and y:s) can be taken here,
+  // since each viewport (frame) clips the visible area. We have to loop them
+  // all through.
+  const visibleRect = viewports.reduceRight(
+    (rect, viewport) => ({
+      left: viewport.x + Math.max(rect.left, 0),
+      right: viewport.x + Math.min(rect.right, viewport.width),
+      top: viewport.y + Math.max(rect.top, 0),
+      bottom: viewport.y + Math.min(rect.bottom, viewport.height),
+    }),
+    passedRect
+  );
+
+  const width = visibleRect.right - visibleRect.left;
+  const height = visibleRect.bottom - visibleRect.top;
+
+  // If `visibleRect` has a non-sensical width or height it means it is not
+  // visible within `viewports`.
+  return width <= 0 || height <= 0
+    ? undefined
+    : {
+        x: visibleRect.left,
+        y: visibleRect.top,
+        width,
+        height,
+      };
+}
+
 export function getViewport(): Box {
   // In `<frameset>` documents `.scrollingElement` is null so fall back to
   // `.documentElement`.
@@ -282,6 +317,81 @@ export function* walkTextNodes(
   }
 }
 
+export function getTextRects({
+  element,
+  viewports,
+  words,
+  checkElementAtPoint = true,
+}: {|
+  element: HTMLElement,
+  viewports: Array<Box>,
+  words: Set<string>,
+  checkElementAtPoint?: boolean,
+|}): Array<Box> {
+  const text = element.textContent.toLowerCase();
+
+  const ranges = [];
+
+  for (const word of words) {
+    let index = -1;
+    while ((index = text.indexOf(word, index + 1)) >= 0) {
+      ranges.push({
+        start: index,
+        end: index + word.length,
+        range: document.createRange(),
+      });
+    }
+  }
+
+  if (ranges.length === 0) {
+    return [];
+  }
+
+  let index = 0;
+
+  for (const node of walkTextNodes(element)) {
+    const nextIndex = index + node.length;
+
+    for (const { start, end, range } of ranges) {
+      if (start >= index && start < nextIndex) {
+        range.setStart(node, start - index);
+      }
+      if (end >= index && end <= nextIndex) {
+        range.setEnd(node, end - index);
+      }
+    }
+
+    index = nextIndex;
+  }
+
+  const [offsetX, offsetY] = viewports.reduceRight(
+    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
+    [0, 0]
+  );
+
+  return [].concat(
+    ...ranges.map(({ range }) => {
+      const rects = range.getClientRects();
+      return Array.from(rects, rect => {
+        const box = getVisibleBox(rect, viewports);
+        if (box == null) {
+          return undefined;
+        }
+        if (!checkElementAtPoint) {
+          return box;
+        }
+        const elementAtPoint = document.elementFromPoint(
+          Math.round(box.x + box.width / 2 - offsetX),
+          Math.round(box.y + box.height / 2 - offsetY)
+        );
+        return elementAtPoint != null && element.contains(elementAtPoint)
+          ? box
+          : undefined;
+      }).filter(Boolean);
+    })
+  );
+}
+
 export function classlist(
   ...args: Array<string | { [string]: boolean }>
 ): string {
@@ -296,4 +406,12 @@ export function classlist(
       )
     )
     .join(" ");
+}
+
+export function isMixedCase(string: string): boolean {
+  return string.toLowerCase() !== string && string.toUpperCase() !== string;
+}
+
+export function splitEnteredTextChars(enteredTextChars: string): Array<string> {
+  return enteredTextChars.split(" ").filter(word => word !== "");
 }

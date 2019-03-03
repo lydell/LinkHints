@@ -1,5 +1,21 @@
 // @flow strict-local
 
+import {
+  CONTAINER_STYLES,
+  CSS,
+  HIDDEN_CLASS,
+  HIGHLIGHTED_HINT_CLASS,
+  HINT_CLASS,
+  MATCHED_CHARS_CLASS,
+  MAX_Z_INDEX,
+  MIN_Z_INDEX,
+  MIXED_CASE_CLASS,
+  PEEK_CLASS,
+  ROOT_CLASS,
+  SHRUGGIE,
+  STATUS_CLASS,
+  TEXT_RECT_CLASS,
+} from "../shared/css";
 import type {
   ElementWithHint,
   HintMeasurements,
@@ -32,103 +48,7 @@ type HintSize = {|
   height: number,
 |};
 
-const ROOT_CLASS = "root";
-const HINT_CLASS = "hint";
-const HIGHLIGHTED_HINT_CLASS = "highlighted";
-const MIXED_CASE_CLASS = "mixedCase";
-const MATCHED_CHARS_CLASS = "matchedChars";
-const TEXT_RECT_CLASS = "matchedText";
-const STATUS_CLASS = "status";
-const PEEK_CLASS = "peek";
-const HIDDEN_CLASS = "hidden";
-
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
-
-// The minimum and maximum z-index browsers support.
-const MIN_Z_INDEX = -2147483648;
-const MAX_Z_INDEX = 2147483647;
-
-const GREEN = "lime";
-// The purple used in Firefox for findbar "Highlight all" matches.
-const PURPLE = "#ef0fff";
-// The yellow used in Chrome for findbar matches.
-const YELLOW = "#f6ff00";
-
-const CONTAINER_STYLES = {
-  all: "unset",
-  position: "fixed",
-  "z-index": String(MAX_Z_INDEX),
-  "pointer-events": "none",
-  overflow: "hidden",
-};
-
-const font = BROWSER === "firefox" ? "font: menu;" : "font-family: system-ui;";
-
-const CSS = `
-.${ROOT_CLASS} {
-  ${font}
-}
-
-.${HINT_CLASS} {
-  position: absolute;
-  box-sizing: border-box;
-  padding: 2px;
-  border: solid 1px rgba(0, 0, 0, 0.5);
-  background-color: ${YELLOW};
-  color: black;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: bold;
-  white-space: nowrap;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.${MIXED_CASE_CLASS} {
-  text-transform: none;
-}
-
-.${HIGHLIGHTED_HINT_CLASS} {
-  background-color: ${GREEN};
-}
-
-.${MATCHED_CHARS_CLASS} {
-  opacity: 0.3;
-}
-
-.${TEXT_RECT_CLASS} {
-  position: absolute;
-  z-index: ${MIN_Z_INDEX};
-  box-sizing: border-box;
-  border-bottom: 2px solid ${PURPLE};
-}
-
-.${STATUS_CLASS} {
-  box-sizing: border-box;
-  position: absolute;
-  z-index: ${MAX_Z_INDEX};
-  bottom: 0;
-  right: 0;
-  max-width: 100%;
-  padding: 4px 6px;
-  box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
-  background-color: black;
-  color: white;
-  font-size: 14px;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.${PEEK_CLASS} {
-  opacity: 0.2;
-}
-
-.${HIDDEN_CLASS} {
-  opacity: 0;
-}
-`.trim();
 
 export default class RendererProgram {
   css: string;
@@ -168,9 +88,10 @@ export default class RendererProgram {
       this.onResize,
     ]);
 
-    this.shruggieElement = createHintElement("¯\\_(ツ)_/¯");
+    this.shruggieElement = createHintElement(SHRUGGIE);
     this.shruggieElement.classList.add(HIDDEN_CLASS);
     setStyles(this.shruggieElement, {
+      position: "absolute",
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
@@ -181,6 +102,10 @@ export default class RendererProgram {
     this.statusElement.classList.add(STATUS_CLASS, HIDDEN_CLASS);
     this.statusText = document.createTextNode("");
     this.statusElement.append(this.statusText);
+    setStyles(this.statusElement, {
+      position: "absolute",
+      "z-index": String(MAX_Z_INDEX),
+    });
 
     this.hintSize = {
       widthBase: 0,
@@ -192,10 +117,7 @@ export default class RendererProgram {
     container.id = CONTAINER_ID;
     setStyles(container, CONTAINER_STYLES);
 
-    // Using `mode: "closed"` is tempting, but then Firefox does not seem to
-    // allow inspecting the elements inside in its devtools. That's important
-    // for people who want to customize the styling of the hints.
-    const shadowRoot = container.attachShadow({ mode: "open" });
+    const shadowRoot = container.attachShadow({ mode: "closed" });
 
     const root = document.createElement("div");
     root.className = ROOT_CLASS;
@@ -287,13 +209,16 @@ export default class RendererProgram {
     log("log", "RendererProgram#onMessage", message.type, message);
 
     switch (message.type) {
-      case "StateSync":
-        this.css = `${CSS}\n\n${message.css}`;
+      case "StateSync": {
+        const newCSS = `${CSS}\n\n${message.css}`;
+        const changedCSS = this.css !== newCSS;
+        this.css = newCSS;
         log.level = message.logLevel;
-        if (BROWSER === "firefox" && this.parsedCSS != null) {
+        if (BROWSER === "firefox" && this.parsedCSS != null && changedCSS) {
           this.parsedCSS = parseCSS(this.css);
         }
         break;
+      }
 
       case "Render":
         this.render(message.elements, { mixedCase: message.mixedCase });
@@ -663,10 +588,12 @@ export default class RendererProgram {
       element.className = TEXT_RECT_CLASS;
       element.setAttribute("data-frame-id", String(frameId));
       setStyles(element, {
+        position: "absolute",
         left: `${rect.x}px`,
         top: `${rect.y}px`,
         width: `${rect.width}px`,
         height: `${rect.height}px`,
+        "z-index": String(MIN_Z_INDEX),
       });
       root.append(element);
     }
@@ -874,6 +801,7 @@ function getHintPosition({
 
   return {
     styles: {
+      position: "absolute",
       left: alignLeft ? `${left}px` : "",
       // This could also be done using `left` and
       // `transform: translateX(-100%)`, but that results in blurry hints in

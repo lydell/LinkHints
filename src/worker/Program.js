@@ -18,10 +18,10 @@ import {
   addEventListener,
   addListener,
   bind,
+  getTextRects,
   getViewport,
   log,
   unreachable,
-  walkTextNodes,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -29,7 +29,7 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
-import ElementManager, { getVisibleBox } from "./ElementManager";
+import ElementManager from "./ElementManager";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
 
 type CurrentElements = {|
@@ -205,7 +205,11 @@ export default class WorkerProgram {
         const wordsSet = new Set(words);
         const rects = [].concat(
           ...elements.map(elementData =>
-            getTextRects(elementData.element, current.viewports, wordsSet)
+            getTextRects({
+              element: elementData.element,
+              viewports: current.viewports,
+              words: wordsSet,
+            })
           )
         );
 
@@ -696,7 +700,11 @@ export default class WorkerProgram {
               .filter((_elementData, index) => current.indexes.includes(index))
               .filter(Boolean)
               .map(({ element }) =>
-                getTextRects(element, current.viewports, wordsSet)
+                getTextRects({
+                  element,
+                  viewports: current.viewports,
+                  words: wordsSet,
+                })
               )
           );
 
@@ -900,72 +908,6 @@ function getTextWeight(text: string, weight: number): number {
   // non-whitespace characters, plus a tiny bit of the regular hint weight in
   // case of ties.
   return Math.max(1, text.replace(/\s/g, "").length + Math.log10(weight));
-}
-
-function getTextRects(
-  element: HTMLElement,
-  viewports: Array<Box>,
-  words: Set<string>
-): Array<Box> {
-  const text = element.textContent.toLowerCase();
-
-  const ranges = [];
-
-  for (const word of words) {
-    let index = -1;
-    while ((index = text.indexOf(word, index + 1)) >= 0) {
-      ranges.push({
-        start: index,
-        end: index + word.length,
-        range: document.createRange(),
-      });
-    }
-  }
-
-  if (ranges.length === 0) {
-    return [];
-  }
-
-  let index = 0;
-
-  for (const node of walkTextNodes(element)) {
-    const nextIndex = index + node.length;
-
-    for (const { start, end, range } of ranges) {
-      if (start >= index && start < nextIndex) {
-        range.setStart(node, start - index);
-      }
-      if (end >= index && end <= nextIndex) {
-        range.setEnd(node, end - index);
-      }
-    }
-
-    index = nextIndex;
-  }
-
-  const [offsetX, offsetY] = viewports.reduceRight(
-    ([x, y], viewport) => [x + viewport.x, y + viewport.y],
-    [0, 0]
-  );
-
-  return [].concat(
-    ...ranges.map(({ range }) => {
-      const rects = range.getClientRects();
-      return Array.from(rects, rect => {
-        const box = getVisibleBox(rect, viewports);
-        if (box == null) {
-          return undefined;
-        }
-        const elementAtPoint = document.elementFromPoint(
-          Math.round(box.x + box.width / 2 - offsetX),
-          Math.round(box.y + box.height / 2 - offsetY)
-        );
-        return elementAtPoint != null && element.contains(elementAtPoint)
-          ? box
-          : undefined;
-      }).filter(Boolean);
-    })
-  );
 }
 
 function suppressEvent(event: Event) {

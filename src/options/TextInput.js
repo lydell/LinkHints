@@ -2,6 +2,8 @@
 
 import * as React from "preact";
 
+import { classlist } from "../shared/main";
+
 const SAVE_TIMEOUT = 200; // ms
 
 type Reason = "input" | "blur";
@@ -9,8 +11,17 @@ type Reason = "input" | "blur";
 type Props = {
   savedValue: string,
   normalize: string => string,
-  save: (string, Reason) => void,
+  save: ?(string, Reason) => void,
+  textarea: boolean,
+  className: string,
   // ...restProps
+};
+
+const defaultProps = {
+  normalize: string => string,
+  save: undefined,
+  textarea: false,
+  className: "",
 };
 
 type State = {|
@@ -19,7 +30,11 @@ type State = {|
 |};
 
 export default class TextInput extends React.Component<Props, State> {
+  static defaultProps: typeof defaultProps;
   timeoutId: ?TimeoutID;
+  selectionStart: number;
+  selectionEnd: number;
+  ref: ?(HTMLInputElement | HTMLTextAreaElement);
 
   constructor(props: Props) {
     super(props);
@@ -30,6 +45,16 @@ export default class TextInput extends React.Component<Props, State> {
     };
 
     this.timeoutId = undefined;
+    this.selectionStart = 0;
+    this.selectionEnd = 0;
+    this.ref = undefined;
+  }
+
+  componentDidMount() {
+    // Move the default cursor position from the end of the textarea to the start.
+    if (this.props.textarea) {
+      this.restoreSelection();
+    }
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -38,13 +63,40 @@ export default class TextInput extends React.Component<Props, State> {
       this.props.savedValue !== prevProps.savedValue &&
       this.props.savedValue !== this.state.value
     ) {
-      this.setState({ value: this.props.savedValue });
+      this.setState({ value: this.props.savedValue }, () => {
+        // When readonly textareas change, move the cursor back to the start.
+        if (this.props.textarea && this.props.save == null) {
+          this.selectionStart = 0;
+          this.selectionEnd = 0;
+          setTimeout(() => {
+            this.restoreSelection();
+          }, 0);
+        }
+      });
+    }
+  }
+
+  storeSelection() {
+    const element = this.ref;
+    if (element != null) {
+      this.selectionStart = element.selectionStart;
+      this.selectionEnd = element.selectionEnd;
+    }
+  }
+
+  restoreSelection() {
+    const element = this.ref;
+    if (element != null) {
+      element.selectionStart = this.selectionStart;
+      element.selectionEnd = this.selectionEnd;
     }
   }
 
   save(value: string, reason: Reason) {
     const { save } = this.props;
-    save(value, reason);
+    if (save != null) {
+      save(value, reason);
+    }
   }
 
   saveThrottled(value: string) {
@@ -59,22 +111,49 @@ export default class TextInput extends React.Component<Props, State> {
   }
 
   render() {
-    const { savedValue, normalize, ...restProps } = this.props;
+    const {
+      savedValue,
+      normalize,
+      save,
+      textarea,
+      className,
+      ...restProps
+    } = this.props;
     const { value } = this.state;
+    const Tag = textarea ? "textarea" : "input";
+    const readonly = save == null;
 
     return (
-      <input
+      <Tag
         {...restProps}
-        type="text"
+        ref={ref => {
+          this.ref = ref;
+        }}
+        className={classlist(className, { "is-readonly": readonly })}
         value={value}
         spellCheck="false"
-        onInput={event => {
-          const newValue = event.target.value;
-          const normalizedValue = normalize(newValue);
-          this.setState({ value: newValue });
-          if (normalizedValue !== savedValue) {
-            this.saveThrottled(normalizedValue);
+        onInput={(
+          event: SyntheticInputEvent<HTMLInputElement | HTMLTextAreaElement>
+        ) => {
+          if (readonly) {
+            // This is like the `readonly` attribute, but with a visible cursor,
+            // which is nice when selecting parts of the text for copying.
+            event.currentTarget.value = value;
+            this.restoreSelection();
+          } else {
+            const newValue = event.target.value;
+            const normalizedValue = normalize(newValue);
+            this.setState({ value: newValue });
+            if (normalizedValue !== savedValue) {
+              this.saveThrottled(normalizedValue);
+            }
           }
+        }}
+        onKeyDown={() => {
+          this.storeSelection();
+        }}
+        onMouseDown={() => {
+          this.storeSelection();
         }}
         onFocus={() => {
           this.setState({ focused: true });
@@ -94,3 +173,5 @@ export default class TextInput extends React.Component<Props, State> {
     );
   }
 }
+
+TextInput.defaultProps = defaultProps;

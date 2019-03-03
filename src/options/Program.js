@@ -2,6 +2,7 @@
 
 import * as React from "preact";
 
+import { CSS, SUGGESTION_FONT_SIZE, SUGGESTION_VIMIUM } from "../shared/css";
 import { Resets, addListener, bind, log, unreachable } from "../shared/main";
 import type {
   FromBackground,
@@ -9,11 +10,18 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { type Options, type PartialOptions } from "../shared/options";
-import ExtraLabel from "./ExtraLabel";
+import Attachment from "./Attachment";
+import CSSPreview from "./CSSPreview";
 import Field from "./Field";
 import TextInput from "./TextInput";
 
 const MIN_HINTS_CHARS = 2;
+
+const CSS_SUGGESTIONS = [
+  { name: "Base CSS", value: CSS },
+  { name: "Font size", value: SUGGESTION_FONT_SIZE },
+  { name: "Vimium", value: SUGGESTION_VIMIUM },
+];
 
 type Props = {||};
 
@@ -25,6 +33,8 @@ type State = {|
   |},
   hasSaved: boolean,
   customHintsChars: string,
+  peek: boolean,
+  cssSuggestion: string,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -39,6 +49,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
       optionsData: undefined,
       hasSaved: false,
       customHintsChars: "",
+      peek: false,
+      cssSuggestion: CSS_SUGGESTIONS[0].value,
     };
 
     bind(this, [
@@ -129,7 +141,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   render() {
-    const { optionsData, hasSaved, customHintsChars } = this.state;
+    const {
+      optionsData,
+      hasSaved,
+      customHintsChars,
+      peek,
+      cssSuggestion,
+    } = this.state;
 
     if (optionsData == null) {
       return null;
@@ -165,7 +183,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 ones further to the left. All <em>other</em> characters are used
                 to match elements by their <em>text.</em> Lowercase vs uppercase
                 matters when typing <em>hint characters</em>, but not when{" "}
-                <em>matching by text.</em>
+                <em>filtering by text.</em>
               </p>
               {isLowerCase && (
                 <p>
@@ -202,7 +220,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
               />
 
               <div className="Spaced" style={{ flex: "1 1 50%" }}>
-                <ExtraLabel label="Presets" style={{ flex: "1 1 50%" }}>
+                <Attachment label="Presets" style={{ flex: "1 1 50%" }}>
                   <select
                     style={{ flexGrow: 1 }}
                     value={selectedIndex}
@@ -224,7 +242,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       preset => preset.value !== customHintsChars
                     ) && <option value={customIndex}>Custom</option>}
                   </select>
-                </ExtraLabel>
+                </Attachment>
 
                 <button
                   type="button"
@@ -247,10 +265,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
         <Field
           id="hintsAutoActivate"
-          label="Auto activate when matching by text"
+          label="Auto activate when filtering by text"
           description={
             <p>
-              When <em>matching by text</em> you can press <kbd>Enter</kbd> to
+              When <em>filtering by text</em> you can press <kbd>Enter</kbd> to
               activate the matched hint (highlighted in green). With this option
               enabled, the matched hint is automatically activated if it is the
               only match. Many times one might type a few extra characters
@@ -280,7 +298,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 <span>Enabled</span>
               </label>
 
-              <ExtraLabel
+              <Attachment
                 label={`Over-typing duration (default: ${
                   defaults.hintsTimeout
                 })`}
@@ -306,7 +324,104 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   />
                   <span style={{ flex: "1 1 50%" }}>milliseconds</span>
                 </div>
-              </ExtraLabel>
+              </Attachment>
+            </div>
+          )}
+        />
+
+        <Field
+          id="css"
+          label="Appearance"
+          description={null}
+          changed={options.css !== defaults.css}
+          render={({ id }) => (
+            <div>
+              <div className="Spaced">
+                <TextInput
+                  textarea
+                  placeholder="Write or copy and paste CSS overrides here…"
+                  style={{ flex: "1 1 50%", height: 310 }}
+                  id={id}
+                  savedValue={options.css}
+                  save={value => {
+                    this.saveOptions({ css: value });
+                  }}
+                />
+
+                <Attachment
+                  content={
+                    <div className="Spaced TinyLabel">
+                      <select
+                        value={cssSuggestion}
+                        onChange={(
+                          event: SyntheticEvent<HTMLSelectElement>
+                        ) => {
+                          this.setState({
+                            cssSuggestion: event.currentTarget.value,
+                          });
+                        }}
+                      >
+                        {CSS_SUGGESTIONS.map(({ name, value }) => (
+                          <option key={name} value={value}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          this.saveOptions({
+                            css:
+                              options.css.trim() === ""
+                                ? cssSuggestion
+                                : `${options.css.replace(
+                                    /\n\s*$/,
+                                    ""
+                                  )}\n\n${cssSuggestion}`,
+                          });
+                        }}
+                      >
+                        Copy over
+                      </button>
+                    </div>
+                  }
+                  style={{ flex: "1 1 50%" }}
+                >
+                  <TextInput textarea savedValue={cssSuggestion} />
+                </Attachment>
+              </div>
+
+              <p className="Field-description">
+                To the left, you can add or copy and paste CSS overrides to
+                change the look of things. To the right, you’ll find the base
+                CSS for reference, as well as some inspiration through the
+                dropdown.
+              </p>
+
+              <div className="TinyLabel Spaced" style={{ marginTop: 10 }}>
+                <p>Preview</p>
+
+                <label
+                  className="Spaced Spaced--center"
+                  style={{ marginLeft: "auto" }}
+                >
+                  <span>Peek</span>
+                  <input
+                    type="checkbox"
+                    value={peek}
+                    onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                      this.setState({ peek: event.currentTarget.checked });
+                    }}
+                  />
+                </label>
+              </div>
+
+              <CSSPreview
+                hintsChars={options.hintsChars}
+                css={options.css}
+                peek={peek}
+              />
             </div>
           )}
         />

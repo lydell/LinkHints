@@ -4,14 +4,14 @@ import React from "preact";
 
 import { classlist } from "../shared/main";
 
-type Props = {
+type Props = {|
   id: string,
   label: React.Node,
   description: React.Node,
   changed: boolean,
   changedRight: boolean,
   render: ({| id: string |}) => React.Node,
-};
+|};
 
 Field.defaultProps = {
   changedRight: false,

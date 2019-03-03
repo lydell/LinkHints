@@ -2,6 +2,7 @@
   --grey-leia: #fafafa;
   --grey-luke: #ddd;
   --blue: #2b4eed;
+  --tiny-space: 4px;
 }
 
 *,
@@ -42,6 +43,14 @@ textarea {
   font-weight: inherit;
   letter-spacing: inherit;
   line-height: inherit;
+  resize: vertical;
+}
+
+input.is-readonly,
+button.is-readonly,
+select.is-readonly,
+textarea.is-readonly {
+  font-style: italic;
 }
 
 input[type="checkbox"] {
@@ -52,6 +61,7 @@ input[type="checkbox"] {
 
 textarea {
   width: 100%;
+  font-size: 0.8em;
 }
 
 label {
@@ -126,7 +136,7 @@ kbd {
 
 .Field-label {
   display: block;
-  margin-bottom: 4px;
+  padding-bottom: var(--tiny-space);
   font-weight: bold;
 }
 
@@ -135,28 +145,36 @@ kbd {
   font-size: 14px;
 }
 
-.ExtraLabel {
+.Attachment {
   display: inline-flex;
   position: relative;
 }
 
-.ExtraLabel-label {
+.Attachment-content {
   position: absolute;
   left: 0;
   bottom: 100%;
-  margin-bottom: 4px;
+}
+
+.TinyLabel {
+  padding-bottom: var(--tiny-space);
   font-size: 12px;
 }
 
 .Spaced {
-  --spacing: 10px;
   display: flex;
 }
 
 .Spaced > * + * {
-  margin-left: var(--spacing);
+  margin-left: 0.625em;
 }
 
 .Spaced--center {
   align-items: center;
+}
+
+.Preview {
+  position: relative;
+  border: 1px solid var(--grey-luke);
+  overflow: auto;
 }

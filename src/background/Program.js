@@ -23,9 +23,11 @@ import {
   Resets,
   addListener,
   bind,
+  isMixedCase,
   log,
   makeRandomToken,
   partition,
+  splitEnteredTextChars,
   unreachable,
 } from "../shared/main";
 import type {
@@ -2223,10 +2225,6 @@ function mergeElements(
   });
 }
 
-function splitEnteredTextChars(enteredTextChars: string): Array<string> {
-  return enteredTextChars.split(" ").filter(word => word !== "");
-}
-
 function matchesText(passedText: string, words: Array<string>): boolean {
   const text = passedText.toLowerCase();
   return words.every(word => text.includes(word));
@@ -2250,8 +2248,4 @@ function clearUpdateTimeout(updateState: UpdateState) {
   if (updateState.type === "Timeout") {
     clearTimeout(updateState.timeoutId);
   }
-}
-
-function isMixedCase(string: string): boolean {
-  return string.toLowerCase() !== string && string.toUpperCase() !== string;
 }

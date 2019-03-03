@@ -13,6 +13,7 @@ import {
   Resets,
   addEventListener,
   bind,
+  getVisibleBox,
   log,
   partition,
   setStyles,
@@ -1282,41 +1283,6 @@ function getNonCoveredPoint(
   }
 
   return undefined;
-}
-
-// Turn a `ClientRect` into a `Box` using the coordinates of the topmost
-// viewport. Only the part of the `ClientRect` visible through all viewports end
-// up in the `Box`.
-export function getVisibleBox(
-  passedRect: ClientRect,
-  viewports: Array<Box>
-): ?Box {
-  // No shortcuts (such as summing up viewport x:s and y:s) can be taken here,
-  // since each viewport (frame) clips the visible area. We have to loop them
-  // all through.
-  const visibleRect = viewports.reduceRight(
-    (rect, viewport) => ({
-      left: viewport.x + Math.max(rect.left, 0),
-      right: viewport.x + Math.min(rect.right, viewport.width),
-      top: viewport.y + Math.max(rect.top, 0),
-      bottom: viewport.y + Math.min(rect.bottom, viewport.height),
-    }),
-    passedRect
-  );
-
-  const width = visibleRect.right - visibleRect.left;
-  const height = visibleRect.bottom - visibleRect.top;
-
-  // If `visibleRect` has a non-sensical width or height it means it is not
-  // visible within `viewports`.
-  return width <= 0 || height <= 0
-    ? undefined
-    : {
-        x: visibleRect.left,
-        y: visibleRect.top,
-        width,
-        height,
-      };
 }
 
 // Try to find the best piece of text to place the hint at. This is difficult,
