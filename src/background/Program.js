@@ -27,7 +27,7 @@ import {
   log,
   makeRandomToken,
   partition,
-  splitEnteredTextChars,
+  splitEnteredText,
   unreachable,
 } from "../shared/main";
 import type {
@@ -82,8 +82,8 @@ type HintsState =
       startTime: number,
       time: TimeTracker,
       durations: Array<{| url: string, durations: Durations |}>,
-      enteredHintChars: string,
-      enteredTextChars: string,
+      enteredChars: string,
+      enteredText: string,
       elementsWithHints: Array<ElementWithHint>,
       highlightedIndexes: Set<number>,
       updateState: UpdateState,
@@ -378,29 +378,29 @@ export default class BackgroundProgram {
         }
 
         const isHintKey =
-          this.options.hintsChars.includes(key) ||
-          (isBackspace && hintsState.enteredHintChars !== "");
+          this.options.chars.includes(key) ||
+          (isBackspace && hintsState.enteredChars !== "");
 
         // Disallow filtering by text after having started entering hint chars.
-        if (!isHintKey && !isEnter && hintsState.enteredHintChars !== "") {
+        if (!isHintKey && !isEnter && hintsState.enteredChars !== "") {
           return;
         }
 
         // Update entered chars (either text chars or hint chars).
-        const chars = isHintKey
-          ? hintsState.enteredHintChars
-          : hintsState.enteredTextChars;
-        const newChars = isBackspace
-          ? chars.slice(0, -1)
+        const entered = isHintKey
+          ? hintsState.enteredChars
+          : hintsState.enteredText;
+        const updated = isBackspace
+          ? entered.slice(0, -1)
           : isEnter
-          ? chars
-          : `${chars}${key}`;
-        const enteredHintChars = isHintKey
-          ? newChars
-          : hintsState.enteredHintChars;
-        const enteredTextChars = isHintKey
-          ? hintsState.enteredTextChars
-          : newChars
+          ? entered
+          : `${entered}${key}`;
+        const enteredChars = isHintKey
+          ? updated
+          : hintsState.enteredChars;
+        const enteredText = isHintKey
+          ? hintsState.enteredText
+          : updated
               .toLowerCase()
               // Trim leading whitespace and allow only one trailing space.
               .replace(/^\s+/, "")
@@ -416,12 +416,12 @@ export default class BackgroundProgram {
           words,
         } = updateHints({
           mode: hintsState.mode,
-          enteredHintChars,
-          enteredTextChars,
+          enteredChars,
+          enteredText,
           elementsWithHints: hintsState.elementsWithHints,
           highlightedIndexes,
-          hintsChars: this.options.hintsChars,
-          hintsAutoActivate: this.options.hintsAutoActivate,
+          chars: this.options.chars,
+          autoActivate: this.options.autoActivate,
           matchHighlighted: isEnter,
           updateMeasurements: false,
         });
@@ -435,17 +435,17 @@ export default class BackgroundProgram {
             : [actualMatch.elementWithHint, actualMatch.autoActivated];
 
         // If pressing a hint char that is currently unused, ignore it.
-        if (enteredHintChars !== "" && updates.every(update => update.hidden)) {
+        if (enteredChars !== "" && updates.every(update => update.hidden)) {
           return;
         }
 
-        hintsState.enteredHintChars = enteredHintChars;
-        hintsState.enteredTextChars = enteredTextChars;
+        hintsState.enteredChars = enteredChars;
+        hintsState.enteredText = enteredText;
         hintsState.elementsWithHints = allElementsWithHints;
         hintsState.highlightedIndexes = highlightedIndexes;
 
         this.getTextRects({
-          enteredHintChars,
+          enteredChars,
           allElementsWithHints,
           words,
           tabId: info.tabId,
@@ -473,7 +473,7 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates,
-            enteredTextChars,
+            enteredText,
           },
           { tabId: info.tabId }
         );
@@ -598,16 +598,16 @@ export default class BackgroundProgram {
           info.frameId
         );
 
-        const { enteredHintChars, enteredTextChars } = hintsState;
+        const { enteredChars, enteredText } = hintsState;
 
         const { allElementsWithHints, updates } = updateHints({
           mode: hintsState.mode,
-          enteredHintChars,
-          enteredTextChars,
+          enteredChars,
+          enteredText,
           elementsWithHints: updatedElementsWithHints,
           highlightedIndexes: hintsState.highlightedIndexes,
-          hintsChars: this.options.hintsChars,
-          hintsAutoActivate: this.options.hintsAutoActivate,
+          chars: this.options.chars,
+          autoActivate: this.options.autoActivate,
           matchHighlighted: false,
           updateMeasurements: true,
         });
@@ -618,7 +618,7 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates,
-            enteredTextChars,
+            enteredText,
           },
           { tabId: info.tabId }
         );
@@ -727,12 +727,12 @@ export default class BackgroundProgram {
   }
 
   getTextRects({
-    enteredHintChars,
+    enteredChars,
     allElementsWithHints,
     words,
     tabId,
   }: {|
-    enteredHintChars: string,
+    enteredChars: string,
     allElementsWithHints: Array<ElementWithHint>,
     words: Array<string>,
     tabId: number,
@@ -741,7 +741,7 @@ export default class BackgroundProgram {
     for (const { text, hint, frame } of allElementsWithHints) {
       const previous = indexesByFrame.get(frame.id) || [];
       indexesByFrame.set(frame.id, previous);
-      if (matchesText(text, words) && hint.startsWith(enteredHintChars)) {
+      if (matchesText(text, words) && hint.startsWith(enteredChars)) {
         previous.push(frame.index);
       }
     }
@@ -835,7 +835,7 @@ export default class BackgroundProgram {
           {
             type: "UpdateHints",
             updates,
-            enteredTextChars: hintsState.enteredTextChars,
+            enteredText: hintsState.enteredText,
           },
           { tabId }
         );
@@ -870,8 +870,8 @@ export default class BackgroundProgram {
         );
 
         hintsState.highlightedIndexes = matchedIndexes;
-        hintsState.enteredHintChars = "";
-        hintsState.enteredTextChars = "";
+        hintsState.enteredChars = "";
+        hintsState.enteredText = "";
 
         this.openNewTab({
           url,
@@ -886,8 +886,8 @@ export default class BackgroundProgram {
             type: "UpdateHints",
             updates: assignHints(hintsState.elementsWithHints, {
               mode: "ManyTab",
-              hintsChars: this.options.hintsChars,
-              hasEnteredTextChars: false,
+              chars: this.options.chars,
+              hasEnteredText: false,
             }).map((element, index) => ({
               type: "UpdateContent",
               index: element.index,
@@ -897,7 +897,7 @@ export default class BackgroundProgram {
               highlighted: matchedIndexes.has(element.index),
               hidden: element.hidden,
             })),
-            enteredTextChars: "",
+            enteredText: "",
           },
           { tabId }
         );
@@ -980,27 +980,27 @@ export default class BackgroundProgram {
       return;
     }
 
-    const { enteredHintChars, enteredTextChars } = hintsState;
+    const { enteredChars, enteredText } = hintsState;
 
     const { allElementsWithHints, updates, words } = updateHints({
       mode: hintsState.mode,
-      enteredHintChars,
-      enteredTextChars,
+      enteredChars,
+      enteredText,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      hintsChars: this.options.hintsChars,
-      hintsAutoActivate: this.options.hintsAutoActivate,
+      chars: this.options.chars,
+      autoActivate: this.options.autoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
 
-    this.getTextRects({ enteredHintChars, allElementsWithHints, words, tabId });
+    this.getTextRects({ enteredChars, allElementsWithHints, words, tabId });
 
     this.sendRendererMessage(
       {
         type: "UpdateHints",
         updates,
-        enteredTextChars,
+        enteredText,
       },
       { tabId }
     );
@@ -1088,8 +1088,8 @@ export default class BackgroundProgram {
       })),
       {
         mode: hintsState.mode,
-        hintsChars: this.options.hintsChars,
-        hasEnteredTextChars: false,
+        chars: this.options.chars,
+        hasEnteredText: false,
       }
       // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
       // real to map these elements to DOM elements in RendererProgram.
@@ -1101,8 +1101,8 @@ export default class BackgroundProgram {
       startTime: hintsState.startTime,
       time,
       durations: hintsState.durations,
-      enteredHintChars: "",
-      enteredTextChars: "",
+      enteredChars: "",
+      enteredText: "",
       elementsWithHints,
       highlightedIndexes: new Set(),
       updateState: {
@@ -1122,7 +1122,7 @@ export default class BackgroundProgram {
       {
         type: "Render",
         elements: elementsWithHints,
-        mixedCase: isMixedCase(this.options.hintsChars),
+        mixedCase: isMixedCase(this.options.chars),
       },
       { tabId }
     );
@@ -1183,16 +1183,16 @@ export default class BackgroundProgram {
       }
     }
 
-    const { enteredHintChars, enteredTextChars } = hintsState;
+    const { enteredChars, enteredText } = hintsState;
 
     const { allElementsWithHints, updates } = updateHints({
       mode: hintsState.mode,
-      enteredHintChars,
-      enteredTextChars,
+      enteredChars,
+      enteredText,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      hintsChars: this.options.hintsChars,
-      hintsAutoActivate: this.options.hintsAutoActivate,
+      chars: this.options.chars,
+      autoActivate: this.options.autoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
@@ -1212,7 +1212,7 @@ export default class BackgroundProgram {
       {
         type: "UpdateHints",
         updates,
-        enteredTextChars,
+        enteredText,
       },
       { tabId: info.tabId }
     );
@@ -1712,7 +1712,7 @@ export default class BackgroundProgram {
           tabId,
           frameId: "all_frames",
         });
-      }, this.options.hintsTimeout);
+      }, this.options.overTypingDuration);
     }
   }
 }
@@ -1950,11 +1950,11 @@ function assignHints(
   passedElements: Array<ElementWithHint>,
   {
     mode,
-    hintsChars,
-    hasEnteredTextChars,
-  }: {| mode: HintsMode, hintsChars: string, hasEnteredTextChars: boolean |}
+    chars,
+    hasEnteredText,
+  }: {| mode: HintsMode, chars: string, hasEnteredText: boolean |}
 ): Array<ElementWithHint> {
-  const largestTextWeight = hasEnteredTextChars
+  const largestTextWeight = hasEnteredText
     ? Math.max(1, ...passedElements.map(element => element.textWeight))
     : 0;
 
@@ -1965,7 +1965,7 @@ function assignHints(
       // When filtering by text, give better hints to elements with shorter
       // text. The more of the text that is matched, the more likely to be what
       // the user is looking for.
-      weight: hasEnteredTextChars
+      weight: hasEnteredText
         ? largestTextWeight - element.textWeight + 1
         : element.hintMeasurements.weight,
       // This is set to the real thing below.
@@ -1983,7 +1983,7 @@ function assignHints(
         // not to rely on that to get consistent hints.
         comparePositions(a.hintMeasurements, b.hintMeasurements) ||
         // `hintsState.elementsWithHints` changes order as
-        // `hintsState.enteredTextChars` come and go. Sort on `.index` if all other
+        // `hintsState.enteredText` come and go. Sort on `.index` if all other
         // things are equal, so that elements don’t unexpectedly swap hints after
         // erasing some text chars.
         a.index - b.index
@@ -1991,12 +1991,12 @@ function assignHints(
 
   const combined = combineByHref(elements, mode);
 
-  const tree = huffman.createTree(combined, hintsChars.length, {
+  const tree = huffman.createTree(combined, chars.length, {
     // Even though we sorted `elements` above, `combined` might not be sorted.
     sorted: false,
   });
 
-  tree.assignCodeWords(hintsChars, (item, codeWord) => {
+  tree.assignCodeWords(chars, (item, codeWord) => {
     if (item instanceof Combined) {
       for (const child of item.children) {
         child.hint = codeWord;
@@ -2044,22 +2044,22 @@ function makeMessageInfo(sender: MessageSender): ?MessageInfo {
 
 function updateHints({
   mode,
-  enteredHintChars,
-  enteredTextChars,
+  enteredChars,
+  enteredText,
   elementsWithHints: passedElementsWithHints,
   highlightedIndexes,
-  hintsChars,
-  hintsAutoActivate,
+  chars,
+  autoActivate: autoActivateOption,
   matchHighlighted,
   updateMeasurements,
 }: {|
   mode: HintsMode,
-  enteredHintChars: string,
-  enteredTextChars: string,
+  enteredChars: string,
+  enteredText: string,
   elementsWithHints: Array<ElementWithHint>,
   highlightedIndexes: Set<number>,
-  hintsChars: string,
-  hintsAutoActivate: boolean,
+  chars: string,
+  autoActivate: boolean,
   matchHighlighted: boolean,
   updateMeasurements: boolean,
 |}): {|
@@ -2069,10 +2069,10 @@ function updateHints({
   updates: Array<HintUpdate>,
   words: Array<string>,
 |} {
-  const hasEnteredTextChars = enteredTextChars !== "";
-  const hasEnteredTextCharsOnly =
-    hasEnteredTextChars && enteredHintChars === "";
-  const words = splitEnteredTextChars(enteredTextChars);
+  const hasEnteredText = enteredText !== "";
+  const hasEnteredTextOnly =
+    hasEnteredText && enteredChars === "";
+  const words = splitEnteredText(enteredText);
 
   // Filter away elements/hints not matching by text.
   const [matching, nonMatching] = partition(passedElementsWithHints, element =>
@@ -2082,8 +2082,8 @@ function updateHints({
   // Update the hints after the above filtering.
   const elementsWithHintsAndMaybeHidden = assignHints(matching, {
     mode,
-    hintsChars,
-    hasEnteredTextChars,
+    chars,
+    hasEnteredText,
   });
 
   // Filter away elements that have become hidden _after_ assigning hints, so
@@ -2098,15 +2098,15 @@ function updateHints({
   // chars have been entered.
   const allHints = elementsWithHints
     .map(element => element.hint)
-    .filter(hint => hint.startsWith(enteredHintChars));
-  const matchingHints = allHints.filter(hint => hint === enteredHintChars);
-  const autoActivate = hasEnteredTextCharsOnly && hintsAutoActivate;
+    .filter(hint => hint.startsWith(enteredChars));
+  const matchingHints = allHints.filter(hint => hint === enteredChars);
+  const autoActivate = hasEnteredTextOnly && autoActivateOption;
   const matchingHintsSet = autoActivate
     ? new Set(allHints)
     : new Set(matchingHints);
   const matchedHint =
     matchingHintsSet.size === 1 ? Array.from(matchingHintsSet)[0] : undefined;
-  const highlightedHint = hasEnteredTextChars ? allHints[0] : undefined;
+  const highlightedHint = hasEnteredText ? allHints[0] : undefined;
   const match = elementsWithHints.find(
     element =>
       element.hint === matchedHint ||
@@ -2115,7 +2115,7 @@ function updateHints({
 
   const updates: Array<HintUpdate> = elementsWithHintsAndMaybeHidden
     .map((element, index) => {
-      const matches = element.hint.startsWith(enteredHintChars);
+      const matches = element.hint.startsWith(enteredChars);
       const highlighted =
         (match != null && element.hint === match.hint) ||
         element.hint === highlightedHint ||
@@ -2141,8 +2141,8 @@ function updateHints({
             type: "UpdateContent",
             index: element.index,
             order: index,
-            matchedChars: enteredHintChars,
-            restChars: element.hint.slice(enteredHintChars.length),
+            matchedChars: enteredChars,
+            restChars: element.hint.slice(enteredChars.length),
             highlighted,
             hidden: element.hidden || !matches,
           }

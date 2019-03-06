@@ -412,6 +412,6 @@ export function isMixedCase(string: string): boolean {
   return string.toLowerCase() !== string && string.toUpperCase() !== string;
 }
 
-export function splitEnteredTextChars(enteredTextChars: string): Array<string> {
-  return enteredTextChars.split(" ").filter(word => word !== "");
+export function splitEnteredText(enteredText: string): Array<string> {
+  return enteredText.split(" ").filter(word => word !== "");
 }

@@ -174,7 +174,7 @@ export type ToRenderer =
   | {|
       type: "UpdateHints",
       updates: Array<HintUpdate>,
-      enteredTextChars: string,
+      enteredText: string,
     |}
   | {|
       type: "RotateHints",

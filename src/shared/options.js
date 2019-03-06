@@ -6,12 +6,12 @@ import { type KeyboardMapping, decodeKeyboardMapping } from "./keyboard";
 import { type LogLevel, DEFAULT_LOG_LEVEL, decodeLogLevel } from "./main";
 
 export type Options = {|
-  ignoreKeyboardLayout: boolean,
-  hintsChars: string,
-  hintsAutoActivate: boolean,
-  hintsTimeout: number,
+  chars: string,
+  autoActivate: boolean,
+  overTypingDuration: number,
   css: string,
   logLevel: LogLevel,
+  ignoreKeyboardLayout: boolean,
   globalKeyboardShortcuts: Array<KeyboardMapping>,
   normalKeyboardShortcuts: Array<KeyboardMapping>,
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
@@ -25,12 +25,12 @@ export const makeOptionsDecoder: (
   Options,
   Array<[string, Error]>,
 ] = recordWithDefaultsAndErrors.bind(undefined, {
-  ignoreKeyboardLayout: boolean,
-  hintsChars: string,
-  hintsAutoActivate: boolean,
-  hintsTimeout: number,
+  chars: string,
+  autoActivate: boolean,
+  overTypingDuration: number,
   css: string,
   logLevel: map(string, decodeLogLevel),
+  ignoreKeyboardLayout: boolean,
   globalKeyboardShortcuts: array(decodeKeyboardMapping),
   normalKeyboardShortcuts: array(decodeKeyboardMapping),
   hintsKeyboardShortcuts: array(decodeKeyboardMapping),
@@ -38,13 +38,13 @@ export const makeOptionsDecoder: (
 
 export function getDefaults({ mac }: {| mac: boolean |}): Options {
   return {
-    ignoreKeyboardLayout: false,
-    hintsChars: "fjdkslaurieowhgmvcn",
-    hintsAutoActivate: true,
+    chars: "fjdkslaurieowhgmvcn",
+    autoActivate: true,
     // This is the "prevent overtyping" timeout from VimFx.
-    hintsTimeout: 400, // ms
+    overTypingDuration: 400, // ms
     css: "",
     logLevel: DEFAULT_LOG_LEVEL,
+    ignoreKeyboardLayout: false,
     globalKeyboardShortcuts: [
       {
         keypress: {

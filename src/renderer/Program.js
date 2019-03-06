@@ -55,7 +55,7 @@ export default class RendererProgram {
   parsedCSS: ?Array<Rule>;
   hints: Array<HTMLElement>;
   rects: Map<HTMLElement, ClientRect>;
-  enteredTextChars: string;
+  enteredText: string;
   resets: Resets;
   shruggieElement: HTMLElement;
   statusElement: HTMLElement;
@@ -74,7 +74,7 @@ export default class RendererProgram {
     this.parsedCSS = undefined;
     this.hints = [];
     this.rects = new Map();
-    this.enteredTextChars = "";
+    this.enteredText = "";
     this.resets = new Resets();
 
     bind(this, [
@@ -225,7 +225,7 @@ export default class RendererProgram {
         break;
 
       case "UpdateHints":
-        this.updateHints(message.updates, message.enteredTextChars);
+        this.updateHints(message.updates, message.enteredText);
         break;
 
       case "RotateHints":
@@ -468,7 +468,7 @@ export default class RendererProgram {
     });
   }
 
-  updateHints(updates: Array<HintUpdate>, enteredTextChars: string) {
+  updateHints(updates: Array<HintUpdate>, enteredText: string) {
     const viewport = getViewport();
     const maybeNeedsMoveInsideViewport = [];
 
@@ -502,7 +502,7 @@ export default class RendererProgram {
             this.maybeApplyStyles(matched);
           }
 
-          if (enteredTextChars !== this.enteredTextChars) {
+          if (enteredText !== this.enteredText) {
             setStyles(child, {
               // Only update `z-index` when the entered text chars have changed
               // (that's the only time `z-index` _needs_ updating), to avoid
@@ -554,13 +554,13 @@ export default class RendererProgram {
       updates.filter(update => update.hidden).length === this.hints.length;
     this.toggleShruggie({ visible: allHidden });
 
-    this.setStatus(enteredTextChars.replace(/\s/g, "\u00a0"));
+    this.setStatus(enteredText.replace(/\s/g, "\u00a0"));
 
     if (maybeNeedsMoveInsideViewport.length > 0) {
       this.moveInsideViewport(maybeNeedsMoveInsideViewport, viewport);
     }
 
-    this.enteredTextChars = enteredTextChars;
+    this.enteredText = enteredText;
   }
 
   rotateHints({ forward }: {| forward: boolean |}) {

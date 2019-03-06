@@ -23,7 +23,7 @@ import {
   classlist,
   getTextRects,
   isMixedCase,
-  splitEnteredTextChars,
+  splitEnteredText,
 } from "../shared/main";
 
 const HINT_X = 38; // px
@@ -43,10 +43,10 @@ const FILTER_BY_TEXT = (
     to filter.
   </p>
 );
-const ENTERED_TEXT_CHARS = "filter by text ex";
+const ENTERED_TEXT = "filter by text ex";
 
 type Props = {|
-  hintsChars: string,
+  chars: string,
   css: string,
   peek: boolean,
 |};
@@ -86,7 +86,7 @@ export default class CSSPreview extends React.Component<Props, State> {
     const textRects = getTextRects({
       element: filterByTextElement,
       viewports: [],
-      words: new Set(splitEnteredTextChars(ENTERED_TEXT_CHARS)),
+      words: new Set(splitEnteredText(ENTERED_TEXT)),
       checkElementAtPoint: false,
     }).map(box => ({
       ...box,
@@ -98,7 +98,7 @@ export default class CSSPreview extends React.Component<Props, State> {
   }
 
   render() {
-    const { hintsChars, css, peek } = this.props;
+    const { chars, css, peek } = this.props;
     const { textRects } = this.state;
 
     let hintZIndex = MAX_Z_INDEX;
@@ -106,7 +106,7 @@ export default class CSSPreview extends React.Component<Props, State> {
       left,
       top,
       matchedChars = "",
-      chars,
+      chars: unmatchedChars,
       highlighted = false,
       hidden = false,
     }: {|
@@ -124,7 +124,7 @@ export default class CSSPreview extends React.Component<Props, State> {
         <div
           key={hintZIndex}
           className={classlist(HINT_CLASS, {
-            [MIXED_CASE_CLASS]: isMixedCase(hintsChars),
+            [MIXED_CASE_CLASS]: isMixedCase(chars),
             [HIGHLIGHTED_HINT_CLASS]: highlighted,
             [HIDDEN_CLASS]: hidden,
           })}
@@ -138,7 +138,7 @@ export default class CSSPreview extends React.Component<Props, State> {
           {matchedChars.length > 0 && (
             <span className={MATCHED_CHARS_CLASS}>{matchedChars}</span>
           )}
-          {chars}
+          {unmatchedChars}
         </div>
       );
     };
@@ -185,10 +185,10 @@ export default class CSSPreview extends React.Component<Props, State> {
                   zIndex: String(MAX_Z_INDEX),
                 }}
               >
-                {ENTERED_TEXT_CHARS}
+                {ENTERED_TEXT}
               </div>
 
-              {hintsChars.split("").map((char, index) =>
+              {chars.split("").map((char, index) =>
                 hint({
                   left: HINT_X * index,
                   top: 0,
@@ -201,8 +201,8 @@ export default class CSSPreview extends React.Component<Props, State> {
                   .concat(
                     ...variations.map(([numMatched, numChars]) =>
                       [false, true].map(highlighted => ({
-                        matchedChars: hintsChars.slice(0, numMatched),
-                        chars: hintsChars.slice(
+                        matchedChars: chars.slice(0, numMatched),
+                        chars: chars.slice(
                           numMatched,
                           numMatched + numChars
                         ),

@@ -15,7 +15,7 @@ import CSSPreview from "./CSSPreview";
 import Field from "./Field";
 import TextInput from "./TextInput";
 
-const MIN_HINTS_CHARS = 2;
+const MIN_CHARS = 2;
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -32,7 +32,7 @@ type State = {|
     errors: Array<string>,
   |},
   hasSaved: boolean,
-  customHintsChars: string,
+  customChars: string,
   peek: boolean,
   cssSuggestion: string,
 |};
@@ -48,7 +48,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.state = {
       optionsData: undefined,
       hasSaved: false,
-      customHintsChars: "",
+      customChars: "",
       peek: false,
       cssSuggestion: CSS_SUGGESTIONS[0].value,
     };
@@ -107,10 +107,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
             defaults: message.defaults,
             errors: message.errors,
           },
-          customHintsChars:
+          customChars:
             state.optionsData == null
-              ? message.options.hintsChars
-              : state.customHintsChars,
+              ? message.options.chars
+              : state.customChars,
         }));
         break;
 
@@ -144,7 +144,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     const {
       optionsData,
       hasSaved,
-      customHintsChars,
+      customChars,
       peek,
       cssSuggestion,
     } = this.state;
@@ -155,26 +155,26 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const { options, defaults, errors } = optionsData;
 
-    const hintsCharsPresets = [
-      { name: "QWERTY (default)", value: defaults.hintsChars },
+    const charsPresets = [
+      { name: "QWERTY (default)", value: defaults.chars },
       { name: "Dvorak", value: "hutenogacpridkmjw" },
       { name: "Colemak", value: "tnseriaoplfuwydhvmck" },
     ];
 
-    const customIndex = hintsCharsPresets.length;
+    const customIndex = charsPresets.length;
 
-    const rawSelectedIndex = hintsCharsPresets.findIndex(
-      preset => preset.value === options.hintsChars
+    const rawSelectedIndex = charsPresets.findIndex(
+      preset => preset.value === options.chars
     );
     const selectedIndex =
       rawSelectedIndex >= 0 ? rawSelectedIndex : customIndex;
 
-    const isLowerCase = options.hintsChars === options.hintsChars.toLowerCase();
+    const isLowerCase = options.chars === options.chars.toLowerCase();
 
     return (
       <div>
         <Field
-          id="hintsChars"
+          id="chars"
           label="Hint characters"
           description={
             <div>
@@ -193,29 +193,26 @@ export default class OptionsProgram extends React.Component<Props, State> {
               )}
             </div>
           }
-          changed={options.hintsChars !== defaults.hintsChars}
+          changed={options.chars !== defaults.chars}
           render={({ id }) => (
             <div className="Spaced">
               <TextInput
                 id={id}
                 style={{ flex: "1 1 50%" }}
-                savedValue={options.hintsChars}
+                savedValue={options.chars}
                 normalize={value => {
-                  const unique = pruneHintsChars(value);
-                  return unique.length >= MIN_HINTS_CHARS
+                  const unique = pruneChars(value);
+                  return unique.length >= MIN_CHARS
                     ? unique
                     : unique.length === 0
-                    ? defaults.hintsChars
-                    : pruneHintsChars(unique + defaults.hintsChars).slice(
-                        0,
-                        MIN_HINTS_CHARS
-                      );
+                    ? defaults.chars
+                    : pruneChars(unique + defaults.chars).slice(0, MIN_CHARS);
                 }}
                 save={(value, reason) => {
                   if (reason === "input") {
-                    this.setState({ customHintsChars: value });
+                    this.setState({ customChars: value });
                   }
-                  this.saveOptions({ hintsChars: value });
+                  this.saveOptions({ chars: value });
                 }}
               />
 
@@ -227,19 +224,19 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
                       const index = Number(event.currentTarget.value);
                       const chars =
-                        index >= 0 && index < hintsCharsPresets.length
-                          ? hintsCharsPresets[index].value
-                          : customHintsChars;
-                      this.saveOptions({ hintsChars: chars });
+                        index >= 0 && index < charsPresets.length
+                          ? charsPresets[index].value
+                          : customChars;
+                      this.saveOptions({ chars });
                     }}
                   >
-                    {hintsCharsPresets.map(({ name }, index) => (
+                    {charsPresets.map(({ name }, index) => (
                       <option key={name} value={index}>
                         {name}
                       </option>
                     ))}
-                    {hintsCharsPresets.every(
-                      preset => preset.value !== customHintsChars
+                    {charsPresets.every(
+                      preset => preset.value !== customChars
                     ) && <option value={customIndex}>Custom</option>}
                   </select>
                 </Attachment>
@@ -249,11 +246,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   style={{ flex: "1 1 50%" }}
                   onClick={() => {
                     const chars = isLowerCase
-                      ? options.hintsChars.toUpperCase()
-                      : options.hintsChars.toLowerCase();
-                    const unique = pruneHintsChars(chars);
-                    this.setState({ customHintsChars: unique });
-                    this.saveOptions({ hintsChars: unique });
+                      ? options.chars.toUpperCase()
+                      : options.chars.toLowerCase();
+                    const unique = pruneChars(chars);
+                    this.setState({ customChars: unique });
+                    this.saveOptions({ chars: unique });
                   }}
                 >
                   {isLowerCase ? "→ UPPERCASE" : "→ lowercase"}
@@ -264,7 +261,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
         />
 
         <Field
-          id="hintsAutoActivate"
+          id="autoActivate"
           label="Auto activate when filtering by text"
           description={
             <p>
@@ -277,8 +274,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
               activation.
             </p>
           }
-          changed={options.hintsAutoActivate !== defaults.hintsAutoActivate}
-          changedRight={options.hintsTimeout !== defaults.hintsTimeout}
+          changed={options.autoActivate !== defaults.autoActivate}
+          changedRight={
+            options.overTypingDuration !== defaults.overTypingDuration
+          }
           render={({ id }) => (
             <div className="Spaced">
               <label
@@ -288,10 +287,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 <input
                   type="checkbox"
                   id={id}
-                  checked={options.hintsAutoActivate}
+                  checked={options.autoActivate}
                   onChange={(event: SyntheticEvent<HTMLInputElement>) => {
                     this.saveOptions({
-                      hintsAutoActivate: event.currentTarget.checked,
+                      autoActivate: event.currentTarget.checked,
                     });
                   }}
                 />
@@ -300,7 +299,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
               <Attachment
                 label={`Over-typing duration (default: ${
-                  defaults.hintsTimeout
+                  defaults.overTypingDuration
                 })`}
                 style={{ flex: "1 1 50%" }}
               >
@@ -310,16 +309,18 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 >
                   <TextInput
                     style={{ flex: "1 1 50%" }}
-                    disabled={!options.hintsAutoActivate}
-                    savedValue={String(options.hintsTimeout)}
+                    disabled={!options.autoActivate}
+                    savedValue={String(options.overTypingDuration)}
                     normalize={value => {
                       const number = Math.max(0, Math.round(parseFloat(value)));
                       return String(
-                        Number.isFinite(number) ? number : defaults.hintsTimeout
+                        Number.isFinite(number)
+                          ? number
+                          : defaults.overTypingDuration
                       );
                     }}
                     save={value => {
-                      this.saveOptions({ hintsTimeout: Number(value) });
+                      this.saveOptions({ overTypingDuration: Number(value) });
                     }}
                   />
                   <span style={{ flex: "1 1 50%" }}>milliseconds</span>
@@ -417,11 +418,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 </label>
               </div>
 
-              <CSSPreview
-                hintsChars={options.hintsChars}
-                css={options.css}
-                peek={peek}
-              />
+              <CSSPreview chars={options.chars} css={options.css} peek={peek} />
             </div>
           )}
         />
@@ -452,6 +449,6 @@ function wrapMessage(message: FromOptions): ToBackground {
   };
 }
 
-function pruneHintsChars(string: string): string {
+function pruneChars(string: string): string {
   return Array.from(new Set(Array.from(string.replace(/\s/g, "")))).join("");
 }
