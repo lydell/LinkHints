@@ -107,6 +107,19 @@ type UpdateState =
       timeoutId: TimeoutID,
     |};
 
+type HintInput =
+  | {|
+      type: "Input",
+      keypress: NormalizedKeypress,
+    |}
+  | {|
+      type: "ActivateHint",
+      alt: boolean,
+    |}
+  | {|
+      type: "Backspace",
+    |};
+
 // This is the same color as the pointer in the icon.
 const BADGE_COLOR = "#323234";
 
@@ -352,155 +365,19 @@ export default class BackgroundProgram {
         this.onKeyboardShortcut(message.action, info, message.timestamp);
         break;
 
-      case "NonKeyboardShortcutKeypress": {
-        const { hintsState } = tabState;
-        if (hintsState.type !== "Hinting") {
-          return;
-        }
-
-        const normalizedKeypress = normalizeKeypress({
-          keypress: message.keypress,
-          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
-        });
-        const rawKey = normalizedKeypress.key;
-        const key = rawKey === "Space" ? " " : rawKey;
-        const isBackspace = key === "Backspace";
-        const isEnter = key === "Enter";
-
+      case "NonKeyboardShortcutKeypress":
         if (isPeekKey(message.keypress)) {
           this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
-          return;
-        }
-
-        // Ignore unknown/non-text keys.
-        if (!(isBackspace || isEnter || key.length === 1)) {
-          return;
-        }
-
-        const isHintKey =
-          this.options.chars.includes(key) ||
-          (isBackspace && hintsState.enteredChars !== "");
-
-        // Disallow filtering by text after having started entering hint chars.
-        if (!isHintKey && !isEnter && hintsState.enteredChars !== "") {
-          return;
-        }
-
-        // Update entered chars (either text chars or hint chars).
-        const entered = isHintKey
-          ? hintsState.enteredChars
-          : hintsState.enteredText;
-        const updated = isBackspace
-          ? entered.slice(0, -1)
-          : isEnter
-          ? entered
-          : `${entered}${key}`;
-        const enteredChars = isHintKey
-          ? updated
-          : hintsState.enteredChars;
-        const enteredText = isHintKey
-          ? hintsState.enteredText
-          : updated
-              .toLowerCase()
-              // Trim leading whitespace and allow only one trailing space.
-              .replace(/^\s+/, "")
-              .replace(/\s+$/, " ");
-
-        // Clear last matches from ManyTab mode.
-        const highlightedIndexes = new Set();
-
-        const {
-          allElementsWithHints,
-          match: actualMatch,
-          updates,
-          words,
-        } = updateHints({
-          mode: hintsState.mode,
-          enteredChars,
-          enteredText,
-          elementsWithHints: hintsState.elementsWithHints,
-          highlightedIndexes,
-          chars: this.options.chars,
-          autoActivate: this.options.autoActivate,
-          matchHighlighted: isEnter,
-          updateMeasurements: false,
-        });
-
-        // Disallow matching hints (by text) by backspacing away chars. This can
-        // happen if your entered text matches two links and then the link you
-        // were after is removed.
-        const [match, preventOverTyping] =
-          isBackspace || actualMatch == null
-            ? [undefined, false]
-            : [actualMatch.elementWithHint, actualMatch.autoActivated];
-
-        // If pressing a hint char that is currently unused, ignore it.
-        if (enteredChars !== "" && updates.every(update => update.hidden)) {
-          return;
-        }
-
-        hintsState.enteredChars = enteredChars;
-        hintsState.enteredText = enteredText;
-        hintsState.elementsWithHints = allElementsWithHints;
-        hintsState.highlightedIndexes = highlightedIndexes;
-
-        this.getTextRects({
-          enteredChars,
-          allElementsWithHints,
-          words,
-          tabId: info.tabId,
-        });
-
-        const shouldContinue =
-          match == null
-            ? true
-            : this.handleHintMatch({
-                tabId: info.tabId,
-                match,
-                updates,
-                preventOverTyping,
-                keypress: normalizedKeypress,
-                timestamp: message.timestamp,
-              });
-
-        // Some hint modes handle updating hintsState and sending messages
-        // themselves. The rest share the same implementation below.
-        if (!shouldContinue) {
-          return;
-        }
-
-        this.sendRendererMessage(
-          {
-            type: "UpdateHints",
-            updates,
-            enteredText,
-          },
-          { tabId: info.tabId }
-        );
-
-        if (match != null) {
-          const timeoutId = setTimeout(() => {
-            unsetUnrenderTimeoutId(tabState);
-            this.sendRendererMessage(
-              { type: "Unrender" },
-              { tabId: info.tabId }
-            );
-          }, MATCH_HIGHLIGHT_DURATION);
-
-          clearUpdateTimeout(hintsState.updateState);
-          tabState.hintsState = {
-            type: "Idle",
-            timeoutId,
-          };
-          this.updateWorkerStateAfterHintActivation({
-            tabId: info.tabId,
-            preventOverTyping,
+        } else {
+          this.handleHintInput(info.tabId, message.timestamp, {
+            type: "Input",
+            keypress: normalizeKeypress({
+              keypress: message.keypress,
+              ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
+            }),
           });
         }
-
-        this.updateBadge(info.tabId);
         break;
-      }
 
       case "Keyup":
         if (isPeekKey(message.keypress)) {
@@ -757,6 +634,145 @@ export default class BackgroundProgram {
     }
   }
 
+  handleHintInput(tabId: number, timestamp: number, input: HintInput) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+    if (hintsState.type !== "Hinting") {
+      return;
+    }
+
+    // Ignore unknown/non-text keys.
+    if (input.type === "Input" && input.keypress.printableKey == null) {
+      return;
+    }
+
+    const isHintKey =
+      (input.type === "Input" &&
+        input.keypress.printableKey != null &&
+        this.options.chars.includes(input.keypress.printableKey)) ||
+      (input.type === "Backspace" && hintsState.enteredChars !== "");
+
+    // Disallow filtering by text after having started entering hint chars.
+    if (
+      !isHintKey &&
+      input.type !== "ActivateHint" &&
+      hintsState.enteredChars !== ""
+    ) {
+      return;
+    }
+
+    // Update entered chars (either text chars or hint chars).
+    const updated = updateChars(
+      isHintKey ? hintsState.enteredChars : hintsState.enteredText,
+      input
+    );
+    const enteredChars = isHintKey ? updated : hintsState.enteredChars;
+    const enteredText = isHintKey
+      ? hintsState.enteredText
+      : updated
+          .toLowerCase()
+          // Trim leading whitespace and allow only one trailing space.
+          .replace(/^\s+/, "")
+          .replace(/\s+$/, " ");
+
+    // Clear last matches from ManyTab mode.
+    const highlightedIndexes = new Set();
+
+    const {
+      allElementsWithHints,
+      match: actualMatch,
+      updates,
+      words,
+    } = updateHints({
+      mode: hintsState.mode,
+      enteredChars,
+      enteredText,
+      elementsWithHints: hintsState.elementsWithHints,
+      highlightedIndexes,
+      chars: this.options.chars,
+      autoActivate: this.options.autoActivate,
+      matchHighlighted: input.type === "ActivateHint",
+      updateMeasurements: false,
+    });
+
+    // Disallow matching hints (by text) by backspacing away chars. This can
+    // happen if your entered text matches two links and then the link you
+    // were after is removed.
+    const [match, preventOverTyping] =
+      input.type === "Backspace" || actualMatch == null
+        ? [undefined, false]
+        : [actualMatch.elementWithHint, actualMatch.autoActivated];
+
+    // If pressing a hint char that is currently unused, ignore it.
+    if (enteredChars !== "" && updates.every(update => update.hidden)) {
+      return;
+    }
+
+    hintsState.enteredChars = enteredChars;
+    hintsState.enteredText = enteredText;
+    hintsState.elementsWithHints = allElementsWithHints;
+    hintsState.highlightedIndexes = highlightedIndexes;
+
+    this.getTextRects({
+      enteredChars,
+      allElementsWithHints,
+      words,
+      tabId,
+    });
+
+    const shouldContinue =
+      match == null
+        ? true
+        : this.handleHintMatch({
+            tabId,
+            match,
+            updates,
+            preventOverTyping,
+            forceForegroundTab:
+              (input.type === "Input" && input.keypress.alt) ||
+              (input.type === "ActivateHint" && input.alt),
+            timestamp,
+          });
+
+    // Some hint modes handle updating hintsState and sending messages
+    // themselves. The rest share the same implementation below.
+    if (!shouldContinue) {
+      return;
+    }
+
+    this.sendRendererMessage(
+      {
+        type: "UpdateHints",
+        updates,
+        enteredText,
+      },
+      { tabId }
+    );
+
+    if (match != null) {
+      const timeoutId = setTimeout(() => {
+        unsetUnrenderTimeoutId(tabState);
+        this.sendRendererMessage({ type: "Unrender" }, { tabId });
+      }, MATCH_HIGHLIGHT_DURATION);
+
+      clearUpdateTimeout(hintsState.updateState);
+      tabState.hintsState = {
+        type: "Idle",
+        timeoutId,
+      };
+      this.updateWorkerStateAfterHintActivation({
+        tabId,
+        preventOverTyping,
+      });
+    }
+
+    this.updateBadge(tabId);
+  }
+
   // Executes some action on the element of the matched hint. Returns whether
   // the "NonKeyboardShortcutKeypress" handler should continue with its default
   // implementation for updating hintsState and sending messages or not. Some
@@ -766,14 +782,14 @@ export default class BackgroundProgram {
     match,
     updates,
     preventOverTyping,
-    keypress,
+    forceForegroundTab,
     timestamp,
   }: {|
     tabId: number,
     match: ElementWithHint,
     updates: Array<HintUpdate>,
     preventOverTyping: boolean,
-    keypress: NormalizedKeypress,
+    forceForegroundTab: boolean,
     timestamp: number,
   |}): boolean {
     const tabState = this.tabState.get(tabId);
@@ -789,7 +805,7 @@ export default class BackgroundProgram {
     const { url } = match;
 
     const mode: HintsMode =
-      url != null && keypress.alt ? "ForegroundTab" : hintsState.mode;
+      url != null && forceForegroundTab ? "ForegroundTab" : hintsState.mode;
 
     switch (mode) {
       case "Click":
@@ -1407,6 +1423,17 @@ export default class BackgroundProgram {
           { type: "Escape" },
           { tabId: info.tabId, frameId: "all_frames" }
         );
+        break;
+
+      case "ActivateHint":
+        this.handleHintInput(info.tabId, timestamp, {
+          type: "ActivateHint",
+          alt: action.alt,
+        });
+        break;
+
+      case "Backspace":
+        this.handleHintInput(info.tabId, timestamp, { type: "Backspace" });
         break;
 
       case "ReverseSelection":
@@ -2042,6 +2069,21 @@ function makeMessageInfo(sender: MessageSender): ?MessageInfo {
     : undefined;
 }
 
+function updateChars(chars: string, input: HintInput): string {
+  switch (input.type) {
+    case "Input": {
+      const key = input.keypress.printableKey;
+      return key != null ? `${chars}${key}` : chars;
+    }
+    case "ActivateHint":
+      return chars;
+    case "Backspace":
+      return chars.slice(0, -1);
+    default:
+      return unreachable(input.type, input);
+  }
+}
+
 function updateHints({
   mode,
   enteredChars,
@@ -2070,8 +2112,7 @@ function updateHints({
   words: Array<string>,
 |} {
   const hasEnteredText = enteredText !== "";
-  const hasEnteredTextOnly =
-    hasEnteredText && enteredChars === "";
+  const hasEnteredTextOnly = hasEnteredText && enteredChars === "";
   const words = splitEnteredText(enteredText);
 
   // Filter away elements/hints not matching by text.

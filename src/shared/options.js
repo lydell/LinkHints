@@ -184,6 +184,39 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
       },
       {
         keypress: {
+          key: "Enter",
+          code: "Enter",
+          alt: false,
+          cmd: false,
+          ctrl: false,
+          shift: false,
+        },
+        action: { type: "ActivateHint", alt: false },
+      },
+      {
+        keypress: {
+          key: "Enter",
+          code: "Enter",
+          alt: true,
+          cmd: false,
+          ctrl: false,
+          shift: false,
+        },
+        action: { type: "ActivateHint", alt: true },
+      },
+      {
+        keypress: {
+          key: "Backspace",
+          code: "Backspace",
+          alt: false,
+          cmd: false,
+          ctrl: false,
+          shift: false,
+        },
+        action: { type: "Backspace" },
+      },
+      {
+        keypress: {
           key: "Tab",
           code: "Tab",
           alt: false,

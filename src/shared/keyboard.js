@@ -29,6 +29,13 @@ export type KeyboardAction =
       type: "Escape",
     |}
   | {|
+      type: "ActivateHint",
+      alt: boolean,
+    |}
+  | {|
+      type: "Backspace",
+    |}
+  | {|
       type: "ReverseSelection",
     |}
   | {|
@@ -64,6 +71,15 @@ function getKeyboardActionDecoder(type: string): mixed => KeyboardAction {
     case "Escape":
       return () => ({ type: "Escape" });
 
+    case "ActivateHint":
+      return record({
+        type: constant(type),
+        alt: boolean,
+      });
+
+    case "Backspace":
+      return () => ({ type: "Backspace" });
+
     case "ReverseSelection":
       return () => ({ type: "ReverseSelection" });
 
@@ -97,6 +113,7 @@ const decodeKeypress: mixed => Keypress = record({
 // A `Keypress` after taking “Ignore keyboard layout” into account.
 export type NormalizedKeypress = {|
   key: string,
+  printableKey: ?string,
   alt: boolean,
   cmd: boolean,
   ctrl: boolean,
@@ -197,6 +214,7 @@ export function normalizeKeypress({
 
   return {
     key,
+    printableKey: key.length === 1 ? key : undefined,
     alt: keypress.alt,
     cmd: keypress.cmd,
     ctrl: keypress.ctrl,
