@@ -423,8 +423,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
           )}
         />
 
+        {/* TODO: Style these and show them somewhere where they’re more noticeable. */}
         {errors.length > 0 && (
-          <div>
+          <div style={{ padding: 30 }}>
             {hasSaved ? (
               <p>Errors were encountered while saving yours options:</p>
             ) : (
@@ -432,7 +433,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
             )}
             <ul>
               {errors.map((error, index) => (
-                <li key={index}>{error}</li>
+                <li key={index}>
+                  <pre>{error}</pre>
+                </li>
               ))}
             </ul>
           </div>

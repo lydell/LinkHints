@@ -45,8 +45,11 @@ import type {
 import {
   type Options,
   type PartialOptions,
+  flattenObject,
+  flattenShortcuts,
   getDefaults,
   makeOptionsDecoder,
+  unflattenObject,
 } from "../shared/options";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 
@@ -374,7 +377,7 @@ export default class BackgroundProgram {
             keypress: normalizeKeypress({
               keypress: message.keypress,
               keyTranslations: this.options.useKeyTranslations
-                ? this.options.keyTranslations
+                ? this.options.keys
                 : {},
             }),
           });
@@ -1627,29 +1630,39 @@ export default class BackgroundProgram {
   async updateOptions() {
     const info = await browser.runtime.getPlatformInfo();
     const defaults = getDefaults({ mac: info.os === "mac" });
-    const rawOptions = await browser.storage.sync.get(defaults);
+    const rawOptions = await browser.storage.sync.get(Object.keys(defaults));
+    const [foo, unflattenErrors] = unflattenObject(rawOptions);
     const decoder = makeOptionsDecoder(defaults);
-    const [options, errors] = decoder(rawOptions);
+    const [options, decodeErrors] = decoder({ ...defaults, ...foo });
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
       rawOptions,
       options,
-      errors,
+      unflattenErrors,
+      decodeErrors,
     });
 
     this.defaults = defaults;
     this.options = options;
-    this.optionsErrors = errors.map(
-      ([key, error]) => `Decode error for option ${repr(key)}: ${error.message}`
-    );
+    this.optionsErrors = unflattenErrors
+      .map(error => `Options format error: ${error.message}`)
+      .concat(
+        decodeErrors.map(
+          ([key, error]) =>
+            `Decode error for option ${repr(key)}: ${error.message}`
+        )
+      );
 
     log.level = options.logLevel;
   }
 
   async saveOptions(partialOptions: PartialOptions) {
     try {
-      await browser.storage.sync.set(partialOptions);
+      // The options are stored flattened to increase the chance of the browser
+      // sync not overwriting things when options has changed from multiple
+      // places.
+      await browser.storage.sync.set(flattenObject(partialOptions));
       await this.updateOptions();
     } catch (error) {
       this.optionsErrors = [error.message];
@@ -1669,9 +1682,7 @@ export default class BackgroundProgram {
 
     const common = {
       logLevel: log.level,
-      keyTranslations: this.options.useKeyTranslations
-        ? this.options.keyTranslations
-        : {},
+      keyTranslations: this.options.useKeyTranslations ? this.options.keys : {},
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
 
@@ -1682,8 +1693,8 @@ export default class BackgroundProgram {
           keyboardShortcuts: preventOverTyping
             ? []
             : [
-                ...this.options.globalKeyboardShortcuts,
-                ...this.options.hintsKeyboardShortcuts,
+                ...flattenShortcuts(this.options.global),
+                ...flattenShortcuts(this.options.hints),
               ],
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
           ...common,
@@ -1694,8 +1705,8 @@ export default class BackgroundProgram {
           keyboardShortcuts: preventOverTyping
             ? []
             : [
-                ...this.options.globalKeyboardShortcuts,
-                ...this.options.normalKeyboardShortcuts,
+                ...flattenShortcuts(this.options.global),
+                ...flattenShortcuts(this.options.normal),
               ],
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
           ...common,

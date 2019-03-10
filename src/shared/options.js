@@ -7,6 +7,7 @@ import {
   map,
   mixedDict,
   number,
+  repr,
   string,
 } from "tiny-decoders";
 
@@ -19,6 +20,14 @@ import {
 } from "./keyboard";
 import { type LogLevel, DEFAULT_LOG_LEVEL, decodeLogLevel } from "./main";
 
+type Shortcuts = { [string]: Array<KeyboardMapping> };
+
+const decodeShortcuts: mixed => Shortcuts = dict(array(decodeKeyboardMapping));
+
+export function flattenShortcuts(shortcuts: Shortcuts): Array<KeyboardMapping> {
+  return [].concat(...Object.keys(shortcuts).map(key => shortcuts[key]));
+}
+
 export type Options = {|
   chars: string,
   autoActivate: boolean,
@@ -26,10 +35,13 @@ export type Options = {|
   css: string,
   logLevel: LogLevel,
   useKeyTranslations: boolean,
-  keyTranslations: { [string]: KeyPair },
-  globalKeyboardShortcuts: Array<KeyboardMapping>,
-  normalKeyboardShortcuts: Array<KeyboardMapping>,
-  hintsKeyboardShortcuts: Array<KeyboardMapping>,
+  // The following options have shortened names so that the keys don’t get super
+  // long after flattening. More descriptive names would be `keyTranslations`,
+  // `globalKeyboardShortcuts`, etc.
+  keys: { [string]: KeyPair },
+  global: Shortcuts,
+  normal: Shortcuts,
+  hints: Shortcuts,
 |};
 
 export type PartialOptions = $Shape<Options>;
@@ -46,10 +58,10 @@ export const makeOptionsDecoder: (
   css: string,
   logLevel: map(string, decodeLogLevel),
   useKeyTranslations: boolean,
-  keyTranslations: dict(decodeKeyPair),
-  globalKeyboardShortcuts: array(decodeKeyboardMapping),
-  normalKeyboardShortcuts: array(decodeKeyboardMapping),
-  hintsKeyboardShortcuts: array(decodeKeyboardMapping),
+  keys: dict(decodeKeyPair),
+  global: decodeShortcuts,
+  normal: decodeShortcuts,
+  hints: decodeShortcuts,
 });
 
 export function getDefaults({ mac }: {| mac: boolean |}): Options {
@@ -61,211 +73,261 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
     css: "",
     logLevel: DEFAULT_LOG_LEVEL,
     useKeyTranslations: false,
-    keyTranslations: EN_US_QWERTY_TRANSLATIONS,
-    globalKeyboardShortcuts: [
-      {
-        keypress: {
-          key: "Escape",
-          code: "Escape",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: true,
+    keys: EN_US_QWERTY_TRANSLATIONS,
+    global: {
+      Escape: [
+        {
+          keypress: {
+            key: "Escape",
+            code: "Escape",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: true,
+          },
+          action: { type: "Escape" },
         },
-        action: { type: "Escape" },
-      },
-    ],
-    normalKeyboardShortcuts: [
-      {
-        keypress: {
-          key: "j",
-          code: "KeyJ",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
+      ],
+    },
+    normal: {
+      EnterHintsMode_Click: [
+        {
+          keypress: {
+            key: "j",
+            code: "KeyJ",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "Click",
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "Click",
+      ],
+      EnterHintsMode_BackgroundTab: [
+        {
+          keypress: {
+            key: "k",
+            code: "KeyK",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "BackgroundTab",
+          },
         },
-      },
-      {
-        keypress: {
-          key: "k",
-          code: "KeyK",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
+      ],
+      EnterHintsMode_ForegroundTab: [
+        {
+          keypress: {
+            key: "l",
+            code: "KeyL",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "ForegroundTab",
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "BackgroundTab",
+      ],
+      EnterHintsMode_ManyClick: [
+        {
+          keypress: {
+            key: "J",
+            code: "KeyJ",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: true,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "ManyClick",
+          },
         },
-      },
-      {
-        keypress: {
-          key: "l",
-          code: "KeyL",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
+      ],
+      EnterHintsMode_ManyTab: [
+        {
+          keypress: {
+            key: "K",
+            code: "KeyK",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: true,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "ManyTab",
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "ForegroundTab",
+      ],
+      EnterHintsMode_Select: [
+        {
+          keypress: {
+            key: "L",
+            code: "KeyL",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: true,
+          },
+          action: {
+            type: "EnterHintsMode",
+            mode: "Select",
+          },
         },
-      },
-      {
-        keypress: {
-          key: "J",
-          code: "KeyJ",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: true,
+      ],
+      ReverseSelection: [
+        {
+          keypress: {
+            key: "ArrowUp",
+            code: "ArrowUp",
+            alt: !mac,
+            cmd: false,
+            ctrl: mac,
+            shift: true,
+          },
+          action: {
+            type: "ReverseSelection",
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "ManyClick",
+      ],
+      ClickFocusedElement: [
+        {
+          keypress: {
+            key: " ",
+            code: "Space",
+            alt: true,
+            cmd: false,
+            ctrl: true,
+            shift: false,
+          },
+          action: {
+            type: "ClickFocusedElement",
+          },
         },
-      },
-      {
-        keypress: {
-          key: "K",
-          code: "KeyK",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: true,
+      ],
+    },
+    hints: {
+      ExitHintsMode: [
+        {
+          keypress: {
+            key: "Escape",
+            code: "Escape",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "ExitHintsMode",
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "ManyTab",
+      ],
+      ActivateHint: [
+        {
+          keypress: {
+            key: "Enter",
+            code: "Enter",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "ActivateHint",
+            alt: false,
+          },
         },
-      },
-      {
-        keypress: {
-          key: "L",
-          code: "KeyL",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: true,
+      ],
+      ActivateHint_Alt: [
+        {
+          keypress: {
+            key: "Enter",
+            code: "Enter",
+            alt: true,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "ActivateHint",
+            alt: true,
+          },
         },
-        action: {
-          type: "EnterHintsMode",
-          mode: "Select",
+      ],
+      Backspace: [
+        {
+          keypress: {
+            key: "Backspace",
+            code: "Backspace",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "Backspace",
+          },
         },
-      },
-      {
-        keypress: {
-          key: "ArrowUp",
-          code: "ArrowUp",
-          alt: !mac,
-          cmd: false,
-          ctrl: mac,
-          shift: true,
+      ],
+      RotateHints_Forward: [
+        {
+          keypress: {
+            key: "Tab",
+            code: "Tab",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: false,
+          },
+          action: {
+            type: "RotateHints",
+            forward: true,
+          },
         },
-        action: {
-          type: "ReverseSelection",
+      ],
+      RotateHints_Backward: [
+        {
+          keypress: {
+            key: "Tab",
+            code: "Tab",
+            alt: false,
+            cmd: false,
+            ctrl: false,
+            shift: true,
+          },
+          action: {
+            type: "RotateHints",
+            forward: false,
+          },
         },
-      },
-      {
-        keypress: {
-          key: " ",
-          code: "Space",
-          alt: true,
-          cmd: false,
-          ctrl: true,
-          shift: false,
+      ],
+      RefreshHints: [
+        {
+          keypress: {
+            key: "r",
+            code: "KeyR",
+            alt: false,
+            cmd: mac,
+            ctrl: !mac,
+            shift: false,
+          },
+          action: {
+            type: "RefreshHints",
+          },
         },
-        action: {
-          type: "ClickFocusedElement",
-        },
-      },
-    ],
-    hintsKeyboardShortcuts: [
-      {
-        keypress: {
-          key: "Escape",
-          code: "Escape",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
-        action: { type: "ExitHintsMode" },
-      },
-      {
-        keypress: {
-          key: "Enter",
-          code: "Enter",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
-        action: { type: "ActivateHint", alt: false },
-      },
-      {
-        keypress: {
-          key: "Enter",
-          code: "Enter",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
-        action: { type: "ActivateHint", alt: true },
-      },
-      {
-        keypress: {
-          key: "Backspace",
-          code: "Backspace",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
-        action: { type: "Backspace" },
-      },
-      {
-        keypress: {
-          key: "Tab",
-          code: "Tab",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
-        action: { type: "RotateHints", forward: true },
-      },
-      {
-        keypress: {
-          key: "Tab",
-          code: "Tab",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: true,
-        },
-        action: { type: "RotateHints", forward: false },
-      },
-      {
-        keypress: {
-          key: "r",
-          code: "KeyR",
-          alt: false,
-          cmd: mac,
-          ctrl: !mac,
-          shift: false,
-        },
-        action: { type: "RefreshHints" },
-      },
-    ],
+      ],
+    },
   };
 }
 
@@ -294,4 +356,68 @@ export function recordWithDefaultsAndErrors<T: {}>(
     }
     return [result, errors];
   };
+}
+
+// Flatten nested objects by joining keys with ".". This assumes that no keys
+// already contains a ".".
+export function flattenObject(
+  // Flow complains on `flattenObject(options)` if using this:
+  // object: { [string]: mixed },
+  object: {},
+  parents?: Array<string> = []
+): { [string]: mixed } {
+  return Object.entries(object).reduce((result, [key, value]) => {
+    if (typeof value === "object" && value != null && !Array.isArray(value)) {
+      Object.assign(result, flattenObject(value, parents.concat(key)));
+    } else {
+      result[parents.concat(key).join(".")] = value;
+    }
+    return result;
+  }, {});
+}
+
+// Unflatten a flat object by splitting keys on ".".
+export function unflattenObject(object: {
+  [string]: mixed,
+}): [{ [string]: mixed }, Array<Error>] {
+  return Object.entries(object).reduce(
+    ([result, errors], [key, value]) => {
+      try {
+        setDeep(result, key.split("."), value);
+      } catch (error) {
+        return [result, errors.concat(error)];
+      }
+      return [result, errors];
+    },
+    [{}, []]
+  );
+}
+
+function setDeep(
+  object: { [string]: mixed },
+  path: Array<string>,
+  value: mixed,
+  index?: number = 0
+) {
+  const lastIndex = path.length - 1;
+  if (index === lastIndex) {
+    object[path[index]] = value;
+  } else if (index >= 0 && index < lastIndex) {
+    const key = path[index];
+    if (!{}.hasOwnProperty.call(object, key)) {
+      object[key] = {};
+    }
+    const child = object[key];
+    if (typeof child === "object" && child != null && !Array.isArray(child)) {
+      setDeep(child, path, value, index + 1);
+    } else {
+      throw new TypeError(
+        `Cannot set \`.${path.join(".")}\` to ${repr(
+          value
+        )}: Expected \`.${path
+          .slice(0, index + 1)
+          .join(".")}\` to be an object, but got: ${repr(child)}`
+      );
+    }
+  }
 }

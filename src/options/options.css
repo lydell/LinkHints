@@ -142,6 +142,10 @@ kbd {
   font-family: inherit;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 .Field {
   --border-width: 1px;
   border-top: var(--border-width) solid var(--grey-luke);
