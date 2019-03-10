@@ -7,6 +7,7 @@ import {
   type VisibleElement,
 } from "../shared/hints";
 import {
+  type KeyTranslations,
   type KeyboardMapping,
   type KeyboardMode,
   keyboardEventToKeypress,
@@ -61,7 +62,7 @@ const MODIFIER_KEYS: Set<string> = new Set([
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
   keyboardMode: KeyboardMode;
-  ignoreKeyboardLayout: boolean;
+  keyTranslations: KeyTranslations;
   elementManager: ElementManager;
   current: ?CurrentElements;
   oneTimeWindowMessageToken: ?string;
@@ -71,7 +72,7 @@ export default class WorkerProgram {
   constructor() {
     this.keyboardShortcuts = [];
     this.keyboardMode = "Normal";
-    this.ignoreKeyboardLayout = true;
+    this.keyTranslations = {};
     this.elementManager = new ElementManager({
       maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
       onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
@@ -151,7 +152,7 @@ export default class WorkerProgram {
         log.level = message.logLevel;
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.keyboardMode = message.keyboardMode;
-        this.ignoreKeyboardLayout = message.ignoreKeyboardLayout;
+        this.keyTranslations = message.keyTranslations;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
 
         if (message.clearElements) {
@@ -459,13 +460,13 @@ export default class WorkerProgram {
 
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
-      ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+      keyTranslations: this.keyTranslations,
     });
 
     const match = this.keyboardShortcuts.find(mapping => {
       const mappingKeypress = normalizeKeypress({
         keypress: mapping.keypress,
-        ignoreKeyboardLayout: this.ignoreKeyboardLayout,
+        keyTranslations: this.keyTranslations,
       });
       return (
         keypress.key === mappingKeypress.key &&

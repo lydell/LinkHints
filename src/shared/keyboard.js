@@ -3,7 +3,9 @@
 import {
   boolean,
   constant,
+  field,
   fieldAndThen,
+  group,
   map,
   record,
   repr,
@@ -110,7 +112,7 @@ const decodeKeypress: mixed => Keypress = record({
   shift: boolean,
 });
 
-// A `Keypress` after taking “Ignore keyboard layout” into account.
+// A `Keypress` after taking `KeyTranslations` into account.
 export type NormalizedKeypress = {|
   key: string,
   printableKey: ?string,
@@ -157,29 +159,67 @@ export function decodeHintsMode(type: string): HintsMode {
   }
 }
 
-const EN_US_QWERTY_TRANSLATIONS: Map<string, [string, string]> = new Map([
-  ["Backquote", ["`", "~"]],
-  ["Digit1", ["1", "!"]],
-  ["Digit2", ["2", "@"]],
-  ["Digit3", ["3", "#"]],
-  ["Digit4", ["4", "$"]],
-  ["Digit5", ["5", "%"]],
-  ["Digit6", ["6", "^"]],
-  ["Digit7", ["7", "&"]],
-  ["Digit8", ["8", "*"]],
-  ["Digit9", ["9", "("]],
-  ["Digit0", ["0", ")"]],
-  ["Minus", ["-", "_"]],
-  ["Equal", ["=", "+"]],
-  ["Backslash", ["\\", "|"]],
-  ["BracketLeft", ["[", "{"]],
-  ["BracketRight", ["]", "}"]],
-  ["Semicolon", [";", ":"]],
-  ["Quote", ["'", '"']],
-  ["Comma", [",", "<"]],
-  ["Period", [".", ">"]],
-  ["Slash", ["/", "?"]],
-]);
+export type KeyPair = [string, string];
+
+export const decodeKeyPair: mixed => KeyPair = map(
+  group({
+    unshifted: field(0, string),
+    shifted: field(1, string),
+  }),
+  ({ unshifted, shifted }) => [unshifted, shifted]
+);
+
+export type KeyTranslations = { [code: string]: KeyPair };
+
+export const EN_US_QWERTY_TRANSLATIONS: KeyTranslations = {
+  KeyA: ["a", "A"],
+  KeyB: ["b", "B"],
+  KeyC: ["c", "C"],
+  KeyD: ["d", "D"],
+  KeyE: ["e", "E"],
+  KeyF: ["f", "F"],
+  KeyG: ["g", "G"],
+  KeyH: ["h", "H"],
+  KeyI: ["i", "I"],
+  KeyJ: ["j", "J"],
+  KeyK: ["k", "K"],
+  KeyL: ["l", "L"],
+  KeyM: ["m", "M"],
+  KeyN: ["n", "N"],
+  KeyO: ["o", "O"],
+  KeyP: ["p", "P"],
+  KeyQ: ["q", "Q"],
+  KeyR: ["r", "R"],
+  KeyS: ["s", "S"],
+  KeyT: ["t", "T"],
+  KeyU: ["u", "U"],
+  KeyV: ["v", "V"],
+  KeyW: ["w", "W"],
+  KeyX: ["x", "X"],
+  KeyY: ["y", "Y"],
+  KeyZ: ["z", "Z"],
+  Backquote: ["`", "~"],
+  Digit1: ["1", "!"],
+  Digit2: ["2", "@"],
+  Digit3: ["3", "#"],
+  Digit4: ["4", "$"],
+  Digit5: ["5", "%"],
+  Digit6: ["6", "^"],
+  Digit7: ["7", "&"],
+  Digit8: ["8", "*"],
+  Digit9: ["9", "("],
+  Digit0: ["0", ")"],
+  Minus: ["-", "_"],
+  Equal: ["=", "+"],
+  Backslash: ["\\", "|"],
+  BracketLeft: ["[", "{"],
+  BracketRight: ["]", "}"],
+  Semicolon: [";", ":"],
+  Quote: ["'", '"'],
+  Comma: [",", "<"],
+  Period: [".", ">"],
+  Slash: ["/", "?"],
+};
 
 export function keyboardEventToKeypress(event: KeyboardEvent): Keypress {
   return {
@@ -194,20 +234,19 @@ export function keyboardEventToKeypress(event: KeyboardEvent): Keypress {
 
 export function normalizeKeypress({
   keypress,
-  ignoreKeyboardLayout,
+  keyTranslations,
 }: {|
   keypress: Keypress,
-  ignoreKeyboardLayout: boolean,
+  keyTranslations: KeyTranslations,
 |}): NormalizedKeypress {
-  const rawKey =
-    // Use `.key` for numpad keys because it is too much work detecting and
-    // emulating NumLock.
-    ignoreKeyboardLayout && !keypress.code.startsWith("Numpad")
-      ? codeToEnUsQwerty({
-          code: keypress.code,
-          shift: keypress.shift,
-        })
-      : keypress.key;
+  // If ignoring the keyboard layout, try to translate `.code` to a `.key`
+  // value. Use `.key` otherwise.
+  const translated = translateCode({
+    code: keypress.code,
+    shift: keypress.shift,
+    keyTranslations,
+  });
+  const rawKey = translated != null ? translated : keypress.key;
 
   // Consider Space a non-printable key. Easier to see and allows for shift.
   const key = rawKey === " " ? "Space" : rawKey;
@@ -222,24 +261,19 @@ export function normalizeKeypress({
   };
 }
 
-function codeToEnUsQwerty({
+function translateCode({
   code,
   shift,
+  keyTranslations,
 }: {|
   code: string,
   shift: boolean,
-|}): string {
-  // KeyA–KeyZ
-  if (code.startsWith("Key")) {
-    const sliced = code.slice(3);
-    return shift ? sliced : sliced.toLowerCase();
+  keyTranslations: KeyTranslations,
+|}): ?string {
+  if ({}.hasOwnProperty.call(keyTranslations, code)) {
+    const [unshifted, shifted] = keyTranslations[code];
+    return shift ? shifted : unshifted;
   }
 
-  const translation = EN_US_QWERTY_TRANSLATIONS.get(code);
-  if (translation == null) {
-    return code;
-  }
-
-  const [unshifted, shifted] = translation;
-  return shift ? shifted : unshifted;
+  return undefined;
 }

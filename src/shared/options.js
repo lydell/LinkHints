@@ -1,8 +1,22 @@
 // @flow strict-local
 
-import { array, boolean, map, mixedDict, number, string } from "tiny-decoders";
+import {
+  array,
+  boolean,
+  dict,
+  map,
+  mixedDict,
+  number,
+  string,
+} from "tiny-decoders";
 
-import { type KeyboardMapping, decodeKeyboardMapping } from "./keyboard";
+import {
+  type KeyPair,
+  type KeyboardMapping,
+  EN_US_QWERTY_TRANSLATIONS,
+  decodeKeyPair,
+  decodeKeyboardMapping,
+} from "./keyboard";
 import { type LogLevel, DEFAULT_LOG_LEVEL, decodeLogLevel } from "./main";
 
 export type Options = {|
@@ -11,7 +25,8 @@ export type Options = {|
   overTypingDuration: number,
   css: string,
   logLevel: LogLevel,
-  ignoreKeyboardLayout: boolean,
+  useKeyTranslations: boolean,
+  keyTranslations: { [string]: KeyPair },
   globalKeyboardShortcuts: Array<KeyboardMapping>,
   normalKeyboardShortcuts: Array<KeyboardMapping>,
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
@@ -30,7 +45,8 @@ export const makeOptionsDecoder: (
   overTypingDuration: number,
   css: string,
   logLevel: map(string, decodeLogLevel),
-  ignoreKeyboardLayout: boolean,
+  useKeyTranslations: boolean,
+  keyTranslations: dict(decodeKeyPair),
   globalKeyboardShortcuts: array(decodeKeyboardMapping),
   normalKeyboardShortcuts: array(decodeKeyboardMapping),
   hintsKeyboardShortcuts: array(decodeKeyboardMapping),
@@ -44,7 +60,8 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
     overTypingDuration: 400, // ms
     css: "",
     logLevel: DEFAULT_LOG_LEVEL,
-    ignoreKeyboardLayout: false,
+    useKeyTranslations: false,
+    keyTranslations: EN_US_QWERTY_TRANSLATIONS,
     globalKeyboardShortcuts: [
       {
         keypress: {

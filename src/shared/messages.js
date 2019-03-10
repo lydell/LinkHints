@@ -7,6 +7,7 @@ import type {
   HintUpdate,
 } from "./hints";
 import type {
+  KeyTranslations,
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
@@ -108,7 +109,7 @@ export type ToWorker =
       clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
       keyboardMode: KeyboardMode,
-      ignoreKeyboardLayout: boolean,
+      keyTranslations: KeyTranslations,
       oneTimeWindowMessageToken: string,
     |}
   | {|

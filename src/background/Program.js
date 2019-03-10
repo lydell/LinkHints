@@ -373,7 +373,9 @@ export default class BackgroundProgram {
             type: "Input",
             keypress: normalizeKeypress({
               keypress: message.keypress,
-              ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
+              keyTranslations: this.options.useKeyTranslations
+                ? this.options.keyTranslations
+                : {},
             }),
           });
         }
@@ -1665,10 +1667,17 @@ export default class BackgroundProgram {
       this.oneTimeWindowMessageToken = makeRandomToken();
     }
 
+    const common = {
+      logLevel: log.level,
+      keyTranslations: this.options.useKeyTranslations
+        ? this.options.keyTranslations
+        : {},
+      oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+    };
+
     return hintsState.type === "Hinting"
       ? {
           type: "StateSync",
-          logLevel: log.level,
           clearElements: false,
           keyboardShortcuts: preventOverTyping
             ? []
@@ -1677,12 +1686,10 @@ export default class BackgroundProgram {
                 ...this.options.hintsKeyboardShortcuts,
               ],
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
-          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
-          oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+          ...common,
         }
       : {
           type: "StateSync",
-          logLevel: log.level,
           clearElements: true,
           keyboardShortcuts: preventOverTyping
             ? []
@@ -1691,8 +1698,7 @@ export default class BackgroundProgram {
                 ...this.options.normalKeyboardShortcuts,
               ],
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
-          ignoreKeyboardLayout: this.options.ignoreKeyboardLayout,
-          oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+          ...common,
         };
   }
 
