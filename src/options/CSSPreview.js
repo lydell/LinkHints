@@ -202,10 +202,7 @@ export default class CSSPreview extends React.Component<Props, State> {
                     ...variations.map(([numMatched, numChars]) =>
                       [false, true].map(highlighted => ({
                         matchedChars: chars.slice(0, numMatched),
-                        chars: chars.slice(
-                          numMatched,
-                          numMatched + numChars
-                        ),
+                        chars: chars.slice(numMatched, numMatched + numChars),
                         highlighted,
                       }))
                     )
@@ -230,7 +227,7 @@ export default class CSSPreview extends React.Component<Props, State> {
                     top: box.y,
                     width: box.width,
                     height: box.height,
-                    zIndex: String(MIN_Z_INDEX)
+                    zIndex: String(MIN_Z_INDEX),
                   }}
                 />
               ))}
