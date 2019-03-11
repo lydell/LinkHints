@@ -246,18 +246,16 @@ export function normalizeKeypress({
     shift: keypress.shift,
     keyTranslations,
   });
-  const rawKey = translated != null ? translated : keypress.key;
+  const key = translated != null ? translated : keypress.key;
 
-  // Consider Space a non-printable key. Easier to see and allows for shift.
-  const key = rawKey === " " ? "Space" : rawKey;
-
+  // Space is both printable and non-printable, and allows shift.
   return {
-    key,
+    key: key === " " ? "Space" : key,
     printableKey: key.length === 1 ? key : undefined,
     alt: keypress.alt,
     cmd: keypress.cmd,
     ctrl: keypress.ctrl,
-    shift: key.length === 1 ? undefined : keypress.shift,
+    shift: key.length > 1 || key === " " ? keypress.shift : undefined,
   };
 }
 
