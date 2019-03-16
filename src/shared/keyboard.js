@@ -241,9 +241,11 @@ export function keyboardEventToKeypress(event: KeyboardEvent): Keypress {
 export function normalizeKeypress({
   keypress,
   keyTranslations,
+  capslock,
 }: {|
   keypress: Keypress,
   keyTranslations: KeyTranslations,
+  capslock: boolean,
 |}): NormalizedKeypress {
   // If ignoring the keyboard layout, try to translate `.code` to a `.key`
   // value. Use `.key` otherwise.
@@ -254,14 +256,54 @@ export function normalizeKeypress({
   });
   const key = translated != null ? translated : keypress.key;
 
-  // Space is both printable and non-printable, and allows shift.
+  // Printable and non-printable are handled slightly differently.
+  const isChar = key.length === 1;
+
+  // Space is both printable (" ") and non-printable ("Space"), and allows shift
+  // (unlike other printable keys).
+  const isSpace = key === " ";
+
+  // Capslock is handled differently based on whether the key comes from
+  // `keyTranslations`.
+  const wasTranslated = translated != null;
+
   return {
-    key: key === " " ? "Space" : key,
-    printableKey: key.length === 1 ? key : undefined,
+    key: isSpace
+      ? "Space"
+      : // For keyboard shortcuts, capslock should not make a difference. When
+      // `key` comes from `keyTranslations`, capslock is ignored by definition.
+      // When using `event.key`, try to undo the effects of capslock, by
+      // changing case.
+      isChar && !wasTranslated && capslock
+      ? keypress.shift
+        ? key.toUpperCase() // Capslock made it lowercase; change it back.
+        : key.toLowerCase() // Capslock made it uppercase; change it back.
+      : key,
+    printableKey:
+      // When typing hints chars or filtering by text, capslock _should_ make a
+      // difference. For example, one might use capslock instead of holding
+      // shift when filtering by text. Since capslock is ignored when `key`
+      // comes from `keyTranslations`, try to simulate capslock. When using
+      // `event.key` there’s nothing to do – capslock has already been applied
+      // for us.
+      isChar
+        ? wasTranslated && capslock
+          ? // Remember that shift works the other way around in capslock mode.
+            keypress.shift
+            ? key.toLowerCase()
+            : key.toUpperCase()
+          : key
+        : undefined,
     alt: keypress.alt,
     cmd: keypress.cmd,
     ctrl: keypress.ctrl,
-    shift: key.length > 1 || key === " " ? keypress.shift : undefined,
+    // Shift is ignored for printable keys: Shift changes the value of `key`
+    // ("a" vs "A", "/" vs "?") and is as such not needed to check when matching
+    // keyboard shortcuts. _Not_ checking it means that keyboard shortcuts have
+    // a higher chance of working with several keyboard layouts. For example, in
+    // the Swedish keyboard layout shift is required to type "/", while in the
+    // American layout shift is not pressed when typing "/".
+    shift: !isChar || isSpace ? keypress.shift : undefined,
   };
 }
 

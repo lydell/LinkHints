@@ -9,6 +9,7 @@ import {
   type Keypress,
   isModifierKey,
   keyboardEventToKeypress,
+  normalizeKeypress,
 } from "../shared/keyboard";
 import {
   Resets,
@@ -53,6 +54,7 @@ type State = {|
     text: string,
     testOnly: boolean,
     lastKeypress: ?Keypress,
+    capslock: boolean,
   |},
   peek: boolean,
   cssSuggestion: string,
@@ -76,6 +78,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
         text: "",
         testOnly: false,
         lastKeypress: undefined,
+        capslock: false,
       },
       peek: false,
       cssSuggestion: CSS_SUGGESTIONS[0].value,
@@ -506,13 +509,20 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         if (isModifierKey(key)) {
                           return;
                         }
-                        const {
-                          keyTranslations: keys,
-                          key: finalKey,
-                        } = updateKeyTranslations(
+                        const keys = updateKeyTranslations(
                           { code, key, shift },
                           options.keys
                         );
+                        const capslock = event.getModifierState("CapsLock");
+                        const normalizedKeypress = normalizeKeypress({
+                          keypress,
+                          keyTranslations: keys != null ? keys : options.keys,
+                          capslock,
+                        });
+                        const finalKey =
+                          normalizedKeypress.printableKey != null
+                            ? normalizedKeypress.printableKey
+                            : normalizedKeypress.key;
                         if (keys != null && !keyTranslationsInput.testOnly) {
                           this.saveOptions({ keys });
                         }
@@ -524,6 +534,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                 keyTranslationsInput.text
                               } ${finalKey}`.trimLeft(),
                               lastKeypress: keypress,
+                              capslock,
                             },
                           },
                           () => {
@@ -532,6 +543,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             }
                           }
                         );
+                      }}
+                      onKeyUp={(event: KeyboardEvent) => {
+                        const capslock = event.getModifierState("CapsLock");
+                        if (capslock !== keyTranslationsInput.capslock) {
+                          this.setState({
+                            keyTranslationsInput: {
+                              ...keyTranslationsInput,
+                              capslock,
+                            },
+                          });
+                        }
                       }}
                     />
                   </Attachment>
@@ -562,6 +584,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
                               )}
                             </td>
                           </tr>
+                          {keyTranslationsInput.capslock && (
+                            <tr>
+                              <th>Caps Lock</th>
+                              <td>
+                                On{" "}
+                                {!keyTranslationsInput.testOnly && (
+                                  <strong>– beware!</strong>
+                                )}
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -848,23 +881,16 @@ function pruneChars(string: string): string {
 function updateKeyTranslations(
   { code, key, shift }: {| code: string, key: string, shift: boolean |},
   keyTranslations: KeyTranslations
-): {| keyTranslations: ?KeyTranslations, key: string |} {
+): ?KeyTranslations {
   const previousPair = {}.hasOwnProperty.call(keyTranslations, code)
     ? keyTranslations[code]
     : undefined;
 
   const newPair = updatePair({ key, shift }, previousPair);
   const changed = previousPair == null || !pairsEqual(newPair, previousPair);
-  const newKeyTranslations = changed
+  return changed
     ? sortKeyTranslations({ ...keyTranslations, [code]: newPair })
     : undefined;
-
-  const [unshifted, shifted] = newPair;
-
-  return {
-    keyTranslations: newKeyTranslations,
-    key: shift ? shifted : unshifted,
-  };
 }
 
 function updatePair(

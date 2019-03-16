@@ -16,7 +16,6 @@ import {
   type HintsMode,
   type KeyboardAction,
   type NormalizedKeypress,
-  normalizeKeypress,
 } from "../shared/keyboard";
 import {
   Resets,
@@ -371,12 +370,7 @@ export default class BackgroundProgram {
       case "NonKeyboardShortcutKeypress":
         this.handleHintInput(info.tabId, message.timestamp, {
           type: "Input",
-          keypress: normalizeKeypress({
-            keypress: message.keypress,
-            keyTranslations: this.options.useKeyTranslations
-              ? this.options.keys
-              : {},
-          }),
+          keypress: message.keypress,
         });
         break;
 

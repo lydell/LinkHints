@@ -452,12 +452,14 @@ export default class WorkerProgram {
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       keyTranslations: this.keyTranslations,
+      capslock: event.getModifierState("CapsLock"),
     });
 
     const match = this.keyboardShortcuts.find(mapping => {
       const mappingKeypress = normalizeKeypress({
         keypress: mapping.keypress,
         keyTranslations: this.keyTranslations,
+        capslock: false,
       });
       return (
         keypress.key === mappingKeypress.key &&
@@ -513,7 +515,7 @@ export default class WorkerProgram {
     } else if (this.keyboardMode === "Hints" && suppress) {
       this.sendMessage({
         type: "NonKeyboardShortcutKeypress",
-        keypress: keyboardEventToKeypress(event),
+        keypress,
         timestamp: performance.now(),
       });
     }

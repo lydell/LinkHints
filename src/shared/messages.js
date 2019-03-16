@@ -11,7 +11,7 @@ import type {
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
-  Keypress,
+  NormalizedKeypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
 import type { Options, PartialOptions } from "./options";
@@ -67,7 +67,7 @@ export type FromWorker =
     |}
   | {|
       type: "NonKeyboardShortcutKeypress",
-      keypress: Keypress,
+      keypress: NormalizedKeypress,
       timestamp: number,
     |}
   | {|
