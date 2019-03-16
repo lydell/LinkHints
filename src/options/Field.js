@@ -6,7 +6,7 @@ import { classlist } from "../shared/main";
 
 type Props = {|
   id: string,
-  connectTop: boolean,
+  connected: boolean,
   label: React.Node,
   span: boolean,
   description: React.Node,
@@ -16,14 +16,14 @@ type Props = {|
 |};
 
 Field.defaultProps = {
-  connectTop: false,
+  connected: false,
   span: false,
   changedRight: false,
 };
 
 export default function Field({
   id,
-  connectTop,
+  connected,
   label,
   span,
   description,
@@ -33,22 +33,26 @@ export default function Field({
 }: Props) {
   return (
     <div
-      className={classlist("Field", {
-        "is-connectTop": connectTop,
+      className={classlist("Field", "SpacedVertical", {
+        "is-connected": connected,
         "is-changed": changed,
         "is-changedRight": changedRight,
       })}
     >
-      {span ? (
-        <span className="Field-label">{label}</span>
-      ) : (
-        <label htmlFor={id} className="Field-label">
-          {label}
-        </label>
-      )}
-      {render({ id })}
+      <div>
+        {span ? (
+          <span className="Field-label">{label}</span>
+        ) : (
+          <label htmlFor={id} className="Field-label">
+            {label}
+          </label>
+        )}
+
+        {render({ id })}
+      </div>
+
       {description != null && (
-        <div className="Field-description">{description}</div>
+        <div className="TextSmall">{description}</div>
       )}
     </div>
   );

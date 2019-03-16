@@ -128,7 +128,6 @@ select {
 
 textarea {
   width: 100%;
-  font-size: 0.8em;
   resize: vertical;
 }
 
@@ -159,18 +158,14 @@ pre {
 
 .Field {
   --border-width: 1px;
+  --padding-vertical: 18px;
   border-top: var(--border-width) solid var(--grey-luke);
-  padding: 18px 22px;
+  padding: var(--padding-vertical) 22px;
   position: relative;
 }
 
 .Field:first-child {
   border-top: none;
-}
-
-.Field.is-connectTop {
-  border-top: none;
-  padding-top: 0;
 }
 
 .Field::before,
@@ -211,19 +206,41 @@ pre {
   opacity: 1;
 }
 
+/* This CSS only supports connecting two fields. */
+.Field:first-child.is-connected,
+.Field:not(.is-connected) + .Field.is-connected {
+  padding-bottom: calc(var(--padding-vertical) / 2);
+}
+
+.Field.is-connected + .Field.is-connected {
+  border-top: none;
+  padding-top: calc(var(--padding-vertical) / 2);
+}
+
+.Field:first-child.is-connected::before,
+.Field:first-child.is-connected::after,
+.Field:not(.is-connected) + .Field.is-connected::before,
+.Field:not(.is-connected) + .Field.is-connected::after {
+  bottom: 0;
+}
+
+.Field.is-connected + .Field.is-connected::before,
+.Field.is-connected + .Field.is-connected::after {
+  top: 0;
+}
+
 .Field-label {
   display: block;
   padding-bottom: var(--tiny-space);
   font-weight: bold;
 }
 
-.Field-description {
-  margin-top: 10px;
+.TextSmall {
   font-size: 14px;
 }
 
 .Attachment {
-  display: inline-flex;
+  display: flex;
   position: relative;
 }
 
@@ -231,6 +248,7 @@ pre {
   position: absolute;
   left: 0;
   bottom: 100%;
+  width: 100%;
 }
 
 .TinyLabel {
@@ -248,6 +266,120 @@ pre {
 
 .Spaced--center {
   align-items: center;
+}
+
+.Spaced--end {
+  align-items: flex-end;
+}
+
+.SpacedVertical {
+  display: flex;
+  flex-direction: column;
+}
+
+.SpacedVertical > * + * {
+  margin-top: 10px;
+}
+
+.KeypressTable {
+  table-layout: fixed;
+  border-spacing: 0;
+  border: 1px solid var(--grey-luke);
+  padding: 2px 0;
+  width: 100%;
+}
+
+.KeypressTable th {
+  text-align: left;
+}
+
+.KeypressTable td,
+.KeypressTable th {
+  padding: 2px 8px;
+}
+
+.KeysTable {
+  border: 1px solid var(--grey-luke);
+  width: 100%;
+  height: 310px;
+  overflow-y: auto;
+}
+
+.KeysTable.is-disabled {
+  opacity: 0.5;
+}
+
+.KeysTable table {
+  table-layout: fixed;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.KeysTable thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--grey-luke);
+  text-align: left;
+  font-weight: normal;
+}
+
+.KeysTable td,
+.KeysTable th {
+  padding: 0;
+  padding-right: 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.KeysTable td:first-child,
+.KeysTable th:first-child {
+  padding-left: 9px;
+  width: 50%;
+}
+
+.KeysTable td:last-child,
+.KeysTable th:last-child {
+  width: 20px;
+  padding: 0;
+}
+
+.KeysTable td.is-changed,
+.KeysTable th.is-changed {
+  background-image: linear-gradient(to right, var(--blue) 3px, transparent 0);
+}
+
+.KeysTable tbody tr:nth-child(even) td {
+  background-color: var(--grey-leia);
+}
+
+.KeysTable tbody tr.is-animated td {
+  animation: Highlight 1000ms ease-out forwards;
+}
+
+@keyframes Highlight {
+  from, 20% {
+    box-shadow: inset 0 0 0 99px var(--blue);
+    color: white;
+  }
+
+  to {
+    box-shadow: inset 0 0 0 99px transparent;
+    color: inherit;
+  }
+}
+
+.RemoveButton {
+  border: none;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  width: 100%;
+}
+
+.RemoveButton:hover,
+.RemoveButton:focus {
+  color: var(--blue);
 }
 
 .Preview {

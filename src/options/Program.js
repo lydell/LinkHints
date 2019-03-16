@@ -6,9 +6,18 @@ import { CSS, SUGGESTION_FONT_SIZE, SUGGESTION_VIMIUM } from "../shared/css";
 import {
   type KeyPair,
   type KeyTranslations,
+  type Keypress,
   isModifierKey,
+  keyboardEventToKeypress,
 } from "../shared/keyboard";
-import { Resets, addListener, bind, log, unreachable } from "../shared/main";
+import {
+  Resets,
+  addListener,
+  bind,
+  classlist,
+  log,
+  unreachable,
+} from "../shared/main";
 import type {
   FromBackground,
   FromOptions,
@@ -28,6 +37,8 @@ const CSS_SUGGESTIONS = [
   { name: "Vimium", value: SUGGESTION_VIMIUM },
 ];
 
+const DUMMY_KEY = "__dummy";
+
 type Props = {||};
 
 type State = {|
@@ -38,24 +49,34 @@ type State = {|
   |},
   hasSaved: boolean,
   customChars: string,
-  keyTranslationsInput: string,
+  keyTranslationsInput: {|
+    text: string,
+    testOnly: boolean,
+    lastKeypress: ?Keypress,
+  |},
   peek: boolean,
   cssSuggestion: string,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets;
+  keysTableRef: ?HTMLDivElement;
 
   constructor(props: Props) {
     super(props);
 
     this.resets = new Resets();
+    this.keysTableRef = undefined;
 
     this.state = {
       optionsData: undefined,
       hasSaved: false,
       customChars: "",
-      keyTranslationsInput: "",
+      keyTranslationsInput: {
+        text: "",
+        testOnly: false,
+        lastKeypress: undefined,
+      },
       peek: false,
       cssSuggestion: CSS_SUGGESTIONS[0].value,
     };
@@ -179,9 +200,28 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const isLowerCase = options.chars === options.chars.toLowerCase();
 
+    const keysChanged =
+      // Both Chrome and Firefox return the keys in alphabetical order
+      // when reading from storage, and the defaults are written in
+      // aplphabetical order, so a simple `JSON.stringify` should be
+      // enough to compare.
+      JSON.stringify(options.keys) !== JSON.stringify(defaults.keys);
+
+    const { lastKeypress } = keyTranslationsInput;
+    const modifiers =
+      lastKeypress != null
+        ? [
+            lastKeypress.alt ? "Alt" : undefined,
+            lastKeypress.cmd ? "Cmd" : undefined,
+            lastKeypress.ctrl ? "Ctrl" : undefined,
+            lastKeypress.shift ? "Shift" : undefined,
+          ].filter(Boolean)
+        : [];
+
     return (
       <div>
         <Field
+          key="chars"
           id="chars"
           label="Hint characters"
           description={
@@ -269,6 +309,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
         />
 
         <Field
+          key="autoActivate"
           id="autoActivate"
           label="Auto activate when filtering by text"
           description={
@@ -339,7 +380,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
         />
 
         <Field
+          key="useKeyTranslations"
           id="useKeyTranslations"
+          connected={options.useKeyTranslations}
           label="Keyboard layout"
           span
           description={
@@ -390,105 +433,235 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
         {options.useKeyTranslations && (
           <Field
+            key="keys"
             id="keys"
-            connectTop
-            label="TODO"
-            description={null}
-            changed={
-              // Both Chrome and Firefox return the keys in alphabetical order
-              // when reading from storage, and the defaults are written in
-              // aplphabetical order, so a simple `JSON.stringify` should be
-              // enough to compare.
-              JSON.stringify(options.keys) !== JSON.stringify(defaults.keys)
+            connected
+            label={
+              keyTranslationsInput.testOnly
+                ? "Type here to test your translations"
+                : "Type here to translate codes to keys"
             }
+            description={null}
+            changed={keysChanged}
             render={({ id }) => (
               <div className="Spaced">
-                <div style={{ flex: "1 1 50%" }}>
-                  <textarea
-                    id={id}
-                    spellCheck="false"
-                    value={keyTranslationsInput}
-                    onInput={(
-                      event: SyntheticInputEvent<
-                        HTMLInputElement | HTMLTextAreaElement
-                      >
-                    ) => {
-                      event.currentTarget.value = keyTranslationsInput;
-                    }}
-                    onBlur={() => {
-                      this.setState({ keyTranslationsInput: "" });
-                    }}
-                    onKeyDown={(
-                      event: SyntheticKeyboardEvent<HTMLTextAreaElement>
-                    ) => {
-                      event.preventDefault();
-                      const {
-                        // $FlowIgnore: `.code` is missing in SyntheticKeyboardEvent.
-                        code,
-                        key,
-                        shiftKey: shift,
-                      } = event;
-                      if (isModifierKey(key)) {
-                        return;
+                <div className="SpacedVertical" style={{ flex: "1 1 50%" }}>
+                  <Attachment
+                    style={{ flexGrow: "1" }}
+                    content={
+                      <div className="TinyLabel Spaced">
+                        <label
+                          className="Spaced Spaced--center"
+                          style={{ marginLeft: "auto" }}
+                        >
+                          <span>Test only</span>
+                          <input
+                            type="checkbox"
+                            value={keyTranslationsInput.testOnly}
+                            onChange={(
+                              event: SyntheticEvent<HTMLInputElement>
+                            ) => {
+                              this.setState({
+                                keyTranslationsInput: {
+                                  ...keyTranslationsInput,
+                                  testOnly: event.currentTarget.checked,
+                                },
+                              });
+                            }}
+                          />
+                        </label>
+                      </div>
+                    }
+                  >
+                    <textarea
+                      id={id}
+                      spellCheck="false"
+                      className="TextSmall"
+                      style={{ resize: "none" }}
+                      placeholder={
+                        keyTranslationsInput.testOnly
+                          ? "Type with another layout…"
+                          : "Type with your main layout…"
                       }
-                      const {
-                        keyTranslations: keys,
-                        key: finalKey,
-                      } = updateKeyTranslations(
-                        { code, key, shift },
-                        options.keys
-                      );
-                      if (keys != null) {
-                        this.saveOptions({ keys });
-                      }
-                      this.setState({
-                        keyTranslationsInput: `${keyTranslationsInput} ${finalKey}`.trimLeft(),
-                      });
-                    }}
-                  />
+                      value={keyTranslationsInput.text}
+                      onInput={(
+                        event: SyntheticInputEvent<
+                          HTMLInputElement | HTMLTextAreaElement
+                        >
+                      ) => {
+                        event.currentTarget.value = keyTranslationsInput.text;
+                      }}
+                      onBlur={() => {
+                        this.setState({
+                          keyTranslationsInput: {
+                            ...keyTranslationsInput,
+                            text: "",
+                          },
+                        });
+                      }}
+                      onKeyDown={(event: KeyboardEvent) => {
+                        event.preventDefault();
+                        const keypress = keyboardEventToKeypress(event);
+                        const { code, key, shift } = keypress;
+                        if (isModifierKey(key)) {
+                          return;
+                        }
+                        const {
+                          keyTranslations: keys,
+                          key: finalKey,
+                        } = updateKeyTranslations(
+                          { code, key, shift },
+                          options.keys
+                        );
+                        if (keys != null && !keyTranslationsInput.testOnly) {
+                          this.saveOptions({ keys });
+                        }
+                        this.setState(
+                          {
+                            keyTranslationsInput: {
+                              ...keyTranslationsInput,
+                              text: `${
+                                keyTranslationsInput.text
+                              } ${finalKey}`.trimLeft(),
+                              lastKeypress: keypress,
+                            },
+                          },
+                          () => {
+                            if (!keyTranslationsInput.testOnly) {
+                              this.scrollKeyIntoView(code);
+                            }
+                          }
+                        );
+                      }}
+                    />
+                  </Attachment>
+
+                  {lastKeypress != null && (
+                    <div>
+                      <p className="TinyLabel">Last received keypress data</p>
+
+                      <table className="KeypressTable TextSmall">
+                        <tbody>
+                          <tr>
+                            <th>Code</th>
+                            <td>{lastKeypress.code}</td>
+                          </tr>
+                          <tr>
+                            <th>Key</th>
+                            <td>{lastKeypress.key}</td>
+                          </tr>
+                          <tr>
+                            <th>Modifiers</th>
+                            <td style={{ paddingTop: 0, paddingBottom: 0 }}>
+                              {modifiers.length > 0 && (
+                                <div className="Spaced">
+                                  {modifiers.map(modifier => (
+                                    <kbd key={modifier}>{modifier}</kbd>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 <Attachment
                   content={
-                    <div className="Spaced Spaced--center TinyLabel">
+                    <div className="Spaced Spaced--end TinyLabel">
                       <span>Key translations</span>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          this.saveOptions({ keys: defaults.keys });
-                        }}
-                      >
-                        Reset to default (QWERTY)
-                      </button>
+                      <span style={{ marginLeft: "auto" }}>
+                        {keysChanged ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              this.saveOptions({ keys: defaults.keys });
+                              if (this.keysTableRef != null) {
+                                this.keysTableRef.scrollTop = 0;
+                              }
+                            }}
+                          >
+                            Reset to defaults (en-US QWERTY)
+                          </button>
+                        ) : (
+                          <em>Using defaults (en-US QWERTY)</em>
+                        )}
+                      </span>
                     </div>
                   }
                   style={{ flex: "1 1 50%" }}
                 >
                   <div
-                    // TODO: Styling.
-                    style={{
-                      height: 310,
-                      overflowY: "auto",
-                      border: "1px solid magenta",
+                    className={classlist("KeysTable", "TextSmall", {
+                      "is-disabled": keyTranslationsInput.testOnly,
+                    })}
+                    ref={ref => {
+                      this.keysTableRef = ref;
                     }}
                   >
                     <table>
-                      <thead style={{ position: "sticky", top: 0 }}>
+                      <thead>
                         <tr>
                           <th>Code</th>
                           <th>Actual key</th>
                           <th>Shifted</th>
+                          <th />
                         </tr>
                       </thead>
                       <tbody>
                         {Object.keys(options.keys).map(code => {
+                          if (code === DUMMY_KEY) {
+                            return null;
+                          }
                           const [unshifted, shifted] = options.keys[code];
+                          const {
+                            [code]: [defaultUnshifted, defaultShifted] = [
+                              undefined,
+                              undefined,
+                            ],
+                          } = defaults.keys;
+                          const changed =
+                            unshifted !== defaultUnshifted ||
+                            shifted !== defaultShifted;
                           return (
-                            <tr key={code}>
-                              <td>{code}</td>
+                            <tr key={code} id={makeKeysRowId(code)}>
+                              <td
+                                className={classlist({ "is-changed": changed })}
+                              >
+                                {code}
+                              </td>
                               <td>{unshifted}</td>
                               <td>{shifted}</td>
+                              <td>
+                                <button
+                                  type="button"
+                                  title="Remove this key translation"
+                                  className="RemoveButton"
+                                  disabled={keyTranslationsInput.testOnly}
+                                  onClick={() => {
+                                    const {
+                                      [code]: removed,
+                                      ...newKeyTranslations
+                                    } = options.keys;
+                                    this.saveOptions({
+                                      keys:
+                                        Object.keys(newKeyTranslations).length >
+                                        0
+                                          ? newKeyTranslations
+                                          : // Empty `options.keys` cannot be
+                                            // distinguished from missing
+                                            // `options.keys`, so save a dummy key
+                                            // in this case.
+                                            { [DUMMY_KEY]: ["", ""] },
+                                    });
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </td>
                             </tr>
                           );
                         })}
@@ -502,15 +675,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
         )}
 
         <Field
+          key="css"
           id="css"
           label="Appearance"
           description={null}
           changed={options.css !== defaults.css}
           render={({ id }) => (
-            <div>
+            <div className="SpacedVertical">
               <div className="Spaced">
                 <TextInput
                   textarea
+                  className="TextSmall"
                   placeholder="Write or copy and paste CSS overrides here…"
                   style={{ flex: "1 1 50%", height: 310 }}
                   id={id}
@@ -560,36 +735,46 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   }
                   style={{ flex: "1 1 50%" }}
                 >
-                  <TextInput textarea savedValue={cssSuggestion} />
+                  <TextInput
+                    textarea
+                    className="TextSmall"
+                    savedValue={cssSuggestion}
+                  />
                 </Attachment>
               </div>
 
-              <p className="Field-description">
+              <p className="TextSmall">
                 To the left, you can add or copy and paste CSS overrides to
                 change the look of things. To the right, you’ll find the base
                 CSS for reference, as well as some inspiration through the
                 dropdown.
               </p>
 
-              <div className="TinyLabel Spaced" style={{ marginTop: 10 }}>
-                <p>Preview</p>
+              <div>
+                <div className="TinyLabel Spaced">
+                  <p>Preview</p>
 
-                <label
-                  className="Spaced Spaced--center"
-                  style={{ marginLeft: "auto" }}
-                >
-                  <span>Peek</span>
-                  <input
-                    type="checkbox"
-                    value={peek}
-                    onChange={(event: SyntheticEvent<HTMLInputElement>) => {
-                      this.setState({ peek: event.currentTarget.checked });
-                    }}
-                  />
-                </label>
+                  <label
+                    className="Spaced Spaced--center"
+                    style={{ marginLeft: "auto" }}
+                  >
+                    <span>Peek</span>
+                    <input
+                      type="checkbox"
+                      value={peek}
+                      onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                        this.setState({ peek: event.currentTarget.checked });
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <CSSPreview
+                  chars={options.chars}
+                  css={options.css}
+                  peek={peek}
+                />
               </div>
-
-              <CSSPreview chars={options.chars} css={options.css} peek={peek} />
             </div>
           )}
         />
@@ -613,6 +798,39 @@ export default class OptionsProgram extends React.Component<Props, State> {
         )}
       </div>
     );
+  }
+
+  scrollKeyIntoView(code: string) {
+    const id = makeKeysRowId(code);
+    const element = document.getElementById(id);
+    const keysTable = this.keysTableRef;
+
+    if (keysTable == null || element == null) {
+      return;
+    }
+
+    element.classList.remove("is-animated");
+
+    const elementRect = element.getBoundingClientRect();
+    const keysTableRect = keysTable.getBoundingClientRect();
+    const headingsHeight = Math.max(
+      0,
+      ...Array.from(
+        keysTable.querySelectorAll("thead th"),
+        th => th.offsetHeight
+      )
+    );
+
+    const diffTop = elementRect.top - keysTableRect.top - headingsHeight;
+    const diffBottom = elementRect.bottom - keysTableRect.bottom;
+
+    if (diffTop < 0) {
+      keysTable.scrollTop += diffTop;
+    } else if (diffBottom > 0) {
+      keysTable.scrollTop += diffBottom;
+    }
+
+    element.classList.add("is-animated");
   }
 }
 
@@ -638,7 +856,7 @@ function updateKeyTranslations(
   const newPair = updatePair({ key, shift }, previousPair);
   const changed = previousPair == null || !pairsEqual(newPair, previousPair);
   const newKeyTranslations = changed
-    ? { ...keyTranslations, [code]: newPair }
+    ? sortKeyTranslations({ ...keyTranslations, [code]: newPair })
     : undefined;
 
   const [unshifted, shifted] = newPair;
@@ -668,4 +886,18 @@ function pairsEqual(
   [a2, b2]: [string, string]
 ): boolean {
   return a1 === a2 && b1 === b2;
+}
+
+function sortKeyTranslations(
+  keyTranslations: KeyTranslations
+): KeyTranslations {
+  const keys = Object.keys(keyTranslations).sort();
+  return keys.reduce((result, key) => {
+    result[key] = keyTranslations[key];
+    return result;
+  }, {});
+}
+
+function makeKeysRowId(code: string): string {
+  return `KeysTable-row-${code}`;
 }
