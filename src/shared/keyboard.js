@@ -172,6 +172,22 @@ export const decodeKeyPair: mixed => KeyPair = map(
 export type KeyTranslations = { [code: string]: KeyPair };
 
 export const EN_US_QWERTY_TRANSLATIONS: KeyTranslations = {
+  Backquote: ["`", "~"],
+  Backslash: ["\\", "|"],
+  BracketLeft: ["[", "{"],
+  BracketRight: ["]", "}"],
+  Comma: [",", "<"],
+  Digit0: ["0", ")"],
+  Digit1: ["1", "!"],
+  Digit2: ["2", "@"],
+  Digit3: ["3", "#"],
+  Digit4: ["4", "$"],
+  Digit5: ["5", "%"],
+  Digit6: ["6", "^"],
+  Digit7: ["7", "&"],
+  Digit8: ["8", "*"],
+  Digit9: ["9", "("],
+  Equal: ["=", "+"],
   KeyA: ["a", "A"],
   KeyB: ["b", "B"],
   KeyC: ["c", "C"],
@@ -198,26 +214,10 @@ export const EN_US_QWERTY_TRANSLATIONS: KeyTranslations = {
   KeyX: ["x", "X"],
   KeyY: ["y", "Y"],
   KeyZ: ["z", "Z"],
-  Backquote: ["`", "~"],
-  Digit1: ["1", "!"],
-  Digit2: ["2", "@"],
-  Digit3: ["3", "#"],
-  Digit4: ["4", "$"],
-  Digit5: ["5", "%"],
-  Digit6: ["6", "^"],
-  Digit7: ["7", "&"],
-  Digit8: ["8", "*"],
-  Digit9: ["9", "("],
-  Digit0: ["0", ")"],
   Minus: ["-", "_"],
-  Equal: ["=", "+"],
-  Backslash: ["\\", "|"],
-  BracketLeft: ["[", "{"],
-  BracketRight: ["]", "}"],
-  Semicolon: [";", ":"],
-  Quote: ["'", '"'],
-  Comma: [",", "<"],
   Period: [".", ">"],
+  Quote: ["'", '"'],
+  Semicolon: [";", ":"],
   Slash: ["/", "?"],
 };
 
@@ -274,4 +274,19 @@ function translateCode({
   }
 
   return undefined;
+}
+
+const MODIFIER_KEYS: Set<string> = new Set([
+  "Alt",
+  "AltGraph",
+  "Control",
+  "Hyper",
+  "Meta",
+  "Shift",
+  "Super",
+  "OS",
+]);
+
+export function isModifierKey(key: string): boolean {
+  return MODIFIER_KEYS.has(key);
 }

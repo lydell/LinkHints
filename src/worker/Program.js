@@ -10,6 +10,7 @@ import {
   type KeyTranslations,
   type KeyboardMapping,
   type KeyboardMode,
+  isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
@@ -48,16 +49,6 @@ type CurrentElements = {|
 // computer, the lag starts somewhere between 10K and 20K tracked links.
 // Tracking at most 10K should be enough for regular sites.
 const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
-
-const MODIFIER_KEYS: Set<string> = new Set([
-  "Alt",
-  "Control",
-  "Hyper",
-  "Meta",
-  "Shift",
-  "Super",
-  "OS",
-]);
 
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping>;
@@ -490,7 +481,7 @@ export default class WorkerProgram {
       // This always uses `event.key` since we are looking for _actual_ modifier
       // key presses (keys may be rebound).
       (this.keyboardMode === "Hints" &&
-        (MODIFIER_KEYS.has(event.key) || (!event.ctrlKey && !event.metaKey)));
+        (isModifierKey(event.key) || (!event.ctrlKey && !event.metaKey)));
 
     if (suppress) {
       suppressEvent(event);

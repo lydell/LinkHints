@@ -1629,14 +1629,17 @@ export default class BackgroundProgram {
   async updateOptions() {
     const info = await browser.runtime.getPlatformInfo();
     const defaults = getDefaults({ mac: info.os === "mac" });
-    const rawOptions = await browser.storage.sync.get(Object.keys(defaults));
-    const [foo, unflattenErrors] = unflattenObject(rawOptions);
+    const rawOptions = await browser.storage.sync.get();
+    const [unflattened, unflattenErrors] = unflattenObject(rawOptions);
+    const defaulted = { ...defaults, ...unflattened };
     const decoder = makeOptionsDecoder(defaults);
-    const [options, decodeErrors] = decoder({ ...defaults, ...foo });
+    const [options, decodeErrors] = decoder(defaulted);
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
       rawOptions,
+      unflattened,
+      defaulted,
       options,
       unflattenErrors,
       decodeErrors,
@@ -1657,11 +1660,30 @@ export default class BackgroundProgram {
   }
 
   async saveOptions(partialOptions: PartialOptions) {
+    // The options are stored flattened to increase the chance of the browser
+    // sync not overwriting things when options has changed from multiple
+    // places. This means we have to retrieve the whole storage, unflatten it,
+    // merge in the `partialOptions`, flatten that and finally store it. Just
+    // flattening `partialOptions` and storing that would mean that you couldn't
+    // remove any `options.keys`, for example.
     try {
-      // The options are stored flattened to increase the chance of the browser
-      // sync not overwriting things when options has changed from multiple
-      // places.
-      await browser.storage.sync.set(flattenObject(partialOptions));
+      const rawOptions = await browser.storage.sync.get();
+      const [unflattened, unflattenErrors] = unflattenObject(rawOptions);
+      const merged = { ...unflattened, ...partialOptions };
+      const flattened = flattenObject(merged);
+      const keysToRemove = Object.keys(rawOptions).filter(key => !{}.hasOwnProperty.call(flattened, key))
+      log("log", "BackgroundProgram#saveOptions", {
+        partialOptions,
+        unflattened,
+        merged,
+        flattened,
+        keysToRemove,
+        // It's fine to just log these errors. `this.updateOptions` will get
+        // them again and pass them on.
+        unflattenErrors,
+      });
+      await browser.storage.sync.remove(keysToRemove);
+      await browser.storage.sync.set(flattened);
       await this.updateOptions();
     } catch (error) {
       this.optionsErrors = [error.message];

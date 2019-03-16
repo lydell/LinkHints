@@ -12,7 +12,7 @@ import {
 } from "tiny-decoders";
 
 import {
-  type KeyPair,
+  type KeyTranslations,
   type KeyboardMapping,
   EN_US_QWERTY_TRANSLATIONS,
   decodeKeyPair,
@@ -38,7 +38,7 @@ export type Options = {|
   // The following options have shortened names so that the keys don’t get super
   // long after flattening. More descriptive names would be `keyTranslations`,
   // `globalKeyboardShortcuts`, etc.
-  keys: { [string]: KeyPair },
+  keys: KeyTranslations,
   global: Shortcuts,
   normal: Shortcuts,
   hints: Shortcuts,
