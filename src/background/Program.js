@@ -1348,17 +1348,16 @@ export default class BackgroundProgram {
           errors: this.optionsErrors,
           defaults: this.defaults,
         });
-        const tabs = await browser.tabs.query({});
-        for (const tab of tabs) {
+        for (const tabId of this.tabState.keys()) {
           // This also does a "StateSync" for all workers.
-          this.exitHintsMode({ tabId: tab.id });
+          this.exitHintsMode({ tabId });
           this.sendRendererMessage(
             {
               type: "StateSync",
               css: this.options.css,
               logLevel: log.level,
             },
-            { tabId: tab.id }
+            { tabId }
           );
         }
         break;
