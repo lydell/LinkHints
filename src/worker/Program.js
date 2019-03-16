@@ -527,13 +527,6 @@ export default class WorkerProgram {
       return;
     }
 
-    if (this.keyboardMode === "Hints") {
-      this.sendMessage({
-        type: "Keyup",
-        keypress: keyboardEventToKeypress(event),
-      });
-    }
-
     if (this.suppressNextKeyup != null) {
       const { key, code } = this.suppressNextKeyup;
       if (event.key === key && event.code === code) {

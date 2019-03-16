@@ -5,6 +5,7 @@ import Shadow from "preact-shadow-root";
 
 import {
   CSS,
+  HAS_MATCHED_CHARS_CLASS,
   HIDDEN_CLASS,
   HIGHLIGHTED_HINT_CLASS,
   HINT_CLASS,
@@ -120,11 +121,13 @@ export default class CSSPreview extends React.Component<Props, State> {
       /* eslint-enable react/require-default-props */
     |}) => {
       hintZIndex--;
+          const hasMatchedChars = matchedChars !== "";
       return (
         <div
           key={hintZIndex}
           className={classlist(HINT_CLASS, {
             [MIXED_CASE_CLASS]: isMixedCase(chars),
+            [HAS_MATCHED_CHARS_CLASS]: hasMatchedChars,
             [HIGHLIGHTED_HINT_CLASS]: highlighted,
             [HIDDEN_CLASS]: hidden,
           })}
@@ -135,7 +138,7 @@ export default class CSSPreview extends React.Component<Props, State> {
             zIndex: hintZIndex,
           }}
         >
-          {matchedChars.length > 0 && (
+          {hasMatchedChars && (
             <span className={MATCHED_CHARS_CLASS}>{matchedChars}</span>
           )}
           {unmatchedChars}

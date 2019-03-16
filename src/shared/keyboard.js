@@ -28,6 +28,9 @@ export type KeyboardAction =
       type: "RefreshHints",
     |}
   | {|
+      type: "TogglePeek",
+    |}
+  | {|
       type: "Escape",
     |}
   | {|
@@ -69,6 +72,9 @@ function getKeyboardActionDecoder(type: string): mixed => KeyboardAction {
 
     case "RefreshHints":
       return () => ({ type: "RefreshHints" });
+
+    case "TogglePeek":
+      return () => ({ type: "TogglePeek" });
 
     case "Escape":
       return () => ({ type: "Escape" });

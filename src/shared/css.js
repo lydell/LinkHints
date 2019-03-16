@@ -4,6 +4,7 @@ export const ROOT_CLASS = "root";
 export const HINT_CLASS = "hint";
 export const HIGHLIGHTED_HINT_CLASS = "highlighted";
 export const MIXED_CASE_CLASS = "mixedCase";
+export const HAS_MATCHED_CHARS_CLASS = "hasMatchedChars";
 export const MATCHED_CHARS_CLASS = "matchedChars";
 export const TEXT_RECT_CLASS = "matchedText";
 export const STATUS_CLASS = "status";
@@ -74,7 +75,7 @@ export const CSS = `
   line-height: 1;
 }
 
-.${PEEK_CLASS} {
+.${PEEK_CLASS} .${HINT_CLASS}:not(.${HAS_MATCHED_CHARS_CLASS}):not(.${HIGHLIGHTED_HINT_CLASS}) {
   opacity: 0.2;
 }
 
@@ -83,7 +84,7 @@ export const CSS = `
 }
 
 .${HIDDEN_CLASS} {
-  opacity: 0;
+  opacity: 0 !important;
 }
 `.trim();
 

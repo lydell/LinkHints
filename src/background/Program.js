@@ -15,7 +15,6 @@ import type {
 import {
   type HintsMode,
   type KeyboardAction,
-  type Keypress,
   type NormalizedKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
@@ -90,6 +89,7 @@ type HintsState =
       elementsWithHints: Array<ElementWithHint>,
       highlightedIndexes: Set<number>,
       updateState: UpdateState,
+      peeking: boolean,
     |};
 
 type PendingElements = {|
@@ -369,25 +369,15 @@ export default class BackgroundProgram {
         break;
 
       case "NonKeyboardShortcutKeypress":
-        if (isPeekKey(message.keypress)) {
-          this.sendRendererMessage({ type: "Peek" }, { tabId: info.tabId });
-        } else {
-          this.handleHintInput(info.tabId, message.timestamp, {
-            type: "Input",
-            keypress: normalizeKeypress({
-              keypress: message.keypress,
-              keyTranslations: this.options.useKeyTranslations
-                ? this.options.keys
-                : {},
-            }),
-          });
-        }
-        break;
-
-      case "Keyup":
-        if (isPeekKey(message.keypress)) {
-          this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
-        }
+        this.handleHintInput(info.tabId, message.timestamp, {
+          type: "Input",
+          keypress: normalizeKeypress({
+            keypress: message.keypress,
+            keyTranslations: this.options.useKeyTranslations
+              ? this.options.keys
+              : {},
+          }),
+        });
         break;
 
       case "ReportVisibleFrame": {
@@ -1132,6 +1122,7 @@ export default class BackgroundProgram {
           this.updateElements(tabId);
         }, UPDATE_INTERVAL),
       },
+      peeking: false,
     };
     this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
       tabId,
@@ -1421,6 +1412,26 @@ export default class BackgroundProgram {
         break;
       }
 
+      case "TogglePeek": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null) {
+          return;
+        }
+
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Hinting") {
+          return;
+        }
+
+        this.sendRendererMessage(
+          hintsState.peeking ? { type: "Unpeek" } : { type: "Peek" },
+          { tabId: info.tabId }
+        );
+
+        hintsState.peeking = !hintsState.peeking;
+        break;
+      }
+
       case "Escape":
         this.exitHintsMode({ tabId: info.tabId });
         this.sendWorkerMessage(
@@ -1671,7 +1682,9 @@ export default class BackgroundProgram {
       const [unflattened, unflattenErrors] = unflattenObject(rawOptions);
       const merged = { ...unflattened, ...partialOptions };
       const flattened = flattenObject(merged);
-      const keysToRemove = Object.keys(rawOptions).filter(key => !{}.hasOwnProperty.call(flattened, key))
+      const keysToRemove = Object.keys(rawOptions).filter(
+        key => !{}.hasOwnProperty.call(flattened, key)
+      );
       log("log", "BackgroundProgram#saveOptions", {
         partialOptions,
         unflattened,
@@ -2072,33 +2085,6 @@ function assignHints(
   });
 
   return elements;
-}
-
-// For peeking, we need something that doesn’t trigger when:
-//
-// - pressing ctrl+r or cmd+r to refresh the hints (ctrl and cmd)
-// - using the alt key to open in a new tab (alt)
-// - typing uppercase (shift)
-// - rotating hints (tab)
-// - erasing typed characters (backspace)
-// - activating hints (enter)
-// - filtering by text (letters, numbers, symbols, space)
-//
-// Additionally, the Meta/Windows key is not safe on Windows and some Linux
-// distributions since pressing it opens the start menu or simlilar.
-//
-// Holding both ctrl and shift should work in all cases on all platforms, and is
-// reasonably easy to press (the keys are next to each other (vertically) on
-// most keyboards).
-//
-// This uses a non-normalized keypress and always the `event.key` value since
-// the pressed keys _have_ to trigger the actual modifiers as well, so we can
-// check for `.shiftKey` and `.ctrlKey`.
-function isPeekKey(keypress: Keypress): boolean {
-  return (
-    (keypress.key === "Control" && keypress.shift) ||
-    (keypress.key === "Shift" && keypress.ctrl)
-  );
 }
 
 function makeMessageInfo(sender: MessageSender): ?MessageInfo {

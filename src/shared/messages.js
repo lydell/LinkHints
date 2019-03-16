@@ -71,10 +71,6 @@ export type FromWorker =
       timestamp: number,
     |}
   | {|
-      type: "Keyup",
-      keypress: Keypress,
-    |}
-  | {|
       type: "ReportVisibleFrame",
     |}
   | {|

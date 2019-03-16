@@ -3,6 +3,7 @@
 import {
   CONTAINER_STYLES,
   CSS,
+  HAS_MATCHED_CHARS_CLASS,
   HIDDEN_CLASS,
   HIGHLIGHTED_HINT_CLASS,
   HINT_CLASS,
@@ -491,10 +492,13 @@ export default class RendererProgram {
         case "UpdateContent": {
           emptyNode(child);
 
+          const hasMatchedChars = update.matchedChars !== "";
+
           child.classList.toggle(HIDDEN_CLASS, update.hidden);
+          child.classList.toggle(HAS_MATCHED_CHARS_CLASS, hasMatchedChars);
           child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
 
-          if (update.matchedChars !== "") {
+          if (hasMatchedChars) {
             const matched = document.createElement("span");
             matched.className = MATCHED_CHARS_CLASS;
             matched.append(document.createTextNode(update.matchedChars));

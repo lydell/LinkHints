@@ -327,6 +327,21 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
           },
         },
       ],
+      TogglePeek: [
+        {
+          keypress: {
+            key: "p",
+            code: "KeyP",
+            alt: false,
+            cmd: mac,
+            ctrl: !mac,
+            shift: false,
+          },
+          action: {
+            type: "TogglePeek",
+          },
+        },
+      ],
     },
   };
 }
