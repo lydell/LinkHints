@@ -452,22 +452,16 @@ export default class WorkerProgram {
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       keyTranslations: this.keyTranslations,
-      capslock: event.getModifierState("CapsLock"),
     });
 
     const match = this.keyboardShortcuts.find(mapping => {
-      const mappingKeypress = normalizeKeypress({
-        keypress: mapping.keypress,
-        keyTranslations: this.keyTranslations,
-        capslock: false,
-      });
+      const { shortcut } = mapping;
       return (
-        keypress.key === mappingKeypress.key &&
-        keypress.alt === mappingKeypress.alt &&
-        keypress.cmd === mappingKeypress.cmd &&
-        keypress.ctrl === mappingKeypress.ctrl &&
-        (mappingKeypress.shift == null ||
-          keypress.shift === mappingKeypress.shift)
+        keypress.key === shortcut.key &&
+        keypress.alt === shortcut.alt &&
+        keypress.cmd === shortcut.cmd &&
+        keypress.ctrl === shortcut.ctrl &&
+        (keypress.shift == null || keypress.shift === shortcut.shift)
       );
     });
 

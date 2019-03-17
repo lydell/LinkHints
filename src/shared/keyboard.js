@@ -2,9 +2,7 @@
 
 import {
   boolean,
-  constant,
   field,
-  fieldAndThen,
   group,
   map,
   record,
@@ -13,89 +11,46 @@ import {
 } from "tiny-decoders";
 
 export type KeyboardAction =
-  | {|
-      type: "EnterHintsMode",
-      mode: HintsMode,
-    |}
-  | {|
-      type: "ExitHintsMode",
-    |}
-  | {|
-      type: "RotateHints",
-      forward: boolean,
-    |}
-  | {|
-      type: "RefreshHints",
-    |}
-  | {|
-      type: "TogglePeek",
-    |}
-  | {|
-      type: "Escape",
-    |}
-  | {|
-      type: "ActivateHint",
-      alt: boolean,
-    |}
-  | {|
-      type: "Backspace",
-    |}
-  | {|
-      type: "ReverseSelection",
-    |}
-  | {|
-      type: "ClickFocusedElement",
-    |};
+  | "EnterHintsMode_Click"
+  | "EnterHintsMode_BackgroundTab"
+  | "EnterHintsMode_ForegroundTab"
+  | "EnterHintsMode_ManyClick"
+  | "EnterHintsMode_ManyTab"
+  | "EnterHintsMode_Select"
+  | "ReverseSelection"
+  | "ClickFocusedElement"
+  | "Escape"
+  | "ActivateHint"
+  | "ActivateHintAlt"
+  | "Backspace"
+  | "RotateHintsForward"
+  | "RotateHintsBackward"
+  | "RefreshHints"
+  | "TogglePeek"
+  | "ExitHintsMode";
 
-const decodeKeyboardAction: mixed => KeyboardAction = fieldAndThen(
-  "type",
-  string,
-  getKeyboardActionDecoder
-);
-
-function getKeyboardActionDecoder(type: string): mixed => KeyboardAction {
+export function decodeKeyboardAction(type: string): KeyboardAction {
   switch (type) {
-    case "EnterHintsMode":
-      return record({
-        type: constant(type),
-        mode: map(string, decodeHintsMode),
-      });
-
-    case "ExitHintsMode":
-      return () => ({ type: "ExitHintsMode" });
-
-    case "RotateHints":
-      return record({
-        type: constant(type),
-        forward: boolean,
-      });
-
-    case "RefreshHints":
-      return () => ({ type: "RefreshHints" });
-
-    case "TogglePeek":
-      return () => ({ type: "TogglePeek" });
-
-    case "Escape":
-      return () => ({ type: "Escape" });
-
-    case "ActivateHint":
-      return record({
-        type: constant(type),
-        alt: boolean,
-      });
-
-    case "Backspace":
-      return () => ({ type: "Backspace" });
-
+    case "EnterHintsMode_Click":
+    case "EnterHintsMode_BackgroundTab":
+    case "EnterHintsMode_ForegroundTab":
+    case "EnterHintsMode_ManyClick":
+    case "EnterHintsMode_ManyTab":
+    case "EnterHintsMode_Select":
     case "ReverseSelection":
-      return () => ({ type: "ReverseSelection" });
-
     case "ClickFocusedElement":
-      return () => ({ type: "ClickFocusedElement" });
-
+    case "Escape":
+    case "ActivateHint":
+    case "ActivateHintAlt":
+    case "Backspace":
+    case "RotateHintsForward":
+    case "RotateHintsBackward":
+    case "RefreshHints":
+    case "TogglePeek":
+    case "ExitHintsMode":
+      return type;
     default:
-      throw new TypeError(`Invalid KeyboardAction type: ${repr(type)}`);
+      throw new TypeError(`Invalid KeyboardAction: ${repr(type)}`);
   }
 }
 
@@ -107,16 +62,8 @@ export type Keypress = {|
   cmd: boolean,
   ctrl: boolean,
   shift: boolean,
+  capslock: boolean,
 |};
-
-const decodeKeypress: mixed => Keypress = record({
-  key: string,
-  code: string,
-  alt: boolean,
-  cmd: boolean,
-  ctrl: boolean,
-  shift: boolean,
-});
 
 // A `Keypress` after taking `KeyTranslations` into account.
 export type NormalizedKeypress = {|
@@ -131,15 +78,84 @@ export type NormalizedKeypress = {|
   shift: ?boolean,
 |};
 
+export type Shortcut = {|
+  key: string,
+  alt: boolean,
+  cmd: boolean,
+  ctrl: boolean,
+  shift: boolean,
+|};
+
+const decodeShortcut: mixed => Shortcut = record({
+  key: string,
+  alt: boolean,
+  cmd: boolean,
+  ctrl: boolean,
+  shift: boolean,
+});
+
+function requireModifier(shortcut: Shortcut): Shortcut {
+  const { key, alt, cmd, ctrl, shift } = shortcut;
+  if (!(alt || cmd || ctrl || (shift && key.length > 1))) {
+    throw new TypeError(
+      `Expected Shortcut to use a least one modifier, but got: ${repr(
+        shortcut
+      )}`
+    );
+  }
+  return shortcut;
+}
+
+const SHORTCUT_SEPARATOR = "-";
+
+export function serializeShortcut(shortcut: Shortcut): string {
+  return [
+    shortcut.alt ? "alt" : undefined,
+    shortcut.cmd ? "cmd" : undefined,
+    shortcut.ctrl ? "ctrl" : undefined,
+    shortcut.shift ? "shift" : undefined,
+    shortcut.key,
+  ]
+    .filter(Boolean)
+    .join(SHORTCUT_SEPARATOR);
+}
+
+// This turns a shortcut string into an object that can be fed to `decodeShortcut`.
+export function deserializeShortcut(
+  shortcutString: string
+): { [string]: mixed } {
+  const parts = shortcutString.split(SHORTCUT_SEPARATOR);
+  const lastIndex = parts.length - 1;
+  return parts.reduce((result, part, index) => {
+    if (index === lastIndex) {
+      // If the last part is empty, we’re deserializing a shortcut like `alt--`.
+      result.key = part === "" ? SHORTCUT_SEPARATOR : part;
+    }
+    // Ignore empty parts, such as in `alt--x`.
+    else if (part !== "") {
+      // Modifiers.
+      result[part] = true;
+    }
+    return result;
+  }, {});
+}
+
 export type KeyboardMapping = {|
-  keypress: Keypress,
+  shortcut: Shortcut,
   action: KeyboardAction,
 |};
 
 export const decodeKeyboardMapping: mixed => KeyboardMapping = record({
-  keypress: decodeKeypress,
-  action: decodeKeyboardAction,
+  shortcut: decodeShortcut,
+  action: map(string, decodeKeyboardAction),
 });
+
+export const decodeKeyboardMappingWithModifiers: mixed => KeyboardMapping = record(
+  {
+    shortcut: map(decodeShortcut, requireModifier),
+    action: map(string, decodeKeyboardAction),
+  }
+);
 
 export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping";
 
@@ -235,17 +251,16 @@ export function keyboardEventToKeypress(event: KeyboardEvent): Keypress {
     cmd: event.metaKey,
     ctrl: event.ctrlKey,
     shift: event.shiftKey,
+    capslock: event.getModifierState("CapsLock"),
   };
 }
 
 export function normalizeKeypress({
   keypress,
   keyTranslations,
-  capslock,
 }: {|
   keypress: Keypress,
   keyTranslations: KeyTranslations,
-  capslock: boolean,
 |}): NormalizedKeypress {
   // If ignoring the keyboard layout, try to translate `.code` to a `.key`
   // value. Use `.key` otherwise.
@@ -274,7 +289,7 @@ export function normalizeKeypress({
       // `key` comes from `keyTranslations`, capslock is ignored by definition.
       // When using `event.key`, try to undo the effects of capslock, by
       // changing case.
-      isChar && !wasTranslated && capslock
+      isChar && !wasTranslated && keypress.capslock
       ? keypress.shift
         ? key.toUpperCase() // Capslock made it lowercase; change it back.
         : key.toLowerCase() // Capslock made it uppercase; change it back.
@@ -287,7 +302,7 @@ export function normalizeKeypress({
       // `event.key` there’s nothing to do – capslock has already been applied
       // for us.
       isChar
-        ? wasTranslated && capslock
+        ? wasTranslated && keypress.capslock
           ? // Remember that shift works the other way around in capslock mode.
             keypress.shift
             ? key.toLowerCase()

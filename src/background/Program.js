@@ -41,13 +41,12 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
-  type Options,
+  type OptionsData,
   type PartialOptions,
-  flattenObject,
-  flattenShortcuts,
+  flattenOptions,
   getDefaults,
   makeOptionsDecoder,
-  unflattenObject,
+  unflattenOptions,
 } from "../shared/options";
 import { type Durations, type Perf, TimeTracker } from "../shared/perf";
 
@@ -149,17 +148,20 @@ const UPDATE_MIN_TIMEOUT = 100; // ms
 const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
 export default class BackgroundProgram {
-  defaults: Options;
-  options: Options;
-  optionsErrors: Array<string>;
+  options: OptionsData;
   tabState: Map<number, TabState>;
   oneTimeWindowMessageToken: string;
   resets: Resets;
 
   constructor() {
-    this.defaults = getDefaults({ mac: true });
-    this.options = this.options;
-    this.optionsErrors = [];
+    const mac = false;
+    const defaults = getDefaults({ mac });
+    this.options = {
+      defaults,
+      values: defaults,
+      errors: [],
+      mac,
+    };
     this.tabState = new Map();
     this.oneTimeWindowMessageToken = makeRandomToken();
     this.resets = new Resets();
@@ -194,7 +196,7 @@ export default class BackgroundProgram {
     try {
       await this.updateOptions();
     } catch (error) {
-      this.optionsErrors = [error.message];
+      this.options.errors = [error.message];
     }
 
     const tabs = await browser.tabs.query({});
@@ -472,8 +474,8 @@ export default class BackgroundProgram {
           enteredText,
           elementsWithHints: updatedElementsWithHints,
           highlightedIndexes: hintsState.highlightedIndexes,
-          chars: this.options.chars,
-          autoActivate: this.options.autoActivate,
+          chars: this.options.values.chars,
+          autoActivate: this.options.values.autoActivate,
           matchHighlighted: false,
           updateMeasurements: true,
         });
@@ -642,7 +644,7 @@ export default class BackgroundProgram {
     const isHintKey =
       (input.type === "Input" &&
         input.keypress.printableKey != null &&
-        this.options.chars.includes(input.keypress.printableKey)) ||
+        this.options.values.chars.includes(input.keypress.printableKey)) ||
       (input.type === "Backspace" && hintsState.enteredChars !== "");
 
     // Disallow filtering by text after having started entering hint chars.
@@ -682,8 +684,8 @@ export default class BackgroundProgram {
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes,
-      chars: this.options.chars,
-      autoActivate: this.options.autoActivate,
+      chars: this.options.values.chars,
+      autoActivate: this.options.values.autoActivate,
       matchHighlighted: input.type === "ActivateHint",
       updateMeasurements: false,
     });
@@ -891,7 +893,7 @@ export default class BackgroundProgram {
             type: "UpdateHints",
             updates: assignHints(hintsState.elementsWithHints, {
               mode: "ManyTab",
-              chars: this.options.chars,
+              chars: this.options.values.chars,
               hasEnteredText: false,
             }).map((element, index) => ({
               type: "UpdateContent",
@@ -993,8 +995,8 @@ export default class BackgroundProgram {
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      chars: this.options.chars,
-      autoActivate: this.options.autoActivate,
+      chars: this.options.values.chars,
+      autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
@@ -1093,7 +1095,7 @@ export default class BackgroundProgram {
       })),
       {
         mode: hintsState.mode,
-        chars: this.options.chars,
+        chars: this.options.values.chars,
         hasEnteredText: false,
       }
       // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
@@ -1128,7 +1130,7 @@ export default class BackgroundProgram {
       {
         type: "Render",
         elements: elementsWithHints,
-        mixedCase: isMixedCase(this.options.chars),
+        mixedCase: isMixedCase(this.options.values.chars),
       },
       { tabId }
     );
@@ -1197,8 +1199,8 @@ export default class BackgroundProgram {
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
       highlightedIndexes: hintsState.highlightedIndexes,
-      chars: this.options.chars,
-      autoActivate: this.options.autoActivate,
+      chars: this.options.values.chars,
+      autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
       updateMeasurements: false,
     });
@@ -1236,7 +1238,7 @@ export default class BackgroundProgram {
         this.sendRendererMessage(
           {
             type: "StateSync",
-            css: this.options.css,
+            css: this.options.values.css,
             logLevel: log.level,
           },
           { tabId: info.tabId }
@@ -1319,8 +1321,6 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
-          errors: this.optionsErrors,
-          defaults: this.defaults,
         });
         break;
 
@@ -1330,8 +1330,6 @@ export default class BackgroundProgram {
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
-          errors: this.optionsErrors,
-          defaults: this.defaults,
         });
         for (const tabId of this.tabState.keys()) {
           // This also does a "StateSync" for all workers.
@@ -1339,7 +1337,7 @@ export default class BackgroundProgram {
           this.sendRendererMessage(
             {
               type: "StateSync",
-              css: this.options.css,
+              css: this.options.values.css,
               logLevel: log.level,
             },
             { tabId }
@@ -1358,24 +1356,58 @@ export default class BackgroundProgram {
     info: MessageInfo,
     timestamp: number
   ) {
-    switch (action.type) {
-      case "EnterHintsMode":
-        this.enterHintsMode({
-          tabId: info.tabId,
-          timestamp,
-          mode: action.mode,
-        });
+    const enterHintsMode = (mode: HintsMode) => {
+      this.enterHintsMode({
+        tabId: info.tabId,
+        timestamp,
+        mode,
+      });
+    };
+
+    switch (action) {
+      case "EnterHintsMode_Click":
+        enterHintsMode("Click");
+        break;
+
+      case "EnterHintsMode_BackgroundTab":
+        enterHintsMode("BackgroundTab");
+        break;
+
+      case "EnterHintsMode_ForegroundTab":
+        enterHintsMode("ForegroundTab");
+        break;
+
+      case "EnterHintsMode_ManyClick":
+        enterHintsMode("ManyClick");
+        break;
+
+      case "EnterHintsMode_ManyTab":
+        enterHintsMode("ManyTab");
+        break;
+
+      case "EnterHintsMode_Select":
+        enterHintsMode("Select");
         break;
 
       case "ExitHintsMode":
         this.exitHintsMode({ tabId: info.tabId });
         break;
 
-      case "RotateHints":
+      case "RotateHintsForward":
         this.sendRendererMessage(
           {
             type: "RotateHints",
-            forward: action.forward,
+            forward: true,
+          },
+          { tabId: info.tabId }
+        );
+        break;
+
+      case "RotateHintsBackward":
+        this.sendRendererMessage(
+          {
+            type: "RotateHints",
+            forward: false,
           },
           { tabId: info.tabId }
         );
@@ -1437,7 +1469,14 @@ export default class BackgroundProgram {
       case "ActivateHint":
         this.handleHintInput(info.tabId, timestamp, {
           type: "ActivateHint",
-          alt: action.alt,
+          alt: false,
+        });
+        break;
+
+      case "ActivateHintAlt":
+        this.handleHintInput(info.tabId, timestamp, {
+          type: "ActivateHint",
+          alt: false,
         });
         break;
 
@@ -1460,7 +1499,7 @@ export default class BackgroundProgram {
         break;
 
       default:
-        unreachable(action.type, action);
+        unreachable(action);
     }
   }
 
@@ -1633,9 +1672,10 @@ export default class BackgroundProgram {
 
   async updateOptions() {
     const info = await browser.runtime.getPlatformInfo();
-    const defaults = getDefaults({ mac: info.os === "mac" });
+    const mac = info.os === "mac";
+    const defaults = getDefaults({ mac });
     const rawOptions = await browser.storage.sync.get();
-    const [unflattened, unflattenErrors] = unflattenObject(rawOptions);
+    const unflattened = unflattenOptions(rawOptions);
     const defaulted = { ...defaults, ...unflattened };
     const decoder = makeOptionsDecoder(defaults);
     const [options, decodeErrors] = decoder(defaulted);
@@ -1646,20 +1686,18 @@ export default class BackgroundProgram {
       unflattened,
       defaulted,
       options,
-      unflattenErrors,
       decodeErrors,
     });
 
-    this.defaults = defaults;
-    this.options = options;
-    this.optionsErrors = unflattenErrors
-      .map(error => `Options format error: ${error.message}`)
-      .concat(
-        decodeErrors.map(
-          ([key, error]) =>
-            `Decode error for option ${repr(key)}: ${error.message}`
-        )
-      );
+    this.options = {
+      values: options,
+      defaults,
+      errors: decodeErrors.map(
+        ([key, error]) =>
+          `Decode error for option ${repr(key)}: ${error.message}`
+      ),
+      mac,
+    };
 
     log.level = options.logLevel;
   }
@@ -1673,9 +1711,9 @@ export default class BackgroundProgram {
     // remove any `options.keys`, for example.
     try {
       const rawOptions = await browser.storage.sync.get();
-      const [unflattened, unflattenErrors] = unflattenObject(rawOptions);
+      const unflattened = unflattenOptions(rawOptions);
       const merged = { ...unflattened, ...partialOptions };
-      const flattened = flattenObject(merged);
+      const flattened = flattenOptions(merged);
       const keysToRemove = Object.keys(rawOptions).filter(
         key => !{}.hasOwnProperty.call(flattened, key)
       );
@@ -1685,15 +1723,12 @@ export default class BackgroundProgram {
         merged,
         flattened,
         keysToRemove,
-        // It's fine to just log these errors. `this.updateOptions` will get
-        // them again and pass them on.
-        unflattenErrors,
       });
       await browser.storage.sync.remove(keysToRemove);
       await browser.storage.sync.set(flattened);
       await this.updateOptions();
     } catch (error) {
-      this.optionsErrors = [error.message];
+      this.options.errors = [error.message];
     }
   }
 
@@ -1710,7 +1745,9 @@ export default class BackgroundProgram {
 
     const common = {
       logLevel: log.level,
-      keyTranslations: this.options.useKeyTranslations ? this.options.keys : {},
+      keyTranslations: this.options.values.useKeyTranslations
+        ? this.options.values.keyTranslations
+        : {},
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
     };
 
@@ -1720,10 +1757,7 @@ export default class BackgroundProgram {
           clearElements: false,
           keyboardShortcuts: preventOverTyping
             ? []
-            : [
-                ...flattenShortcuts(this.options.global),
-                ...flattenShortcuts(this.options.hints),
-              ],
+            : this.options.values.hintsKeyboardShortcuts,
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
           ...common,
         }
@@ -1732,10 +1766,7 @@ export default class BackgroundProgram {
           clearElements: true,
           keyboardShortcuts: preventOverTyping
             ? []
-            : [
-                ...flattenShortcuts(this.options.global),
-                ...flattenShortcuts(this.options.normal),
-              ],
+            : this.options.values.normalKeyboardShortcuts,
           keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
           ...common,
         };
@@ -1784,7 +1815,7 @@ export default class BackgroundProgram {
           tabId,
           frameId: "all_frames",
         });
-      }, this.options.overTypingDuration);
+      }, this.options.values.overTypingDuration);
     }
   }
 }

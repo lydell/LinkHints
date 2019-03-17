@@ -358,7 +358,8 @@ pre {
 }
 
 @keyframes Highlight {
-  from, 20% {
+  from,
+  20% {
     box-shadow: inset 0 0 0 99px var(--blue);
     color: white;
   }
@@ -386,4 +387,8 @@ pre {
   position: relative;
   border: 1px solid var(--grey-luke);
   overflow: auto;
+}
+
+.KeyboardShortcut > * + * {
+  margin-left: 1px;
 }

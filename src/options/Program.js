@@ -6,6 +6,7 @@ import { CSS, SUGGESTION_FONT_SIZE, SUGGESTION_VIMIUM } from "../shared/css";
 import {
   type KeyPair,
   type KeyTranslations,
+  type KeyboardMapping,
   type Keypress,
   isModifierKey,
   keyboardEventToKeypress,
@@ -24,13 +25,18 @@ import type {
   FromOptions,
   ToBackground,
 } from "../shared/messages";
-import { type Options, type PartialOptions } from "../shared/options";
+import {
+  type OptionsData,
+  type PartialOptions,
+  normalizeChars,
+  normalizeNonNegativeInteger,
+} from "../shared/options";
 import Attachment from "./Attachment";
 import CSSPreview from "./CSSPreview";
 import Field from "./Field";
+import KeyboardShortcut from "./KeyboardShortcut";
+import KeyboardShortcuts from "./KeyboardShortcuts";
 import TextInput from "./TextInput";
-
-const MIN_CHARS = 2;
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -38,23 +44,16 @@ const CSS_SUGGESTIONS = [
   { name: "Vimium", value: SUGGESTION_VIMIUM },
 ];
 
-const DUMMY_KEY = "__dummy";
-
 type Props = {||};
 
 type State = {|
-  optionsData: ?{|
-    options: Options,
-    defaults: Options,
-    errors: Array<string>,
-  |},
+  options: ?OptionsData,
   hasSaved: boolean,
   customChars: string,
   keyTranslationsInput: {|
     text: string,
     testOnly: boolean,
     lastKeypress: ?Keypress,
-    capslock: boolean,
   |},
   peek: boolean,
   cssSuggestion: string,
@@ -71,14 +70,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
     this.keysTableRef = undefined;
 
     this.state = {
-      optionsData: undefined,
+      options: undefined,
       hasSaved: false,
       customChars: "",
       keyTranslationsInput: {
         text: "",
         testOnly: false,
         lastKeypress: undefined,
-        capslock: false,
       },
       peek: false,
       cssSuggestion: CSS_SUGGESTIONS[0].value,
@@ -133,14 +131,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
       case "StateSync":
         log.level = message.logLevel;
         this.setState(state => ({
-          optionsData: {
-            options: message.options,
-            defaults: message.defaults,
-            errors: message.errors,
-          },
+          options: message.options,
           customChars:
-            state.optionsData == null
-              ? message.options.chars
+            state.options == null
+              ? message.options.values.chars
               : state.customChars,
         }));
         break;
@@ -152,13 +146,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   saveOptions(partialOptions: PartialOptions) {
     this.setState(state => ({
-      optionsData:
-        state.optionsData == null
+      options:
+        state.options == null
           ? undefined
           : {
-              ...state.optionsData,
-              options: {
-                ...state.optionsData.options,
+              ...state.options,
+              values: {
+                ...state.options.values,
                 ...partialOptions,
               },
               errors: [],
@@ -173,7 +167,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   render() {
     const {
-      optionsData,
+      options: optionsData,
       hasSaved,
       customChars,
       keyTranslationsInput,
@@ -185,7 +179,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       return null;
     }
 
-    const { options, defaults, errors } = optionsData;
+    const { values: options, defaults, errors, mac } = optionsData;
 
     const charsPresets = [
       { name: "QWERTY (default)", value: defaults.chars },
@@ -203,23 +197,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const isLowerCase = options.chars === options.chars.toLowerCase();
 
-    const keysChanged =
+    const keyTranslationsChanged =
       // Both Chrome and Firefox return the keys in alphabetical order
       // when reading from storage, and the defaults are written in
       // aplphabetical order, so a simple `JSON.stringify` should be
       // enough to compare.
-      JSON.stringify(options.keys) !== JSON.stringify(defaults.keys);
+      JSON.stringify(options.keyTranslations) !==
+      JSON.stringify(defaults.keyTranslations);
 
     const { lastKeypress } = keyTranslationsInput;
-    const modifiers =
-      lastKeypress != null
-        ? [
-            lastKeypress.alt ? "Alt" : undefined,
-            lastKeypress.cmd ? "Cmd" : undefined,
-            lastKeypress.ctrl ? "Ctrl" : undefined,
-            lastKeypress.shift ? "Shift" : undefined,
-          ].filter(Boolean)
-        : [];
 
     return (
       <div>
@@ -251,14 +237,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 id={id}
                 style={{ flex: "1 1 50%" }}
                 savedValue={options.chars}
-                normalize={value => {
-                  const unique = pruneChars(value);
-                  return unique.length >= MIN_CHARS
-                    ? unique
-                    : unique.length === 0
-                    ? defaults.chars
-                    : pruneChars(unique + defaults.chars).slice(0, MIN_CHARS);
-                }}
+                normalize={value => normalizeChars(value, defaults.chars)}
                 save={(value, reason) => {
                   if (reason === "input") {
                     this.setState({ customChars: value });
@@ -299,7 +278,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     const chars = isLowerCase
                       ? options.chars.toUpperCase()
                       : options.chars.toLowerCase();
-                    const unique = pruneChars(chars);
+                    const unique = normalizeChars(chars, defaults.chars);
                     this.setState({ customChars: unique });
                     this.saveOptions({ chars: unique });
                   }}
@@ -317,10 +296,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
           label="Auto activate when filtering by text"
           description={
             <p>
-              When <em>filtering by text</em> you can press <kbd>Enter</kbd> to
-              activate the matched hint (highlighted in green). With this option
-              enabled, the matched hint is automatically activated if it is the
-              only match. Many times one might type a few extra characters
+              When <em>filtering by text</em> you can press{" "}
+              <ActivateHighlightedKey
+                mac={mac}
+                mappings={options.hintsKeyboardShortcuts}
+                defaultMappings={defaults.hintsKeyboardShortcuts}
+              />{" "}
+              to activate the highlighted hint (green). With this option
+              enabled, the highlighted hint is automatically activated if it is
+              the only match. Many times one might type a few extra characters
               before realizing that a hint was automatically activated, so your
               key strokes are suppressed for a short period just after
               activation.
@@ -363,14 +347,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     style={{ flex: "1 1 50%" }}
                     disabled={!options.autoActivate}
                     savedValue={String(options.overTypingDuration)}
-                    normalize={value => {
-                      const number = Math.max(0, Math.round(parseFloat(value)));
-                      return String(
-                        Number.isFinite(number)
-                          ? number
-                          : defaults.overTypingDuration
-                      );
-                    }}
+                    normalize={value =>
+                      normalizeNonNegativeInteger(
+                        value,
+                        defaults.overTypingDuration
+                      )
+                    }
                     save={value => {
                       this.saveOptions({ overTypingDuration: Number(value) });
                     }}
@@ -436,8 +418,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
         {options.useKeyTranslations && (
           <Field
-            key="keys"
-            id="keys"
+            key="keyTranslations"
+            id="keyTranslations"
             connected
             label={
               keyTranslationsInput.testOnly
@@ -445,7 +427,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 : "Type here to translate codes to keys"
             }
             description={null}
-            changed={keysChanged}
+            changed={keyTranslationsChanged}
             render={({ id }) => (
               <div className="Spaced">
                 <div className="SpacedVertical" style={{ flex: "1 1 50%" }}>
@@ -509,22 +491,26 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         if (isModifierKey(key)) {
                           return;
                         }
-                        const keys = updateKeyTranslations(
+                        const keyTranslations = updateKeyTranslations(
                           { code, key, shift },
-                          options.keys
+                          options.keyTranslations
                         );
-                        const capslock = event.getModifierState("CapsLock");
                         const normalizedKeypress = normalizeKeypress({
                           keypress,
-                          keyTranslations: keys != null ? keys : options.keys,
-                          capslock,
+                          keyTranslations:
+                            keyTranslations != null
+                              ? keyTranslations
+                              : options.keyTranslations,
                         });
                         const finalKey =
                           normalizedKeypress.printableKey != null
                             ? normalizedKeypress.printableKey
                             : normalizedKeypress.key;
-                        if (keys != null && !keyTranslationsInput.testOnly) {
-                          this.saveOptions({ keys });
+                        if (
+                          keyTranslations != null &&
+                          !keyTranslationsInput.testOnly
+                        ) {
+                          this.saveOptions({ keyTranslations });
                         }
                         this.setState(
                           {
@@ -534,7 +520,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                 keyTranslationsInput.text
                               } ${finalKey}`.trimLeft(),
                               lastKeypress: keypress,
-                              capslock,
                             },
                           },
                           () => {
@@ -546,11 +531,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       }}
                       onKeyUp={(event: KeyboardEvent) => {
                         const capslock = event.getModifierState("CapsLock");
-                        if (capslock !== keyTranslationsInput.capslock) {
+                        if (
+                          lastKeypress != null &&
+                          capslock !== lastKeypress.capslock
+                        ) {
                           this.setState({
                             keyTranslationsInput: {
                               ...keyTranslationsInput,
-                              capslock,
+                              lastKeypress: {
+                                ...lastKeypress,
+                                capslock,
+                              },
                             },
                           });
                         }
@@ -575,16 +566,19 @@ export default class OptionsProgram extends React.Component<Props, State> {
                           <tr>
                             <th>Modifiers</th>
                             <td style={{ paddingTop: 0, paddingBottom: 0 }}>
-                              {modifiers.length > 0 && (
-                                <div className="Spaced">
-                                  {modifiers.map(modifier => (
-                                    <kbd key={modifier}>{modifier}</kbd>
-                                  ))}
-                                </div>
-                              )}
+                              <KeyboardShortcut
+                                mac={mac}
+                                shortcut={{
+                                  key: "",
+                                  alt: lastKeypress.alt,
+                                  cmd: lastKeypress.cmd,
+                                  ctrl: lastKeypress.ctrl,
+                                  shift: lastKeypress.shift,
+                                }}
+                              />
                             </td>
                           </tr>
-                          {keyTranslationsInput.capslock && (
+                          {lastKeypress.capslock && (
                             <tr>
                               <th>Caps Lock</th>
                               <td>
@@ -607,11 +601,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       <span>Key translations</span>
 
                       <span style={{ marginLeft: "auto" }}>
-                        {keysChanged ? (
+                        {keyTranslationsChanged ? (
                           <button
                             type="button"
                             onClick={() => {
-                              this.saveOptions({ keys: defaults.keys });
+                              this.saveOptions({
+                                keyTranslations: defaults.keyTranslations,
+                              });
                               if (this.keysTableRef != null) {
                                 this.keysTableRef.scrollTop = 0;
                               }
@@ -645,17 +641,16 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.keys(options.keys).map(code => {
-                          if (code === DUMMY_KEY) {
-                            return null;
-                          }
-                          const [unshifted, shifted] = options.keys[code];
+                        {Object.keys(options.keyTranslations).map(code => {
+                          const [unshifted, shifted] = options.keyTranslations[
+                            code
+                          ];
                           const {
                             [code]: [defaultUnshifted, defaultShifted] = [
                               undefined,
                               undefined,
                             ],
-                          } = defaults.keys;
+                          } = defaults.keyTranslations;
                           const changed =
                             unshifted !== defaultUnshifted ||
                             shifted !== defaultShifted;
@@ -678,17 +673,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                     const {
                                       [code]: removed,
                                       ...newKeyTranslations
-                                    } = options.keys;
+                                    } = options.keyTranslations;
                                     this.saveOptions({
-                                      keys:
-                                        Object.keys(newKeyTranslations).length >
-                                        0
-                                          ? newKeyTranslations
-                                          : // Empty `options.keys` cannot be
-                                            // distinguished from missing
-                                            // `options.keys`, so save a dummy key
-                                            // in this case.
-                                            { [DUMMY_KEY]: ["", ""] },
+                                      keyTranslations: newKeyTranslations,
                                     });
                                   }}
                                 >
@@ -706,6 +693,25 @@ export default class OptionsProgram extends React.Component<Props, State> {
             )}
           />
         )}
+
+        <KeyboardShortcuts
+          key="normal"
+          id="normal"
+          mac={mac}
+          name="Main keyboard shortcuts"
+          requireModifiers
+          shortcuts={options.normalKeyboardShortcuts}
+          defaultShortcuts={defaults.normalKeyboardShortcuts}
+        />
+
+        <KeyboardShortcuts
+          key="hints"
+          id="hints"
+          mac={mac}
+          name="Hints mode keyboard shortcuts"
+          shortcuts={options.hintsKeyboardShortcuts}
+          defaultShortcuts={defaults.hintsKeyboardShortcuts}
+        />
 
         <Field
           key="css"
@@ -874,10 +880,6 @@ function wrapMessage(message: FromOptions): ToBackground {
   };
 }
 
-function pruneChars(string: string): string {
-  return Array.from(new Set(Array.from(string.replace(/\s/g, "")))).join("");
-}
-
 function updateKeyTranslations(
   { code, key, shift }: {| code: string, key: string, shift: boolean |},
   keyTranslations: KeyTranslations
@@ -926,4 +928,36 @@ function sortKeyTranslations(
 
 function makeKeysRowId(code: string): string {
   return `KeysTable-row-${code}`;
+}
+
+function ActivateHighlightedKey({
+  mac,
+  mappings,
+  defaultMappings,
+}: {|
+  mac: boolean,
+  mappings: Array<KeyboardMapping>,
+  defaultMappings: Array<KeyboardMapping>,
+|}) {
+  const first = mappings.find(mapping => mapping.action === "ActivateHint");
+
+  if (first != null) {
+    return <KeyboardShortcut mac={mac} shortcut={first.shortcut} />;
+  }
+
+  const firstDefault = defaultMappings.find(
+    mapping => mapping.action === "ActivateHint"
+  );
+
+  const fallback =
+    firstDefault != null
+      ? firstDefault.shortcut
+      : { key: "error", alt: false, cmd: false, ctrl: false, shift: false };
+
+  return (
+    <span>
+      <KeyboardShortcut mac={mac} shortcut={fallback} /> (note: you’ve disabled
+      that shortcut)
+    </span>
+  );
 }
