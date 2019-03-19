@@ -700,8 +700,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
           mac={mac}
           name="Main keyboard shortcuts"
           requireModifiers
-          shortcuts={options.normalKeyboardShortcuts}
-          defaultShortcuts={defaults.normalKeyboardShortcuts}
+          mappings={options.normalKeyboardShortcuts}
+          defaultMappings={defaults.normalKeyboardShortcuts}
         />
 
         <KeyboardShortcuts
@@ -709,8 +709,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
           id="hints"
           mac={mac}
           name="Hints mode keyboard shortcuts"
-          shortcuts={options.hintsKeyboardShortcuts}
-          defaultShortcuts={defaults.hintsKeyboardShortcuts}
+          mappings={options.hintsKeyboardShortcuts}
+          defaultMappings={defaults.hintsKeyboardShortcuts}
         />
 
         <Field

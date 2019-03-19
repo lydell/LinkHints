@@ -2,21 +2,29 @@
 
 import * as React from "preact";
 
-import { type KeyboardAction, type KeyboardMapping } from "../shared/keyboard";
-import { unreachable } from "../shared/main";
+import {
+  type KeyboardAction,
+  type KeyboardMapping,
+  type Shortcut,
+  serializeShortcut,
+} from "../shared/keyboard";
+import { classlist, unreachable } from "../shared/main";
 import Field from "./Field";
 import KeyboardShortcut from "./KeyboardShortcut";
+import Modal from "./Modal";
 
 type Props = {|
   id: string,
   name: string,
   mac: boolean,
   requireModifiers: boolean,
-  shortcuts: Array<KeyboardMapping>,
-  defaultShortcuts: Array<KeyboardMapping>,
+  mappings: Array<KeyboardMapping>,
+  defaultMappings: Array<KeyboardMapping>,
 |};
 
-type State = {||};
+type State = {|
+  modalOpen: boolean,
+|};
 
 const defaultProps = {
   requireModifiers: false,
@@ -25,11 +33,13 @@ const defaultProps = {
 export default class KeyboardShortcuts extends React.Component<Props, State> {
   static defaultProps: typeof defaultProps;
 
-  // constructor(props: Props) {
-  //   super(props);
-  //
-  //   this.state = {};
-  // }
+  constructor(props: Props) {
+    super(props);
+
+    this.state = {
+      modalOpen: false,
+    };
+  }
 
   render() {
     const {
@@ -37,9 +47,10 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       name,
       mac,
       // requireModifiers,
-      // shortcuts,
-      defaultShortcuts,
+      mappings,
+      defaultMappings,
     } = this.props;
+    const { modalOpen } = this.state;
 
     return (
       <Field
@@ -49,15 +60,74 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
         description={null}
         changed={false}
         render={() => (
-          <div className="SpacedVertical">
-            {defaultShortcuts.map((mapping, index) => {
-              return (
-                <div key={index} className="Spaced">
-                  <KeyboardShortcut mac={mac} shortcut={mapping.shortcut} />{" "}
-                  {describeKeyboardAction(mapping.action).name}
-                </div>
-              );
-            })}
+          <div>
+            <table className="ShortcutsTable">
+              <tbody>
+                {defaultMappings.map((defaultMapping, index) => {
+                  const shortcuts = mappings
+                    .filter(mapping => mapping.action === defaultMapping.action)
+                    .map(mapping => ({
+                      key: serializeShortcut(mapping.shortcut),
+                      shortcut: mapping.shortcut,
+                    }))
+                    .sort((a, b) => compare(a.key, b.key));
+
+                  const changed = !(
+                    shortcuts.length === 1 &&
+                    shortcuts.every(({ shortcut }) =>
+                      equalShortcuts(shortcut, defaultMapping.shortcut)
+                    )
+                  );
+
+                  return (
+                    <tr key={index}>
+                      <th className={classlist({ "is-changed": changed })}>
+                        {describeKeyboardAction(defaultMapping.action).name}
+                      </th>
+                      <td>
+                        <div className="Spaced Spaced--center">
+                          <div className="ShortcutsGrid">
+                            {shortcuts.map(({ key, shortcut }) => (
+                              <div key={key}>
+                                <KeyboardShortcut
+                                  mac={mac}
+                                  shortcut={shortcut}
+                                />
+                                <button
+                                  type="button"
+                                  title="Remove this shortcut"
+                                  className="RemoveButton"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            title="Add shortcut"
+                            className="AddShortcutButton"
+                            onClick={() => {
+                              this.setState({ modalOpen: true });
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <Modal
+              isOpen={modalOpen}
+              onClose={() => {
+                this.setState({ modalOpen: false });
+              }}
+            />
           </div>
         )}
       />
@@ -132,7 +202,7 @@ function describeKeyboardAction(
 
     case "Escape":
       return {
-        name: "Exit hints mode, blur active element and clear selection",
+        name: "Exit hints mode, blur elements and clear selection",
       };
 
     case "ActivateHint":
@@ -163,4 +233,12 @@ function describeKeyboardAction(
     default:
       return unreachable(action);
   }
+}
+
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function equalShortcuts(a: Shortcut, b: Shortcut): boolean {
+  return serializeShortcut(a) === serializeShortcut(b);
 }

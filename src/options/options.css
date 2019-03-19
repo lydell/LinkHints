@@ -40,7 +40,7 @@ textarea {
   padding: 0.125em 0.375em;
   border: 1px solid var(--grey-luke);
   border-radius: 0;
-  background: none;
+  background: white;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
@@ -154,6 +154,11 @@ kbd {
 
 pre {
   white-space: pre-wrap;
+}
+
+table td.is-changed,
+table th.is-changed {
+  background-image: linear-gradient(to right, var(--blue) 3px, transparent 0);
 }
 
 .Field {
@@ -344,9 +349,8 @@ pre {
   padding: 0;
 }
 
-.KeysTable td.is-changed,
-.KeysTable th.is-changed {
-  background-image: linear-gradient(to right, var(--blue) 3px, transparent 0);
+.KeysTable td:last-child button {
+  width: 100%;
 }
 
 .KeysTable tbody tr:nth-child(even) td {
@@ -371,16 +375,68 @@ pre {
 }
 
 .RemoveButton {
+  --size: 20px;
   border: none;
+  background: none;
   padding: 0;
-  font-size: 20px;
+  min-width: var(--size);
+  font-size: var(--size);
   line-height: 1;
-  width: 100%;
 }
 
 .RemoveButton:hover,
 .RemoveButton:focus {
   color: var(--blue);
+}
+
+.AddShortcutButton {
+  align-self: flex-start;
+  margin-left: auto;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.ShortcutsTable {
+  table-layout: fixed;
+  border-spacing: 0;
+  border: 1px solid var(--grey-luke);
+  width: 100%;
+}
+
+.ShortcutsTable td,
+.ShortcutsTable th {
+  padding: 3px;
+  padding-left: 5px;
+  vertical-align: top;
+}
+
+.ShortcutsTable th {
+  padding-top: 6px;
+  padding-left: 9px;
+  width: calc(50%);
+  font-weight: normal;
+  text-align: left;
+}
+
+.ShortcutsTable tbody tr:nth-child(even) td,
+.ShortcutsTable tbody tr:nth-child(even) th {
+  background-color: var(--grey-leia);
+}
+
+.ShortcutsGrid {
+  --spacing-vertical: 3px;
+  --spacing-horizontal: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  margin: calc(-1 * var(--spacing-vertical))
+    calc(-1 * var(--spacing-horizontal));
+  width: 100%;
+}
+
+.ShortcutsGrid > * {
+  flex: 1 1 50%;
+  display: flex;
+  padding: var(--spacing-vertical) var(--spacing-horizontal);
 }
 
 .Preview {
@@ -389,6 +445,50 @@ pre {
   overflow: auto;
 }
 
+.KeyboardShortcut {
+  white-space: nowrap;
+}
+
 .KeyboardShortcut > * + * {
   margin-left: 1px;
+}
+
+.Modal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+
+.Modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.Modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  z-index: 9000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.Modal-content {
+  position: fixed;
+  z-index: 9001;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.Modal-contentInner {
+  background-color: white;
+  padding: 30px;
+  pointer-events: auto;
 }
