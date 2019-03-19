@@ -61,13 +61,12 @@ type State = {|
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets;
-  keysTableRef: ?HTMLDivElement;
+  keysTableRef: { current: HTMLDivElement | null } = React.createRef();
 
   constructor(props: Props) {
     super(props);
 
     this.resets = new Resets();
-    this.keysTableRef = undefined;
 
     this.state = {
       options: undefined,
@@ -608,8 +607,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
                               this.saveOptions({
                                 keyTranslations: defaults.keyTranslations,
                               });
-                              if (this.keysTableRef != null) {
-                                this.keysTableRef.scrollTop = 0;
+                              if (this.keysTableRef.current != null) {
+                                this.keysTableRef.current.scrollTop = 0;
                               }
                             }}
                           >
@@ -627,9 +626,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     className={classlist("KeysTable", "TextSmall", {
                       "is-disabled": keyTranslationsInput.testOnly,
                     })}
-                    ref={ref => {
-                      this.keysTableRef = ref;
-                    }}
+                    ref={this.keysTableRef}
                   >
                     <table>
                       <thead>
@@ -842,7 +839,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   scrollKeyIntoView(code: string) {
     const id = makeKeysRowId(code);
     const element = document.getElementById(id);
-    const keysTable = this.keysTableRef;
+    const keysTable = this.keysTableRef.current;
 
     if (keysTable == null || element == null) {
       return;

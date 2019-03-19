@@ -7,6 +7,7 @@ module.exports = {
   root: true,
   parser: "babel-eslint",
   plugins: [
+    "babel",
     "flowtype",
     // "flowtype-errors",
     "import",
@@ -22,6 +23,7 @@ module.exports = {
     {},
     baseRules({ flow: true, import: true, react: true }),
     {
+      "babel/no-invalid-this": "error",
       // "flowtype-errors/show-errors": "error",
       "import/no-restricted-paths": [
         "error",
@@ -38,9 +40,11 @@ module.exports = {
         },
       ],
       "no-console": "error",
+      "no-invalid-this": "off",
       "no-script-url": "off",
       // "prettier/prettier": "error",
       "require-await": "error",
+      "react/require-default-props": "off",
     }
   ),
   overrides: [

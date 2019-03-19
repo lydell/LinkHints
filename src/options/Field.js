@@ -6,29 +6,23 @@ import { classlist } from "../shared/main";
 
 type Props = {|
   id: string,
-  connected: boolean,
+  connected?: boolean,
   label: React.Node,
-  span: boolean,
+  span?: boolean,
   description: React.Node,
   changed: boolean,
-  changedRight: boolean,
+  changedRight?: boolean,
   render: ({| id: string |}) => React.Node,
 |};
 
-Field.defaultProps = {
-  connected: false,
-  span: false,
-  changedRight: false,
-};
-
 export default function Field({
   id,
-  connected,
+  connected = false,
   label,
-  span,
+  span = false,
   description,
   changed,
-  changedRight,
+  changedRight = false,
   render,
 }: Props) {
   return (

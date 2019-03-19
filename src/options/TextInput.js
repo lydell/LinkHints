@@ -17,38 +17,28 @@ type Props = {
   // ...restProps
 };
 
-const defaultProps = {
-  normalize: string => string,
-  save: undefined,
-  textarea: false,
-  className: "",
-};
-
 type State = {|
   value: string,
   focused: boolean,
 |};
 
 export default class TextInput extends React.Component<Props, State> {
-  static defaultProps: typeof defaultProps;
-  timeoutId: ?TimeoutID;
-  selectionStart: number;
-  selectionEnd: number;
-  ref: ?(HTMLInputElement | HTMLTextAreaElement);
+  static defaultProps = {
+    normalize: (string: string) => string,
+    save: undefined,
+    textarea: false,
+    className: "",
+  };
 
-  constructor(props: Props) {
-    super(props);
+  timeoutId: ?TimeoutID = undefined;
+  selectionStart: number = 0;
+  selectionEnd: number = 0;
+  ref: ?(HTMLInputElement | HTMLTextAreaElement) = undefined;
 
-    this.state = {
-      value: props.savedValue,
-      focused: false,
-    };
-
-    this.timeoutId = undefined;
-    this.selectionStart = 0;
-    this.selectionEnd = 0;
-    this.ref = undefined;
-  }
+  state = {
+    value: this.props.savedValue,
+    focused: false,
+  };
 
   componentDidMount() {
     // Move the default cursor position from the end of the textarea to the start.
@@ -173,5 +163,3 @@ export default class TextInput extends React.Component<Props, State> {
     );
   }
 }
-
-TextInput.defaultProps = defaultProps;

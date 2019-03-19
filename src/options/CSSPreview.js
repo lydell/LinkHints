@@ -57,19 +57,12 @@ type State = {|
 |};
 
 export default class CSSPreview extends React.Component<Props, State> {
-  containerRef: { current: HTMLDivElement | null };
-  filterByText: { current: HTMLDivElement | null };
+  containerRef: { current: HTMLDivElement | null } = React.createRef();
+  filterByText: { current: HTMLDivElement | null } = React.createRef();
 
-  constructor(props: Props) {
-    super(props);
-
-    this.containerRef = React.createRef();
-    this.filterByText = React.createRef();
-
-    this.state = {
-      textRects: [],
-    };
-  }
+  state = {
+    textRects: [],
+  };
 
   componentDidMount() {
     this.updateTextRects();
@@ -121,7 +114,7 @@ export default class CSSPreview extends React.Component<Props, State> {
       /* eslint-enable react/require-default-props */
     |}) => {
       hintZIndex--;
-          const hasMatchedChars = matchedChars !== "";
+      const hasMatchedChars = matchedChars !== "";
       return (
         <div
           key={hintZIndex}

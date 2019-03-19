@@ -26,20 +26,14 @@ type State = {|
   modalOpen: boolean,
 |};
 
-const defaultProps = {
-  requireModifiers: false,
-};
-
 export default class KeyboardShortcuts extends React.Component<Props, State> {
-  static defaultProps: typeof defaultProps;
+  static defaultProps = {
+    requireModifiers: false,
+  };
 
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      modalOpen: false,
-    };
-  }
+  state = {
+    modalOpen: false,
+  };
 
   render() {
     const {
@@ -134,8 +128,6 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
     );
   }
 }
-
-KeyboardShortcuts.defaultProps = defaultProps;
 
 type KeyboardActionDescription = {|
   name: string,

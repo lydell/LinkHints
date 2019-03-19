@@ -11,11 +11,6 @@ type Props = {
   // ...restProps
 };
 
-Attachment.defaultProps = {
-  label: undefined,
-  content: undefined,
-};
-
 export default function Attachment({
   label,
   content,
