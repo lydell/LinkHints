@@ -176,11 +176,7 @@ export function addListener<Listener, Options>(
 }
 
 export class Resets {
-  _callbacks: Array<() => any>;
-
-  constructor() {
-    this._callbacks = [];
-  }
+  _callbacks: Array<() => any> = [];
 
   add(...callbacks: Array<() => any>) {
     this._callbacks.push(...callbacks);

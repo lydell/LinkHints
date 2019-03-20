@@ -10,13 +10,8 @@ export type Perf = Array<{|
 |}>;
 
 export class TimeTracker {
-  _durations: Durations;
-  _current: ?{| label: string, timestamp: number |};
-
-  constructor() {
-    this._durations = [];
-    this._current = undefined;
-  }
+  _durations: Durations = [];
+  _current: ?{| label: string, timestamp: number |} = undefined;
 
   start(label: string) {
     this.stop();

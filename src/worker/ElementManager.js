@@ -821,13 +821,8 @@ export default class ElementManager {
 // (`<label>`–`<input>` pairs) or hints that are most likely false positives
 // (`<div>`s with click listeners wrapping a `<button>`).
 class Deduper {
-  positionMap: Map<string, Array<VisibleElement>>;
-  rejected: Set<HTMLElement>;
-
-  constructor() {
-    this.positionMap = new Map();
-    this.rejected = new Set();
-  }
+  positionMap: Map<string, Array<VisibleElement>> = new Map;
+  rejected: Set<HTMLElement> = new Set;
 
   add(visibleElement: VisibleElement) {
     const { element } = visibleElement;

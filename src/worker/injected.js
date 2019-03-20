@@ -93,13 +93,8 @@ export default () => {
   };
 
   class HookManager {
-    fnMap: Map<Function, Function>;
-    resetFns: Array<Function>;
-
-    constructor() {
-      this.fnMap = new Map();
-      this.resetFns = [];
-    }
+    fnMap: Map<Function, Function> = new Map();
+    resetFns: Array<Function> = [];
 
     reset() {
       // Reset all overridden methods.
@@ -249,17 +244,10 @@ export default () => {
   type Deadline = { timeRemaining: () => number };
 
   class ClickListenerTracker {
-    clickListenersByElement: ClickListenersByElement;
-    queue: Array<QueueItem>;
-    sendQueue: Array<SendQueueItem>;
-    idleCallbackId: ?IdleCallbackID;
-
-    constructor() {
-      this.clickListenersByElement = new Map();
-      this.queue = [];
-      this.sendQueue = [];
-      this.idleCallbackId = undefined;
-    }
+    clickListenersByElement: ClickListenersByElement = new Map();
+    queue: Array<QueueItem> = [];
+    sendQueue: Array<SendQueueItem> = [];
+    idleCallbackId: ?IdleCallbackID = undefined;
 
     reset() {
       if (this.idleCallbackId != null) {
@@ -482,13 +470,8 @@ export default () => {
   }
 
   class AddedRemoved<T> {
-    added: Set<T>;
-    removed: Set<T>;
-
-    constructor() {
-      this.added = new Set();
-      this.removed = new Set();
-    }
+    added: Set<T> = new Set();
+    removed: Set<T> = new Set();
 
     add(item: T) {
       if (this.removed.has(item)) {
