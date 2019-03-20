@@ -51,28 +51,20 @@ type CurrentElements = {|
 const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
 
 export default class WorkerProgram {
-  keyboardShortcuts: Array<KeyboardMapping>;
-  keyboardMode: KeyboardMode;
-  keyTranslations: KeyTranslations;
-  elementManager: ElementManager;
-  current: ?CurrentElements;
-  oneTimeWindowMessageToken: ?string;
-  suppressNextKeyup: ?{| key: string, code: string |};
-  resets: Resets;
+  keyboardShortcuts: Array<KeyboardMapping> = [];
+  keyboardMode: KeyboardMode = "Normal";
+  keyTranslations: KeyTranslations = {};
+  current: ?CurrentElements = undefined;
+  oneTimeWindowMessageToken: ?string = undefined;
+  suppressNextKeyup: ?{| key: string, code: string |} = undefined;
+  resets: Resets = new Resets();
+
+  elementManager: ElementManager = new ElementManager({
+    maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
+    onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
+  });
 
   constructor() {
-    this.keyboardShortcuts = [];
-    this.keyboardMode = "Normal";
-    this.keyTranslations = {};
-    this.elementManager = new ElementManager({
-      maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
-      onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
-    });
-    this.current = undefined;
-    this.oneTimeWindowMessageToken = undefined;
-    this.suppressNextKeyup = undefined;
-    this.resets = new Resets();
-
     bind(this, [
       [this.onBlur, { catch: true }],
       [this.onKeydown, { catch: true }],

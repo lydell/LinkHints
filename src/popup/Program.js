@@ -11,11 +11,9 @@ import type { Durations, Perf } from "../shared/perf";
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
-  resets: Resets;
+  resets: Resets = new Resets();
 
   constructor() {
-    this.resets = new Resets();
-
     bind(this, [
       [this.onMessage, { catch: true }],
       [this.sendMessage, { catch: true }],

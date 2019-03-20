@@ -190,22 +190,31 @@ const infiniteDeadline = {
 export default class ElementManager {
   maxIntersectionObservedElements: number;
   onTrackedElementsMutation: () => void;
-  queue: Array<QueueItem>;
-  injectedHasQueue: boolean;
-  elements: Map<HTMLElement, ElementType>;
-  visibleElements: Set<HTMLElement>;
-  visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement>;
-  elementsWithClickListeners: WeakSet<HTMLElement>;
-  elementsWithScrollbars: WeakSet<HTMLElement>;
-  intersectionObserver: IntersectionObserver;
-  frameIntersectionObserver: IntersectionObserver;
-  mutationObserver: MutationObserver;
-  idleCallbackId: ?IdleCallbackID;
-  bailed: boolean;
-  resets: Resets;
   probe: HTMLElement;
-  observerProbeCallback: ?() => void;
-  flushObserversPromise: ?Promise<void>;
+  queue: Array<QueueItem> = [];
+  injectedHasQueue: boolean = false;
+  elements: Map<HTMLElement, ElementType> = new Map();
+  visibleElements: Set<HTMLElement> = new Set();
+  visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement> = new Set();
+  elementsWithClickListeners: WeakSet<HTMLElement> = new WeakSet();
+  elementsWithScrollbars: WeakSet<HTMLElement> = new WeakSet();
+  idleCallbackId: ?IdleCallbackID = undefined;
+  bailed: boolean = false;
+  resets: Resets = new Resets();
+  observerProbeCallback: ?() => void = undefined;
+  flushObserversPromise: ?Promise<void> = undefined;
+
+  intersectionObserver: IntersectionObserver = new IntersectionObserver(
+    this.onIntersection.bind(this)
+  );
+
+  frameIntersectionObserver: IntersectionObserver = new IntersectionObserver(
+    this.onFrameIntersection.bind(this)
+  );
+
+  mutationObserver: MutationObserver = new MutationObserver(
+    this.onMutation.bind(this)
+  );
 
   constructor({
     maxIntersectionObservedElements,
@@ -217,33 +226,9 @@ export default class ElementManager {
     this.maxIntersectionObservedElements = maxIntersectionObservedElements;
     this.onTrackedElementsMutation = onTrackedElementsMutation;
 
-    this.queue = [];
-    this.injectedHasQueue = false;
-    this.elements = new Map();
-    this.visibleElements = new Set();
-    this.visibleFrames = new Set();
-    this.elementsWithClickListeners = new WeakSet();
-    this.elementsWithScrollbars = new WeakSet();
-
-    this.intersectionObserver = new IntersectionObserver(
-      this.onIntersection.bind(this)
-    );
-
-    this.frameIntersectionObserver = new IntersectionObserver(
-      this.onFrameIntersection.bind(this)
-    );
-
-    this.mutationObserver = new MutationObserver(this.onMutation.bind(this));
-
-    this.idleCallbackId = undefined;
-    this.bailed = false;
-    this.resets = new Resets();
-
     const probe = document.createElement("div");
     setStyles(probe, PROBE_STYLES);
     this.probe = probe;
-    this.observerProbeCallback = undefined;
-    this.flushObserversPromise = undefined;
 
     bind(this, [
       this.onClickableElement,
@@ -821,8 +806,8 @@ export default class ElementManager {
 // (`<label>`–`<input>` pairs) or hints that are most likely false positives
 // (`<div>`s with click listeners wrapping a `<button>`).
 class Deduper {
-  positionMap: Map<string, Array<VisibleElement>> = new Map;
-  rejected: Set<HTMLElement> = new Set;
+  positionMap: Map<string, Array<VisibleElement>> = new Map();
+  rejected: Set<HTMLElement> = new Set();
 
   add(visibleElement: VisibleElement) {
     const { element } = visibleElement;

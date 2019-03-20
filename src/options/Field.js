@@ -45,9 +45,7 @@ export default function Field({
         {render({ id })}
       </div>
 
-      {description != null && (
-        <div className="TextSmall">{description}</div>
-      )}
+      {description != null && <div className="TextSmall">{description}</div>}
     </div>
   );
 }

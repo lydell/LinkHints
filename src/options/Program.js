@@ -60,26 +60,24 @@ type State = {|
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
-  resets: Resets;
+  resets: Resets = new Resets();
   keysTableRef: { current: HTMLDivElement | null } = React.createRef();
+
+  state = {
+    options: undefined,
+    hasSaved: false,
+    customChars: "",
+    keyTranslationsInput: {
+      text: "",
+      testOnly: false,
+      lastKeypress: undefined,
+    },
+    peek: false,
+    cssSuggestion: CSS_SUGGESTIONS[0].value,
+  };
 
   constructor(props: Props) {
     super(props);
-
-    this.resets = new Resets();
-
-    this.state = {
-      options: undefined,
-      hasSaved: false,
-      customChars: "",
-      keyTranslationsInput: {
-        text: "",
-        testOnly: false,
-        lastKeypress: undefined,
-      },
-      peek: false,
-      cssSuggestion: CSS_SUGGESTIONS[0].value,
-    };
 
     bind(this, [
       [this.onMessage, { catch: true }],

@@ -52,12 +52,12 @@ type HintSize = {|
 const MAX_IMMEDIATE_HINT_MOVEMENTS = 50;
 
 export default class RendererProgram {
-  css: string;
-  parsedCSS: ?Array<Rule>;
-  hints: Array<HTMLElement>;
-  rects: Map<HTMLElement, ClientRect>;
-  enteredText: string;
-  resets: Resets;
+  css: string = CSS;
+  parsedCSS: ?Array<Rule> = undefined;
+  hints: Array<HTMLElement> = [];
+  rects: Map<HTMLElement, ClientRect> = new Map();
+  enteredText: string = "";
+  resets: Resets = new Resets();
   shruggieElement: HTMLElement;
   statusElement: HTMLElement;
   statusText: Text;
@@ -71,13 +71,6 @@ export default class RendererProgram {
   |};
 
   constructor() {
-    this.css = CSS;
-    this.parsedCSS = undefined;
-    this.hints = [];
-    this.rects = new Map();
-    this.enteredText = "";
-    this.resets = new Resets();
-
     bind(this, [
       [this.onMessage, { catch: true }],
       [this.sendMessage, { catch: true }],

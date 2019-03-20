@@ -149,9 +149,9 @@ const MATCH_HIGHLIGHT_DURATION = 200; // ms
 
 export default class BackgroundProgram {
   options: OptionsData;
-  tabState: Map<number, TabState>;
-  oneTimeWindowMessageToken: string;
-  resets: Resets;
+  tabState: Map<number, TabState> = new Map();
+  oneTimeWindowMessageToken: string = makeRandomToken();
+  resets: Resets = new Resets();
 
   constructor() {
     const mac = false;
@@ -162,9 +162,6 @@ export default class BackgroundProgram {
       errors: [],
       mac,
     };
-    this.tabState = new Map();
-    this.oneTimeWindowMessageToken = makeRandomToken();
-    this.resets = new Resets();
 
     bind(this, [
       [this.onKeyboardShortcut, { catch: true }],
