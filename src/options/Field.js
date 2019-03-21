@@ -7,6 +7,7 @@ import { classlist } from "../shared/main";
 type Props = {|
   id: string,
   connected?: boolean,
+  fullWidth?: boolean,
   label: React.Node,
   span?: boolean,
   description: React.Node,
@@ -18,6 +19,7 @@ type Props = {|
 export default function Field({
   id,
   connected = false,
+  fullWidth = false,
   label,
   span = false,
   description,
@@ -29,6 +31,7 @@ export default function Field({
     <div
       className={classlist("Field", "SpacedVertical", {
         "is-connected": connected,
+        "is-fullWidth": fullWidth,
         "is-changed": changed,
         "is-changedRight": changedRight,
       })}

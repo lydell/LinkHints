@@ -697,6 +697,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
           requireModifiers
           mappings={options.normalKeyboardShortcuts}
           defaultMappings={defaults.normalKeyboardShortcuts}
+          onChange={newMappings => {
+            this.saveOptions({
+              normalKeyboardShortcuts: newMappings,
+            });
+          }}
         />
 
         <KeyboardShortcuts
@@ -706,6 +711,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
           name="Hints mode keyboard shortcuts"
           mappings={options.hintsKeyboardShortcuts}
           defaultMappings={defaults.hintsKeyboardShortcuts}
+          onChange={newMappings => {
+            this.saveOptions({
+              hintsKeyboardShortcuts: newMappings,
+            });
+          }}
         />
 
         <Field

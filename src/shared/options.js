@@ -1,10 +1,11 @@
 // @flow strict-local
 
 import {
-  array,
   boolean,
   dict,
+  field,
   map,
+  mixedArray,
   mixedDict,
   number,
   repr,
@@ -44,22 +45,64 @@ export type Options = {|
 
 export type PartialOptions = $Shape<Options>;
 
-export const makeOptionsDecoder: (
+export function makeOptionsDecoder(
   defaults: Options
-) => mixed => [
-  Options,
-  Array<[string, Error]>,
-] = recordWithDefaultsAndErrors.bind(undefined, {
-  chars: map(string, validateChars),
-  autoActivate: boolean,
-  overTypingDuration: map(number, nonNegativeInteger),
-  css: string,
-  logLevel: map(string, decodeLogLevel),
-  useKeyTranslations: boolean,
-  keyTranslations: dict(decodeKeyPair),
-  normalKeyboardShortcuts: array(decodeKeyboardMappingWithModifiers),
-  hintsKeyboardShortcuts: array(decodeKeyboardMapping),
-});
+): mixed => [Options, Array<[string, Error]>] {
+  return map(
+    recordWithDefaultsAndErrors(defaults, {
+      chars: map(string, validateChars),
+      autoActivate: boolean,
+      overTypingDuration: map(number, nonNegativeInteger),
+      css: string,
+      logLevel: map(string, decodeLogLevel),
+      useKeyTranslations: boolean,
+      keyTranslations: dict(decodeKeyPair),
+      normalKeyboardShortcuts: arrayWithErrors(
+        decodeKeyboardMappingWithModifiers
+      ),
+      hintsKeyboardShortcuts: arrayWithErrors(decodeKeyboardMapping),
+    }),
+    ([
+      { normalKeyboardShortcuts, hintsKeyboardShortcuts, ...options },
+      errors,
+    ]) => {
+      const [normal, normalErrors] = separateMappingsAndErrors(
+        "normalKeyboardShortcuts",
+        normalKeyboardShortcuts
+      );
+      const [hints, hintsErrors] = separateMappingsAndErrors(
+        "hintsKeyboardShortcuts",
+        hintsKeyboardShortcuts
+      );
+      return [
+        {
+          ...options,
+          normalKeyboardShortcuts: normal,
+          hintsKeyboardShortcuts: hints,
+        },
+        errors.concat(normalErrors, hintsErrors),
+      ];
+    }
+  );
+}
+
+function separateMappingsAndErrors(
+  name: string,
+  mappingsWithErrors: Array<KeyboardMapping | TypeError>
+): [Array<KeyboardMapping>, Array<[string, Error]>] {
+  const mappings: Array<KeyboardMapping> = [];
+  const errors: Array<[string, Error]> = [];
+
+  for (const [index, item] of mappingsWithErrors.entries()) {
+    if (item instanceof TypeError) {
+      errors.push([`${name}[${index}]`, item]);
+    } else {
+      mappings.push(item);
+    }
+  }
+
+  return [mappings, errors];
+}
 
 const MIN_CHARS = 2;
 
@@ -319,9 +362,9 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
 
 type ExtractDecoderType = <T, U>((mixed) => T | U) => T | U;
 
-export function recordWithDefaultsAndErrors<T: {}>(
-  mapping: T,
-  defaults: $ObjMap<T, ExtractDecoderType>
+function recordWithDefaultsAndErrors<T: {}>(
+  defaults: $ObjMap<T, ExtractDecoderType>,
+  mapping: T
 ): mixed => [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
   return function recordWithDefaultsAndErrorsDecoder(
     value: mixed
@@ -341,6 +384,23 @@ export function recordWithDefaultsAndErrors<T: {}>(
       }
     }
     return [result, errors];
+  };
+}
+
+function arrayWithErrors<T>(
+  decoder: mixed => T
+): mixed => Array<T | TypeError> {
+  return function arrayWithErrorsDecoder(value: mixed): Array<T | TypeError> {
+    const arr = mixedArray(value);
+    const result = [];
+    for (let index = 0; index < arr.length; index++) {
+      try {
+        result.push(field(index, decoder)(arr));
+      } catch (error) {
+        result.push(error);
+      }
+    }
+    return result;
   };
 }
 

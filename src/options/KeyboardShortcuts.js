@@ -20,6 +20,7 @@ type Props = {|
   requireModifiers: boolean,
   mappings: Array<KeyboardMapping>,
   defaultMappings: Array<KeyboardMapping>,
+  onChange: (Array<KeyboardMapping>) => void,
 |};
 
 type State = {|
@@ -43,12 +44,14 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       // requireModifiers,
       mappings,
       defaultMappings,
+      onChange,
     } = this.props;
     const { modalOpen } = this.state;
 
     return (
       <Field
         id={id}
+        fullWidth
         label={name}
         span
         description={null}
@@ -91,6 +94,17 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                   type="button"
                                   title="Remove this shortcut"
                                   className="RemoveButton"
+                                  onClick={() => {
+                                    onChange(
+                                      mappings.filter(
+                                        mapping =>
+                                          !equalShortcuts(
+                                            shortcut,
+                                            mapping.shortcut
+                                          )
+                                      )
+                                    );
+                                  }}
                                 >
                                   ×
                                 </button>

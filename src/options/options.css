@@ -3,6 +3,9 @@
   --grey-luke: #ccc;
   --blue: #2b4eed;
   --tiny-space: 4px;
+
+  --Field_padding-horizontal: 22px;
+  --Field_changed-width: 4px;
 }
 
 *,
@@ -156,16 +159,12 @@ pre {
   white-space: pre-wrap;
 }
 
-table td.is-changed,
-table th.is-changed {
-  background-image: linear-gradient(to right, var(--blue) 3px, transparent 0);
-}
-
 .Field {
   --border-width: 1px;
+  --padding-horizontal: var(--Field_padding-horizontal);
   --padding-vertical: 18px;
   border-top: var(--border-width) solid var(--grey-luke);
-  padding: var(--padding-vertical) 22px;
+  padding: var(--padding-vertical) var(--padding-horizontal);
   position: relative;
 }
 
@@ -180,7 +179,7 @@ table th.is-changed {
   top: calc(-1 * var(--border-width));
   bottom: calc(-1 * var(--border-width));
   left: 0;
-  width: 4px;
+  width: var(--Field_changed-width);
   background-color: var(--blue);
   opacity: 0;
   transition: opacity 200ms;
@@ -234,10 +233,20 @@ table th.is-changed {
   top: 0;
 }
 
+.Field.is-fullWidth {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .Field-label {
   display: block;
   padding-bottom: var(--tiny-space);
   font-weight: bold;
+}
+
+.Field.is-fullWidth .Field-label {
+  padding-left: var(--Field_padding-horizontal);
+  padding-right: var(--Field_padding-horizontal);
 }
 
 .TextSmall {
@@ -374,6 +383,10 @@ table th.is-changed {
   }
 }
 
+.KeysTable td.is-changed {
+  background-image: linear-gradient(to right, var(--blue) 3px, transparent 0);
+}
+
 .RemoveButton {
   --size: 20px;
   border: none;
@@ -399,7 +412,6 @@ table th.is-changed {
 .ShortcutsTable {
   table-layout: fixed;
   border-spacing: 0;
-  border: 1px solid var(--grey-luke);
   width: 100%;
 }
 
@@ -412,14 +424,26 @@ table th.is-changed {
 
 .ShortcutsTable th {
   padding-top: 6px;
-  padding-left: 9px;
+  padding-left: calc(
+    var(--Field_padding-horizontal) - var(--Field_changed-width)
+  );
+  border-left: var(--Field_changed-width) solid transparent;
   width: calc(50%);
   font-weight: normal;
   text-align: left;
+  transition: border-color 200ms;
 }
 
-.ShortcutsTable tbody tr:nth-child(even) td,
-.ShortcutsTable tbody tr:nth-child(even) th {
+.ShortcutsTable th.is-changed {
+  border-left-color: var(--blue);
+}
+
+.ShortcutsTable td {
+  padding-right: var(--Field_padding-horizontal);
+}
+
+.ShortcutsTable tbody tr:nth-child(odd) td,
+.ShortcutsTable tbody tr:nth-child(odd) th {
   background-color: var(--grey-leia);
 }
 

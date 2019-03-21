@@ -94,6 +94,14 @@ const decodeShortcut: mixed => Shortcut = record({
   shift: boolean,
 });
 
+const EMPTY_SHORTCUT: Shortcut = {
+  key: "",
+  alt: false,
+  cmd: false,
+  ctrl: false,
+  shift: false,
+};
+
 function requireModifier(shortcut: Shortcut): Shortcut {
   const { key, alt, cmd, ctrl, shift } = shortcut;
   if (!(alt || cmd || ctrl || (shift && key.length > 1))) {
@@ -126,18 +134,21 @@ export function deserializeShortcut(
 ): { [string]: mixed } {
   const parts = shortcutString.split(SHORTCUT_SEPARATOR);
   const lastIndex = parts.length - 1;
-  return parts.reduce((result, part, index) => {
-    if (index === lastIndex) {
-      // If the last part is empty, we’re deserializing a shortcut like `alt--`.
-      result.key = part === "" ? SHORTCUT_SEPARATOR : part;
-    }
-    // Ignore empty parts, such as in `alt--x`.
-    else if (part !== "") {
-      // Modifiers.
-      result[part] = true;
-    }
-    return result;
-  }, {});
+  return parts.reduce(
+    (result, part, index) => {
+      if (index === lastIndex) {
+        // If the last part is empty, we’re deserializing a shortcut like `alt--`.
+        result.key = part === "" ? SHORTCUT_SEPARATOR : part;
+      }
+      // Ignore empty parts, such as in `alt--x`.
+      else if (part !== "") {
+        // Modifiers.
+        result[part] = true;
+      }
+      return result;
+    },
+    { ...EMPTY_SHORTCUT }
+  );
 }
 
 export type KeyboardMapping = {|
