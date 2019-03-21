@@ -1711,18 +1711,25 @@ export default class BackgroundProgram {
       const unflattened = unflattenOptions(rawOptions);
       const merged = { ...unflattened, ...partialOptions };
       const flattened = flattenOptions(merged);
+
+      // Remove previously added `keyTranslations` and keyboard mappings.
       const keysToRemove = Object.keys(rawOptions).filter(
         key => !{}.hasOwnProperty.call(flattened, key)
       );
+
+      const optionsToSet = flattenOptions(partialOptions);
+
       log("log", "BackgroundProgram#saveOptions", {
         partialOptions,
         unflattened,
         merged,
         flattened,
+        optionsToSet,
         keysToRemove,
       });
+
       await browser.storage.sync.remove(keysToRemove);
-      await browser.storage.sync.set(flattened);
+      await browser.storage.sync.set(optionsToSet);
       await this.updateOptions();
     } catch (error) {
       this.options.errors = [error.message];
