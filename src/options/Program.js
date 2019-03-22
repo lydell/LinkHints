@@ -17,6 +17,7 @@ import {
   addListener,
   bind,
   classlist,
+  deepEqual,
   log,
   unreachable,
 } from "../shared/main";
@@ -194,13 +195,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const isLowerCase = options.chars === options.chars.toLowerCase();
 
-    const keyTranslationsChanged =
-      // Both Chrome and Firefox return the keys in alphabetical order
-      // when reading from storage, and the defaults are written in
-      // aplphabetical order, so a simple `JSON.stringify` should be
-      // enough to compare.
-      JSON.stringify(options.keyTranslations) !==
-      JSON.stringify(defaults.keyTranslations);
+    const keyTranslationsChanged = !deepEqual(
+      options.keyTranslations,
+      defaults.keyTranslations
+    );
 
     const { lastKeypress } = keyTranslationsInput;
 
@@ -636,50 +634,55 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.keys(options.keyTranslations).map(code => {
-                          const [unshifted, shifted] = options.keyTranslations[
-                            code
-                          ];
-                          const {
-                            [code]: [defaultUnshifted, defaultShifted] = [
-                              undefined,
-                              undefined,
-                            ],
-                          } = defaults.keyTranslations;
-                          const changed =
-                            unshifted !== defaultUnshifted ||
-                            shifted !== defaultShifted;
-                          return (
-                            <tr key={code} id={makeKeysRowId(code)}>
-                              <td
-                                className={classlist({ "is-changed": changed })}
-                              >
-                                {code}
-                              </td>
-                              <td>{unshifted}</td>
-                              <td>{shifted}</td>
-                              <td>
-                                <button
-                                  type="button"
-                                  title="Remove this key translation"
-                                  className="RemoveButton"
-                                  disabled={keyTranslationsInput.testOnly}
-                                  onClick={() => {
-                                    const {
-                                      [code]: removed,
-                                      ...newKeyTranslations
-                                    } = options.keyTranslations;
-                                    this.saveOptions({
-                                      keyTranslations: newKeyTranslations,
-                                    });
-                                  }}
+                        {Object.keys(options.keyTranslations)
+                          .sort()
+                          .map(code => {
+                            const [
+                              unshifted,
+                              shifted,
+                            ] = options.keyTranslations[code];
+                            const {
+                              [code]: [defaultUnshifted, defaultShifted] = [
+                                undefined,
+                                undefined,
+                              ],
+                            } = defaults.keyTranslations;
+                            const changed =
+                              unshifted !== defaultUnshifted ||
+                              shifted !== defaultShifted;
+                            return (
+                              <tr key={code} id={makeKeysRowId(code)}>
+                                <td
+                                  className={classlist({
+                                    "is-changed": changed,
+                                  })}
                                 >
-                                  ×
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                  {code}
+                                </td>
+                                <td>{unshifted}</td>
+                                <td>{shifted}</td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    title="Remove this key translation"
+                                    className="RemoveButton"
+                                    disabled={keyTranslationsInput.testOnly}
+                                    onClick={() => {
+                                      const {
+                                        [code]: removed,
+                                        ...newKeyTranslations
+                                      } = options.keyTranslations;
+                                      this.saveOptions({
+                                        keyTranslations: newKeyTranslations,
+                                      });
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
                   </div>
@@ -894,10 +897,8 @@ function updateKeyTranslations(
     : undefined;
 
   const newPair = updatePair({ key, shift }, previousPair);
-  const changed = previousPair == null || !pairsEqual(newPair, previousPair);
-  return changed
-    ? sortKeyTranslations({ ...keyTranslations, [code]: newPair })
-    : undefined;
+  const changed = previousPair == null || !deepEqual(newPair, previousPair);
+  return changed ? { ...keyTranslations, [code]: newPair } : undefined;
 }
 
 function updatePair(
@@ -912,23 +913,6 @@ function updatePair(
     return shift ? [unshifted, key] : [key, shifted];
   }
   return [key, key];
-}
-
-function pairsEqual(
-  [a1, b1]: [string, string],
-  [a2, b2]: [string, string]
-): boolean {
-  return a1 === a2 && b1 === b2;
-}
-
-function sortKeyTranslations(
-  keyTranslations: KeyTranslations
-): KeyTranslations {
-  const keys = Object.keys(keyTranslations).sort();
-  return keys.reduce((result, key) => {
-    result[key] = keyTranslations[key];
-    return result;
-  }, {});
 }
 
 function makeKeysRowId(code: string): string {

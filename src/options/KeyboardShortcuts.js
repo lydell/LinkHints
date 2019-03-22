@@ -5,10 +5,9 @@ import * as React from "preact";
 import {
   type KeyboardAction,
   type KeyboardMapping,
-  type Shortcut,
   serializeShortcut,
 } from "../shared/keyboard";
-import { classlist, unreachable } from "../shared/main";
+import { classlist, deepEqual,unreachable } from "../shared/main";
 import Field from "./Field";
 import KeyboardShortcut from "./KeyboardShortcut";
 import Modal from "./Modal";
@@ -72,7 +71,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                   const changed = !(
                     shortcuts.length === 1 &&
                     shortcuts.every(({ shortcut }) =>
-                      equalShortcuts(shortcut, defaultMapping.shortcut)
+                      deepEqual(shortcut, defaultMapping.shortcut)
                     )
                   );
 
@@ -98,10 +97,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                     onChange(
                                       mappings.filter(
                                         mapping =>
-                                          !equalShortcuts(
-                                            shortcut,
-                                            mapping.shortcut
-                                          )
+                                          !deepEqual(shortcut, mapping.shortcut)
                                       )
                                     );
                                   }}
@@ -243,8 +239,4 @@ function describeKeyboardAction(
 
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
-}
-
-function equalShortcuts(a: Shortcut, b: Shortcut): boolean {
-  return serializeShortcut(a) === serializeShortcut(b);
 }

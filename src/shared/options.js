@@ -2,7 +2,6 @@
 
 import {
   boolean,
-  dict,
   field,
   map,
   mixedArray,
@@ -13,6 +12,7 @@ import {
 } from "tiny-decoders";
 
 import {
+  type KeyPair,
   type KeyTranslations,
   type KeyboardMapping,
   EN_US_QWERTY_TRANSLATIONS,
@@ -22,7 +22,12 @@ import {
   deserializeShortcut,
   serializeShortcut,
 } from "./keyboard";
-import { type LogLevel, DEFAULT_LOG_LEVEL, decodeLogLevel } from "./main";
+import {
+  type LogLevel,
+  DEFAULT_LOG_LEVEL,
+  decodeLogLevel,
+  deepEqual,
+} from "./main";
 
 export type OptionsData = {|
   values: Options,
@@ -45,6 +50,8 @@ export type Options = {|
 
 export type PartialOptions = $Shape<Options>;
 
+export type FlatOptions = { [string]: mixed };
+
 export function makeOptionsDecoder(
   defaults: Options
 ): mixed => [Options, Array<[string, Error]>] {
@@ -56,16 +63,25 @@ export function makeOptionsDecoder(
       css: string,
       logLevel: map(string, decodeLogLevel),
       useKeyTranslations: boolean,
-      keyTranslations: dict(decodeKeyPair),
+      keyTranslations: dictWithErrors(decodeKeyPair),
       normalKeyboardShortcuts: arrayWithErrors(
         decodeKeyboardMappingWithModifiers
       ),
       hintsKeyboardShortcuts: arrayWithErrors(decodeKeyboardMapping),
     }),
     ([
-      { normalKeyboardShortcuts, hintsKeyboardShortcuts, ...options },
+      {
+        keyTranslations,
+        normalKeyboardShortcuts,
+        hintsKeyboardShortcuts,
+        ...options
+      },
       errors,
     ]) => {
+      const [keys, keysErrors] = separateKeyTranslationsAndErrors(
+        "keyTranslations",
+        keyTranslations
+      );
       const [normal, normalErrors] = separateMappingsAndErrors(
         "normalKeyboardShortcuts",
         normalKeyboardShortcuts
@@ -77,13 +93,33 @@ export function makeOptionsDecoder(
       return [
         {
           ...options,
+          keyTranslations: keys,
           normalKeyboardShortcuts: normal,
           hintsKeyboardShortcuts: hints,
         },
-        errors.concat(normalErrors, hintsErrors),
+        errors.concat(keysErrors, normalErrors, hintsErrors),
       ];
     }
   );
+}
+
+function separateKeyTranslationsAndErrors(
+  name: string,
+  keyTranslationsWithErrors: { [string]: KeyPair | TypeError }
+): [{ [string]: KeyPair }, Array<[string, Error]>] {
+  const keyTranslations: { [string]: KeyPair } = {};
+  const errors: Array<[string, Error]> = [];
+
+  for (const key of Object.keys(keyTranslationsWithErrors)) {
+    const item = keyTranslationsWithErrors[key];
+    if (item instanceof TypeError) {
+      errors.push([`${name}[${repr(key)}]`, item]);
+    } else {
+      keyTranslations[key] = item;
+    }
+  }
+
+  return [keyTranslations, errors];
 }
 
 function separateMappingsAndErrors(
@@ -387,6 +423,7 @@ function recordWithDefaultsAndErrors<T: {}>(
   };
 }
 
+// This also ignores `null` values.
 function arrayWithErrors<T>(
   decoder: mixed => T
 ): mixed => Array<T | TypeError> {
@@ -394,17 +431,43 @@ function arrayWithErrors<T>(
     const arr = mixedArray(value);
     const result = [];
     for (let index = 0; index < arr.length; index++) {
-      try {
-        result.push(field(index, decoder)(arr));
-      } catch (error) {
-        result.push(error);
+      if (arr[index] !== null) {
+        try {
+          result.push(field(index, decoder)(arr));
+        } catch (error) {
+          result.push(error);
+        }
       }
     }
     return result;
   };
 }
 
-export function flattenOptions(options: PartialOptions): { [string]: mixed } {
+// This also ignores `null` values.
+export function dictWithErrors<T>(
+  decoder: mixed => T
+): mixed => { [string]: T | TypeError } {
+  return function dictWithErrorsDecoder(
+    value: mixed
+  ): { [string]: T | TypeError } {
+    const obj = mixedDict(value);
+    const keys = Object.keys(obj);
+    const result = {};
+    for (let index = 0; index < keys.length; index++) {
+      const key = keys[index];
+      if (obj[key] !== null) {
+        try {
+          result[key] = field(key, decoder)(obj);
+        } catch (error) {
+          result[key] = error;
+        }
+      }
+    }
+    return result;
+  };
+}
+
+export function flattenOptions(options: Options): FlatOptions {
   const {
     keyTranslations,
     normalKeyboardShortcuts,
@@ -414,83 +477,63 @@ export function flattenOptions(options: PartialOptions): { [string]: mixed } {
 
   return {
     ...rest,
-    ...(keyTranslations != null
-      ? flattenKeyTranslations(keyTranslations, "keys")
-      : {}),
-    ...(normalKeyboardShortcuts != null
-      ? flattenKeyboardMappings(normalKeyboardShortcuts, "normal")
-      : {}),
-    ...(hintsKeyboardShortcuts != null
-      ? flattenKeyboardMappings(hintsKeyboardShortcuts, "hints")
-      : {}),
+    ...flattenKeyTranslations(keyTranslations, "keys"),
+    ...flattenKeyboardMappings(normalKeyboardShortcuts, "normal"),
+    ...flattenKeyboardMappings(hintsKeyboardShortcuts, "hints"),
   };
 }
 
 function flattenKeyTranslations(
   keyTranslations: KeyTranslations,
   prefix: string
-): { [string]: mixed } {
-  const keys = Object.keys(keyTranslations);
-  // Distinguish between no translations set, and all of them removed.
-  return keys.length > 0
-    ? keys.reduce((result, code) => {
-        result[`${prefix}.${code}`] = keyTranslations[code];
-        return result;
-      }, {})
-    : { [prefix]: null };
+): FlatOptions {
+  return Object.keys(keyTranslations).reduce((result, code) => {
+    result[`${prefix}.${code}`] = keyTranslations[code];
+    return result;
+  }, {});
 }
 
 function flattenKeyboardMappings(
   mappings: Array<KeyboardMapping>,
   prefix: string
-): { [string]: mixed } {
-  // Distinguish between no mappings set, and all of them removed.
-  return mappings.length > 0
-    ? mappings.reduce((result, mapping) => {
-        result[`${prefix}.${serializeShortcut(mapping.shortcut)}`] =
-          mapping.action;
-        return result;
-      }, {})
-    : { [prefix]: null };
+): FlatOptions {
+  return mappings.reduce((result, mapping) => {
+    result[`${prefix}.${serializeShortcut(mapping.shortcut)}`] = mapping.action;
+    return result;
+  }, {});
 }
 
 const PREFIX_REGEX = /([^.]+)\.([^]*)/;
 
 // This takes a flat object and turns it into an object that can be fed to
 // `makeOptionsDecoder`.
-export function unflattenOptions(object: {
-  [string]: mixed,
-}): { [string]: mixed } {
+export function unflattenOptions(object: FlatOptions): FlatOptions {
   const options = {};
 
   function set(parent: string, key: string, value: mixed) {
     if (!(typeof options[parent] === "object" && options[parent] != null)) {
       options[parent] = {};
     }
-    // `"keys": null`, for example, indicates that all `keyTranslations` have
-    // been removed.
-    if (!(key === "" && value === null)) {
-      options[parent][key] = value;
-    }
+    options[parent][key] = value;
   }
 
   function pushShortcut(parent: string, key: string, value: mixed) {
     if (!Array.isArray(options[parent])) {
       options[parent] = [];
     }
-    // `"normal": null`, for example, indicates that all
-    // `normalKeyboardShortcuts` have been removed.
-    if (!(key === "" && value === null)) {
-      options[parent].push({
-        shortcut: deserializeShortcut(key),
-        action: value,
-      });
-    }
+    options[parent].push(
+      value === null
+        ? null
+        : {
+            shortcut: deserializeShortcut(key),
+            action: value,
+          }
+    );
   }
 
   for (const key of Object.keys(object)) {
     const item = object[key];
-    const [, start, rest] = PREFIX_REGEX.exec(key) || ["", key, ""];
+    const [, start, rest] = PREFIX_REGEX.exec(key) || ["", "", ""];
 
     switch (start) {
       case "keys":
@@ -511,4 +554,62 @@ export function unflattenOptions(object: {
   }
 
   return options;
+}
+
+export function diffOptions(
+  defaults: FlatOptions,
+  fullOptions: FlatOptions,
+  saved: FlatOptions
+): {| keysToRemove: Array<string>, optionsToSet: FlatOptions |} {
+  const keysToRemove = [];
+  const optionsToSet = {};
+
+  // `defaults` and `fullOptions` have some keys in common. `fullOptions` might
+  // have removed some keys present in `defaults`, and added some new ones. If
+  // added ones are later removed, those are only present in `saved`.
+  const allKeys = new Set([
+    ...Object.keys(defaults),
+    ...Object.keys(fullOptions),
+    ...Object.keys(saved),
+  ]);
+
+  for (const key of allKeys) {
+    if (
+      {}.hasOwnProperty.call(defaults, key) &&
+      !{}.hasOwnProperty.call(fullOptions, key)
+    ) {
+      // Default deleted; only set if needed.
+      if (saved[key] !== null) {
+        // Mark as deleted.
+        optionsToSet[key] = null;
+      }
+    } else if (
+      !{}.hasOwnProperty.call(defaults, key) &&
+      {}.hasOwnProperty.call(fullOptions, key)
+    ) {
+      // Added new; only set if needed.
+      if (!deepEqual(fullOptions[key], saved[key])) {
+        optionsToSet[key] = fullOptions[key];
+      }
+    } else if (deepEqual(fullOptions[key], defaults[key])) {
+      // Option is the same as default; remove if needed.
+      if ({}.hasOwnProperty.call(saved, key)) {
+        keysToRemove.push(key);
+      }
+    } else if (
+      {}.hasOwnProperty.call(saved, key) &&
+      !{}.hasOwnProperty.call(fullOptions, key)
+    ) {
+      // Extra deleted; remove.
+      keysToRemove.push(key);
+    } else if (!deepEqual(fullOptions[key], saved[key])) {
+      // Set user option, if needed.
+      optionsToSet[key] = fullOptions[key];
+    }
+  }
+
+  return {
+    keysToRemove,
+    optionsToSet,
+  };
 }

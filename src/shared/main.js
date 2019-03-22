@@ -411,3 +411,50 @@ export function isMixedCase(string: string): boolean {
 export function splitEnteredText(enteredText: string): Array<string> {
   return enteredText.split(" ").filter(word => word !== "");
 }
+
+// Deep equal for JSON data.
+export function deepEqual(a: mixed, b: mixed): boolean {
+  if (a === b) {
+    return true;
+  }
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (let index = a.length - 1; index >= 0; index--) {
+      if (!deepEqual(a[index], b[index])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  if (
+    typeof a === "object" &&
+    a != null &&
+    typeof b === "object" &&
+    b != null
+  ) {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) {
+      return false;
+    }
+
+    const keys = new Set(keysA.concat(keysB));
+
+    for (const key of keys) {
+      if (!deepEqual(a[key], b[key])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}

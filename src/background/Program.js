@@ -43,6 +43,7 @@ import type {
 import {
   type OptionsData,
   type PartialOptions,
+  diffOptions,
   flattenOptions,
   getDefaults,
   makeOptionsDecoder,
@@ -1672,16 +1673,16 @@ export default class BackgroundProgram {
     const mac = info.os === "mac";
     const defaults = getDefaults({ mac });
     const rawOptions = await browser.storage.sync.get();
-    const unflattened = unflattenOptions(rawOptions);
-    const defaulted = { ...defaults, ...unflattened };
+    const defaulted = { ...flattenOptions(defaults), ...rawOptions };
+    const unflattened = unflattenOptions(defaulted)
     const decoder = makeOptionsDecoder(defaults);
-    const [options, decodeErrors] = decoder(defaulted);
+    const [options, decodeErrors] = decoder(unflattened);
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
       rawOptions,
-      unflattened,
       defaulted,
+      unflattened,
       options,
       decodeErrors,
     });
@@ -1708,26 +1709,16 @@ export default class BackgroundProgram {
     // remove any `options.keys`, for example.
     try {
       const rawOptions = await browser.storage.sync.get();
-      const unflattened = unflattenOptions(rawOptions);
-      const merged = { ...unflattened, ...partialOptions };
-      const flattened = flattenOptions(merged);
-
-      // Remove previously added `keyTranslations` and keyboard mappings.
-      const keysToRemove = Object.keys(rawOptions).filter(
-        key => !{}.hasOwnProperty.call(flattened, key)
+      const {keysToRemove, optionsToSet} = diffOptions(
+        flattenOptions(this.options.defaults),
+        flattenOptions({...this.options.values, ...partialOptions}),
+        rawOptions,
       );
-
-      const optionsToSet = flattenOptions(partialOptions);
-
       log("log", "BackgroundProgram#saveOptions", {
         partialOptions,
-        unflattened,
-        merged,
-        flattened,
-        optionsToSet,
         keysToRemove,
+        optionsToSet,
       });
-
       await browser.storage.sync.remove(keysToRemove);
       await browser.storage.sync.set(optionsToSet);
       await this.updateOptions();
