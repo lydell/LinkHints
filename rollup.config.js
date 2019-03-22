@@ -3,10 +3,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const resolve = require("rollup-plugin-node-resolve");
-const commonjs = require("rollup-plugin-commonjs");
-const replace = require("rollup-plugin-replace");
 const rimraf = require("rimraf");
+const commonjs = require("rollup-plugin-commonjs");
+const prettier = require("rollup-plugin-prettier");
+const replace = require("rollup-plugin-replace");
+const resolve = require("rollup-plugin-node-resolve");
 const sucrase = require("rollup-plugin-sucrase");
 
 const config = require("./project.config");
@@ -74,6 +75,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
       replace(makeGlobals()),
       resolve(),
       commonjs(),
+      PROD ? prettier({ parser: "babel" }) : undefined,
     ].filter(Boolean),
     onwarn: (warning /*: mixed */) => {
       throw warning;
