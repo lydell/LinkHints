@@ -7,10 +7,10 @@ import {
   type KeyboardMapping,
   serializeShortcut,
 } from "../shared/keyboard";
-import { classlist, deepEqual,unreachable } from "../shared/main";
+import { classlist, deepEqual, unreachable } from "../shared/main";
+import ButtonWithPopup from "./ButtonWithPopup";
 import Field from "./Field";
 import KeyboardShortcut from "./KeyboardShortcut";
-import Modal from "./Modal";
 
 type Props = {|
   id: string,
@@ -22,17 +22,11 @@ type Props = {|
   onChange: (Array<KeyboardMapping>) => void,
 |};
 
-type State = {|
-  modalOpen: boolean,
-|};
+type State = {||};
 
 export default class KeyboardShortcuts extends React.Component<Props, State> {
   static defaultProps = {
     requireModifiers: false,
-  };
-
-  state = {
-    modalOpen: false,
   };
 
   render() {
@@ -45,7 +39,6 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       defaultMappings,
       onChange,
     } = this.props;
-    const { modalOpen } = this.state;
 
     return (
       <Field
@@ -108,16 +101,17 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                             ))}
                           </div>
 
-                          <button
-                            type="button"
-                            title="Add shortcut"
-                            className="AddShortcutButton"
-                            onClick={() => {
-                              this.setState({ modalOpen: true });
-                            }}
-                          >
-                            +
-                          </button>
+                          <div className="AddShortcutButton">
+                            <ButtonWithPopup
+                              title="Add shortcut"
+                              buttonContent={<strong>+</strong>}
+                              onChange={open => {
+                                console.log("COP", open);
+                              }}
+                            >
+                              Test
+                            </ButtonWithPopup>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -125,13 +119,6 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                 })}
               </tbody>
             </table>
-
-            <Modal
-              isOpen={modalOpen}
-              onClose={() => {
-                this.setState({ modalOpen: false });
-              }}
-            />
           </div>
         )}
       />
