@@ -2,6 +2,7 @@
   --grey-leia: #fafafa;
   --grey-luke: #ccc;
   --blue: #2b4eed;
+  --red: #ec130e;
   --tiny-space: 4px;
 
   --Field_padding-horizontal: 22px;
@@ -135,6 +136,10 @@ textarea {
   resize: vertical;
 }
 
+a {
+  color: var(--blue);
+}
+
 label {
   margin: 0;
   font-weight: inherit;
@@ -154,6 +159,8 @@ kbd {
   border-radius: 3px;
   font-size: 0.8em;
   font-family: inherit;
+  font-style: normal;
+  font-weight: normal;
 }
 
 pre {
@@ -252,6 +259,15 @@ pre {
 
 .TextSmall {
   font-size: 14px;
+}
+
+.Error {
+  color: var(--red);
+  font-weight: bold;
+}
+
+.Error a {
+  color: inherit;
 }
 
 .Attachment {
@@ -407,6 +423,14 @@ pre {
   align-self: flex-start;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+.AddShortcutButton-button {
+  --size: 28px;
+  width: var(--size);
+  height: var(--size);
+  padding: 0;
+  line-height: 0;
 }
 
 .ShortcutsTable {

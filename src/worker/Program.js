@@ -434,13 +434,6 @@ export default class WorkerProgram {
       return;
     }
 
-    // The "keydown" event fires at an interval while it is pressed. We're only
-    // interested in the event where the key was actually pressed down. Ignore
-    // the rest. Don't log this since it results in a _lot_ of logs.
-    if (event.repeat) {
-      return;
-    }
-
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       keyTranslations: this.keyTranslations,
@@ -460,6 +453,7 @@ export default class WorkerProgram {
     const suppress =
       match != null ||
       this.keyboardMode === "PreventOverTyping" ||
+      this.keyboardMode === "Capture" ||
       // Allow ctrl and cmd _shortcuts_ in hints mode (but always suppress
       // pressing modifier keys _themselves_ in case the page does unwanted
       // things when holding down alt for example). ctrl and cmd can't safely be
@@ -492,7 +486,23 @@ export default class WorkerProgram {
       });
     }
 
-    if (match != null) {
+    // The "keydown" event fires at an interval while it is pressed. We're only
+    // interested in the event where the key was actually pressed down. Ignore
+    // the rest. Don't log this since it results in a _lot_ of logs. This is
+    // done _after_ suppression – we still want to consistenly suppress the key,
+    // but don't want it to trigger more actions.
+    if (event.repeat) {
+      return;
+    }
+
+    if (this.keyboardMode === "Capture") {
+      if (!isModifierKey(event.key)) {
+        this.sendMessage({
+          type: "KeypressCaptured",
+          keypress,
+        });
+      }
+    } else if (match != null) {
       this.sendMessage({
         type: "KeyboardShortcutMatched",
         action: match.action,

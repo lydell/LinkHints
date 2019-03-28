@@ -15,6 +15,7 @@ import type {
 import {
   type HintsMode,
   type KeyboardAction,
+  type KeyboardMode,
   type NormalizedKeypress,
 } from "../shared/keyboard";
 import {
@@ -320,7 +321,9 @@ export default class BackgroundProgram {
         break;
 
       case "FromOptions":
-        this.onOptionsMessage(message.message);
+        if (info != null) {
+          this.onOptionsMessage(message.message, info);
+        }
         break;
 
       default:
@@ -370,6 +373,13 @@ export default class BackgroundProgram {
       case "NonKeyboardShortcutKeypress":
         this.handleHintInput(info.tabId, message.timestamp, {
           type: "Input",
+          keypress: message.keypress,
+        });
+        break;
+
+      case "KeypressCaptured":
+        this.sendOptionsMessage({
+          type: "KeypressCaptured",
           keypress: message.keypress,
         });
         break;
@@ -1312,7 +1322,7 @@ export default class BackgroundProgram {
     }
   }
 
-  async onOptionsMessage(message: FromOptions) {
+  async onOptionsMessage(message: FromOptions, info: MessageInfo) {
     switch (message.type) {
       case "OptionsScriptAdded":
         this.sendOptionsMessage({
@@ -1341,6 +1351,25 @@ export default class BackgroundProgram {
             { tabId }
           );
         }
+        break;
+      }
+
+      case "ToggleKeyboardCapture": {
+        const tabState = this.tabState.get(info.tabId);
+        if (tabState == null) {
+          return;
+        }
+
+        const { hintsState } = tabState;
+        this.sendWorkerMessage(
+          this.makeWorkerState(hintsState, {
+            keyboardMode: message.capture ? "Capture" : undefined,
+          }),
+          {
+            tabId: info.tabId,
+            frameId: "all_frames",
+          }
+        );
         break;
       }
 
@@ -1674,7 +1703,7 @@ export default class BackgroundProgram {
     const defaults = getDefaults({ mac });
     const rawOptions = await browser.storage.sync.get();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
-    const unflattened = unflattenOptions(defaulted)
+    const unflattened = unflattenOptions(defaulted);
     const decoder = makeOptionsDecoder(defaults);
     const [options, decodeErrors] = decoder(unflattened);
 
@@ -1709,10 +1738,10 @@ export default class BackgroundProgram {
     // remove any `options.keys`, for example.
     try {
       const rawOptions = await browser.storage.sync.get();
-      const {keysToRemove, optionsToSet} = diffOptions(
+      const { keysToRemove, optionsToSet } = diffOptions(
         flattenOptions(this.options.defaults),
-        flattenOptions({...this.options.values, ...partialOptions}),
-        rawOptions,
+        flattenOptions({ ...this.options.values, ...partialOptions }),
+        rawOptions
       );
       log("log", "BackgroundProgram#saveOptions", {
         partialOptions,
@@ -1731,8 +1760,8 @@ export default class BackgroundProgram {
     hintsState: HintsState,
     {
       refreshToken = true,
-      preventOverTyping = false,
-    }: {| refreshToken?: boolean, preventOverTyping?: boolean |} = {}
+      keyboardMode,
+    }: {| refreshToken?: boolean, keyboardMode?: KeyboardMode |} = {}
   ): ToWorker {
     if (refreshToken) {
       this.oneTimeWindowMessageToken = makeRandomToken();
@@ -1750,19 +1779,21 @@ export default class BackgroundProgram {
       ? {
           type: "StateSync",
           clearElements: false,
-          keyboardShortcuts: preventOverTyping
-            ? []
-            : this.options.values.hintsKeyboardShortcuts,
-          keyboardMode: preventOverTyping ? "PreventOverTyping" : "Hints",
+          keyboardShortcuts:
+            keyboardMode === "PreventOverTyping"
+              ? []
+              : this.options.values.hintsKeyboardShortcuts,
+          keyboardMode: keyboardMode != null ? keyboardMode : "Hints",
           ...common,
         }
       : {
           type: "StateSync",
           clearElements: true,
-          keyboardShortcuts: preventOverTyping
-            ? []
-            : this.options.values.normalKeyboardShortcuts,
-          keyboardMode: preventOverTyping ? "PreventOverTyping" : "Normal",
+          keyboardShortcuts:
+            keyboardMode === "PreventOverTyping"
+              ? []
+              : this.options.values.normalKeyboardShortcuts,
+          keyboardMode: keyboardMode != null ? keyboardMode : "Normal",
           ...common,
         };
   }
@@ -1784,7 +1815,9 @@ export default class BackgroundProgram {
     }
 
     this.sendWorkerMessage(
-      this.makeWorkerState(tabState.hintsState, { preventOverTyping }),
+      this.makeWorkerState(tabState.hintsState, {
+        keyboardMode: preventOverTyping ? "PreventOverTyping" : undefined,
+      }),
       {
         tabId,
         frameId: "all_frames",

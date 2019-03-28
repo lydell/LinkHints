@@ -71,6 +71,10 @@ export type FromWorker =
       timestamp: number,
     |}
   | {|
+      type: "KeypressCaptured",
+      keypress: NormalizedKeypress,
+    |}
+  | {|
       type: "ReportVisibleFrame",
     |}
   | {|
@@ -220,10 +224,19 @@ export type FromOptions =
   | {|
       type: "SaveOptions",
       partialOptions: PartialOptions,
+    |}
+  | {|
+      type: "ToggleKeyboardCapture",
+      capture: boolean,
     |};
 
-export type ToOptions = {|
-  type: "StateSync",
-  logLevel: LogLevel,
-  options: OptionsData,
-|};
+export type ToOptions =
+  | {|
+      type: "StateSync",
+      logLevel: LogLevel,
+      options: OptionsData,
+    |}
+  | {|
+      type: "KeypressCaptured",
+      keypress: NormalizedKeypress,
+    |};

@@ -168,7 +168,7 @@ export const decodeKeyboardMappingWithModifiers: mixed => KeyboardMapping = reco
   }
 );
 
-export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping";
+export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping" | "Capture";
 
 export type HintsMode =
   | "Click"

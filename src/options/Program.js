@@ -8,6 +8,7 @@ import {
   type KeyTranslations,
   type KeyboardMapping,
   type Keypress,
+  type NormalizedKeypress,
   isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
@@ -36,7 +37,12 @@ import Attachment from "./Attachment";
 import CSSPreview from "./CSSPreview";
 import Field from "./Field";
 import KeyboardShortcut from "./KeyboardShortcut";
-import KeyboardShortcuts from "./KeyboardShortcuts";
+import KeyboardShortcuts, {
+  describeKeyboardAction,
+  getConflictingKeyboardActions,
+  getKeyboardActionId,
+  isRecognized,
+} from "./KeyboardShortcuts";
 import TextInput from "./TextInput";
 
 const CSS_SUGGESTIONS = [
@@ -56,6 +62,10 @@ type State = {|
     testOnly: boolean,
     lastKeypress: ?Keypress,
   |},
+  capturedKeypressWithTimestamp: ?{|
+    timestamp: number,
+    keypress: NormalizedKeypress,
+  |},
   peek: boolean,
   cssSuggestion: string,
 |};
@@ -73,6 +83,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       testOnly: false,
       lastKeypress: undefined,
     },
+    capturedKeypressWithTimestamp: undefined,
     peek: false,
     cssSuggestion: CSS_SUGGESTIONS[0].value,
   };
@@ -137,6 +148,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
         }));
         break;
 
+      case "KeypressCaptured":
+        this.setState({
+          capturedKeypressWithTimestamp: {
+            timestamp: Date.now(),
+            keypress: message.keypress,
+          },
+        });
+        break;
+
       default:
         unreachable(message.type, message);
     }
@@ -169,6 +189,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       hasSaved,
       customChars,
       keyTranslationsInput,
+      capturedKeypressWithTimestamp,
       peek,
       cssSuggestion,
     } = this.state;
@@ -184,6 +205,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
       { name: "Dvorak", value: "hutenogacpridkmjw" },
       { name: "Colemak", value: "tnseriaoplfuwydhvmck" },
     ];
+
+    const conflictingActions = getConflictingKeyboardActions(
+      defaults.hintsKeyboardShortcuts,
+      options.hintsKeyboardShortcuts,
+      options.chars
+    );
 
     const customIndex = charsPresets.length;
 
@@ -210,6 +237,16 @@ export default class OptionsProgram extends React.Component<Props, State> {
           label="Hint characters"
           description={
             <div>
+              {conflictingActions.length > 0 &&
+                conflictingActions.map(([action, chars]) => (
+                  <p key={action} className="Error">
+                    Overridden by{" "}
+                    <a href={`#${getKeyboardActionId(action)}`}>
+                      {describeKeyboardAction(action).name}
+                    </a>
+                    : {chars.join(", ")}
+                  </p>
+                ))}
               <p>
                 Use the characters you find the easiest to type. Put the best
                 ones further to the left. All <em>other</em> characters are used
@@ -486,6 +523,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         if (isModifierKey(key)) {
                           return;
                         }
+                        if (!isRecognized(key)) {
+                          this.setState({
+                            keyTranslationsInput: {
+                              ...keyTranslationsInput,
+                              lastKeypress: keypress,
+                            },
+                          });
+                          return;
+                        }
                         const keyTranslations = updateKeyTranslations(
                           { code, key, shift },
                           options.keyTranslations
@@ -556,7 +602,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
                           </tr>
                           <tr>
                             <th>Key</th>
-                            <td>{lastKeypress.key}</td>
+                            <td>
+                              {lastKeypress.key}
+                              {!isRecognized(lastKeypress.key)
+                                ? " (ignored)"
+                                : null}
+                            </td>
                           </tr>
                           <tr>
                             <th>Modifiers</th>
@@ -564,7 +615,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
                               <KeyboardShortcut
                                 mac={mac}
                                 shortcut={{
-                                  key: "",
                                   alt: lastKeypress.alt,
                                   cmd: lastKeypress.cmd,
                                   ctrl: lastKeypress.ctrl,
@@ -698,13 +748,16 @@ export default class OptionsProgram extends React.Component<Props, State> {
           mac={mac}
           name="Main keyboard shortcuts"
           requireModifiers
+          chars=""
           mappings={options.normalKeyboardShortcuts}
           defaultMappings={defaults.normalKeyboardShortcuts}
+          capturedKeypressWithTimestamp={capturedKeypressWithTimestamp}
           onChange={newMappings => {
             this.saveOptions({
               normalKeyboardShortcuts: newMappings,
             });
           }}
+          onAddChange={this.onKeyboardShortcutAddChange}
         />
 
         <KeyboardShortcuts
@@ -712,13 +765,16 @@ export default class OptionsProgram extends React.Component<Props, State> {
           id="hints"
           mac={mac}
           name="Hints mode keyboard shortcuts"
+          chars={options.chars}
           mappings={options.hintsKeyboardShortcuts}
           defaultMappings={defaults.hintsKeyboardShortcuts}
+          capturedKeypressWithTimestamp={capturedKeypressWithTimestamp}
           onChange={newMappings => {
             this.saveOptions({
               hintsKeyboardShortcuts: newMappings,
             });
           }}
+          onAddChange={this.onKeyboardShortcutAddChange}
         />
 
         <Field
@@ -846,6 +902,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
       </div>
     );
   }
+
+  onKeyboardShortcutAddChange = (isAdding: boolean) => {
+    this.setState({ capturedKeypressWithTimestamp: undefined });
+    this.sendMessage({
+      type: "ToggleKeyboardCapture",
+      capture: isAdding,
+    });
+  };
 
   scrollKeyIntoView(code: string) {
     const id = makeKeysRowId(code);

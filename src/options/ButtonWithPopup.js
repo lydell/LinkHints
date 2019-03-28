@@ -6,8 +6,10 @@ import { Resets, addEventListener, classlist } from "../shared/main";
 
 type Props = {
   buttonContent: React.Node,
+  open?: boolean,
   onChange: boolean => void,
   children: React.Node,
+  className?: string,
   // ...restProps passed on to the `<button>`.
 };
 
@@ -24,10 +26,10 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
   rootRef: { current: HTMLDivElement | null } = React.createRef();
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { onChange } = this.props;
-    const { open } = this.state;
+    const { open = this.state.open } = this.props;
+    const { open: prevOpen = prevState.open } = prevProps;
 
-    if (open !== prevState.open) {
+    if (open !== prevOpen) {
       if (open) {
         this.resets.add(
           addEventListener(window, "focus", this.closeIfOutside),
@@ -36,7 +38,6 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
       } else {
         this.resets.reset();
       }
-      onChange(open);
     }
   }
 
@@ -45,8 +46,14 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
   }
 
   render() {
-    const { buttonContent, children, ...restProps } = this.props;
-    const { open } = this.state;
+    const {
+      open = this.state.open,
+      buttonContent,
+      children,
+      onChange,
+      className = "",
+      ...restProps
+    } = this.props;
 
     return (
       <div
@@ -56,9 +63,9 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
         <button
           {...restProps}
           type="button"
-          className="ButtonWithPopup-button"
+          className={classlist("ButtonWithPopup-button", className)}
           onClick={() => {
-            this.setState({ open: !open });
+            this.setOpen(!open);
           }}
         >
           {buttonContent}
@@ -73,8 +80,21 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
     const root = this.rootRef.current;
     const { target } = event;
 
-    if (root != null && target instanceof Node && !root.contains(target)) {
-      this.setState({ open: false });
+    if (
+      root != null &&
+      target instanceof Node &&
+      !root.contains(target) &&
+      target !== document
+    ) {
+      this.setOpen(false);
     }
+  };
+
+  setOpen = (open: boolean) => {
+    const { onChange } = this.props;
+    if (this.props.open == null) {
+      this.setState({ open });
+    }
+    onChange(open);
   };
 }
