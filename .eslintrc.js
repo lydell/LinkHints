@@ -13,6 +13,7 @@ module.exports = {
     "import",
     // "prettier",
     "react",
+    "react-hooks",
     "simple-import-sort",
   ],
   env: {

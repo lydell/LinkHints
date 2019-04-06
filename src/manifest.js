@@ -65,7 +65,7 @@ module.exports = () =>
     ],
   });
 
-function toJSON(obj: mixed): string {
+function toJSON(obj: { [string]: mixed }): string {
   return JSON.stringify(obj, undefined, 2);
 }
 
