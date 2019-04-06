@@ -2,7 +2,12 @@
 
 import * as React from "preact";
 
-import { CSS, SUGGESTION_FONT_SIZE, SUGGESTION_VIMIUM } from "../shared/css";
+import {
+  CSS,
+  MAX_Z_INDEX,
+  SUGGESTION_FONT_SIZE,
+  SUGGESTION_VIMIUM,
+} from "../shared/css";
 import {
   type KeyPair,
   type KeyTranslations,
@@ -882,22 +887,22 @@ export default class OptionsProgram extends React.Component<Props, State> {
           )}
         />
 
-        {/* TODO: Style these and show them somewhere where they’re more noticeable. */}
+        <div id="errors" />
         {errors.length > 0 && (
-          <div style={{ padding: 30 }}>
-            {hasSaved ? (
-              <p>Errors were encountered while saving yours options:</p>
-            ) : (
-              <p>Errors were encountered while reading your saved options:</p>
-            )}
-            <ul>
-              {errors.map((error, index) => (
-                <li key={index}>
-                  <pre>{error}</pre>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <a
+            href="#errors"
+            className="ErrorsHeading"
+            style={{ zIndex: MAX_Z_INDEX }}
+          >
+            {hasSaved
+              ? "Errors were encountered while saving yours options."
+              : "Errors were encountered while reading your saved options"}
+          </a>
+        )}
+        {errors.length > 0 && (
+          <pre className="Errors SpacedVertical TextSmall">
+            {errors.join("\n\n")}
+          </pre>
         )}
       </div>
     );

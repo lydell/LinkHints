@@ -1,7 +1,6 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
-import { repr } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import type {
@@ -1721,7 +1720,9 @@ export default class BackgroundProgram {
       defaults,
       errors: decodeErrors.map(
         ([key, error]) =>
-          `Decode error for option ${repr(key)}: ${error.message}`
+          // Using `JSON.stringify` here instead of `repr` in order not to
+          // truncate the option name.
+          `Decode error for option ${JSON.stringify(key)}: ${error.message}`
       ),
       mac,
     };

@@ -6,6 +6,7 @@
   --tiny-space: 4px;
 
   --Field_padding-horizontal: 22px;
+  --Field_padding-vertical: 18px;
   --Field_changed-width: 4px;
   --button_border-width: 2px;
 }
@@ -164,13 +165,14 @@ kbd {
 }
 
 pre {
+  margin: 0;
   white-space: pre-wrap;
 }
 
 .Field {
   --border-width: 1px;
   --padding-horizontal: var(--Field_padding-horizontal);
-  --padding-vertical: 18px;
+  --padding-vertical: var(--Field_padding-vertical);
   border-top: var(--border-width) solid var(--grey-luke);
   padding: var(--padding-vertical) var(--padding-horizontal);
   position: relative;
@@ -533,4 +535,20 @@ pre {
   border: var(--button_border-width) solid var(--blue);
   background-color: white;
   padding: 20px;
+}
+
+.Errors {
+  padding: var(--Field_padding-horizontal);
+  padding-top: 0;
+  background-color: var(--red);
+}
+
+.ErrorsHeading {
+  display: block;
+  position: sticky;
+  bottom: 0;
+  padding: var(--Field_padding-vertical) var(--Field_padding-horizontal);
+  background-color: var(--red);
+  color: inherit;
+  font-weight: bold;
 }
