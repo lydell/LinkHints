@@ -60,8 +60,11 @@ module.exports = {
     input: "options/main.js",
     output: "compiled/options.js",
   },
+  optionsCss: {
+    input: "options/options.css",
+    output: "compiled/options.css",
+  },
   optionsHtml: "compiled/options.html",
-  optionsCss: ["options/options.css"],
   manifest: {
     input: "manifest.js",
     output: "manifest.json",

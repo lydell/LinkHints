@@ -36,8 +36,9 @@ module.exports = [
     html: config.optionsHtml,
     // Content scripts don’t run in the options page, so manually include them.
     js: [config.worker.output, config.renderer.output, config.options.output],
-    css: config.optionsCss,
+    css: [config.optionsCss.output],
   }),
+  copy(config.optionsCss),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
   .filter(Boolean)
