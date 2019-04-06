@@ -112,6 +112,11 @@ input[type="radio"] {
   background-clip: content-box;
 }
 
+/* The circle looks off-center on Firefox for me with 3px padding for some reason. */
+.firefox input[type="radio"] {
+  padding: 2px;
+}
+
 input[type="radio"]:checked {
   background-color: var(--blue);
 }
