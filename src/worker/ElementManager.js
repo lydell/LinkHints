@@ -1057,7 +1057,13 @@ function getSingleRectPoint({
   // _are_ text nodes inside the `<option>` elements and their rects _can_ be
   // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
   // will fail. An example is the signup form at <https://www.facebook.com/>.
-  if (!(element instanceof HTMLSelectElement)) {
+  // Also, ignore fallback text inside `<canvas>` elements.
+  if (
+    !(
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLCanvasElement
+    )
+  ) {
     const textPoint = getBestNonEmptyTextPoint({
       element,
       elementRect: rect,
