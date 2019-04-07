@@ -1072,6 +1072,7 @@ function getSingleRectPoint({
       preferTextStart: elementType === "selectable",
       range,
     });
+
     if (textPoint != null) {
       return textPoint;
     }
@@ -1385,7 +1386,9 @@ function isWithin(point: Point, box: Box): boolean {
     point.x >= box.x &&
     point.x <= box.x + box.width * MAX_HINT_X_PERCENTAGE_OF_WIDTH &&
     point.y >= box.y &&
-    point.y <= box.y + box.height
+    // Use `<`, not `<=`, since a point at `box.y + box.height` is located at
+    // the first pixel _below_ the box.
+    point.y < box.y + box.height
   );
 }
 
