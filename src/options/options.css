@@ -28,10 +28,7 @@ html.firefox {
 }
 
 body {
-  max-width: 800px;
-  margin: 50px auto;
-  background-color: white;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.5);
+  margin: 0;
   font-size: 16px;
   line-height: 1.25;
 }
@@ -169,6 +166,33 @@ kbd {
 pre {
   margin: 0;
   white-space: pre-wrap;
+}
+
+.Layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 50px 15px;
+}
+
+.Layout-main {
+  max-width: 800px;
+}
+
+.Layout-sidebar {
+  width: 320px;
+  position: sticky;
+  top: 0;
+  margin-left: var(--Field_padding);
+}
+
+.Layout-sidebar > * + * {
+  margin-top: var(--Field_padding);
+}
+
+.Paper {
+  background-color: white;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.5);
 }
 
 .Field {
@@ -329,6 +353,29 @@ pre {
   margin-top: 10px;
 }
 
+/* .TestLinks {} */
+
+.TestLinks-grid {
+  display: grid;
+  grid-template: repeat(9, 1fr) / repeat(3, 1fr);
+  grid-auto-flow: column;
+}
+
+.TestLinks-pagination {
+  font-size: 12px;
+  justify-content: center;
+}
+
+.TestLink {
+  text-decoration: none;
+  outline: none;
+}
+
+.TestLink.is-clicked {
+  font-weight: bold;
+  color: inherit;
+}
+
 .KeypressTable {
   table-layout: fixed;
   border-spacing: 0;
@@ -465,9 +512,7 @@ pre {
 
 .ShortcutsTable th {
   padding-top: 6px;
-  padding-left: calc(
-    var(--Field_padding) - var(--Field_changed-width)
-  );
+  padding-left: calc(var(--Field_padding) - var(--Field_changed-width));
   border-left: var(--Field_changed-width) solid transparent;
   width: calc(50%);
   font-weight: normal;

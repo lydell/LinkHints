@@ -87,6 +87,8 @@ const LINK_PROTOCOLS = new Set(
     "http:",
     "https:",
     "ftp:",
+    "chrome-extension:",
+    "moz-extension:",
     // Firefox does not allow opening `file://` URLs in new tabs, but Chrome
     // does. Both allow _clicking_ them.
     // See: <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create>

@@ -413,8 +413,10 @@ function ShortcutErrorDisplay({
         <div>
           <p>
             <strong>
-              This shortcut is already used for “
-              {describeKeyboardAction(error.otherMapping.action).name}.”
+              This shortcut is already used for:{" "}
+              <span style={{ whiteSpace: "nowrap" }}>
+                “{describeKeyboardAction(error.otherMapping.action).name}.”
+              </span>
             </strong>
           </p>
           <p>Press the shortcut again to replace, or choose another one!</p>
