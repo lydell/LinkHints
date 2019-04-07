@@ -154,9 +154,12 @@ p + p {
 }
 
 kbd {
+  display: inline-block;
+  min-width: 1.6em;
   padding: 0 4px;
   border: 2px solid var(--grey-luke);
   border-radius: 3px;
+  text-align: center;
   font-size: 0.8em;
   font-family: inherit;
   font-style: normal;
