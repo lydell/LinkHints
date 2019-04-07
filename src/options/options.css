@@ -5,8 +5,7 @@
   --red: #ec130e;
   --tiny-space: 4px;
 
-  --Field_padding-horizontal: 22px;
-  --Field_padding-vertical: 18px;
+  --Field_padding: 22px;
   --Field_changed-width: 4px;
   --button_border-width: 2px;
 }
@@ -171,10 +170,8 @@ pre {
 
 .Field {
   --border-width: 1px;
-  --padding-horizontal: var(--Field_padding-horizontal);
-  --padding-vertical: var(--Field_padding-vertical);
   border-top: var(--border-width) solid var(--grey-luke);
-  padding: var(--padding-vertical) var(--padding-horizontal);
+  padding: var(--Field_padding);
   position: relative;
 }
 
@@ -223,12 +220,12 @@ pre {
 /* This CSS only supports connecting two fields. */
 .Field:first-child.is-connected,
 .Field:not(.is-connected) + .Field.is-connected {
-  padding-bottom: calc(var(--padding-vertical) / 2);
+  padding-bottom: calc(var(--Field_padding) / 2);
 }
 
 .Field.is-connected + .Field.is-connected {
   border-top: none;
-  padding-top: calc(var(--padding-vertical) / 2);
+  padding-top: calc(var(--Field_padding) / 2);
 }
 
 .Field:first-child.is-connected::before,
@@ -251,12 +248,18 @@ pre {
 .Field-label {
   display: block;
   padding-bottom: var(--tiny-space);
+  margin-top: -3px;
+  line-height: 1;
   font-weight: bold;
 }
 
 .Field.is-fullWidth .Field-label {
-  padding-left: var(--Field_padding-horizontal);
-  padding-right: var(--Field_padding-horizontal);
+  padding-left: var(--Field_padding);
+  padding-right: var(--Field_padding);
+}
+
+.Field.is-connected .Field-label {
+  margin-top: 0;
 }
 
 .TextSmall {
@@ -451,7 +454,7 @@ pre {
 .ShortcutsTable th {
   padding-top: 6px;
   padding-left: calc(
-    var(--Field_padding-horizontal) - var(--Field_changed-width)
+    var(--Field_padding) - var(--Field_changed-width)
   );
   border-left: var(--Field_changed-width) solid transparent;
   width: calc(50%);
@@ -465,7 +468,7 @@ pre {
 }
 
 .ShortcutsTable td {
-  padding-right: var(--Field_padding-horizontal);
+  padding-right: var(--Field_padding);
 }
 
 .ShortcutsTable tbody tr:nth-child(odd) td,
@@ -538,7 +541,7 @@ pre {
 }
 
 .Errors {
-  padding: var(--Field_padding-horizontal);
+  padding: var(--Field_padding);
   padding-top: 0;
   background-color: var(--red);
 }
@@ -547,7 +550,7 @@ pre {
   display: block;
   position: sticky;
   bottom: 0;
-  padding: var(--Field_padding-vertical) var(--Field_padding-horizontal);
+  padding: var(--Field_padding) var(--Field_padding);
   background-color: var(--red);
   color: inherit;
   font-weight: bold;

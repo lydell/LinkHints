@@ -48,7 +48,11 @@ export default function Field({
         {render({ id })}
       </div>
 
-      {description != null && <div className="TextSmall">{description}</div>}
+      {description != null && (
+        <div className="TextSmall" style={{ marginBottom: -2 }}>
+          {description}
+        </div>
+      )}
     </div>
   );
 }
