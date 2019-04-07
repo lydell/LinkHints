@@ -2028,15 +2028,19 @@ function getBadgeText(hintsState: HintsState): string {
       return "";
     case "Collecting":
       return "…";
-    case "Hinting":
+    case "Hinting": {
+      const { enteredChars, enteredText } = hintsState;
+      const words = splitEnteredText(enteredText);
       return String(
         hintsState.elementsWithHints.filter(
-          // "Hidden" elements have been removed from the DOM or moved
-          // off-screen. Elements with blank hints don't are filtered out by
-          // text.
-          element => !element.hidden && element.hint !== ""
+          element =>
+            // "Hidden" elements have been removed from the DOM or moved off-screen.
+            !element.hidden &&
+            matchesText(element.text, words) &&
+            element.hint.startsWith(enteredChars)
         ).length
       );
+    }
     default:
       return unreachable(hintsState.type);
   }
@@ -2281,10 +2285,8 @@ function updateHints({
       }))
     );
 
-  // Blank out the hint for the elements filtered by text. The badge count
-  // only includes non-empty hints.
   const allElementsWithHints = elementsWithHintsAndMaybeHidden.concat(
-    nonMatching.map(element => ({ ...element, hint: "" }))
+    nonMatching
   );
 
   return {
