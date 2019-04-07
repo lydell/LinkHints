@@ -324,7 +324,13 @@ export function getTextRects({
   words: Set<string>,
   checkElementAtPoint?: boolean,
 |}): Array<Box> {
-  const text = element.textContent.toLowerCase();
+  const text =
+    // Ignore text inside `<textarea>`, `<select>` and `<canvas>`, as explained
+    // in `extractText` in `worker/Program.js`.
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement
+      ? ""
+      : element.textContent.toLowerCase();
 
   const ranges = [];
 

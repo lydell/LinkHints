@@ -65,10 +65,31 @@
 
     <p><a href="https://example.com">example.com</a></p>
     <p>
-      <textarea rows="5" cols="90">
+      <label>
+        <div>Label:</div>
+        <textarea rows="5" cols="90">
 Focus this textarea and open the above link in a new tab to try the overtyping prevention.
 Also, it should not be possible to match this textarea by this default text.</textarea
-      >
+        >
+      </label>
+    </p>
+
+    <p>
+      Just like with all other form controls, it should not be possible to match
+      the select by the text of one of the options.
+    </p>
+    <p>
+      Also try to select the label text. When doing so, it should not be
+      possible to match things inside the textarea or select.
+    </p>
+    <p>
+      <label>
+        <div>Label:</div>
+        <select>
+          <option>one</option>
+          <option>two</option>
+        </select>
+      </label>
     </p>
 
     <p>Overlapping hints. The best hint should be on top.</p>

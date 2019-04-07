@@ -923,13 +923,18 @@ function visibleElementToElementReport(
 }
 
 function extractText(element: HTMLElement, type: ElementType): string {
-  // Scrollable elements do have `.textContent`, but it’s not intuitive to filter
-  // them by text (especially since the matching text might be scrolled away).
-  // Treat them more like frames (where you can’t look inside). `<textarea>`
-  // elements have `.textContent` they have default text in the HTML, but that
-  // is not updated as the user types. To be consistent with `<input>` text
-  // inputs, ignore their text as well.
-  return type === "scrollable" || type === "textarea"
+  // Scrollable elements do have `.textContent`, but it’s not intuitive to
+  // filter them by text (especially since the matching text might be scrolled
+  // away). Treat them more like frames (where you can’t look inside).
+  // `<textarea>` elements have `.textContent` they have default text in the
+  // HTML, but that is not updated as the user types. `<select>` also has
+  // `.textContent`, but most `<option>`s are not visible. To be consistent with
+  // `<input>`, ignore the text of `<textarea>` and `<select>` as well. Finally,
+  // also ignore fallback content inside `<canvas>`.
+  return type === "scrollable" ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element instanceof HTMLCanvasElement
     ? ""
     : element.textContent;
 }
