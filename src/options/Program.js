@@ -677,7 +677,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     className={classlist("KeysTable", "TextSmall", {
                       "is-disabled": keyTranslationsInput.testOnly,
                     })}
-                    ref={this.keysTableRef}
+                    ref={ref => {
+                      // When removing the "is-animated" class,
+                      // `ref={this.keysTableRef}` stopped working for some
+                      // reason, but a manual callback still works somehow.
+                      this.keysTableRef.current = ref;
+                    }}
                   >
                     <table>
                       <thead>
@@ -947,6 +952,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
     }
 
     element.classList.add("is-animated");
+    // Remove the animation when finished to avoid it running again when
+    // toggling the radio buttons back and forth.
+    element.addEventListener(
+      "animationend",
+      () => {
+        element.classList.remove("is-animated");
+      },
+      { once: true }
+    );
   }
 }
 
