@@ -49,9 +49,7 @@ export default function Field({
       </div>
 
       {description != null && (
-        <div className="Field-description TextSmall">
-          {description}
-        </div>
+        <div className="Field-description TextSmall">{description}</div>
       )}
     </div>
   );
