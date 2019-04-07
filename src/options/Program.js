@@ -463,7 +463,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 ? "Type here to test your translations"
                 : "Type here to translate codes to keys"
             }
-            description={null}
             changed={keyTranslationsChanged}
             render={({ id }) => (
               <div className="Spaced">
@@ -757,6 +756,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
           id="normal"
           mac={mac}
           name="Main keyboard shortcuts"
+          description={
+            <p>
+              <strong>Tip:</strong> Hold{" "}
+              <KeyboardShortcut mac={mac} shortcut={{ alt: true }} /> while
+              activating a hint (typing the last character) to force links to
+              open in a new tab!
+            </p>
+          }
           requireModifiers
           chars=""
           mappings={options.normalKeyboardShortcuts}
@@ -791,7 +798,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
           key="css"
           id="css"
           label="Appearance"
-          description={null}
           changed={options.css !== defaults.css}
           render={({ id }) => (
             <div className="SpacedVertical">

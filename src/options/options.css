@@ -265,6 +265,15 @@ pre {
   margin-top: 0;
 }
 
+.Field-description {
+  margin-bottom: -2px;
+}
+
+.Field.is-fullWidth .Field-description {
+  padding-left: var(--Field_padding);
+  padding-right: var(--Field_padding);
+}
+
 .TextSmall {
   font-size: 14px;
 }

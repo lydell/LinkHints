@@ -10,7 +10,7 @@ type Props = {|
   fullWidth?: boolean,
   label: React.Node,
   span?: boolean,
-  description: React.Node,
+  description?: React.Node,
   changed: boolean,
   changedRight?: boolean,
   render: ({| id: string |}) => React.Node,
@@ -49,7 +49,7 @@ export default function Field({
       </div>
 
       {description != null && (
-        <div className="TextSmall" style={{ marginBottom: -2 }}>
+        <div className="Field-description TextSmall">
           {description}
         </div>
       )}

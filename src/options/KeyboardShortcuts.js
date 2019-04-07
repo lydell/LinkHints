@@ -22,6 +22,7 @@ type ShortcutError =
 type Props = {|
   id: string,
   name: string,
+  description?: React.Node,
   mac: boolean,
   requireModifiers: boolean,
   chars: string,
@@ -178,6 +179,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
     const {
       id,
       name,
+      description,
       mac,
       mappings,
       defaultMappings,
@@ -193,7 +195,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
         fullWidth
         label={name}
         span
-        description={null}
+        description={description}
         changed={false}
         render={() => (
           <div>
