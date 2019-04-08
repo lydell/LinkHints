@@ -1,6 +1,7 @@
 :root {
-  --grey-leia: #fafafa;
-  --grey-luke: #ccc;
+  --grey-leia: #f7f7f7;
+  --grey-han: #bbb;
+  --grey-luke: #767676;
   --blue: #2b4eed;
   --red: #ec130e;
   --tiny-space: 4px;
@@ -156,6 +157,7 @@ kbd {
   padding: 0 4px;
   border: 2px solid var(--grey-luke);
   border-radius: 3px;
+  background-color: white;
   text-align: center;
   font-size: 0.8em;
   font-family: inherit;
@@ -197,7 +199,7 @@ pre {
 
 .Field {
   --border-width: 1px;
-  border-top: var(--border-width) solid var(--grey-luke);
+  border-top: var(--border-width) solid var(--grey-han);
   padding: var(--Field_padding);
   position: relative;
 }
@@ -413,7 +415,7 @@ pre {
 .KeysTable thead th {
   position: sticky;
   top: 0;
-  background-color: var(--grey-luke);
+  background-color: var(--grey-han);
   text-align: left;
   font-weight: normal;
 }
