@@ -282,8 +282,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                 });
                                 onAddChange(open);
                               }}
-                            >
-                              {isAdding && (
+                              popupContent={() => (
                                 <div
                                   className="SpacedVertical"
                                   style={{ width: 450 }}
@@ -317,7 +316,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                   </p>
                                 </div>
                               )}
-                            </ButtonWithPopup>
+                            />
                           </div>
                         </div>
                       </td>

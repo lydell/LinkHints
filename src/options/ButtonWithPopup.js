@@ -6,9 +6,9 @@ import { Resets, addEventListener, classlist } from "../shared/main";
 
 type Props = {
   buttonContent: React.Node,
+  popupContent: ({| close: () => void |}) => React.Node,
   open?: boolean,
-  onChange: boolean => void,
-  children: React.Node,
+  onChange?: boolean => void,
   className?: string,
   // ...restProps passed on to the `<button>`.
 };
@@ -49,7 +49,7 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
     const {
       open = this.state.open,
       buttonContent,
-      children,
+      popupContent,
       onChange,
       className = "",
       ...restProps
@@ -71,7 +71,15 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
           {buttonContent}
         </button>
 
-        {open && <div className="ButtonWithPopup-popup">{children}</div>}
+        {open && (
+          <div className="ButtonWithPopup-popup">
+            {popupContent({
+              close: () => {
+                this.setOpen(false);
+              },
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -95,6 +103,8 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
     if (this.props.open == null) {
       this.setState({ open });
     }
-    onChange(open);
+    if (onChange != null) {
+      onChange(open);
+    }
   };
 }

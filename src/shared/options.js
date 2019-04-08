@@ -32,6 +32,7 @@ import {
 export type OptionsData = {|
   values: Options,
   defaults: Options,
+  raw: FlatOptions,
   errors: Array<string>,
   mac: boolean,
 |};
@@ -54,7 +55,7 @@ export type FlatOptions = { [string]: mixed };
 
 export function makeOptionsDecoder(
   defaults: Options
-): mixed => [Options, Array<[string, Error]>] {
+): mixed => [Options, Array<string>] {
   return map(
     recordWithDefaultsAndErrors(defaults, {
       chars: map(string, validateChars),
@@ -97,7 +98,12 @@ export function makeOptionsDecoder(
           normalKeyboardShortcuts: normal,
           hintsKeyboardShortcuts: hints,
         },
-        errors.concat(keysErrors, normalErrors, hintsErrors),
+        errors.concat(keysErrors, normalErrors, hintsErrors).map(
+          ([key, error]) =>
+            // Using `JSON.stringify` here instead of `repr` in order not to
+            // truncate the option name.
+            `Decode error for option ${JSON.stringify(key)}: ${error.message}`
+        ),
       ];
     }
   );
@@ -612,4 +618,44 @@ export function diffOptions(
     keysToRemove,
     optionsToSet,
   };
+}
+
+export function importOptions(
+  data: mixed,
+  options: Options,
+  defaults: Options
+): {|
+  options: ?Options,
+  successCount: number,
+  errors: Array<string>,
+|} {
+  try {
+    const flatOptions = mixedDict(data);
+    const keyErrors = Object.keys(unflattenOptions(flatOptions))
+      .map(key =>
+        ({}.hasOwnProperty.call(defaults, key)
+          ? undefined
+          : `Unknown key: ${repr(key)}`)
+      )
+      .filter(Boolean);
+    const updatedOptionsFlat = {
+      ...flattenOptions(options),
+      ...flatOptions,
+    };
+    const unflattened = unflattenOptions(updatedOptionsFlat);
+    const decoder = makeOptionsDecoder(defaults);
+    const [newOptions, decodeErrors] = decoder(unflattened);
+    const errors = keyErrors.concat(decodeErrors);
+    return {
+      options: newOptions,
+      successCount: Object.keys(flatOptions).length - errors.length,
+      errors,
+    };
+  } catch (error) {
+    return {
+      options: undefined,
+      successCount: 0,
+      errors: [`The file is invalid: ${error.message}`],
+    };
+  }
 }

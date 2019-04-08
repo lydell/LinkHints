@@ -35,12 +35,15 @@ import type {
 import {
   type OptionsData,
   type PartialOptions,
+  importOptions,
   normalizeChars,
   normalizeNonNegativeInteger,
 } from "../shared/options";
 import Attachment from "./Attachment";
+import ButtonWithPopup from "./ButtonWithPopup";
 import CSSPreview from "./CSSPreview";
 import Field from "./Field";
+import ImportSummary from "./ImportSummary";
 import KeyboardShortcut from "./KeyboardShortcut";
 import KeyboardShortcuts, {
   describeKeyboardAction,
@@ -74,10 +77,15 @@ type State = {|
   |},
   peek: boolean,
   cssSuggestion: string,
+  importData: {|
+    successCount: ?number,
+    errors: Array<string>,
+  |},
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets = new Resets();
+  hiddenErrors: Array<string> = [];
   keysTableRef: { current: HTMLDivElement | null } = React.createRef();
 
   state = {
@@ -92,6 +100,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
     capturedKeypressWithTimestamp: undefined,
     peek: false,
     cssSuggestion: CSS_SUGGESTIONS[0].value,
+    importData: {
+      successCount: undefined,
+      errors: [],
+    },
   };
 
   constructor(props: Props) {
@@ -143,16 +155,30 @@ export default class OptionsProgram extends React.Component<Props, State> {
     log("log", "OptionsProgram#onMessage", message.type, message);
 
     switch (message.type) {
-      case "StateSync":
+      case "StateSync": {
         log.level = message.logLevel;
+        // If the options errors (if any) are the same as the ones shown when
+        // clicking the X button for the errors, keep them hidden. Otherwise
+        // show the new errors.
+        const errorsHidden = deepEqual(
+          this.hiddenErrors,
+          message.options.errors
+        );
         this.setState(state => ({
-          options: message.options,
+          options: {
+            ...message.options,
+            errors: errorsHidden ? [] : message.options.errors,
+          },
           customChars:
             state.options == null
               ? message.options.values.chars
               : state.customChars,
         }));
+        if (!errorsHidden) {
+          this.hiddenErrors = [];
+        }
         break;
+      }
 
       case "KeypressCaptured":
         this.setState({
@@ -189,6 +215,68 @@ export default class OptionsProgram extends React.Component<Props, State> {
     });
   }
 
+  resetOptions() {
+    this.setState(state => ({
+      options:
+        state.options == null
+          ? undefined
+          : {
+              ...state.options,
+              values: state.options.defaults,
+              errors: [],
+            },
+      hasSaved: false,
+    }));
+    this.sendMessage({
+      type: "ResetOptions",
+    });
+  }
+
+  async importOptions() {
+    const { options: optionsData } = this.state;
+    if (optionsData == null) {
+      return;
+    }
+    const { values: options, defaults } = optionsData;
+    try {
+      const file = await selectFile("application/json");
+      const data = await readAsJson(file);
+      const { options: newOptions, successCount, errors } = importOptions(
+        data,
+        options,
+        defaults
+      );
+      this.setState({
+        importData: {
+          successCount,
+          errors,
+        },
+      });
+      if (newOptions != null) {
+        this.saveOptions(newOptions);
+      }
+    } catch (error) {
+      this.setState({
+        importData: {
+          successCount: 0,
+          errors: [`The file is invalid: ${error.message}`],
+        },
+      });
+    }
+  }
+
+  exportOptions() {
+    const { options: optionsData } = this.state;
+    if (optionsData == null) {
+      return;
+    }
+    saveFile(
+      JSON.stringify(optionsData.raw, undefined, 2),
+      `synth-options-${toISODateString(new Date())}.json`,
+      "application/json"
+    );
+  }
+
   render() {
     const {
       options: optionsData,
@@ -198,13 +286,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
       capturedKeypressWithTimestamp,
       peek,
       cssSuggestion,
+      importData,
     } = this.state;
 
     if (optionsData == null) {
       return null;
     }
 
-    const { values: options, defaults, errors, mac } = optionsData;
+    const { values: options, defaults, mac } = optionsData;
+    const errors = importData.errors.concat(optionsData.errors);
+
+    const usingDefaults = deepEqual(defaults, options);
 
     const charsPresets = [
       { name: "QWERTY (default)", value: defaults.chars },
@@ -908,15 +1000,35 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
           <div id="errors" />
           {errors.length > 0 && (
-            <a
-              href="#errors"
-              className="ErrorsHeading"
-              style={{ zIndex: MAX_Z_INDEX }}
-            >
-              {hasSaved
-                ? "Errors were encountered while saving yours options."
-                : "Errors were encountered while reading your saved options"}
-            </a>
+            <div className="ErrorsHeading" style={{ zIndex: MAX_Z_INDEX }}>
+              <a href="#errors" className="ErrorsHeading-link">
+                {importData.errors.length > 0
+                  ? "Errors were encountered while importing your options."
+                  : hasSaved
+                  ? "Errors were encountered while saving your options."
+                  : "Errors were encountered while reading your saved options."}
+              </a>
+              <button
+                type="button"
+                title="Hide errors"
+                className="ErrorsHeading-removeButton RemoveButton"
+                onClick={() => {
+                  this.setState({
+                    options: {
+                      ...optionsData,
+                      errors: [],
+                    },
+                    importData: {
+                      ...importData,
+                      errors: [],
+                    },
+                  });
+                  this.hiddenErrors = optionsData.errors;
+                }}
+              >
+                ×
+              </button>
+            </div>
           )}
           {errors.length > 0 && (
             <pre className="Errors SpacedVertical TextSmall">
@@ -926,6 +1038,79 @@ export default class OptionsProgram extends React.Component<Props, State> {
         </main>
 
         <aside className="Layout-sidebar">
+          <div className="Paper">
+            <Field
+              id="allOptions"
+              label="All options"
+              span
+              changed={false}
+              render={() => (
+                <div className="SpacedVertical">
+                  <div className="Spaced">
+                    <button
+                      type="button"
+                      style={{ flex: "1 1 50%" }}
+                      disabled={usingDefaults}
+                      onClick={() => {
+                        this.exportOptions();
+                      }}
+                    >
+                      Export
+                    </button>
+                    <div className="SpacedVertical" style={{ flex: "1 1 50%" }}>
+                      <ButtonWithPopup
+                        open={importData.successCount != null}
+                        buttonContent="Import"
+                        popupContent={() => (
+                          <div style={{ whiteSpace: "nowrap" }}>
+                            <ImportSummary
+                              success={importData.successCount || 0}
+                              errors={importData.errors.length}
+                            />
+                          </div>
+                        )}
+                        onChange={open => {
+                          if (open) {
+                            this.importOptions();
+                          } else {
+                            this.setState({
+                              importData: {
+                                ...importData,
+                                successCount: undefined,
+                              },
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <ButtonWithPopup
+                    disabled={usingDefaults}
+                    buttonContent="Reset to defaults"
+                    popupContent={({ close }) => (
+                      <div className="SpacedVertical">
+                        <p>
+                          <strong>
+                            This will reset all options to their defaults.
+                          </strong>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            this.resetOptions();
+                            close();
+                          }}
+                        >
+                          Yes, reset all options
+                        </button>
+                      </div>
+                    )}
+                  />
+                </div>
+              )}
+            />
+          </div>
+
           <div className="Paper">
             <Field
               id="testLinks"
@@ -1059,4 +1244,38 @@ function ActivateHighlightedKey({
       that shortcut)
     </span>
   );
+}
+
+function saveFile(content: string, fileName: string, contentType: string) {
+  const a = document.createElement("a");
+  const file = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(file);
+  a.href = url;
+  a.download = fileName;
+  a.dispatchEvent(new MouseEvent("click"));
+  URL.revokeObjectURL(url);
+}
+
+function selectFile(accept: string): Promise<File> {
+  return new Promise(resolve => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.onchange = () => {
+      input.onchange = null;
+      resolve(input.files[0]);
+    };
+    input.dispatchEvent(new MouseEvent("click"));
+  });
+}
+
+function readAsJson(file: File): Promise<mixed> {
+  return new Response(file).json();
+}
+
+function toISODateString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(date.getMonth()).padStart(2, "0")}`;
 }

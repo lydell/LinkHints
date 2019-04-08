@@ -4,7 +4,7 @@
   --grey-luke: #767676;
   --blue: #2b4eed;
   --red: #ec130e;
-  --tiny-space: 4px;
+  --tiny-space: 6px;
 
   --Field_padding: 22px;
   --Field_changed-width: 4px;
@@ -50,18 +50,18 @@ textarea {
   letter-spacing: inherit;
   line-height: inherit;
   transition: border-color 200ms;
+  outline: none;
 }
 
-input:hover,
-button:hover,
-select:hover,
-textarea:hover,
-input:focus,
-button:focus,
-select:focus,
-textarea:focus {
+input:not(:disabled):hover,
+button:not(:disabled):hover,
+select:not(:disabled):hover,
+textarea:not(:disabled):hover,
+input:not(:disabled):focus,
+button:not(:disabled):focus,
+select:not(:disabled):focus,
+textarea:not(:disabled):focus {
   border-color: var(--blue);
-  outline: none;
 }
 
 input:disabled,
@@ -184,7 +184,7 @@ pre {
 .Layout-sidebar {
   width: 320px;
   position: sticky;
-  top: 0;
+  top: var(--Field_padding);
   margin-left: var(--Field_padding);
 }
 
@@ -361,6 +361,7 @@ pre {
   display: grid;
   grid-template: repeat(9, 1fr) / repeat(3, 1fr);
   grid-auto-flow: column;
+  grid-gap: 4px;
 }
 
 .TestLinks-pagination {
@@ -566,10 +567,8 @@ pre {
 }
 
 .ButtonWithPopup {
-  position: relative;
-}
-
-.ButtonWithPopup {
+  display: inline-flex;
+  flex-direction: column;
   position: relative;
 }
 
@@ -596,7 +595,7 @@ pre {
   right: 0;
   border: var(--button_border-width) solid var(--blue);
   background-color: white;
-  padding: 20px;
+  padding: 24px;
 }
 
 .Errors {
@@ -606,11 +605,20 @@ pre {
 }
 
 .ErrorsHeading {
-  display: block;
+  display: flex;
   position: sticky;
   bottom: 0;
-  padding: var(--Field_padding) var(--Field_padding);
   background-color: var(--red);
+}
+
+.ErrorsHeading-link {
+  flex-grow: 1;
+  padding: var(--Field_padding) var(--Field_padding);
   color: inherit;
   font-weight: bold;
+}
+
+.ErrorsHeading-removeButton {
+  width: 50px;
+  font-size: 28px;
 }

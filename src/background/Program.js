@@ -160,6 +160,7 @@ export default class BackgroundProgram {
     this.options = {
       defaults,
       values: defaults,
+      raw: {},
       errors: [],
       mac,
     };
@@ -1331,27 +1332,15 @@ export default class BackgroundProgram {
         });
         break;
 
-      case "SaveOptions": {
+      case "SaveOptions":
         await this.saveOptions(message.partialOptions);
-        this.sendOptionsMessage({
-          type: "StateSync",
-          logLevel: log.level,
-          options: this.options,
-        });
-        for (const tabId of this.tabState.keys()) {
-          // This also does a "StateSync" for all workers.
-          this.exitHintsMode({ tabId });
-          this.sendRendererMessage(
-            {
-              type: "StateSync",
-              css: this.options.values.css,
-              logLevel: log.level,
-            },
-            { tabId }
-          );
-        }
+        this.updateTabsAfterOptionsChange();
         break;
-      }
+
+      case "ResetOptions":
+        await this.resetOptions();
+        this.updateTabsAfterOptionsChange();
+        break;
 
       case "ToggleKeyboardCapture": {
         const tabState = this.tabState.get(info.tabId);
@@ -1718,12 +1707,8 @@ export default class BackgroundProgram {
     this.options = {
       values: options,
       defaults,
-      errors: decodeErrors.map(
-        ([key, error]) =>
-          // Using `JSON.stringify` here instead of `repr` in order not to
-          // truncate the option name.
-          `Decode error for option ${JSON.stringify(key)}: ${error.message}`
-      ),
+      raw: rawOptions,
+      errors: decodeErrors,
       mac,
     };
 
@@ -1754,6 +1739,35 @@ export default class BackgroundProgram {
       await this.updateOptions();
     } catch (error) {
       this.options.errors = [error.message];
+    }
+  }
+
+  async resetOptions() {
+    try {
+      await browser.storage.sync.clear();
+      await this.updateOptions();
+    } catch (error) {
+      this.options.errors = [error.message];
+    }
+  }
+
+  updateTabsAfterOptionsChange() {
+    this.sendOptionsMessage({
+      type: "StateSync",
+      logLevel: log.level,
+      options: this.options,
+    });
+    for (const tabId of this.tabState.keys()) {
+      // This also does a "StateSync" for all workers.
+      this.exitHintsMode({ tabId });
+      this.sendRendererMessage(
+        {
+          type: "StateSync",
+          css: this.options.values.css,
+          logLevel: log.level,
+        },
+        { tabId }
+      );
     }
   }
 

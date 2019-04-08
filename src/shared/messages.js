@@ -226,6 +226,9 @@ export type FromOptions =
       partialOptions: PartialOptions,
     |}
   | {|
+      type: "ResetOptions",
+    |}
+  | {|
       type: "ToggleKeyboardCapture",
       capture: boolean,
     |};
