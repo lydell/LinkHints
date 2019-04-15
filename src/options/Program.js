@@ -1234,9 +1234,7 @@ function ActivateHighlightedKey({
   );
 
   const fallback =
-    firstDefault != null
-      ? firstDefault.shortcut
-      : { key: "error", alt: false, cmd: false, ctrl: false, shift: false };
+    firstDefault != null ? firstDefault.shortcut : { key: "error" };
 
   return (
     <span>
