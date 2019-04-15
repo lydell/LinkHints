@@ -20,6 +20,37 @@
     <h1>All clickable things in the HTML standard</h1>
     <p>See also <a href="../media/index.html">media elements</a>.</p>
 
+    <p>
+      <button type="button" id="clickEverything">
+        Add click listeners to everything
+      </button>
+      <button type="button" id="diableEverything">
+        Disable buttons and inputs
+      </button>
+    </p>
+
+    <script>
+      clickEverything.onclick = () => {
+        for (const element of document.body.querySelectorAll("*")) {
+          element.addEventListener(
+            "click",
+            event => {
+              console.log("Click!", event);
+            },
+            true
+          );
+        }
+      };
+
+      diableEverything.onclick = () => {
+        for (const element of document.querySelectorAll(
+          "button, input[type='button']"
+        )) {
+          element.disabled = true;
+        }
+      };
+    </script>
+
     <a href="https://example.com" class="always">Always visible link</a>
 
     <h2>a</h2>
@@ -185,25 +216,25 @@
     </details>
 
     <h2>role attribute</h2>
-    <p role="button" onclick="alert('button')">button</p>
-    <p role="checkbox" onclick="alert('checkbox')">checkbox</p>
-    <p role="gridcell" onclick="alert('gridcell')">gridcell</p>
-    <p role="link" onclick="alert('link')">link</p>
-    <p role="menuitem" onclick="alert('menuitem')">menuitem</p>
-    <p role="menuitemcheckbox" onclick="alert('menuitemcheckbox')">
+    <p role="button">button</p>
+    <p role="checkbox">checkbox</p>
+    <p role="gridcell">gridcell</p>
+    <p role="link">link</p>
+    <p role="menuitem">menuitem</p>
+    <p role="menuitemcheckbox">
       menuitemcheckbox
     </p>
-    <p role="menuitemradio" onclick="alert('menuitemradio')">menuitemradio</p>
-    <p role="option" onclick="alert('option')">option</p>
-    <p role="radio" onclick="alert('radio')">radio</p>
-    <p role="searchbox" onclick="alert('searchbox')">searchbox</p>
-    <p role="separator" onclick="alert('separator')">separator</p>
-    <p role="spinbutton" onclick="alert('spinbutton')">spinbutton</p>
-    <p role="switch" onclick="alert('switch')">switch</p>
-    <p role="tab" onclick="alert('tab')">tab</p>
-    <p role="textbox" onclick="alert('textbox')">textbox</p>
-    <p role="treeitem" onclick="alert('treeitem')">treeitem</p>
-    <p role="other" onclick="alert('other')">other</p>
+    <p role="menuitemradio">menuitemradio</p>
+    <p role="option">option</p>
+    <p role="radio">radio</p>
+    <p role="searchbox">searchbox</p>
+    <p role="separator">separator</p>
+    <p role="spinbutton">spinbutton</p>
+    <p role="switch">switch</p>
+    <p role="tab">tab</p>
+    <p role="textbox">textbox</p>
+    <p role="treeitem">treeitem</p>
+    <p role="other">other</p>
 
     <h2>contenteditable</h2>
     <p contenteditable="true">contenteditable</p>
