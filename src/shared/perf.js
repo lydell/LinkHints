@@ -2,10 +2,21 @@
 
 export type Durations = Array<[string, number]>;
 
+export type Stats = {|
+  url: string,
+  title: string,
+  numElements: number,
+  numVisibleElements: number,
+  numVisibleFrames: number,
+  bailed: boolean,
+  durations: Durations,
+|};
+
 export type Perf = Array<{|
+  id: number,
   timeToFirstPaint: number,
   topDurations: Durations,
-  collectDurations: Array<{| url: string, durations: Durations |}>,
+  collectStats: Array<Stats>,
   renderDurations: Durations,
 |}>;
 
@@ -35,6 +46,6 @@ export class TimeTracker {
 
   export(): Durations {
     this.stop();
-    return this._durations;
+    return this._durations.slice();
   }
 }

@@ -622,7 +622,7 @@ export default class WorkerProgram {
       type: "ReportVisibleElements",
       elements: elements.map(visibleElementToElementReport),
       numFrames: frames.length,
-      durations: time.export(),
+      stats: this.elementManager.makeStats(time.export()),
     });
 
     this.current = {

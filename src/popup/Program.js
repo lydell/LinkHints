@@ -118,7 +118,7 @@ export default class PopupProgram {
       for (const {
         timeToFirstPaint,
         topDurations,
-        collectDurations,
+        collectStats,
         renderDurations,
       } of perf) {
         const li = document.createElement("li");
@@ -127,16 +127,16 @@ export default class PopupProgram {
         summary.textContent = `${formatDuration(timeToFirstPaint)} ms`;
         details.append(summary);
         const collectTables =
-          collectDurations.length === 1
-            ? [["Collect (no frames)", collectDurations[0].durations]]
+          collectStats.length === 1
+            ? [["Collect (no frames)", collectStats[0].durations]]
             : [
                 [
                   "Collect total",
                   sumDurations(
-                    collectDurations.map(({ durations }) => durations)
+                    collectStats.map(({ durations }) => durations)
                   ),
                 ],
-                ...collectDurations.map(({ url, durations }) => [
+                ...collectStats.map(({ url, durations }) => [
                   `Collect ${url}`,
                   durations,
                 ]),

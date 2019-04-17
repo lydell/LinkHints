@@ -49,7 +49,7 @@ import {
   makeOptionsDecoder,
   unflattenOptions,
 } from "../shared/options";
-import { type Durations, type Perf, TimeTracker } from "../shared/perf";
+import { type Perf, type Stats, TimeTracker } from "../shared/perf";
 
 type MessageInfo = {|
   tabId: number,
@@ -74,7 +74,7 @@ type HintsState =
       pendingElements: PendingElements,
       startTime: number,
       time: TimeTracker,
-      durations: Array<{| url: string, durations: Durations |}>,
+      stats: Array<Stats>,
       timeoutId: ?TimeoutID,
     |}
   | {|
@@ -82,7 +82,7 @@ type HintsState =
       mode: HintsMode,
       startTime: number,
       time: TimeTracker,
-      durations: Array<{| url: string, durations: Durations |}>,
+      stats: Array<Stats>,
       enteredChars: string,
       enteredText: string,
       elementsWithHints: Array<ElementWithHint>,
@@ -434,10 +434,7 @@ export default class BackgroundProgram {
           hintsState.pendingElements.pendingFrames.collecting - 1
         );
 
-        hintsState.durations.push({
-          url: info.url == null ? "?" : info.url,
-          durations: message.durations,
-        });
+        hintsState.stats.push(message.stats);
 
         if (message.numFrames === 0) {
           // If there are no frames, start hinting immediately, unless we're
@@ -1115,7 +1112,7 @@ export default class BackgroundProgram {
       mode: hintsState.mode,
       startTime: hintsState.startTime,
       time,
-      durations: hintsState.durations,
+      stats: hintsState.stats,
       enteredChars: "",
       enteredText: "",
       elementsWithHints,
@@ -1258,19 +1255,24 @@ export default class BackgroundProgram {
         if (hintsState.type !== "Hinting") {
           return;
         }
-        const { startTime, time, durations: collectDurations } = hintsState;
+        const { startTime, time, stats: collectStats } = hintsState;
         time.stop();
         const { durations, firstPaintTimestamp } = message;
         const timeToFirstPaint = firstPaintTimestamp - startTime;
         tabState.perf = [
           {
+            id: Date.now(),
             timeToFirstPaint,
             topDurations: time.export(),
-            collectDurations,
+            collectStats,
             renderDurations: durations,
           },
           ...tabState.perf,
         ].slice(0, 10);
+        this.sendOptionsMessage({
+          type: "PerfUpdate",
+          perf: { [info.tabId]: tabState.perf },
+        });
         break;
       }
 
@@ -1314,6 +1316,10 @@ export default class BackgroundProgram {
             perf: tabState.perf,
           },
         });
+        this.sendOptionsMessage({
+          type: "PerfUpdate",
+          perf: { [tab.id]: tabState.perf },
+        });
         break;
       }
 
@@ -1324,13 +1330,22 @@ export default class BackgroundProgram {
 
   async onOptionsMessage(message: FromOptions, info: MessageInfo) {
     switch (message.type) {
-      case "OptionsScriptAdded":
+      case "OptionsScriptAdded": {
         this.sendOptionsMessage({
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
         });
+        const perf = Array.from(this.tabState).reduce(
+          (result, [tabId, tabState]) => {
+            result[tabId] = tabState.perf;
+            return result;
+          },
+          {}
+        );
+        this.sendOptionsMessage({ type: "PerfUpdate", perf });
         break;
+      }
 
       case "SaveOptions":
         await this.saveOptions(message.partialOptions);
@@ -1565,7 +1580,7 @@ export default class BackgroundProgram {
       },
       startTime: timestamp,
       time,
-      durations: [],
+      stats: [],
       timeoutId: undefined,
     };
 
@@ -1643,6 +1658,11 @@ export default class BackgroundProgram {
     }
 
     this.tabState.delete(tabId);
+
+    this.sendOptionsMessage({
+      type: "PerfUpdate",
+      perf: { [tabId]: [] },
+    });
   }
 
   async updateIcon(tabId: number) {

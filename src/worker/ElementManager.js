@@ -20,7 +20,7 @@ import {
   unreachable,
   walkTextNodes,
 } from "../shared/main";
-import type { TimeTracker } from "../shared/perf";
+import type { Durations, Stats, TimeTracker } from "../shared/perf";
 import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,
@@ -312,6 +312,18 @@ export default class ElementManager {
       size,
       this.maxIntersectionObservedElements
     );
+  }
+
+  makeStats(durations: Durations): Stats {
+    return {
+      url: window.location.href,
+      title: document.title,
+      numElements: this.elements.size,
+      numVisibleElements: this.visibleElements.size,
+      numVisibleFrames: this.visibleFrames.size,
+      bailed: this.bailed,
+      durations,
+    };
   }
 
   queueItem(item: QueueItem) {

@@ -39,6 +39,7 @@ import {
   normalizeChars,
   normalizeNonNegativeInteger,
 } from "../shared/options";
+import { type Perf } from "../shared/perf";
 import Attachment from "./Attachment";
 import ButtonWithPopup from "./ButtonWithPopup";
 import CSSPreview from "./CSSPreview";
@@ -81,6 +82,7 @@ type State = {|
     successCount: ?number,
     errors: Array<string>,
   |},
+  perf: { [tabId: string]: Perf },
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -104,6 +106,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       successCount: undefined,
       errors: [],
     },
+    perf: {},
   };
 
   constructor(props: Props) {
@@ -187,6 +190,15 @@ export default class OptionsProgram extends React.Component<Props, State> {
             keypress: message.keypress,
           },
         });
+        break;
+
+      case "PerfUpdate":
+        this.setState(state => ({
+          perf: {
+            ...state.perf,
+            ...message.perf,
+          },
+        }));
         break;
 
       default:
@@ -287,6 +299,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       peek,
       cssSuggestion,
       importData,
+      perf,
     } = this.state;
 
     if (optionsData == null) {
@@ -997,6 +1010,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
               </div>
             )}
           />
+
+          <pre>{JSON.stringify(perf, undefined, 2)}</pre>
 
           <div id="errors" />
           {errors.length > 0 && (
