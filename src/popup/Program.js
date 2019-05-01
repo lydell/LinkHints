@@ -132,9 +132,7 @@ export default class PopupProgram {
             : [
                 [
                   "Collect total",
-                  sumDurations(
-                    collectStats.map(({ durations }) => durations)
-                  ),
+                  sumDurations(collectStats.map(({ durations }) => durations)),
                 ],
                 ...collectStats.map(({ url, durations }) => [
                   `Collect ${url}`,
