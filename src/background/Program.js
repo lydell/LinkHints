@@ -61,6 +61,7 @@ type TabState = {|
   hintsState: HintsState,
   preventOverTypingTimeoutId: ?TimeoutID,
   perf: Perf,
+  isOptionsPage: boolean,
 |};
 
 type HintsState =
@@ -166,6 +167,7 @@ export default class BackgroundProgram {
     };
 
     bind(this, [
+      [this.maybeReopenOptions, { catch: true }],
       [this.onKeyboardShortcut, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onOptionsMessage, { log: true, catch: true }],
@@ -182,7 +184,9 @@ export default class BackgroundProgram {
       [this.stop, { log: true, catch: true }],
       [this.updateIcon, { catch: true }],
       [this.updateOptions, { catch: true }],
+      [this.updateOptionsPageData, { catch: true }],
       this.onConnect,
+      this.onTabActivated,
       this.onTabCreated,
       this.onTabUpdated,
       this.onTabRemoved,
@@ -203,6 +207,7 @@ export default class BackgroundProgram {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addListener(browser.runtime.onConnect, this.onConnect),
+      addListener(browser.tabs.onActivated, this.onTabActivated),
       addListener(browser.tabs.onCreated, this.onTabCreated),
       addListener(
         browser.tabs.onUpdated,
@@ -228,6 +233,8 @@ export default class BackgroundProgram {
     } else {
       await runContentScripts(tabs);
     }
+
+    this.maybeReopenOptions();
   }
 
   stop() {
@@ -322,7 +329,7 @@ export default class BackgroundProgram {
 
       case "FromOptions":
         if (info != null) {
-          this.onOptionsMessage(message.message, info);
+          this.onOptionsMessage(message.message, info, tabState);
         }
         break;
 
@@ -1328,17 +1335,23 @@ export default class BackgroundProgram {
     }
   }
 
-  async onOptionsMessage(message: FromOptions, info: MessageInfo) {
+  async onOptionsMessage(
+    message: FromOptions,
+    info: MessageInfo,
+    tabState: TabState
+  ) {
     switch (message.type) {
       case "OptionsScriptAdded": {
+        tabState.isOptionsPage = true;
+        this.updateOptionsPageData();
         this.sendOptionsMessage({
           type: "StateSync",
           logLevel: log.level,
           options: this.options,
         });
         const perf = Array.from(this.tabState).reduce(
-          (result, [tabId, tabState]) => {
-            result[tabId] = tabState.perf;
+          (result, [tabId, tabState2]) => {
+            result[tabId] = tabState2.perf;
             return result;
           },
           {}
@@ -1358,11 +1371,6 @@ export default class BackgroundProgram {
         break;
 
       case "ToggleKeyboardCapture": {
-        const tabState = this.tabState.get(info.tabId);
-        if (tabState == null) {
-          return;
-        }
-
         const { hintsState } = tabState;
         this.sendWorkerMessage(
           this.makeWorkerState(hintsState, {
@@ -1634,9 +1642,19 @@ export default class BackgroundProgram {
     this.updateIcon(tab.id);
   }
 
+  onTabActivated() {
+    this.updateOptionsPageData();
+  }
+
   onTabUpdated(tabId: number, changeInfo: TabChangeInfo) {
     if (changeInfo.status != null) {
       this.updateIcon(tabId);
+    }
+
+    const tabState = this.tabState.get(tabId);
+    if (tabState != null && changeInfo.status === "loading") {
+      tabState.isOptionsPage = false;
+      this.updateOptionsPageData();
     }
   }
 
@@ -1659,10 +1677,14 @@ export default class BackgroundProgram {
 
     this.tabState.delete(tabId);
 
-    this.sendOptionsMessage({
-      type: "PerfUpdate",
-      perf: { [tabId]: [] },
-    });
+    if (!tabState.isOptionsPage) {
+      this.sendOptionsMessage({
+        type: "PerfUpdate",
+        perf: { [tabId]: [] },
+      });
+    }
+
+    this.updateOptionsPageData();
   }
 
   async updateIcon(tabId: number) {
@@ -1881,6 +1903,45 @@ export default class BackgroundProgram {
       }, this.options.values.overTypingDuration);
     }
   }
+
+  async updateOptionsPageData() {
+    if (!PROD) {
+      const optionsTabState = Array.from(this.tabState).filter(
+        ([, tabState]) => tabState.isOptionsPage
+      );
+      let isActive = false;
+      for (const [tabId] of optionsTabState) {
+        try {
+          const tab = await browser.tabs.get(tabId);
+          if (tab.active) {
+            isActive = true;
+            break;
+          }
+        } catch {
+          // Tab was not found. Try the next one.
+        }
+      }
+      if (optionsTabState.length > 0) {
+        browser.storage.local.set({ optionsPage: isActive });
+      } else {
+        browser.storage.local.remove("optionsPage");
+      }
+    }
+  }
+
+  async maybeReopenOptions() {
+    if (!PROD) {
+      const { optionsPage } = await browser.storage.local.get("optionsPage");
+      if (typeof optionsPage === "boolean") {
+        const isActive = optionsPage;
+        const [activeTab] = await browser.tabs.query({ active: true });
+        await browser.runtime.openOptionsPage();
+        if (!isActive) {
+          browser.tabs.update(activeTab.id, { active: true });
+        }
+      }
+    }
+  }
 }
 
 // This is a function (not a constant), because of mutation.
@@ -1892,6 +1953,7 @@ function makeEmptyTabState(): TabState {
     },
     preventOverTypingTimeoutId: undefined,
     perf: [],
+    isOptionsPage: false,
   };
 }
 

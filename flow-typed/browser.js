@@ -101,6 +101,12 @@ declare type Tab = {|
   windowId: number,
 |};
 
+declare type TabActiveInfo = {|
+  previousTabId: number,
+  tabId: number,
+  windowId: number,
+|};
+
 declare type TabChangeInfo = {|
   audible?: boolean,
   discarded?: boolean,
@@ -120,6 +126,19 @@ declare type TabRemoveInfo = {|
 |};
 
 declare type TabStatus = "loading" | "complete";
+
+declare type TabUpdateProperties = {|
+  active?: boolean,
+  autoDiscardable?: boolean,
+  highlighted?: boolean,
+  loadReplace?: boolean,
+  muted?: boolean,
+  openerTabId?: number,
+  pinned?: boolean,
+  selected?: boolean,
+  successorTabId?: number,
+  url?: string,
+|};
 
 declare var browser: {|
   browserAction: {|
@@ -172,6 +191,8 @@ declare var browser: {|
     |}): Promise<Tab>,
     executeScript: (ExecuteScriptDetails => Promise<Array<any>>) &
       ((tabId: number, ExecuteScriptDetails) => Promise<Array<any>>),
+    get: (tabId: number) => Promise<Tab>,
+    onActivated: OnEvent<(TabActiveInfo) => void>,
     onCreated: OnEvent<(Tab) => void>,
     onRemoved: OnEvent<(number, TabRemoveInfo) => void>,
     onUpdated: OnEvent<
@@ -194,11 +215,6 @@ declare var browser: {|
         windowId?: number,
       |}
     >,
-    sendMessage(
-      tabId: number,
-      message: any,
-      options?: {| frameId?: number |}
-    ): Promise<any>,
     query(queryInfo: {|
       active?: boolean,
       audible?: boolean,
@@ -218,5 +234,12 @@ declare var browser: {|
       windowId?: number,
       windowType?: number,
     |}): Promise<Array<Tab>>,
+    sendMessage(
+      tabId: number,
+      message: any,
+      options?: {| frameId?: number |}
+    ): Promise<any>,
+    update: (TabUpdateProperties => Promise<Tab>) &
+      ((tabId: number, TabUpdateProperties) => Promise<Tab>),
   |},
 |};
