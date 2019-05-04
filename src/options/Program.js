@@ -52,6 +52,7 @@ import KeyboardShortcuts, {
   getKeyboardActionId,
   isRecognized,
 } from "./KeyboardShortcuts";
+import Perf from "./Perf";
 import TestLinks from "./TestLinks";
 import TextInput from "./TextInput";
 
@@ -1021,7 +1022,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             )}
           />
 
-          <pre>{JSON.stringify(perf, undefined, 2)}</pre>
+          <Perf perf={perf} />
 
           <div id="errors" />
           {errors.length > 0 && (
