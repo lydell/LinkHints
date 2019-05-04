@@ -15,7 +15,7 @@ import type {
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
 import type { OptionsData, PartialOptions } from "./options";
-import type { Durations, Perf, Stats } from "./perf";
+import type { Durations, Perf, Stats, TabsPerf } from "./perf";
 
 export type FromBackground =
   | {|
@@ -245,5 +245,5 @@ export type ToOptions =
     |}
   | {|
       type: "PerfUpdate",
-      perf: { [tabId: string]: Perf },
+      perf: TabsPerf,
     |};

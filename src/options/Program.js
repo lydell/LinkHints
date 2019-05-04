@@ -39,7 +39,7 @@ import {
   normalizeChars,
   normalizeNonNegativeInteger,
 } from "../shared/options";
-import { type Perf } from "../shared/perf";
+import { type TabsPerf } from "../shared/perf";
 import Attachment from "./Attachment";
 import ButtonWithPopup from "./ButtonWithPopup";
 import CSSPreview from "./CSSPreview";
@@ -82,7 +82,7 @@ type State = {|
     successCount: ?number,
     errors: Array<string>,
   |},
-  perf: { [tabId: string]: Perf },
+  perf: TabsPerf,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -114,6 +114,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     bind(this, [
       [this.onMessage, { catch: true }],
+      [this.savePerf, { catch: true }],
       [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
@@ -193,16 +194,25 @@ export default class OptionsProgram extends React.Component<Props, State> {
         break;
 
       case "PerfUpdate":
-        this.setState(state => ({
-          perf: {
-            ...state.perf,
-            ...message.perf,
-          },
-        }));
+        this.setState(
+          state => ({
+            perf: {
+              ...state.perf,
+              ...message.perf,
+            },
+          }),
+          this.savePerf
+        );
         break;
 
       default:
         unreachable(message.type, message);
+    }
+  }
+
+  async savePerf() {
+    if (!PROD) {
+      await browser.storage.local.set({ perf: this.state.perf });
     }
   }
 

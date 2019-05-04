@@ -1,6 +1,28 @@
 // @flow strict-local
 
+import {
+  array,
+  boolean,
+  dict,
+  field,
+  group,
+  map,
+  number,
+  record,
+  string,
+} from "tiny-decoders";
+
 export type Durations = Array<[string, number]>;
+
+export const decodeDurations: mixed => Durations = array(
+  map(
+    group({
+      label: field(0, string),
+      value: field(1, number),
+    }),
+    ({ label, value }) => [label, value]
+  )
+);
 
 export type Stats = {|
   url: string,
@@ -12,6 +34,16 @@ export type Stats = {|
   durations: Durations,
 |};
 
+export const decodeStats: mixed => Stats = record({
+  url: string,
+  title: string,
+  numElements: number,
+  numVisibleElements: number,
+  numVisibleFrames: number,
+  bailed: boolean,
+  durations: decodeDurations,
+});
+
 export type Perf = Array<{|
   id: number,
   timeToFirstPaint: number,
@@ -19,6 +51,20 @@ export type Perf = Array<{|
   collectStats: Array<Stats>,
   renderDurations: Durations,
 |}>;
+
+export const decodePerf: mixed => Perf = array(
+  record({
+    id: number,
+    timeToFirstPaint: number,
+    topDurations: decodeDurations,
+    collectStats: array(decodeStats),
+    renderDurations: decodeDurations,
+  })
+);
+
+export type TabsPerf = { [tabId: string]: Perf };
+
+export const decodeTabsPerf: mixed => TabsPerf = dict(decodePerf);
 
 export class TimeTracker {
   _durations: Durations = [];

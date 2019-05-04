@@ -49,7 +49,13 @@ import {
   makeOptionsDecoder,
   unflattenOptions,
 } from "../shared/options";
-import { type Perf, type Stats, TimeTracker } from "../shared/perf";
+import {
+  type Perf,
+  type Stats,
+  type TabsPerf,
+  TimeTracker,
+  decodeTabsPerf,
+} from "../shared/perf";
 
 type MessageInfo = {|
   tabId: number,
@@ -152,6 +158,7 @@ const MATCH_HIGHLIGHT_DURATION = 200; // ms
 export default class BackgroundProgram {
   options: OptionsData;
   tabState: Map<number, TabState> = new Map();
+  restoredTabsPerf: TabsPerf = {};
   oneTimeWindowMessageToken: string = makeRandomToken();
   resets: Resets = new Resets();
 
@@ -175,6 +182,7 @@ export default class BackgroundProgram {
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
       [this.openNewTab, { catch: true }],
+      [this.restoreTabsPerf, { catch: true }],
       [this.sendBackgroundMessage, { log: true, catch: true }],
       [this.sendContentMessage, { catch: true }],
       [this.sendPopupMessage, { log: true, catch: true }],
@@ -224,6 +232,9 @@ export default class BackgroundProgram {
 
     browser.browserAction.setBadgeBackgroundColor({ color: BADGE_COLOR });
 
+    await this.restoreTabsPerf();
+    await this.maybeReopenOptions();
+
     // Firefox automatically loads content scripts into existing tabs, while
     // Chrome only automatically loads content scripts into _new_ tabs.
     // Firefox requires a workaround (see renderer/Program.js), while we
@@ -233,8 +244,6 @@ export default class BackgroundProgram {
     } else {
       await runContentScripts(tabs);
     }
-
-    this.maybeReopenOptions();
   }
 
   stop() {
@@ -307,6 +316,8 @@ export default class BackgroundProgram {
     const tabState = tabStateRaw == null ? makeEmptyTabState() : tabStateRaw;
 
     if (info != null && tabStateRaw == null) {
+      const { [String(info.tabId)]: perf = [] } = this.restoredTabsPerf;
+      tabState.perf = perf;
       this.tabState.set(info.tabId, tabState);
     }
 
@@ -1937,8 +1948,18 @@ export default class BackgroundProgram {
         const [activeTab] = await browser.tabs.query({ active: true });
         await browser.runtime.openOptionsPage();
         if (!isActive) {
-          browser.tabs.update(activeTab.id, { active: true });
+          await browser.tabs.update(activeTab.id, { active: true });
         }
+      }
+    }
+  }
+
+  async restoreTabsPerf() {
+    if (!PROD) {
+      const { perf } = await browser.storage.local.get("perf");
+      if (perf != null) {
+        this.restoredTabsPerf = decodeTabsPerf(perf);
+        log("log", "BackgroundProgram#restoreTabsPerf", this.restoredTabsPerf);
       }
     }
   }
