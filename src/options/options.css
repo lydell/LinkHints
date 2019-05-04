@@ -287,7 +287,7 @@ pre {
   padding-right: var(--Field_padding);
 }
 
-.Field.is-connected .Field-label {
+.Field.is-connected + .Field.is-connected .Field-label {
   margin-top: 0;
 }
 
