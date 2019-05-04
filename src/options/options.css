@@ -622,3 +622,24 @@ pre {
   width: 50px;
   font-size: 28px;
 }
+
+.tmp table {
+  margin-top: 15px;
+  width: 100%;
+}
+
+.tmp caption {
+  text-align: left;
+  font-weight: bold;
+}
+
+.tmp td,
+.tmp th {
+  text-align: right;
+  width: 20%;
+}
+
+.tmp td:first-child,
+.tmp th:first-child {
+  text-align: left;
+}

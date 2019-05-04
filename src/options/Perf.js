@@ -22,7 +22,7 @@ export default function Perf({ perf }: Props) {
         );
 
         return (
-          <div key={tabId}>
+          <div key={tabId} className="tmp">
             <h2>
               #{tabId}: {perfData[0].collectStats[0].url}
             </h2>
