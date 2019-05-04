@@ -1473,11 +1473,7 @@ export default class BackgroundProgram {
           return;
         }
 
-        this.enterHintsMode({
-          tabId: info.tabId,
-          timestamp,
-          mode: hintsState.mode,
-        });
+        enterHintsMode(hintsState.mode);
 
         // `this.enterHintsMode` also updates the badge, but after a timeout.
         // Update it immediately so that one can see it flash in case you get
