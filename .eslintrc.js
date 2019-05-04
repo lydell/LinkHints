@@ -78,6 +78,7 @@ module.exports = {
   settings: {
     react: {
       version: "16",
+      flowVersion: "detect",
     },
   },
 };
