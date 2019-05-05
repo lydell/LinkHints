@@ -210,6 +210,10 @@ export default class BackgroundProgram {
       this.options.errors = [error.message];
     }
 
+    if (!PROD) {
+      await this.restoreTabsPerf();
+    }
+
     const tabs = await browser.tabs.query({});
 
     this.resets.add(
@@ -232,8 +236,7 @@ export default class BackgroundProgram {
 
     browser.browserAction.setBadgeBackgroundColor({ color: BADGE_COLOR });
 
-    await this.restoreTabsPerf();
-    await this.maybeReopenOptions();
+    this.maybeReopenOptions();
 
     // Firefox automatically loads content scripts into existing tabs, while
     // Chrome only automatically loads content scripts into _new_ tabs.
