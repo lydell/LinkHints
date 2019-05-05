@@ -1385,6 +1385,12 @@ export default class BackgroundProgram {
         this.updateTabsAfterOptionsChange();
         break;
 
+      case "ResetPerf":
+        for (const tabState2 of this.tabState.values()) {
+          tabState2.perf = [];
+        }
+        break;
+
       case "ToggleKeyboardCapture": {
         const { hintsState } = tabState;
         this.sendWorkerMessage(

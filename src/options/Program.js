@@ -1068,6 +1068,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     this.savePosition
                   );
                 }}
+                onReset={() => {
+                  this.sendMessage({ type: "ResetPerf" });
+                  this.setState({ perf: {} });
+                }}
               />
             </Details>
 

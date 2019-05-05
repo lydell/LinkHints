@@ -230,6 +230,9 @@ export type FromOptions =
       type: "ResetOptions",
     |}
   | {|
+      type: "ResetPerf",
+    |}
+  | {|
       type: "ToggleKeyboardCapture",
       capture: boolean,
     |};

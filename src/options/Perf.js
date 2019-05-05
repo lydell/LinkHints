@@ -13,30 +13,52 @@ type Props = {|
   perf: TabsPerf,
   expandedPerfTabIds: Array<string>,
   onExpandChange: (Array<string>) => void,
+  onReset: () => void,
 |};
 
 export default function Perf({
   perf,
   expandedPerfTabIds,
   onExpandChange,
+  onReset,
 }: Props) {
   const keys = Object.keys(perf);
 
+  const isEmpty = keys.every(tabId => perf[tabId].length === 0);
+
   return (
     <div className="SpacedVertical SpacedVertical--large">
-      <div className="PerfIntro TextSmall">
-        <p>
-          Here you can see some numbers on how entering hints mode the last{" "}
-          {MAX_PERF_ENTRIES} times performed. Most numbers are milliseconds.
-        </p>
+      <div className="PerfIntro">
+        <div className="Spaced">
+          <div>
+            <p>
+              Here you can see some numbers on how entering hints mode the last{" "}
+              {MAX_PERF_ENTRIES} times has performed. Most numbers are
+              milliseconds.
+            </p>
 
-        {keys.every(tabId => perf[tabId].length === 0) && (
-          <p>
-            <strong>
-              Enter hints mode in a tab and stats will appear here!
-            </strong>
-          </p>
-        )}
+            {isEmpty && (
+              <p>
+                <strong>
+                  Enter hints mode in a tab and stats will appear here!
+                </strong>
+              </p>
+            )}
+          </div>
+
+          <div>
+            <button
+              type="button"
+              disabled={isEmpty}
+              title="Data is only stored in memory and is removed automatically when tabs are closed or the whole browser is closed."
+              onClick={() => {
+                onReset();
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
       {keys.map(tabId => {
