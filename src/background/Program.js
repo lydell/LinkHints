@@ -53,6 +53,7 @@ import {
   type Perf,
   type Stats,
   type TabsPerf,
+  MAX_PERF_ENTRIES,
   TimeTracker,
   decodeTabsPerf,
 } from "../shared/perf";
@@ -182,7 +183,6 @@ export default class BackgroundProgram {
       [this.onRendererMessage, { log: true, catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
       [this.openNewTab, { catch: true }],
-      [this.restoreTabsPerf, { catch: true }],
       [this.sendBackgroundMessage, { log: true, catch: true }],
       [this.sendContentMessage, { catch: true }],
       [this.sendPopupMessage, { log: true, catch: true }],
@@ -1286,7 +1286,7 @@ export default class BackgroundProgram {
             renderDurations: durations,
           },
           ...tabState.perf,
-        ].slice(0, 10);
+        ].slice(0, MAX_PERF_ENTRIES);
         this.sendOptionsMessage({
           type: "PerfUpdate",
           perf: { [info.tabId]: tabState.perf },
@@ -1952,10 +1952,23 @@ export default class BackgroundProgram {
 
   async restoreTabsPerf() {
     if (!PROD) {
-      const { perf } = await browser.storage.local.get("perf");
-      if (perf != null) {
-        this.restoredTabsPerf = decodeTabsPerf(perf);
-        log("log", "BackgroundProgram#restoreTabsPerf", this.restoredTabsPerf);
+      try {
+        const { perf } = await browser.storage.local.get("perf");
+        if (perf != null) {
+          this.restoredTabsPerf = decodeTabsPerf(perf);
+          log(
+            "log",
+            "BackgroundProgram#restoreTabsPerf",
+            this.restoredTabsPerf
+          );
+        }
+      } catch (error) {
+        log(
+          "error",
+          "BackgroundProgram#restoreTabsPerf",
+          "Failed to restore.",
+          error
+        );
       }
     }
   }

@@ -2,7 +2,12 @@
 
 import React from "preact";
 
-import { type Durations, type TabsPerf } from "../shared/perf";
+import {
+  type Durations,
+  type Stats,
+  type TabsPerf,
+  MAX_PERF_ENTRIES,
+} from "../shared/perf";
 
 type Props = {|
   perf: TabsPerf,
@@ -17,89 +22,82 @@ export default function Perf({ perf }: Props) {
           return null;
         }
 
-        const averageDuration = getAverage(
+        const medianDuration = getMedian(
           perfData.map(({ timeToFirstPaint }) => timeToFirstPaint)
         );
+
+        const colSpan = MAX_PERF_ENTRIES + 1;
+
+        const topData = durationsToRows(
+          perfData.map(({ topDurations }) => topDurations)
+        );
+
+        const allStats = perfData.map(({ collectStats }) => collectStats);
+        const noFrames = allStats.every(stats => stats.length === 1);
+
+        const collectRows = statsToRows(
+          sumStats(noFrames ? "(no frames)" : "total", allStats)
+        ).concat(noFrames ? [] : statsToRows(allStats));
+
+        const renderData = durationsToRows(
+          perfData.map(({ renderDurations }) => renderDurations)
+        );
+
+        const allRows = [
+          { title: "Top", data: topData },
+          ...collectRows,
+          { title: "Render", data: renderData },
+        ];
 
         return (
           <div key={tabId} className="tmp">
             <h2>
-              #{tabId}: {perfData[0].collectStats[0].url}
+              #{tabId}:{" "}
+              <abbr title="Median time to first paint in milliseconds.">
+                ({formatDuration(medianDuration)})
+              </abbr>{" "}
+              {perfData[0].collectStats[0].url}
             </h2>
 
-            <p>
-              Average: {formatDuration(averageDuration)} ms (time to first
-              paint)
-            </p>
+            <table>
+              <tr>
+                <th>Phase</th>
+                {Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
+                  <th key={index}>{index + 1}</th>
+                ))}
+              </tr>
 
-            {perfData.map(
-              (
-                {
-                  timeToFirstPaint,
-                  topDurations,
-                  collectStats,
-                  renderDurations,
-                },
-                perfIndex
-              ) => {
-                const collectTables =
-                  collectStats.length === 1
-                    ? [["Collect (no frames)", collectStats[0].durations]]
-                    : [
-                        [
-                          "Collect total",
-                          sumDurations(
-                            collectStats.map(({ durations }) => durations)
-                          ),
-                        ],
-                        ...collectStats.map(({ url, durations }) => [
-                          `Collect ${url}`,
-                          durations,
-                        ]),
-                      ];
-                const tables = [
-                  ["Top", topDurations],
-                  ...collectTables,
-                  ["Render", renderDurations],
-                ];
+              <tr>
+                <th>time to first paint</th>
+                {perfData.map(({ id, timeToFirstPaint }) => (
+                  <td key={id}>{formatDuration(timeToFirstPaint)}</td>
+                ))}
+              </tr>
+              <tr>
+                <th>total</th>
+                {perfData.map(({ id, topDurations }) => (
+                  <td key={id}>
+                    {formatDuration(
+                      topDurations.reduce((sum, [, value]) => sum + value, 0)
+                    )}
+                  </td>
+                ))}
+              </tr>
 
-                return (
-                  <div key={perfIndex}>
-                    <h3>{formatDuration(timeToFirstPaint)} ms</h3>
-                    {tables.map(([caption, durations]) => {
-                      const [durationsWithTotal] = durations.reduce(
-                        ([list, prevTotal], [label, value]) => {
-                          const total = prevTotal + value;
-                          return [list.concat({ label, value, total }), total];
-                        },
-                        [[], 0]
-                      );
-                      return (
-                        <table key={caption}>
-                          <caption>{caption}</caption>
-                          <tbody>
-                            <tr>
-                              <th>Phase</th>
-                              <th>Duration (ms)</th>
-                              <th>Total (ms)</th>
-                            </tr>
-                            {durationsWithTotal.map(
-                              ({ label, value, total }, index) => (
-                                <tr key={index}>
-                                  <td>{label}</td>
-                                  <td>{formatDuration(value)}</td>
-                                  <td>{formatDuration(total)}</td>
-                                </tr>
-                              )
-                            )}
-                          </tbody>
-                        </table>
-                      );
-                    })}
-                  </div>
-                );
-              }
-            )}
+              {allRows.map(({ title, data }) => [
+                <tr key={title}>
+                  <th colSpan={colSpan}>{title}</th>
+                </tr>,
+                data.map(({ heading, values }) => (
+                  <tr key={`${title}-${heading}`}>
+                    <th>{heading}</th>
+                    {values.map((value, index) => (
+                      <td key={index}>{value}</td>
+                    ))}
+                  </tr>
+                )),
+              ])}
+            </table>
           </div>
         );
       })}
@@ -107,12 +105,40 @@ export default function Perf({ perf }: Props) {
   );
 }
 
-function getAverage(numbers: Array<number>): number {
-  return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+function getMedian(numbers: Array<number>): number {
+  const sorted = numbers.slice().sort();
+  if (sorted.length === 0) {
+    return 0;
+  }
+  const mid = sorted.length / 2;
+  if (Number.isInteger(mid)) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[Math.floor(mid)];
 }
 
 function formatDuration(duration: number): string {
-  return duration.toFixed(2);
+  return String(Math.round(duration));
+}
+
+function sumStats(
+  title: string,
+  allStats: Array<Array<Stats>>
+): Array<Array<Stats>> {
+  return allStats.map(stats => {
+    const sum = fn => stats.reduce((result, item) => result + fn(item), 0);
+
+    return [
+      {
+        url: title,
+        numElements: sum(({ numElements }) => numElements),
+        numVisibleElements: sum(({ numVisibleElements }) => numVisibleElements),
+        numVisibleFrames: sum(({ numVisibleFrames }) => numVisibleFrames),
+        bailed: sum(({ bailed }) => bailed),
+        durations: sumDurations(stats.map(({ durations }) => durations)),
+      },
+    ];
+  });
 }
 
 function sumDurations(allDurations: Array<Durations>): Durations {
@@ -126,4 +152,77 @@ function sumDurations(allDurations: Array<Durations>): Durations {
   }
 
   return Array.from(result);
+}
+
+function durationsToRows(
+  allDurations: Array<Durations>
+): Array<{| heading: string, values: Array<string> |}> {
+  const labels = new Set(
+    [].concat(
+      ...allDurations.map(durations => durations.map(([label]) => label))
+    )
+  );
+
+  return Array.from(labels, label => ({
+    heading: label,
+    values: allDurations.map(durations => {
+      const match = durations.find(([label2]) => label2 === label);
+      return match != null ? formatDuration(match[1]) : "-";
+    }),
+  }));
+}
+
+function statsToRows(
+  allStats: Array<Array<Stats>>
+): Array<{|
+  title: string,
+  data: Array<{| heading: string, values: Array<string> |}>,
+|}> {
+  const urls = new Set(
+    [].concat(...allStats.map(stats => stats.map(({ url }) => url)))
+  );
+
+  return Array.from(urls, url => {
+    const allData = allStats.map(stats => {
+      const match = stats.find(({ url: url2 }) => url2 === url);
+      return match != null
+        ? {
+            numElements: String(match.numElements),
+            numVisibleElements: String(match.numVisibleElements),
+            numVisibleFrames: String(match.numVisibleFrames),
+            bailed: String(match.bailed),
+            durations: match.durations,
+          }
+        : {
+            numElements: "-",
+            numVisibleElements: "-",
+            numVisibleFrames: "-",
+            bailed: "-",
+            durations: [],
+          };
+    });
+
+    return {
+      title: `Collect ${url}`,
+      data: [
+        ...durationsToRows(allData.map(({ durations }) => durations)),
+        {
+          heading: "# elements",
+          values: allData.map(({ numElements }) => numElements),
+        },
+        {
+          heading: "# visible elements",
+          values: allData.map(({ numVisibleElements }) => numVisibleElements),
+        },
+        {
+          heading: "# visible frames",
+          values: allData.map(({ numVisibleFrames }) => numVisibleFrames),
+        },
+        {
+          heading: "# bailed",
+          values: allData.map(({ bailed }) => bailed),
+        },
+      ],
+    };
+  });
 }

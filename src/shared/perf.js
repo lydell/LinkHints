@@ -2,7 +2,6 @@
 
 import {
   array,
-  boolean,
   dict,
   field,
   group,
@@ -11,6 +10,8 @@ import {
   record,
   string,
 } from "tiny-decoders";
+
+export const MAX_PERF_ENTRIES = 9;
 
 export type Durations = Array<[string, number]>;
 
@@ -26,21 +27,19 @@ export const decodeDurations: mixed => Durations = array(
 
 export type Stats = {|
   url: string,
-  title: string,
   numElements: number,
   numVisibleElements: number,
   numVisibleFrames: number,
-  bailed: boolean,
+  bailed: number,
   durations: Durations,
 |};
 
 export const decodeStats: mixed => Stats = record({
   url: string,
-  title: string,
   numElements: number,
   numVisibleElements: number,
   numVisibleFrames: number,
-  bailed: boolean,
+  bailed: number,
   durations: decodeDurations,
 });
 

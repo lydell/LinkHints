@@ -317,11 +317,10 @@ export default class ElementManager {
   makeStats(durations: Durations): Stats {
     return {
       url: window.location.href,
-      title: document.title,
       numElements: this.elements.size,
       numVisibleElements: this.visibleElements.size,
       numVisibleFrames: this.visibleFrames.size,
-      bailed: this.bailed,
+      bailed: this.bailed ? 1 : 0,
       durations,
     };
   }

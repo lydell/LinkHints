@@ -636,10 +636,11 @@ pre {
 .tmp td,
 .tmp th {
   text-align: right;
-  width: 20%;
+  width: 8%;
 }
 
 .tmp td:first-child,
 .tmp th:first-child {
   text-align: left;
+  width: 20%;
 }
