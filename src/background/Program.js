@@ -1283,7 +1283,6 @@ export default class BackgroundProgram {
         const timeToLastPaint = lastPaintTimestamp - startTime;
         tabState.perf = [
           {
-            id: Date.now(),
             timeToFirstPaint,
             timeToLastPaint,
             topDurations: time.export(),

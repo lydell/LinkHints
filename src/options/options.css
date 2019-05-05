@@ -6,6 +6,8 @@
   --red: #ec130e;
   --tiny-space: 6px;
 
+  --font-size: 16px;
+
   --Field_padding: 22px;
   --Field_changed-width: 4px;
   --button_border-width: 2px;
@@ -22,16 +24,19 @@ html {
   background-color: var(--grey-leia);
   color: black;
   font-family: system-ui;
+  font-size: var(--font-size);
+  line-height: 1.25;
 }
 
 html.firefox {
   font: menu;
+  font-size: var(--font-size);
 }
 
 body {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.25;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 input,
@@ -355,6 +360,10 @@ pre {
   margin-top: 10px;
 }
 
+.SpacedVertical--large > * + * {
+  margin-top: 30px;
+}
+
 /* .TestLinks {} */
 
 .TestLinks-grid {
@@ -623,24 +632,52 @@ pre {
   font-size: 28px;
 }
 
-.tmp table {
-  margin-top: 15px;
+.PerfTable {
+  border-spacing: 0;
   width: 100%;
 }
 
-.tmp caption {
+.PerfTable caption {
+  padding: 0 var(--Field_padding);
   text-align: left;
+  font-size: 1rem;
   font-weight: bold;
 }
 
-.tmp td,
-.tmp th {
+.PerfTable th,
+.PerfTable td {
   text-align: right;
-  width: 8%;
+  font-weight: normal;
+  padding: 2px 0;
+  padding-right: 5px;
 }
 
-.tmp td:first-child,
-.tmp th:first-child {
+.PerfTable th:first-child,
+.PerfTable td:first-child {
+  padding-left: var(--Field_padding);
   text-align: left;
-  width: 20%;
+}
+
+.PerfTable th:last-child,
+.PerfTable td:last-child {
+  padding-right: var(--Field_padding);
+}
+
+.PerfTable thead th,
+.PerfTable th:only-child {
+  padding-top: 10px;
+  font-weight: bold;
+}
+
+.PerfTable thead th:not(:first-child) {
+  --width: 50px;
+  width: var(--width);
+}
+
+.PerfTable thead th:last-child {
+  width: calc(var(--width) + var(--Field_padding));
+}
+
+.PerfTable-alternate {
+  background-color: var(--grey-leia);
 }

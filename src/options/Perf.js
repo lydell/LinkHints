@@ -1,7 +1,7 @@
 // @flow strict-local
-
 import React from "preact";
 
+import { classlist } from "../shared/main";
 import {
   type Durations,
   type Stats,
@@ -15,7 +15,7 @@ type Props = {|
 
 export default function Perf({ perf }: Props) {
   return (
-    <div className="SpacedVertical">
+    <div className="SpacedVertical SpacedVertical--large">
       {Object.keys(perf).map(tabId => {
         const perfData = perf[tabId];
         if (perfData.length === 0) {
@@ -26,15 +26,12 @@ export default function Perf({ perf }: Props) {
           perfData.map(({ timeToFirstPaint }) => timeToFirstPaint)
         );
 
-        const colSpan = MAX_PERF_ENTRIES + 1;
-
         const topData = durationsToRows(
           perfData.map(({ topDurations }) => topDurations)
         );
 
         const allStats = perfData.map(({ collectStats }) => collectStats);
         const noFrames = allStats.every(stats => stats.length === 1);
-
         const collectRows = statsToRows(
           sumStats(noFrames ? "(no frames)" : "total", allStats)
         ).concat(noFrames ? [] : statsToRows(allStats));
@@ -50,55 +47,73 @@ export default function Perf({ perf }: Props) {
         ];
 
         return (
-          <div key={tabId} className="tmp">
-            <h2>
-              #{tabId}:{" "}
+          <table key={tabId} className="PerfTable TextSmall">
+            <caption>
+              <abbr title={`Tab ID: ${tabId}`}>#{tabId}</abbr>{" "}
               <abbr title="Median time to first paint in milliseconds.">
                 ({formatDuration(medianDuration)})
               </abbr>{" "}
               {perfData[0].collectStats[0].url}
-            </h2>
+            </caption>
 
-            <table>
+            <thead>
               <tr>
                 <th>Phase</th>
                 {Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
                   <th key={index}>{index + 1}</th>
                 ))}
               </tr>
+            </thead>
 
-              <tr>
+            <tbody>
+              <tr className="PerfTable-alternate">
                 <th>time to first paint</th>
-                {perfData.map(({ id, timeToFirstPaint }) => (
-                  <td key={id}>{formatDuration(timeToFirstPaint)}</td>
-                ))}
+                {toCells(
+                  perfData.map(({ timeToFirstPaint }) =>
+                    formatDuration(timeToFirstPaint)
+                  )
+                )}
               </tr>
               <tr>
                 <th>time to last paint</th>
-                {perfData.map(({ id, timeToLastPaint }) => (
-                  <td key={id}>{formatDuration(timeToLastPaint)}</td>
-                ))}
+                {toCells(
+                  perfData.map(({ timeToLastPaint }) =>
+                    formatDuration(timeToLastPaint)
+                  )
+                )}
               </tr>
 
               {allRows.map(({ title, data }) => [
                 <tr key={title}>
-                  <th colSpan={colSpan}>{title}</th>
+                  <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
                 </tr>,
-                data.map(({ heading, values }) => (
-                  <tr key={`${title}-${heading}`}>
+                data.map(({ heading, values }, index) => (
+                  <tr
+                    key={`${title}-${heading}`}
+                    className={classlist({
+                      "PerfTable-alternate": index % 2 === 0,
+                    })}
+                  >
                     <th>{heading}</th>
-                    {values.map((value, index) => (
-                      <td key={index}>{value}</td>
-                    ))}
+                    {toCells(values)}
                   </tr>
                 )),
               ])}
-            </table>
-          </div>
+            </tbody>
+          </table>
         );
       })}
     </div>
   );
+}
+
+function toCells(items: Array<string>): Array<React.Node> {
+  const lastIndex = items.length - 1;
+  return Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
+    <td key={index}>
+      {index <= lastIndex ? items[index] : null}
+    </td>
+  ));
 }
 
 function getMedian(numbers: Array<number>): number {
