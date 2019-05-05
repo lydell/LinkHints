@@ -49,18 +49,30 @@ export default function Perf({ perf }: Props) {
         return (
           <table key={tabId} className="PerfTable TextSmall">
             <caption>
-              <abbr title={`Tab ID: ${tabId}`}>#{tabId}</abbr>{" "}
-              <abbr title="Median time to first paint in milliseconds.">
+              <span title={`Tab ID: ${tabId}`}>#{tabId}</span>{" "}
+              <span title="Median time to first paint in milliseconds.">
                 ({formatDuration(medianDuration)})
-              </abbr>{" "}
-              {perfData[0].collectStats[0].url}
+              </span>{" "}
+              {Array.from(
+                new Set(perfData.map(({ collectStats }) => collectStats[0].url))
+              ).join(" | ")}
             </caption>
 
             <thead>
               <tr>
                 <th>Phase</th>
                 {Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
-                  <th key={index}>{index + 1}</th>
+                  <th key={index}>
+                    <span
+                      title={
+                        index < perfData.length
+                          ? perfData[index].collectStats[0].url
+                          : undefined
+                      }
+                    >
+                      {index + 1}
+                    </span>
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -110,9 +122,7 @@ export default function Perf({ perf }: Props) {
 function toCells(items: Array<string>): Array<React.Node> {
   const lastIndex = items.length - 1;
   return Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
-    <td key={index}>
-      {index <= lastIndex ? items[index] : null}
-    </td>
+    <td key={index}>{index <= lastIndex ? items[index] : null}</td>
   ));
 }
 

@@ -681,3 +681,7 @@ pre {
 .PerfTable-alternate {
   background-color: var(--grey-leia);
 }
+
+.PerfTable [title] {
+  border-bottom: 1px dotted currentColor;
+}
