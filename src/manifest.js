@@ -33,13 +33,6 @@ module.exports = () =>
       page: config.optionsHtml,
       open_in_tab: true,
     },
-    commands: {
-      _execute_browser_action: {
-        suggested_key: {
-          default: "Ctrl+Shift+F",
-        },
-      },
-    },
     background: {
       scripts: [
         config.needsPolyfill ? config.polyfill.output : undefined,

@@ -15,7 +15,7 @@ import type {
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
 import type { OptionsData, PartialOptions } from "./options";
-import type { Durations, Perf, Stats, TabsPerf } from "./perf";
+import type { Durations, Stats, TabsPerf } from "./perf";
 
 export type FromBackground =
   | {|
@@ -197,25 +197,14 @@ export type ToRenderer =
       type: "Unrender",
     |};
 
-export type FromPopup =
-  | {|
-      type: "PopupScriptAdded",
-    |}
-  | {|
-      type: "ResetPerf",
-    |};
+export type FromPopup = {|
+  type: "PopupScriptAdded",
+|};
 
 export type ToPopup = {|
   type: "Init",
   logLevel: LogLevel,
-  state:
-    | {|
-        type: "Normal",
-        perf: Perf,
-      |}
-    | {|
-        type: "Disabled",
-      |},
+  isEnabled: boolean,
 |};
 
 export type FromOptions =

@@ -1311,36 +1311,7 @@ export default class BackgroundProgram {
         this.sendPopupMessage({
           type: "Init",
           logLevel: log.level,
-          state:
-            tabState == null
-              ? { type: "Disabled" }
-              : {
-                  type: "Normal",
-                  perf: tabState.perf,
-                },
-        });
-        break;
-      }
-
-      case "ResetPerf": {
-        const tab = await getCurrentTab();
-        const tabState = this.tabState.get(tab.id);
-        if (tabState == null) {
-          return;
-        }
-
-        tabState.perf = [];
-        this.sendPopupMessage({
-          type: "Init",
-          logLevel: log.level,
-          state: {
-            type: "Normal",
-            perf: tabState.perf,
-          },
-        });
-        this.sendOptionsMessage({
-          type: "PerfUpdate",
-          perf: { [tab.id]: tabState.perf },
+          isEnabled: tabState != null,
         });
         break;
       }
