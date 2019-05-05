@@ -1951,7 +1951,7 @@ export default class BackgroundProgram {
       const { optionsPage } = await browser.storage.local.get("optionsPage");
       if (typeof optionsPage === "boolean") {
         const isActive = optionsPage;
-        const [activeTab] = await browser.tabs.query({ active: true });
+        const activeTab = await getCurrentTab;
         await browser.runtime.openOptionsPage();
         if (!isActive) {
           await browser.tabs.update(activeTab.id, { active: true });
@@ -2120,7 +2120,10 @@ function firefoxWorkaround(tabs: Array<Tab>) {
 }
 
 async function getCurrentTab(): Promise<Tab> {
-  const tabs = await browser.tabs.query({ active: true });
+  const tabs = await browser.tabs.query({
+    active: true,
+    windowId: browser.windows.WINDOW_ID_CURRENT,
+  });
   if (tabs.length !== 1) {
     throw new Error(
       `getCurrentTab: Got an unexpected amount of tabs: ${tabs.length}`

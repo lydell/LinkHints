@@ -242,4 +242,7 @@ declare var browser: {|
     update: (TabUpdateProperties => Promise<Tab>) &
       ((tabId: number, TabUpdateProperties) => Promise<Tab>),
   |},
+  windows: {|
+    WINDOW_ID_CURRENT: number,
+  |},
 |};
