@@ -12,18 +12,34 @@ import {
 type Props = {|
   perf: TabsPerf,
   expandedPerfTabIds: Array<string>,
-  onExpandChange: Array<string> => void,
+  onExpandChange: (Array<string>) => void,
 |};
 
-export default function Perf({ perf, expandedPerfTabIds, onExpandChange }: Props) {
+export default function Perf({
+  perf,
+  expandedPerfTabIds,
+  onExpandChange,
+}: Props) {
+  const keys = Object.keys(perf);
+
   return (
     <div className="SpacedVertical SpacedVertical--large">
-      <p>
-        Here you can see some numbers on how entering hints mode the last{" "}
-        {MAX_PERF_ENTRIES} times performed. Most numbers are milliseconds.
-      </p>
+      <div className="PerfIntro TextSmall">
+        <p>
+          Here you can see some numbers on how entering hints mode the last{" "}
+          {MAX_PERF_ENTRIES} times performed. Most numbers are milliseconds.
+        </p>
 
-      {Object.keys(perf).map(tabId => {
+        {keys.every(tabId => perf[tabId].length === 0) && (
+          <p>
+            <strong>
+              Enter hints mode in a tab and stats will appear here!
+            </strong>
+          </p>
+        )}
+      </div>
+
+      {keys.map(tabId => {
         const perfData = perf[tabId];
         if (perfData.length === 0) {
           return null;
@@ -57,13 +73,22 @@ export default function Perf({ perf, expandedPerfTabIds, onExpandChange }: Props
 
         return (
           <table key={tabId} className="PerfTable TextSmall">
-            <caption onClick={() => {
-              onExpandChange(expandedPerfTabIds.filter(id => id !== tabId).concat(expanded ? [] : [tabId]))
-            }}>
-              <span title={`Tab ID: ${tabId}`}>#{tabId}</span>{" "}
+            <caption
+              className={classlist("Toggle", { "is-open": expanded })}
+              onClick={() => {
+                onExpandChange(
+                  expandedPerfTabIds
+                    .filter(id => id !== tabId)
+                    .concat(expanded ? [] : [tabId])
+                );
+              }}
+            >
+              <span title={`Tab ID: ${tabId}`}>#{tabId}</span>
+              {" – "}
               <span title="Median time to first paint in milliseconds.">
-                ({formatDuration(medianDuration)})
-              </span>{" "}
+                {formatDuration(medianDuration)} ms
+              </span>
+              {" – "}
               {Array.from(
                 new Set(perfData.map(({ collectStats }) => collectStats[0].url))
               ).join(" | ")}

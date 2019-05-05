@@ -1,7 +1,15 @@
 // @flow strict-local
 
 import * as React from "preact";
-import { array, map, number, optional, record, string } from "tiny-decoders";
+import {
+  array,
+  boolean,
+  map,
+  number,
+  optional,
+  record,
+  string,
+} from "tiny-decoders";
 
 import {
   CSS,
@@ -45,6 +53,7 @@ import { type TabsPerf } from "../shared/perf";
 import Attachment from "./Attachment";
 import ButtonWithPopup from "./ButtonWithPopup";
 import CSSPreview from "./CSSPreview";
+import Details from "./Details";
 import Field from "./Field";
 import ImportSummary from "./ImportSummary";
 import KeyboardShortcut from "./KeyboardShortcut";
@@ -86,7 +95,9 @@ type State = {|
     errors: Array<string>,
   |},
   perf: TabsPerf,
-  expandedPerfTabIds: ?Array<string>,
+  expandedPerfTabIds: Array<string>,
+  expandedPerf: boolean,
+  expandedDebug: boolean,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -112,7 +123,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
       errors: [],
     },
     perf: {},
-    expandedPerfTabIds: undefined,
+    expandedPerfTabIds: [],
+    expandedPerf: false,
+    expandedDebug: false,
   };
 
   constructor(props: Props) {
@@ -325,6 +338,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
       importData,
       perf,
       expandedPerfTabIds,
+      expandedPerf,
+      expandedDebug,
     } = this.state;
 
     if (optionsData == null) {
@@ -1036,34 +1051,36 @@ export default class OptionsProgram extends React.Component<Props, State> {
             )}
           />
 
-          <button
-            type="button"
-            onClick={() => {
-              this.setState(
-                {
-                  expandedPerfTabIds:
-                    expandedPerfTabIds == null ? [] : undefined,
-                },
-                this.savePosition
-              );
-            }}
-          >
-            {expandedPerfTabIds == null
-              ? "Show performance"
-              : "Hide performance"}
-          </button>
-          {expandedPerfTabIds != null && (
-            <Perf
-              perf={perf}
-              expandedPerfTabIds={expandedPerfTabIds}
-              onExpandChange={newExpandedPerfTabIds => {
-                this.setState(
-                  { expandedPerfTabIds: newExpandedPerfTabIds },
-                  this.savePosition
-                );
+          <div className="SpacedVertical SpacedVertical--large">
+            <Details
+              summary="Performance"
+              open={expandedPerf}
+              onChange={newOpen => {
+                this.setState({ expandedPerf: newOpen }, this.savePosition);
               }}
-            />
-          )}
+            >
+              <Perf
+                perf={perf}
+                expandedPerfTabIds={expandedPerfTabIds}
+                onExpandChange={newExpandedPerfTabIds => {
+                  this.setState(
+                    { expandedPerfTabIds: newExpandedPerfTabIds },
+                    this.savePosition
+                  );
+                }}
+              />
+            </Details>
+
+            <Details
+              summary="Debug"
+              open={expandedDebug}
+              onChange={newOpen => {
+                this.setState({ expandedDebug: newOpen }, this.savePosition);
+              }}
+            >
+              <p>Debug</p>
+            </Details>
+          </div>
 
           <div id="errors" />
           {errors.length > 0 && (
@@ -1250,8 +1267,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   async savePosition() {
     if (!PROD) {
-      const { expandedPerfTabIds } = this.state;
-      await browser.storage.local.set({ expandedPerfTabIds });
+      const { expandedPerfTabIds, expandedPerf, expandedDebug } = this.state;
+      await browser.storage.local.set({
+        expandedPerfTabIds,
+        expandedPerf,
+        expandedDebug,
+      });
     }
   }
 
@@ -1261,22 +1282,21 @@ export default class OptionsProgram extends React.Component<Props, State> {
         return;
       }
       this.hasRestoredPosition = true;
-      const { perf } = this.state;
-      const data = await browser.storage.local.get([
-        "expandedPerfTabIds",
-        "scrollY",
-      ]);
-      const decoder = record({
+      const recordProps = {
         expandedPerfTabIds: optional(
           map(array(string), ids =>
-            ids.filter(id => ({}.hasOwnProperty.call(perf, id)))
+            ids.filter(id => ({}.hasOwnProperty.call(this.state.perf, id)))
           ),
-          undefined
+          []
         ),
+        expandedPerf: optional(boolean, false),
+        expandedDebug: optional(boolean, false),
         scrollY: optional(number, 0),
-      });
-      const { expandedPerfTabIds, scrollY } = decoder(data);
-      this.setState({ expandedPerfTabIds }, () => {
+      };
+      const data = await browser.storage.local.get(Object.keys(recordProps));
+      const decoder = record(recordProps);
+      const { scrollY, expandedPerfTabIds, ...state } = decoder(data);
+      this.setState({ ...state, expandedPerfTabIds }, () => {
         window.scrollTo(0, scrollY);
       });
     }
