@@ -1278,12 +1278,14 @@ export default class BackgroundProgram {
         }
         const { startTime, time, stats: collectStats } = hintsState;
         time.stop();
-        const { durations, firstPaintTimestamp } = message;
+        const { durations, firstPaintTimestamp, lastPaintTimestamp } = message;
         const timeToFirstPaint = firstPaintTimestamp - startTime;
+        const timeToLastPaint = lastPaintTimestamp - startTime;
         tabState.perf = [
           {
             id: Date.now(),
             timeToFirstPaint,
+            timeToLastPaint,
             topDurations: time.export(),
             collectStats,
             renderDurations: durations,

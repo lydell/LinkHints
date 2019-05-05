@@ -455,9 +455,12 @@ export default class RendererProgram {
       await waitForPaint();
     }
 
+    const lastPaintTimestamp = performance.now();
+
     this.sendMessage({
       type: "Rendered",
       firstPaintTimestamp,
+      lastPaintTimestamp,
       durations: time.export(),
     });
   }

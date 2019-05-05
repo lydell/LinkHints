@@ -74,13 +74,9 @@ export default function Perf({ perf }: Props) {
                 ))}
               </tr>
               <tr>
-                <th>total</th>
-                {perfData.map(({ id, topDurations }) => (
-                  <td key={id}>
-                    {formatDuration(
-                      topDurations.reduce((sum, [, value]) => sum + value, 0)
-                    )}
-                  </td>
+                <th>time to last paint</th>
+                {perfData.map(({ id, timeToLastPaint }) => (
+                  <td key={id}>{formatDuration(timeToLastPaint)}</td>
                 ))}
               </tr>
 

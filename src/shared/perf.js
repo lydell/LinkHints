@@ -46,6 +46,7 @@ export const decodeStats: mixed => Stats = record({
 export type Perf = Array<{|
   id: number,
   timeToFirstPaint: number,
+  timeToLastPaint: number,
   topDurations: Durations,
   collectStats: Array<Stats>,
   renderDurations: Durations,
@@ -55,6 +56,7 @@ export const decodePerf: mixed => Perf = array(
   record({
     id: number,
     timeToFirstPaint: number,
+    timeToLastPaint: number,
     topDurations: decodeDurations,
     collectStats: array(decodeStats),
     renderDurations: decodeDurations,

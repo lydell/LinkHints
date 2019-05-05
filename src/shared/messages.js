@@ -159,6 +159,7 @@ export type FromRenderer =
       type: "Rendered",
       durations: Durations,
       firstPaintTimestamp: number,
+      lastPaintTimestamp: number,
     |};
 
 export type ToRenderer =
