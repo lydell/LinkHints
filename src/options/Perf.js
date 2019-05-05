@@ -11,11 +11,18 @@ import {
 
 type Props = {|
   perf: TabsPerf,
+  expandedPerfTabIds: Array<string>,
+  onExpandChange: Array<string> => void,
 |};
 
-export default function Perf({ perf }: Props) {
+export default function Perf({ perf, expandedPerfTabIds, onExpandChange }: Props) {
   return (
     <div className="SpacedVertical SpacedVertical--large">
+      <p>
+        Here you can see some numbers on how entering hints mode the last{" "}
+        {MAX_PERF_ENTRIES} times performed. Most numbers are milliseconds.
+      </p>
+
       {Object.keys(perf).map(tabId => {
         const perfData = perf[tabId];
         if (perfData.length === 0) {
@@ -46,9 +53,13 @@ export default function Perf({ perf }: Props) {
           { title: "Render", data: renderData },
         ];
 
+        const expanded = expandedPerfTabIds.includes(tabId);
+
         return (
           <table key={tabId} className="PerfTable TextSmall">
-            <caption>
+            <caption onClick={() => {
+              onExpandChange(expandedPerfTabIds.filter(id => id !== tabId).concat(expanded ? [] : [tabId]))
+            }}>
               <span title={`Tab ID: ${tabId}`}>#{tabId}</span>{" "}
               <span title="Median time to first paint in milliseconds.">
                 ({formatDuration(medianDuration)})
@@ -58,60 +69,64 @@ export default function Perf({ perf }: Props) {
               ).join(" | ")}
             </caption>
 
-            <thead>
-              <tr>
-                <th>Phase</th>
-                {Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
-                  <th key={index}>
-                    <span
-                      title={
-                        index < perfData.length
-                          ? perfData[index].collectStats[0].url
-                          : undefined
-                      }
+            {expanded && (
+              <thead>
+                <tr>
+                  <th>Phase</th>
+                  {Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
+                    <th key={index}>
+                      <span
+                        title={
+                          index < perfData.length
+                            ? perfData[index].collectStats[0].url
+                            : undefined
+                        }
+                      >
+                        {index + 1}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            )}
+
+            {expanded && (
+              <tbody>
+                <tr className="PerfTable-alternate">
+                  <th>time to first paint</th>
+                  {toCells(
+                    perfData.map(({ timeToFirstPaint }) =>
+                      formatDuration(timeToFirstPaint)
+                    )
+                  )}
+                </tr>
+                <tr>
+                  <th>time to last paint</th>
+                  {toCells(
+                    perfData.map(({ timeToLastPaint }) =>
+                      formatDuration(timeToLastPaint)
+                    )
+                  )}
+                </tr>
+
+                {allRows.map(({ title, data }) => [
+                  <tr key={title}>
+                    <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
+                  </tr>,
+                  data.map(({ heading, values }, index) => (
+                    <tr
+                      key={`${title}-${heading}`}
+                      className={classlist({
+                        "PerfTable-alternate": index % 2 === 0,
+                      })}
                     >
-                      {index + 1}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr className="PerfTable-alternate">
-                <th>time to first paint</th>
-                {toCells(
-                  perfData.map(({ timeToFirstPaint }) =>
-                    formatDuration(timeToFirstPaint)
-                  )
-                )}
-              </tr>
-              <tr>
-                <th>time to last paint</th>
-                {toCells(
-                  perfData.map(({ timeToLastPaint }) =>
-                    formatDuration(timeToLastPaint)
-                  )
-                )}
-              </tr>
-
-              {allRows.map(({ title, data }) => [
-                <tr key={title}>
-                  <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
-                </tr>,
-                data.map(({ heading, values }, index) => (
-                  <tr
-                    key={`${title}-${heading}`}
-                    className={classlist({
-                      "PerfTable-alternate": index % 2 === 0,
-                    })}
-                  >
-                    <th>{heading}</th>
-                    {toCells(values)}
-                  </tr>
-                )),
-              ])}
-            </tbody>
+                      <th>{heading}</th>
+                      {toCells(values)}
+                    </tr>
+                  )),
+                ])}
+              </tbody>
+            )}
           </table>
         );
       })}

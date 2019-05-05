@@ -1,6 +1,7 @@
 // @flow strict-local
 
 import * as React from "preact";
+import { array, map, number, optional, record, string } from "tiny-decoders";
 
 import {
   CSS,
@@ -20,6 +21,7 @@ import {
 } from "../shared/keyboard";
 import {
   Resets,
+  addEventListener,
   addListener,
   bind,
   classlist,
@@ -84,12 +86,14 @@ type State = {|
     errors: Array<string>,
   |},
   perf: TabsPerf,
+  expandedPerfTabIds: ?Array<string>,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets = new Resets();
   hiddenErrors: Array<string> = [];
   keysTableRef: { current: HTMLDivElement | null } = React.createRef();
+  hasRestoredPosition: boolean = false;
 
   state = {
     options: undefined,
@@ -108,6 +112,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       errors: [],
     },
     perf: {},
+    expandedPerfTabIds: undefined,
   };
 
   constructor(props: Props) {
@@ -115,7 +120,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     bind(this, [
       [this.onMessage, { catch: true }],
+      [this.onScroll, { catch: true }],
+      [this.restorePosition, { catch: true }],
       [this.savePerf, { catch: true }],
+      [this.savePosition, { catch: true }],
       [this.sendMessage, { catch: true }],
       [this.start, { log: true, catch: true }],
       [this.stop, { log: true, catch: true }],
@@ -124,6 +132,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   start() {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+
+    if (!PROD) {
+      this.resets.add(addEventListener(window, "scroll", this.onScroll));
+    }
 
     const { documentElement } = document;
     if (documentElement != null) {
@@ -214,6 +226,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   async savePerf() {
     if (!PROD) {
       await browser.storage.local.set({ perf: this.state.perf });
+      await this.restorePosition();
     }
   }
 
@@ -311,6 +324,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       cssSuggestion,
       importData,
       perf,
+      expandedPerfTabIds,
     } = this.state;
 
     if (optionsData == null) {
@@ -1022,7 +1036,34 @@ export default class OptionsProgram extends React.Component<Props, State> {
             )}
           />
 
-          <Perf perf={perf} />
+          <button
+            type="button"
+            onClick={() => {
+              this.setState(
+                {
+                  expandedPerfTabIds:
+                    expandedPerfTabIds == null ? [] : undefined,
+                },
+                this.savePosition
+              );
+            }}
+          >
+            {expandedPerfTabIds == null
+              ? "Show performance"
+              : "Hide performance"}
+          </button>
+          {expandedPerfTabIds != null && (
+            <Perf
+              perf={perf}
+              expandedPerfTabIds={expandedPerfTabIds}
+              onExpandChange={newExpandedPerfTabIds => {
+                this.setState(
+                  { expandedPerfTabIds: newExpandedPerfTabIds },
+                  this.savePosition
+                );
+              }}
+            />
+          )}
 
           <div id="errors" />
           {errors.length > 0 && (
@@ -1199,6 +1240,46 @@ export default class OptionsProgram extends React.Component<Props, State> {
       },
       { once: true }
     );
+  }
+
+  async onScroll() {
+    if (!PROD) {
+      await browser.storage.local.set({ scrollY: window.scrollY });
+    }
+  }
+
+  async savePosition() {
+    if (!PROD) {
+      const { expandedPerfTabIds } = this.state;
+      await browser.storage.local.set({ expandedPerfTabIds });
+    }
+  }
+
+  async restorePosition() {
+    if (!PROD) {
+      if (this.hasRestoredPosition) {
+        return;
+      }
+      this.hasRestoredPosition = true;
+      const { perf } = this.state;
+      const data = await browser.storage.local.get([
+        "expandedPerfTabIds",
+        "scrollY",
+      ]);
+      const decoder = record({
+        expandedPerfTabIds: optional(
+          map(array(string), ids =>
+            ids.filter(id => ({}.hasOwnProperty.call(perf, id)))
+          ),
+          undefined
+        ),
+        scrollY: optional(number, 0),
+      });
+      const { expandedPerfTabIds, scrollY } = decoder(data);
+      this.setState({ expandedPerfTabIds }, () => {
+        window.scrollTo(0, scrollY);
+      });
+    }
   }
 }
 
