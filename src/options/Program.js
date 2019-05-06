@@ -1084,6 +1084,16 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 this.setState({ expandedDebug: newOpen }, this.savePosition);
               }}
             >
+              <div className="Intro">
+                <p>
+                  <strong>Change only if you know what you’re doing!</strong>
+                </p>
+                <p>
+                  Changing some of these options might require refreshing tabs
+                  or restarting the browser to take effect.
+                </p>
+              </div>
+
               <Field
                 key="logLevel"
                 id="logLevel"

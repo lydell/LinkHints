@@ -636,8 +636,8 @@ pre {
   font-size: 28px;
 }
 
-.PerfIntro {
-  padding: 18px var(--Field_padding) 0;
+.Intro {
+  padding: 18px var(--Field_padding);
 }
 
 .PerfTable {

@@ -28,7 +28,7 @@ export default function Perf({
 
   return (
     <div className="SpacedVertical SpacedVertical--large">
-      <div className="PerfIntro">
+      <div className="Intro" style={{ paddingBottom: 0 }}>
         <div className="Spaced">
           <div>
             <p>
