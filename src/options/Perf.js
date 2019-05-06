@@ -95,25 +95,29 @@ export default function Perf({
 
         return (
           <table key={tabId} className="PerfTable TextSmall">
-            <caption
-              className={classlist("Toggle", { "is-open": expanded })}
-              onClick={() => {
-                onExpandChange(
-                  expandedPerfTabIds
-                    .filter(id => id !== tabId)
-                    .concat(expanded ? [] : [tabId])
-                );
-              }}
-            >
-              <span title={`Tab ID: ${tabId}`}>#{tabId}</span>
-              {" – "}
-              <span title="Median time to first paint in milliseconds.">
-                {formatDuration(medianDuration)} ms
-              </span>
-              {" – "}
-              {Array.from(
-                new Set(perfData.map(({ collectStats }) => collectStats[0].url))
-              ).join(" | ")}
+            <caption className={classlist("Toggle", { "is-open": expanded })}>
+              <button
+                type="button"
+                onClick={() => {
+                  onExpandChange(
+                    expandedPerfTabIds
+                      .filter(id => id !== tabId)
+                      .concat(expanded ? [] : [tabId])
+                  );
+                }}
+              >
+                <span title={`Tab ID: ${tabId}`}>#{tabId}</span>
+                {" – "}
+                <span title="Median time to first paint in milliseconds.">
+                  {formatDuration(medianDuration)} ms
+                </span>
+                {" – "}
+                {Array.from(
+                  new Set(
+                    perfData.map(({ collectStats }) => collectStats[0].url)
+                  )
+                ).join(" | ")}
+              </button>
             </caption>
 
             {expanded && (
