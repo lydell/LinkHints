@@ -28,11 +28,13 @@ import {
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
+  LOG_LEVELS,
   Resets,
   addEventListener,
   addListener,
   bind,
   classlist,
+  decodeLogLevel,
   deepEqual,
   log,
   unreachable,
@@ -1082,7 +1084,36 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 this.setState({ expandedDebug: newOpen }, this.savePosition);
               }}
             >
-              <p>Debug</p>
+              <Field
+                key="logLevel"
+                id="logLevel"
+                label="Log level"
+                changed={options.logLevel !== defaults.logLevel}
+                render={({ id }) => (
+                  <select
+                    id={id}
+                    value={options.logLevel}
+                    onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
+                      const { value } = event.currentTarget;
+                      try {
+                        const logLevel = decodeLogLevel(value);
+                        this.saveOptions({ logLevel });
+                      } catch (error) {
+                        log(
+                          "error",
+                          "OptionsProgram#render",
+                          "Failed to decode logLevel.",
+                          error
+                        );
+                      }
+                    }}
+                  >
+                    {Object.keys(LOG_LEVELS).map(level => (
+                      <option key={level}>{level}</option>
+                    ))}
+                  </select>
+                )}
+              />
             </Details>
           </div>
 

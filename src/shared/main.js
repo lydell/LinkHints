@@ -22,7 +22,7 @@ export function decodeLogLevel(logLevel: string): LogLevel {
   }
 }
 
-const LOG_LEVELS = {
+export const LOG_LEVELS = {
   error: 0,
   warn: 1,
   log: 2,
