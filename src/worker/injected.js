@@ -336,7 +336,6 @@ export default () => {
         if (deadline.timeRemaining() <= 0) {
           timesUp = true;
           this.queue = this.queue.slice(index + 1);
-          this.requestIdleCallback();
           break;
         }
       }
@@ -355,7 +354,9 @@ export default () => {
         this.sendQueue.push({ added: false, element });
       }
 
-      if (!timesUp) {
+      if (timesUp) {
+        this.requestIdleCallback();
+      } else {
         this.flushSendQueue(deadline);
       }
     }
