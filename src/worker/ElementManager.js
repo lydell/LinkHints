@@ -185,7 +185,9 @@ const PROBE_STYLES = {
   height: "1px",
 };
 
-const infiniteDeadline = {
+type Deadline = { timeRemaining: () => number };
+
+const infiniteDeadline: Deadline = {
   timeRemaining: () => Infinity,
 };
 
@@ -515,7 +517,7 @@ export default class ElementManager {
     }
   }
 
-  flushQueue(deadline: { timeRemaining: () => number }) {
+  flushQueue(deadline: Deadline) {
     for (const [index, { mutationType, element }] of this.queue.entries()) {
       const type =
         mutationType === "removed" ? undefined : this.getElementType(element);

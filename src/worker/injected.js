@@ -88,7 +88,9 @@ export default () => {
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
 
-  const infiniteDeadline = {
+  type Deadline = { timeRemaining: () => number };
+
+  const infiniteDeadline: Deadline = {
     timeRemaining: () => Infinity,
   };
 
@@ -240,8 +242,6 @@ export default () => {
     added: boolean,
     element: HTMLElement,
   |};
-
-  type Deadline = { timeRemaining: () => number };
 
   class ClickListenerTracker {
     clickListenersByElement: ClickListenersByElement = new Map();
