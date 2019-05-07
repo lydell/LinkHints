@@ -1119,7 +1119,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     }}
                   >
                     {Object.keys(LOG_LEVELS).map(level => (
-                      <option key={level}>{level}</option>
+                      <option key={level} value={level}>
+                        {level.slice(0, 1).toUpperCase() + level.slice(1)}
+                      </option>
                     ))}
                   </select>
                 )}
