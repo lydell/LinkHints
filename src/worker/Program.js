@@ -44,12 +44,6 @@ type CurrentElements = {|
   updating: boolean,
 |};
 
-// The single-page HTML specification has over 70K links! If trying to track all
-// of those with `IntersectionObserver`, scrolling is noticeably laggy. On my
-// computer, the lag starts somewhere between 10K and 20K tracked links.
-// Tracking at most 10K should be enough for regular sites.
-const MAX_INTERSECTION_OBSERVED_ELEMENTS = 10e3;
-
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping> = [];
   keyboardMode: KeyboardMode = "Normal";
@@ -60,7 +54,6 @@ export default class WorkerProgram {
   resets: Resets = new Resets();
 
   elementManager: ElementManager = new ElementManager({
-    maxIntersectionObservedElements: MAX_INTERSECTION_OBSERVED_ELEMENTS,
     onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
   });
 
@@ -88,7 +81,7 @@ export default class WorkerProgram {
       addEventListener(window, "message", this.onWindowMessage),
       addEventListener(window, "pagehide", this.onPagehide)
     );
-    this.elementManager.start();
+    await this.elementManager.start();
 
     // See `RendererProgram#start`.
     try {

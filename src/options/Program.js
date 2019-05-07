@@ -68,6 +68,7 @@ import KeyboardShortcuts, {
 import Perf from "./Perf";
 import TestLinks from "./TestLinks";
 import TextInput from "./TextInput";
+import Tweakable from "./Tweakable";
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -1126,6 +1127,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   </select>
                 )}
               />
+
+              <Tweakable />
             </Details>
           </div>
 

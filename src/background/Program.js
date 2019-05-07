@@ -57,6 +57,7 @@ import {
   TimeTracker,
   decodeTabsPerf,
 } from "../shared/perf";
+import { tweakable } from "../shared/tweakable";
 
 type MessageInfo = {|
   tabId: number,
@@ -139,22 +140,26 @@ const BADGE_COLOR = "#323234";
 // Defaults to 0 (the top-level frame).”
 const TOP_FRAME_ID = 0;
 
-// Some onscreen frames may never respond (if the frame 404s or hasn't loaded
-// yet), but the parent can't now that. If a frame hasn't reported that it is
-// alive after this timeout, ignore it.
-const FRAME_REPORT_TIMEOUT = 100; // ms
+export const t = {
+  // Some onscreen frames may never respond (if the frame 404s or hasn't loaded
+  // yet), but the parent can't now that. If a frame hasn't reported that it is
+  // alive after this timeout, ignore it.
+  FRAME_REPORT_TIMEOUT: 100, // ms
 
-// Only show the bagde “spinner” if the hints are slow.
-const BADGE_COLLECTING_DELAY = 300; // ms
+  // Only show the bagde “spinner” if the hints are slow.
+  BADGE_COLLECTING_DELAY: 300, // ms
 
-// Roughly how often to update the hints in hints mode. While a lower number
-// might yield updates faster, that feels very stuttery. Having a somewhat
-// longer interval feels better.
-const UPDATE_INTERVAL = 500; // ms
-const UPDATE_MIN_TIMEOUT = 100; // ms
+  // Roughly how often to update the hints in hints mode. While a lower number
+  // might yield updates faster, that feels very stuttery. Having a somewhat
+  // longer interval feels better.
+  UPDATE_INTERVAL: 500, // ms
+  UPDATE_MIN_TIMEOUT: 100, // ms
 
-// How long a matched/activated hint should show as highlighted.
-const MATCH_HIGHLIGHT_DURATION = 200; // ms
+  // How long a matched/activated hint should show as highlighted.
+  MATCH_HIGHLIGHT_DURATION: 200, // ms
+};
+
+export const tMeta = tweakable("Background", t);
 
 export default class BackgroundProgram {
   options: OptionsData;
@@ -475,7 +480,7 @@ export default class BackgroundProgram {
               numFramesCollecting:
                 hintsState.pendingElements.pendingFrames.collecting,
             });
-          }, FRAME_REPORT_TIMEOUT);
+          }, t.FRAME_REPORT_TIMEOUT);
         }
         break;
       }
@@ -538,23 +543,23 @@ export default class BackgroundProgram {
 
           const timeout =
             elapsedTime == null
-              ? UPDATE_INTERVAL
-              : Math.max(0, UPDATE_INTERVAL - elapsedTime);
+              ? t.UPDATE_INTERVAL
+              : Math.max(0, t.UPDATE_INTERVAL - elapsedTime);
 
           clearUpdateTimeout(updateState);
 
           log("log", "Scheduling next elements update", {
-            UPDATE_INTERVAL,
+            UPDATE_INTERVAL: t.UPDATE_INTERVAL,
             elapsedTime,
             timeout,
-            UPDATE_MIN_TIMEOUT,
+            UPDATE_MIN_TIMEOUT: t.UPDATE_MIN_TIMEOUT,
           });
 
           hintsState.updateState = {
             type: "Timeout",
             timeoutId: setTimeout(() => {
               this.updateElements(info.tabId);
-            }, Math.max(UPDATE_MIN_TIMEOUT, timeout)),
+            }, Math.max(t.UPDATE_MIN_TIMEOUT, timeout)),
           };
         }
         break;
@@ -774,7 +779,7 @@ export default class BackgroundProgram {
       const timeoutId = setTimeout(() => {
         unsetUnrenderTimeoutId(tabState);
         this.sendRendererMessage({ type: "Unrender" }, { tabId });
-      }, MATCH_HIGHLIGHT_DURATION);
+      }, t.MATCH_HIGHLIGHT_DURATION);
 
       clearUpdateTimeout(hintsState.updateState);
       tabState.hintsState = {
@@ -950,7 +955,7 @@ export default class BackgroundProgram {
             hintsState.highlightedIndexes = new Set();
           }
           this.refreshHintsRendering(tabId);
-        }, MATCH_HIGHLIGHT_DURATION);
+        }, t.MATCH_HIGHLIGHT_DURATION);
 
         return false;
       }
@@ -1142,7 +1147,7 @@ export default class BackgroundProgram {
         type: "Timeout",
         timeoutId: setTimeout(() => {
           this.updateElements(tabId);
-        }, UPDATE_INTERVAL),
+        }, t.UPDATE_INTERVAL),
       },
       peeking: false,
     };
@@ -1582,7 +1587,7 @@ export default class BackgroundProgram {
 
     setTimeout(() => {
       this.updateBadge(tabId);
-    }, BADGE_COLLECTING_DELAY);
+    }, t.BADGE_COLLECTING_DELAY);
   }
 
   exitHintsMode({
@@ -1614,7 +1619,7 @@ export default class BackgroundProgram {
     const timeoutId = !unrender
       ? undefined
       : delayed
-      ? setTimeout(unrenderCallback, MATCH_HIGHLIGHT_DURATION)
+      ? setTimeout(unrenderCallback, t.MATCH_HIGHLIGHT_DURATION)
       : unrenderCallback();
 
     tabState.hintsState = { type: "Idle", timeoutId };
