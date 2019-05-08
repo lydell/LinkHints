@@ -51,7 +51,7 @@ const constants = {
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
-const CLICKABLE_ATTRIBUTES = new Set<string>([
+const ATTRIBUTES_CLICKABLE = new Set<string>([
   // These are supposed to be used with a `role` attribute. In some GitHub
   // dropdowns some items only have this attribute hinting that they are
   // clickable, though.
@@ -75,15 +75,15 @@ export const t = {
   // Tracking at most 10K should be enough for regular sites.
   MAX_INTERSECTION_OBSERVED_ELEMENTS: 10e3,
 
-  LOW_QUALITY_TYPES: new Set<string>(["clickable-event"]),
+  ELEMENT_TYPES_LOW_QUALITY: new Set<string>(["clickable-event"]),
 
   // Give worse hints to scrollable elements and (selectable) frames. They are
   // usually very large by nature, but not that commonly used.
-  WORSE_HINT_TYPES: new Set<string>(["scrollable", "selectable"]),
+  ELEMENT_TYPES_WORSE: new Set<string>(["scrollable", "selectable"]),
 
   // Elements this many pixels high or taller always get their hint placed at the
   // very left edge.
-  BOX_MIN_HEIGHT: 110, // px
+  MIN_HEIGHT_BOX: 110, // px
 
   // Avoid placing hints too far to the right side. The first non-empty text node
   // of an element does not necessarily have to come first, due to CSS. For
@@ -97,7 +97,7 @@ export const t = {
   // this are most likely not clickable, and only used for event delegation.
   MAX_CLICKABLE_EVENT_AREA: 1e6, // px
 
-  LINK_PROTOCOLS: new Set<string>(
+  PROTOCOLS_LINK: new Set<string>(
     [
       "http:",
       "https:",
@@ -112,7 +112,7 @@ export const t = {
   ),
 
   // http://w3c.github.io/aria/#widget_roles
-  CLICKABLE_ROLES: new Set<string>([
+  ROLES_CLICKABLE: new Set<string>([
     "button",
     "checkbox",
     "gridcell",
@@ -140,7 +140,7 @@ export const t = {
   // "plaintext-only". There may be more modes in the future, such as "caret", so
   // it’s better to only list the values that indicate that an element _isn’t_
   // contenteditable.
-  NON_CONTENTEDITABLE_VALUES: new Set<string>([
+  VALUES_NON_CONTENTEDITABLE: new Set<string>([
     // The default value. If a parent is contenteditable, it means that this
     // element is as well (and `element.isContentEditable` is true). But we only
     // want hints for the “root” contenteditable element.
@@ -149,25 +149,25 @@ export const t = {
     "false",
   ]),
 
-  SCROLLABLE_OVERFLOW_VALUES: new Set<string>(["auto", "scroll"]),
+  VALUES_SCROLLABLE_OVERFLOW: new Set<string>(["auto", "scroll"]),
 
-  FRAME_MIN_SIZE: 6, // px
-  TEXT_RECT_MIN_SIZE: 2, // px
-  ICON_MIN_SIZE: 10, // px
+  MIN_SIZE_FRAME: 6, // px
+  MIN_SIZE_TEXT_RECT: 2, // px
+  MIN_SIZE_ICON: 10, // px
 
-  CLICKABLE_ATTRIBUTES,
+  ATTRIBUTES_CLICKABLE,
 
-  MUTATION_ATTRIBUTES: new Set<string>([
+  ATTRIBUTES_MUTATION: new Set<string>([
     "contenteditable",
     "href",
     "role",
     ...CLICKABLE_EVENT_PROPS,
-    ...CLICKABLE_ATTRIBUTES,
+    ...ATTRIBUTES_CLICKABLE,
   ]),
 
   // Find actual images as well as icon font images. Matches for example “Icon”,
   // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
-  IMAGE_SELECTOR:
+  SELECTOR_IMAGE:
     "img, svg, [class*='icon' i], [class~='fa'], [class^='fa-'], [class*=' fa-']",
 };
 
@@ -266,7 +266,7 @@ export default class ElementManager {
     injectScript();
 
     // Wait for tweakable values to load before starting the MutationObserver,
-    // in case the user has changed `MUTATION_ATTRIBUTES`. After the
+    // in case the user has changed `ATTRIBUTES_MUTATION`. After the
     // MutationObserver has been started, queue all elements and frames added
     // before the observer was running.
     await tMeta.loaded;
@@ -274,7 +274,7 @@ export default class ElementManager {
     this.mutationObserver.observe(documentElement, {
       childList: true,
       subtree: true,
-      attributeFilter: Array.from(t.MUTATION_ATTRIBUTES),
+      attributeFilter: Array.from(t.ATTRIBUTES_MUTATION),
     });
 
     this.queueItemAndChildren({
@@ -747,8 +747,8 @@ export default class ElementManager {
       // machine.
       const box = getVisibleBox(element.getBoundingClientRect(), viewports);
       return box != null &&
-        box.width > t.FRAME_MIN_SIZE &&
-        box.height > t.FRAME_MIN_SIZE
+        box.width > t.MIN_SIZE_FRAME &&
+        box.height > t.MIN_SIZE_FRAME
         ? element
         : undefined;
     }).filter(Boolean);
@@ -786,7 +786,7 @@ export default class ElementManager {
         // Note: For SVG elements, `.contentEditable` is `undefined`.
         if (
           element.contentEditable != null &&
-          !t.NON_CONTENTEDITABLE_VALUES.has(element.contentEditable)
+          !t.VALUES_NON_CONTENTEDITABLE.has(element.contentEditable)
         ) {
           return "textarea";
         }
@@ -811,14 +811,14 @@ export default class ElementManager {
         }
 
         const role = element.getAttribute("role");
-        if (role != null && t.CLICKABLE_ROLES.has(role)) {
+        if (role != null && t.ROLES_CLICKABLE.has(role)) {
           return "clickable";
         }
 
         if (
           hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element) ||
-          Array.from(t.CLICKABLE_ATTRIBUTES).some(attr =>
+          Array.from(t.ATTRIBUTES_CLICKABLE).some(attr =>
             element.hasAttribute(attr)
           )
         ) {
@@ -866,7 +866,7 @@ class Deduper {
     elements.push(visibleElement);
 
     const [bad, good] = partition(elements, ({ type }) =>
-      t.LOW_QUALITY_TYPES.has(type)
+      t.ELEMENT_TYPES_LOW_QUALITY.has(type)
     );
 
     // If hints are positioned in the exact same spot, reject those of low
@@ -912,7 +912,7 @@ function getMeasurements(
   const allRects = Array.from(element.getClientRects());
   const filteredRects = allRects.filter(
     rect =>
-      rect.width >= t.TEXT_RECT_MIN_SIZE && rect.height >= t.TEXT_RECT_MIN_SIZE
+      rect.width >= t.MIN_SIZE_TEXT_RECT && rect.height >= t.MIN_SIZE_TEXT_RECT
   );
   // For links with only floated children _all_ rects might have 0 width/height.
   // In that case, use the "empty" ones after all. Floated children is handled
@@ -1075,7 +1075,7 @@ function getSingleRectPoint({
   // _always_ placed there for consistency.
   if (
     elementType === "textarea" ||
-    (elementType !== "selectable" && rect.height >= t.BOX_MIN_HEIGHT)
+    (elementType !== "selectable" && rect.height >= t.MIN_HEIGHT_BOX)
   ) {
     return {
       ...getXY(visibleBox),
@@ -1206,11 +1206,11 @@ function getFirstImagePoint(
     // First try to find an image _child._ For example, <button
     // class="icon-button"><img></button>`. (This button should get the hint at
     // the image, not at the edge of the button.)
-    ...element.querySelectorAll(t.IMAGE_SELECTOR),
+    ...element.querySelectorAll(t.SELECTOR_IMAGE),
     // Then, see if the element itself is an image. For example, `<button
     // class="Icon Icon-search"></button>`. The element itself can also be an
     // `<img>` due to the `float` case in `getMeasurements`.
-    ...(element.matches(t.IMAGE_SELECTOR) ? [element] : []),
+    ...(element.matches(t.SELECTOR_IMAGE) ? [element] : []),
   ];
 
   // Some buttons on Twitter have two icons inside – one shown, one hidden (and
@@ -1226,7 +1226,7 @@ function getFirstImagePoint(
         point: {
           // The image might have padding around it.
           ...getBorderAndPaddingPoint(image, rect, visibleBox),
-          align: rect.height >= t.BOX_MIN_HEIGHT ? "left" : "right",
+          align: rect.height >= t.MIN_HEIGHT_BOX ? "left" : "right",
         },
         rect,
       };
@@ -1345,8 +1345,8 @@ function getBestNonEmptyTextPoint({
           const point = { ...getXY(rect), align };
           return (
             // Exclude screen reader only text.
-            rect.width >= t.TEXT_RECT_MIN_SIZE &&
-              rect.height >= t.TEXT_RECT_MIN_SIZE &&
+            rect.width >= t.MIN_SIZE_TEXT_RECT &&
+              rect.height >= t.MIN_SIZE_TEXT_RECT &&
               // Make sure that the text is inside the element.
               isAcceptable(point)
               ? rect
@@ -1402,7 +1402,7 @@ function getBestNonEmptyTextPoint({
   // instead. It is common to have a little icon before the text of buttons.
   // This avoids covering the icon with the hint.
   const isSingleLine = sameLineRects.length === rects.length;
-  if (isSingleLine && leftMostRect.left >= elementRect.left + t.ICON_MIN_SIZE) {
+  if (isSingleLine && leftMostRect.left >= elementRect.left + t.MIN_SIZE_ICON) {
     const imagePoint = getFirstImagePoint(element, viewports);
     if (
       imagePoint != null &&
@@ -1500,13 +1500,13 @@ function isScrollable(element: HTMLElement): boolean {
   return (
     // $FlowIgnore: See above.
     (element.scrollLeftMax > 0 &&
-      (t.SCROLLABLE_OVERFLOW_VALUES.has(
+      (t.VALUES_SCROLLABLE_OVERFLOW.has(
         computedStyle.getPropertyValue("overflow-x")
       ) ||
         element === document.scrollingElement)) ||
     // $FlowIgnore: See above.
     (element.scrollTopMax > 0 &&
-      (t.SCROLLABLE_OVERFLOW_VALUES.has(
+      (t.VALUES_SCROLLABLE_OVERFLOW.has(
         computedStyle.getPropertyValue("overflow-y")
       ) ||
         element === document.scrollingElement))
@@ -1594,7 +1594,7 @@ function hintWeight(
   // some types, such as scrollable elements, by using a logarithm with a higher
   // base. A tall scrollable element (1080px) gets a weight slightly smaller
   // than that of a small link (12px high).
-  const lg = t.WORSE_HINT_TYPES.has(elementType) ? Math.log10 : Math.log2;
+  const lg = t.ELEMENT_TYPES_WORSE.has(elementType) ? Math.log10 : Math.log2;
 
   return Math.max(1, lg(weight));
 }
@@ -1666,7 +1666,7 @@ function getLinkElementType(element: HTMLAnchorElement): ElementType {
       hrefAttr !== "#" &&
       // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
       // don’t make sense to open in a new tab.
-      t.LINK_PROTOCOLS.has(element.protocol)
+      t.PROTOCOLS_LINK.has(element.protocol)
       ? "link"
       : "clickable"
   );

@@ -39,10 +39,24 @@ export default class Tweakable extends React.Component<Props, State> {
               defaults: tMetaElementManager.defaults,
             },
           },
-          (key, value) => (value instanceof Set ? Array.from(value) : value),
+          (key, value) =>
+            key === "current" || key === "defaults"
+              ? sortObject(value)
+              : value instanceof Set
+              ? Array.from(value)
+              : value,
           2
         )}
       </pre>
     );
   }
+}
+
+function sortObject(object: { [string]: mixed }): { [string]: mixed } {
+  return Object.keys(object)
+    .sort()
+    .reduce((result, key) => {
+      result[key] = object[key];
+      return result;
+    }, {});
 }
