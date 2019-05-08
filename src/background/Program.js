@@ -1556,7 +1556,7 @@ export default class BackgroundProgram {
     this.sendWorkerMessage(
       {
         type: "StartFindElements",
-        types: getHintsTypes(mode),
+        types: getElementTypes(mode),
       },
       {
         tabId,
@@ -1984,7 +1984,7 @@ const CLICK_TYPES: ElementTypes = [
 
 const TAB_TYPES: ElementTypes = ["link"];
 
-function getHintsTypes(mode: HintsMode): ElementTypes {
+function getElementTypes(mode: HintsMode): ElementTypes {
   switch (mode) {
     case "Click":
       return CLICK_TYPES;
