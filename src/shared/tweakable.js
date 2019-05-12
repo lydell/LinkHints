@@ -4,7 +4,9 @@ import { array, map, number, repr, string } from "tiny-decoders";
 
 import { addListener, log } from "./main";
 
-export type TweakableMapping = { [string]: string | number | Set<string> };
+export type TweakableValue = string | number | Set<string>;
+
+export type TweakableMapping = { [string]: TweakableValue };
 
 export type TweakableMeta = {|
   namespace: string,

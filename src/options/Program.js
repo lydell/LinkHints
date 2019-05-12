@@ -1095,40 +1095,45 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 </p>
               </div>
 
-              <Field
-                key="logLevel"
-                id="logLevel"
-                label="Log level"
-                changed={options.logLevel !== defaults.logLevel}
-                render={({ id }) => (
-                  <select
-                    id={id}
-                    value={options.logLevel}
-                    onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
-                      const { value } = event.currentTarget;
-                      try {
-                        const logLevel = decodeLogLevel(value);
-                        this.saveOptions({ logLevel });
-                      } catch (error) {
-                        log(
-                          "error",
-                          "OptionsProgram#render",
-                          "Failed to decode logLevel.",
-                          error
-                        );
-                      }
-                    }}
-                  >
-                    {Object.keys(LOG_LEVELS).map(level => (
-                      <option key={level} value={level}>
-                        {level.slice(0, 1).toUpperCase() + level.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                )}
+              <Tweakable
+                before={
+                  <Field
+                    key="logLevel"
+                    id="logLevel"
+                    label="Log level"
+                    changed={options.logLevel !== defaults.logLevel}
+                    render={({ id }) => (
+                      <select
+                        id={id}
+                        value={options.logLevel}
+                        style={{ width: "33%" }}
+                        onChange={(
+                          event: SyntheticEvent<HTMLSelectElement>
+                        ) => {
+                          const { value } = event.currentTarget;
+                          try {
+                            const logLevel = decodeLogLevel(value);
+                            this.saveOptions({ logLevel });
+                          } catch (error) {
+                            log(
+                              "error",
+                              "OptionsProgram#render",
+                              "Failed to decode logLevel.",
+                              error
+                            );
+                          }
+                        }}
+                      >
+                        {Object.keys(LOG_LEVELS).map(level => (
+                          <option key={level} value={level}>
+                            {level.slice(0, 1).toUpperCase() + level.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                }
               />
-
-              <Tweakable />
             </Details>
           </div>
 
