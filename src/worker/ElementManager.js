@@ -346,33 +346,9 @@ export default class ElementManager {
   }
 
   queueItemAndChildren(item: QueueItem) {
-    const elements = [item.element, ...item.element.querySelectorAll("*")];
-    for (const element of elements) {
-      if (
-        element instanceof HTMLIFrameElement ||
-        element instanceof HTMLFrameElement
-      ) {
-        switch (item.mutationType) {
-          case "added":
-            // In theory, this can lead to more than
-            // `maxIntersectionObservedElements` frames being tracked by the
-            // intersection observer, but in practice there are never that many
-            // frames. YAGNI.
-            this.frameIntersectionObserver.observe(element);
-            break;
-          case "removed":
-            this.frameIntersectionObserver.unobserve(element);
-            this.visibleFrames.delete(element); // Just to be sure.
-            break;
-          case "changed":
-            // Do nothing.
-            break;
-          default:
-            unreachable(item.mutationType, item);
-        }
-      } else {
-        this.queueItem({ mutationType: item.mutationType, element });
-      }
+    this.queueItem(item);
+    for (const element of item.element.querySelectorAll("*")) {
+      this.queueItem({ mutationType: item.mutationType, element });
     }
   }
 
@@ -532,6 +508,31 @@ export default class ElementManager {
 
   flushQueue(deadline: Deadline) {
     for (const [index, { mutationType, element }] of this.queue.entries()) {
+      if (
+        element instanceof HTMLIFrameElement ||
+        element instanceof HTMLFrameElement
+      ) {
+        switch (mutationType) {
+          case "added":
+            // In theory, this can lead to more than
+            // `maxIntersectionObservedElements` frames being tracked by the
+            // intersection observer, but in practice there are never that many
+            // frames. YAGNI.
+            this.frameIntersectionObserver.observe(element);
+            break;
+          case "removed":
+            this.frameIntersectionObserver.unobserve(element);
+            this.visibleFrames.delete(element); // Just to be sure.
+            break;
+          case "changed":
+            // Do nothing.
+            break;
+          default:
+            unreachable(mutationType);
+        }
+        continue;
+      }
+
       const type =
         mutationType === "removed" ? undefined : this.getElementType(element);
       if (type == null) {
