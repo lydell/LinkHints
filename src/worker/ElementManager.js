@@ -9,7 +9,6 @@ import type {
 } from "../shared/hints";
 import {
   type Box,
-  CONTAINER_ID,
   Resets,
   addEventListener,
   bind,
@@ -173,10 +172,33 @@ export const t = {
 
 export const tMeta = tweakable("ElementManager", t);
 
-type QueueItem = {|
-  mutationType: MutationType,
-  element: HTMLElement,
-|};
+type Record = {
+  addedNodes: Array<Node>,
+  removedNodes: Array<Node>,
+  attributeName: ?string,
+  target: Node,
+};
+
+type QueueItem =
+  | {|
+      type: "Records",
+      records: Array<MutationRecord> | Array<Record>,
+      recordIndex: number,
+      addedNodeIndex: number,
+      removedNodeIndex: number,
+      childIndex: number,
+      children: ?NodeList<HTMLElement>,
+      removalsOnly: boolean,
+    |}
+  | {|
+      type: "ClickableChanged",
+      target: EventTarget,
+      clickable: boolean,
+    |}
+  | {|
+      type: "OverflowChanged",
+      target: EventTarget,
+    |};
 
 type MutationType = "added" | "removed" | "changed";
 
@@ -203,9 +225,8 @@ const infiniteDeadline: Deadline = {
 };
 
 export default class ElementManager {
-  onTrackedElementsMutation: () => void;
   probe: HTMLElement;
-  queue: Array<QueueItem> = [];
+  queue: Queue<QueueItem> = makeEmptyQueue();
   injectedHasQueue: boolean = false;
   elements: Map<HTMLElement, ElementType> = new Map();
   visibleElements: Set<HTMLElement> = new Set();
@@ -230,13 +251,11 @@ export default class ElementManager {
     this.onMutation.bind(this)
   );
 
-  constructor({
-    onTrackedElementsMutation,
-  }: {|
-    onTrackedElementsMutation: () => void,
-  |}) {
-    this.onTrackedElementsMutation = onTrackedElementsMutation;
+  removalObserver: MutationObserver = new MutationObserver(
+    this.onRemoval.bind(this)
+  );
 
+  constructor() {
     const probe = document.createElement("div");
     setStyles(probe, PROBE_STYLES);
     this.probe = probe;
@@ -277,10 +296,18 @@ export default class ElementManager {
       attributeFilter: Array.from(t.ATTRIBUTES_MUTATION),
     });
 
-    this.queueItemAndChildren({
-      mutationType: "added",
-      element: documentElement,
-    });
+    // Pick up all elements present in the initial HTML payload. Large HTML
+    // pages are usually streamed in chunks. As later chunks arrive and are
+    // rendered, each new element will trigger the MutationObserver.
+    const records: Array<Record> = [
+      {
+        addedNodes: [documentElement],
+        removedNodes: [],
+        attributeName: undefined,
+        target: documentElement,
+      },
+    ];
+    this.queueRecords(records);
 
     for (const frame of document.querySelectorAll("iframe, frame")) {
       this.frameIntersectionObserver.observe(frame);
@@ -295,7 +322,8 @@ export default class ElementManager {
     this.intersectionObserver.disconnect();
     this.frameIntersectionObserver.disconnect();
     this.mutationObserver.disconnect();
-    this.queue = [];
+    this.removalObserver.disconnect();
+    this.queue = makeEmptyQueue();
     this.elements.clear();
     this.visibleElements.clear();
     this.visibleFrames.clear();
@@ -341,15 +369,24 @@ export default class ElementManager {
   }
 
   queueItem(item: QueueItem) {
-    this.queue.push(item);
+    this.queue.items.push(item);
     this.requestIdleCallback();
   }
 
-  queueItemAndChildren(item: QueueItem) {
-    this.queueItem(item);
-    for (const element of item.element.querySelectorAll("*")) {
-      this.queueItem({ mutationType: item.mutationType, element });
-    }
+  queueRecords(
+    records: Array<MutationRecord> | Array<Record>,
+    { removalsOnly = false }: { removalsOnly?: boolean } = {}
+  ) {
+    this.queueItem({
+      type: "Records",
+      records,
+      recordIndex: 0,
+      addedNodeIndex: 0,
+      removedNodeIndex: 0,
+      childIndex: 0,
+      children: undefined,
+      removalsOnly,
+    });
   }
 
   requestIdleCallback() {
@@ -374,8 +411,11 @@ export default class ElementManager {
       }
     }
 
-    if (probed && this.observerProbeCallback != null) {
-      this.observerProbeCallback();
+    if (probed) {
+      log("debug", "ElementManager#onIntersection", "observerProbeCallback");
+      if (this.observerProbeCallback != null) {
+        this.observerProbeCallback();
+      }
     }
   }
 
@@ -396,79 +436,105 @@ export default class ElementManager {
   }
 
   onMutation(records: Array<MutationRecord>) {
+    let shouldQueue = true;
     let probed = false;
-    let changed = false;
 
+    if (this.observerProbeCallback != null) {
+      shouldQueue = false;
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node === this.probe) {
+            probed = true;
+          } else {
+            shouldQueue = true;
+          }
+          if (probed && shouldQueue) {
+            break;
+          }
+        }
+
+        if (record.removedNodes.length > 0 || record.attributeName != null) {
+          shouldQueue = true;
+        }
+
+        if (probed && shouldQueue) {
+          break;
+        }
+      }
+    }
+
+    if (shouldQueue) {
+      this.queueRecords(records);
+      this.observeRemovals(records);
+    }
+
+    if (probed) {
+      log("debug", "ElementManager#onMutation", "observerProbeCallback", {
+        didQueue: shouldQueue,
+        queue: {
+          length: this.queue.items.length,
+          index: this.queue.index,
+        },
+      });
+      if (this.observerProbeCallback != null) {
+        this.observerProbeCallback();
+      }
+    }
+  }
+
+  onRemoval(records: Array<MutationRecord>) {
+    this.queueRecords(records, {
+      // Ignore added nodes and changed attributes.
+      removalsOnly: true,
+    });
+    this.observeRemovals(records);
+  }
+
+  // Imagine this scenario:
+  //
+  // 1. A grand-parent of a clickable element is removed.
+  // 2. This triggers `onMutation`.
+  // 3. The page removes the clickable element (or a parent of it) from the
+  //    grand-parent for some reason (even though the grand-parent is already
+  //    removed from the DOM).
+  // 4. This does not trigger `onMutation`, since it listens to changes inside
+  //    `documentElement`, but this happens in a detached tree.
+  // 5. The queue is flushed. Running `.querySelectorAll("*")` on the
+  //    grand-parent now won’t include the clickable element, leaving it behind in
+  //    `this.elements` even though it has been removed.
+  //
+  // For this reason, we have to immediately observe all removed nodes for more
+  // removals in their subtree, so that we don’t miss any removed elements.
+  // MutationObservers don’t have an `.unobserve` method, so all of these are
+  // unsubscribed in bulk when `this.queue` is emptied by calling
+  // `.disconnect()`.
+  observeRemovals(records: Array<MutationRecord>) {
     for (const record of records) {
-      for (const node of record.addedNodes) {
-        this.consumeEventAttribute(node);
-        if (node === this.probe) {
-          probed = true;
-        } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
-          this.queueItemAndChildren({ mutationType: "added", element: node });
-          changed = true;
-        }
-      }
-
       for (const node of record.removedNodes) {
-        this.consumeEventAttribute(node);
-        if (node === this.probe) {
-          probed = true;
-        } else if (node instanceof HTMLElement && node.id !== CONTAINER_ID) {
-          this.queueItemAndChildren({ mutationType: "removed", element: node });
-          changed = true;
-        }
+        this.removalObserver.observe(node, {
+          childList: true,
+          subtree: true,
+        });
       }
-
-      if (record.attributeName != null) {
-        const element = record.target;
-        if (element instanceof HTMLElement) {
-          this.queueItem({ mutationType: "changed", element });
-          changed = true;
-        }
-      }
-    }
-
-    if (probed && this.observerProbeCallback != null) {
-      this.observerProbeCallback();
-    }
-
-    if (changed) {
-      this.onTrackedElementsMutation();
     }
   }
 
   onClickableElement(event: CustomEvent) {
-    const element = event.target;
-    if (element instanceof HTMLElement) {
-      this.elementsWithClickListeners.add(element);
-      this.queueItem({ mutationType: "changed", element });
-    }
+    const { target } = event;
+    this.queueItem({
+      type: "ClickableChanged",
+      target,
+      clickable: true,
+    });
   }
 
   onUnclickableElement(event: CustomEvent) {
-    const element = event.target;
-    if (element instanceof HTMLElement) {
-      this.elementsWithClickListeners.delete(element);
-      this.queueItem({ mutationType: "changed", element });
-    }
-  }
-
-  consumeEventAttribute(node: Node) {
-    if (node instanceof HTMLElement) {
-      const value = node.getAttribute(EVENT_ATTRIBUTE);
-      switch (value) {
-        case CLICKABLE_EVENT:
-          this.elementsWithClickListeners.add(node);
-          break;
-        case UNCLICKABLE_EVENT:
-          this.elementsWithClickListeners.delete(node);
-          break;
-        default:
-          return;
-      }
-      node.removeAttribute(EVENT_ATTRIBUTE);
-    }
+    const { target } = event;
+    this.queueItem({
+      type: "ClickableChanged",
+      target,
+      clickable: false,
+    });
   }
 
   onInjectedQueue(event: CustomEvent) {
@@ -486,95 +552,314 @@ export default class ElementManager {
   }
 
   onOverflowChange(event: UIEvent) {
-    const element = event.target;
-    if (!(element instanceof HTMLElement)) {
+    const { target } = event;
+    this.queueItem({ type: "OverflowChanged", target });
+  }
+
+  addOrRemoveElement(mutationType: MutationType, element: HTMLElement) {
+    this.consumeEventAttribute(element);
+
+    if (
+      element instanceof HTMLIFrameElement ||
+      element instanceof HTMLFrameElement
+    ) {
+      switch (mutationType) {
+        case "added":
+          // In theory, this can lead to more than
+          // `maxIntersectionObservedElements` frames being tracked by the
+          // intersection observer, but in practice there are never that many
+          // frames. YAGNI.
+          this.frameIntersectionObserver.observe(element);
+          break;
+        case "removed":
+          this.frameIntersectionObserver.unobserve(element);
+          this.visibleFrames.delete(element); // Just to be sure.
+          break;
+        case "changed":
+          // Do nothing.
+          break;
+        default:
+          unreachable(mutationType);
+      }
       return;
     }
 
-    // An element might have `overflow-x: hidden; overflow-y: auto;`. The events
-    // don't tell which direction changed its overflow, so we must check that
-    // ourselves. We're only interested in elements with scrollbars, not with
-    // hidden overflow.
-    if (isScrollable(element)) {
-      if (!this.elementsWithScrollbars.has(element)) {
-        this.elementsWithScrollbars.add(element);
-        this.queueItem({ mutationType: "changed", element });
+    const type =
+      mutationType === "removed" ? undefined : this.getElementType(element);
+    if (type == null) {
+      if (mutationType !== "added") {
+        this.elements.delete(element);
+        // Removing an element from the DOM also triggers the
+        // IntersectionObserver (removing it from `this.visibleElements`), but
+        // changing an attribute of an element so that it isn't considered
+        // clickable anymore requires a manual deletion from
+        // `this.visibleElements` since the element might still be on-screen.
+        this.visibleElements.delete(element);
+        this.intersectionObserver.unobserve(element);
+        // The element must not be removed from `elementsWithClickListeners`
+        // or `elementsWithScrollbars` (if `mutationType === "removed"`), even
+        // though it might seem logical at first. But the element (or one of
+        // its parents) could temporarily be removed from the paged and then
+        // re-inserted. Then it would still have its click listener, but we
+        // wouldn’t know. So instead of removing `element` here a `WeakSet` is
+        // used, to avoid memory leaks. An example of this is the sortable
+        // table headings on Wikipedia:
+        // <https://en.wikipedia.org/wiki/Help:Sorting>
+        // this.elementsWithClickListeners.delete(element);
+        // this.elementsWithScrollbars.delete(element);
       }
-    } else if (this.elementsWithScrollbars.has(element)) {
-      this.elementsWithScrollbars.delete(element);
-      this.queueItem({ mutationType: "changed", element });
+    } else {
+      this.elements.set(element, type);
+      if (!this.bailed) {
+        this.intersectionObserver.observe(element);
+        if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS) {
+          this.bail();
+        }
+      }
     }
   }
 
+  consumeEventAttribute(element: HTMLElement) {
+    const value = element.getAttribute(EVENT_ATTRIBUTE);
+    switch (value) {
+      case CLICKABLE_EVENT:
+        this.elementsWithClickListeners.add(element);
+        break;
+      case UNCLICKABLE_EVENT:
+        this.elementsWithClickListeners.delete(element);
+        break;
+      default:
+        return;
+    }
+    element.removeAttribute(EVENT_ATTRIBUTE);
+  }
+
   flushQueue(deadline: Deadline) {
-    for (const [index, { mutationType, element }] of this.queue.entries()) {
-      if (
-        element instanceof HTMLIFrameElement ||
-        element instanceof HTMLFrameElement
-      ) {
-        switch (mutationType) {
-          case "added":
-            // In theory, this can lead to more than
-            // `maxIntersectionObservedElements` frames being tracked by the
-            // intersection observer, but in practice there are never that many
-            // frames. YAGNI.
-            this.frameIntersectionObserver.observe(element);
-            break;
-          case "removed":
-            this.frameIntersectionObserver.unobserve(element);
-            this.visibleFrames.delete(element); // Just to be sure.
-            break;
-          case "changed":
-            // Do nothing.
-            break;
-          default:
-            unreachable(mutationType);
-        }
-        continue;
-      }
+    const startQueueIndex = this.queue.index;
 
-      const type =
-        mutationType === "removed" ? undefined : this.getElementType(element);
-      if (type == null) {
-        if (mutationType !== "added") {
-          this.elements.delete(element);
-          // Removing an element from the DOM also triggers the
-          // IntersectionObserver (removing it from `this.visibleElements`), but
-          // changing an attribute of an element so that it isn't considered
-          // clickable anymore requires a manual deletion from
-          // `this.visibleElements` since the element might still be on-screen.
-          this.visibleElements.delete(element);
-          this.intersectionObserver.unobserve(element);
-          // The element must not be removed from `elementsWithClickListeners`
-          // or `elementsWithScrollbars` (if `mutationType === "removed"`), even
-          // though it might seem logical at first. But the element (or one of
-          // its parents) could temporarily be removed from the paged and then
-          // re-inserted. Then it would still have its click listener, but we
-          // wouldn’t know. So instead of removing `element` here a `WeakSet` is
-          // used, to avoid memory leaks. An example of this is the sortable
-          // table headings on Wikipedia:
-          // <https://en.wikipedia.org/wiki/Help:Sorting>
-          // this.elementsWithClickListeners.delete(element);
-          // this.elementsWithScrollbars.delete(element);
-        }
-      } else {
-        this.elements.set(element, type);
-        if (!this.bailed) {
-          this.intersectionObserver.observe(element);
-          if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS) {
-            this.bail();
-          }
-        }
-      }
+    log(
+      "debug",
+      "ElementManager#flushQueue",
+      { length: this.queue.items.length, index: startQueueIndex },
+      { ...this.queue.items[startQueueIndex] }
+    );
 
-      if (deadline.timeRemaining() <= 0) {
-        this.queue = this.queue.slice(index + 1);
+    for (; this.queue.index < this.queue.items.length; this.queue.index++) {
+      if (this.queue.index > startQueueIndex && deadline.timeRemaining() <= 0) {
         this.requestIdleCallback();
         return;
       }
+
+      const item = this.queue.items[this.queue.index];
+
+      switch (item.type) {
+        // This case is really tricky as all of the loops need to be able to
+        // resume where they were during the last idle callback. That’s why we
+        // mutate stuff on the current item, saving the indexes for the next
+        // idle callback. Be careful not to cause duplicate work.
+        case "Records": {
+          const startRecordIndex = item.recordIndex;
+
+          for (; item.recordIndex < item.records.length; item.recordIndex++) {
+            if (
+              item.recordIndex > startRecordIndex &&
+              deadline.timeRemaining() <= 0
+            ) {
+              this.requestIdleCallback();
+              return;
+            }
+
+            const record = item.records[item.recordIndex];
+            const startAddedNodeIndex = item.addedNodeIndex;
+            const startRemovedNodeIndex = item.removedNodeIndex;
+
+            if (!item.removalsOnly) {
+              for (
+                ;
+                item.addedNodeIndex < record.addedNodes.length;
+                item.addedNodeIndex++
+              ) {
+                if (
+                  item.addedNodeIndex > startAddedNodeIndex &&
+                  deadline.timeRemaining() <= 0
+                ) {
+                  this.requestIdleCallback();
+                  return;
+                }
+
+                const element = record.addedNodes[item.addedNodeIndex];
+                let { children } = item;
+
+                if (children == null && element instanceof HTMLElement) {
+                  // When a streaming HTML chunk arrives, _all_ elements in it
+                  // will produce its own MutationRecord, even nested elements.
+                  // Parent elements come first. Since we do a
+                  // `element.querySelectorAll("*")` below, after processing the
+                  // first element we have already gone through that entire
+                  // subtree. So the next MutationRecord (for a child of the
+                  // first element) will be duplicate work. So if we’ve already
+                  // gone through an addition of an element in this queue,
+                  // simply skip to the next one.
+                  // When inserting elements with JavaScript, the number of
+                  // MutationRecords for an insert depends on how the code was
+                  // written. Every `.append()` on an element that is in the DOM
+                  // causes a record. But `.append()` on a non-yet-inserted
+                  // element does not. So we can’t simply skip the
+                  // `.querySelectorAll("*")` business.
+                  // It should be safe to keep the `.addedElements` set even
+                  // though the queue lives over time. If an already gone
+                  // through element is changed that will cause removal or
+                  // attribute mutations, which will be run eventually.
+                  if (this.queue.addedElements.has(element)) {
+                    continue;
+                  }
+
+                  // In my testing on the single-page HTML specification (which
+                  // is huge!), `.getElementsByTagName("*")` is faster, but it’s
+                  // not like `.querySelectorAll("*")` is super slow. We can use
+                  // the former because it returns a live `HTMLCollection` which
+                  // mutates as the DOM mutates. If for example a bunch of nodes
+                  // are removed, `item.addedNodeIndex` could now be too far
+                  // ahead in the list, missing some added elements.
+                  children = element.querySelectorAll("*");
+                  item.children = children;
+
+                  this.addOrRemoveElement("added", element);
+                  this.queue.addedElements.add(element);
+
+                  if (deadline.timeRemaining() <= 0) {
+                    this.requestIdleCallback();
+                    return;
+                  }
+                }
+
+                if (children != null && children.length > 0) {
+                  const startChildIndex = item.childIndex;
+                  for (; item.childIndex < children.length; item.childIndex++) {
+                    if (
+                      item.childIndex > startChildIndex &&
+                      deadline.timeRemaining() <= 0
+                    ) {
+                      this.requestIdleCallback();
+                      return;
+                    }
+                    const child = children[item.childIndex];
+                    if (!this.queue.addedElements.has(child)) {
+                      this.addOrRemoveElement("added", child);
+                      this.queue.addedElements.add(child);
+                    }
+                  }
+                }
+
+                item.childIndex = 0;
+                item.children = undefined;
+              }
+            }
+
+            for (
+              ;
+              item.removedNodeIndex < record.removedNodes.length;
+              item.removedNodeIndex++
+            ) {
+              if (
+                item.removedNodeIndex > startRemovedNodeIndex &&
+                deadline.timeRemaining() <= 0
+              ) {
+                this.requestIdleCallback();
+                return;
+              }
+
+              const element = record.removedNodes[item.removedNodeIndex];
+              let { children } = item;
+
+              if (children == null && element instanceof HTMLElement) {
+                children = element.querySelectorAll("*");
+                item.children = children;
+                this.addOrRemoveElement("removed", element);
+                this.queue.addedElements.delete(element);
+                if (deadline.timeRemaining() <= 0) {
+                  this.requestIdleCallback();
+                  return;
+                }
+              }
+
+              if (children != null && children.length > 0) {
+                const startChildIndex = item.childIndex;
+                for (; item.childIndex < children.length; item.childIndex++) {
+                  if (
+                    item.childIndex > startChildIndex &&
+                    deadline.timeRemaining() <= 0
+                  ) {
+                    this.requestIdleCallback();
+                    return;
+                  }
+                  const child = children[item.childIndex];
+                  this.addOrRemoveElement("removed", child);
+                  // The same element might be added, removed and then added
+                  // again, all in the same queue. So unmark it as already gone
+                  // through so it can be re-added again.
+                  this.queue.addedElements.delete(child);
+                }
+              }
+
+              item.childIndex = 0;
+              item.children = undefined;
+            }
+
+            item.addedNodeIndex = 0;
+            item.removedNodeIndex = 0;
+
+            if (!item.removalsOnly && record.attributeName != null) {
+              const element = record.target;
+              if (element instanceof HTMLElement) {
+                this.addOrRemoveElement("changed", element);
+              }
+            }
+          }
+          break;
+        }
+
+        case "ClickableChanged": {
+          const element = item.target;
+          if (element instanceof HTMLElement) {
+            if (item.clickable) {
+              this.elementsWithClickListeners.add(element);
+            } else {
+              this.elementsWithClickListeners.delete(element);
+            }
+            this.addOrRemoveElement("changed", element);
+          }
+          break;
+        }
+
+        case "OverflowChanged": {
+          const element = item.target;
+          if (element instanceof HTMLElement) {
+            // An element might have `overflow-x: hidden; overflow-y: auto;`. The events
+            // don't tell which direction changed its overflow, so we must check that
+            // ourselves. We're only interested in elements with scrollbars, not with
+            // hidden overflow.
+            if (isScrollable(element)) {
+              if (!this.elementsWithScrollbars.has(element)) {
+                this.elementsWithScrollbars.add(element);
+                this.addOrRemoveElement("changed", element);
+              }
+            } else if (this.elementsWithScrollbars.has(element)) {
+              this.elementsWithScrollbars.delete(element);
+              this.addOrRemoveElement("changed", element);
+            }
+          }
+          break;
+        }
+
+        default:
+          unreachable(item.type, item);
+      }
     }
 
-    this.queue = [];
+    this.queue = makeEmptyQueue();
+    this.removalObserver.disconnect();
+    log("debug", "ElementManager#flushQueue", "Empty queue.");
   }
 
   flushObservers(): Promise<void> {
@@ -592,7 +877,9 @@ export default class ElementManager {
       const intersectionCallback = () => {
         this.observerProbeCallback = undefined;
         this.intersectionObserver.unobserve(this.probe);
-        this.probe.remove();
+        // It is up to the caller of `flushObservers` to remove the probe, since
+        // doing so triggers the MutationObserver, queueing a removed element.
+        // this.probe.remove();
         resolve();
       };
 
@@ -602,8 +889,8 @@ export default class ElementManager {
       };
 
       // Trigger first the MutationObserver, then the IntersectionObserver.
-      // `this.observerProbeCallback` like this is a bit ugly, but it works (at
-      // least until we need concurrent flushes).
+      // Setting `this.observerProbeCallback` like this is a bit ugly, but it
+      // works (at least until we need concurrent flushes).
       this.observerProbeCallback = mutationCallback;
       documentElement.append(this.probe);
     });
@@ -652,7 +939,7 @@ export default class ElementManager {
 
     // If `injectedNeedsFlush` then `this.queue` will be modified, so check the
     // length _after_ flusing injected.js.
-    const needsFlush = this.queue.length > 0;
+    const needsFlush = this.queue.items.length > 0;
 
     if (needsFlush) {
       log("log", prefix, "flush queue", this.queue);
@@ -664,11 +951,13 @@ export default class ElementManager {
       await this.flushObservers();
     }
 
+    this.probe.remove();
+
     const candidates =
       passedCandidates != null
         ? passedCandidates
         : types === "selectable"
-        ? document.querySelectorAll("*")
+        ? document.getElementsByTagName("*")
         : this.bailed
         ? this.elements.keys()
         : this.visibleElements;
@@ -836,6 +1125,20 @@ export default class ElementManager {
       }
     }
   }
+}
+
+type Queue<T> = {|
+  items: Array<T>,
+  index: number,
+  addedElements: Set<HTMLElement>,
+|};
+
+function makeEmptyQueue<T>(): Queue<T> {
+  return {
+    items: [],
+    index: 0,
+    addedElements: new Set(),
+  };
 }
 
 // Attempt to remove hints that do the same thing as some other element

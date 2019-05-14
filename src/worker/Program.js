@@ -52,10 +52,10 @@ export default class WorkerProgram {
   oneTimeWindowMessageToken: ?string = undefined;
   suppressNextKeyup: ?{| key: string, code: string |} = undefined;
   resets: Resets = new Resets();
-
-  elementManager: ElementManager = new ElementManager({
-    onTrackedElementsMutation: this.onTrackedElementsMutation.bind(this),
-  });
+  elementManager: ElementManager = new ElementManager();
+  mutationObserver: MutationObserver = new MutationObserver(
+    this.onMutation.bind(this)
+  );
 
   constructor() {
     bind(this, [
@@ -99,6 +99,7 @@ export default class WorkerProgram {
   stop() {
     this.resets.reset();
     this.elementManager.stop();
+    this.mutationObserver.disconnect();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
   }
@@ -133,6 +134,7 @@ export default class WorkerProgram {
 
         if (message.clearElements) {
           this.current = undefined;
+          this.mutationObserver.disconnect();
         }
         break;
 
@@ -543,7 +545,7 @@ export default class WorkerProgram {
     }
   }
 
-  onTrackedElementsMutation() {
+  onMutation() {
     const { current } = this;
     if (current == null) {
       return;
@@ -583,8 +585,8 @@ export default class WorkerProgram {
   ) {
     // In ManyClick mode and when refreshing hints we enter hints mode anew
     // without exiting the “previous” hints mode. Make sure that any update
-    // polling (or the update from `onTrackedElementsMutation`) don’t interfere
-    // with this report.
+    // polling (or the update from `onMutation`) don’t interfere with this
+    // report.
     if (this.current != null) {
       this.current.updating = true;
     }
@@ -627,6 +629,15 @@ export default class WorkerProgram {
       words: [],
       updating: false,
     };
+
+    const { documentElement } = document;
+    if (documentElement != null) {
+      this.mutationObserver.observe(documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+    }
   }
 
   async updateVisibleElements({

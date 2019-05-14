@@ -245,8 +245,8 @@ export default () => {
 
   class ClickListenerTracker {
     clickListenersByElement: ClickListenersByElement = new Map();
-    queue: Array<QueueItem> = [];
-    sendQueue: Array<SendQueueItem> = [];
+    queue: Queue<QueueItem> = makeEmptyQueue();
+    sendQueue: Queue<SendQueueItem> = makeEmptyQueue();
     idleCallbackId: ?IdleCallbackID = undefined;
 
     reset() {
@@ -255,16 +255,16 @@ export default () => {
       }
 
       this.clickListenersByElement = new Map();
-      this.queue = [];
-      this.sendQueue = [];
+      this.queue = makeEmptyQueue();
+      this.sendQueue = makeEmptyQueue();
       this.idleCallbackId = undefined;
     }
 
     queueItem(item: QueueItem) {
-      const numItems = this.queue.push(item);
+      const numItems = this.queue.items.push(item);
       this.requestIdleCallback();
 
-      if (numItems === 1 && this.sendQueue.length === 0) {
+      if (numItems === 1 && this.sendQueue.items.length === 0) {
         sendWindowEvent(QUEUE_EVENT, { hasQueue: true });
       }
     }
@@ -279,9 +279,11 @@ export default () => {
     }
 
     flushQueue(deadline: Deadline) {
-      const hadQueue = this.queue.length > 0 || this.sendQueue.length > 0;
+      const hadQueue =
+        this.queue.items.length > 0 || this.sendQueue.items.length > 0;
       this._flushQueue(deadline);
-      const hasQueue = this.queue.length > 0 || this.sendQueue.length > 0;
+      const hasQueue =
+        this.queue.items.length > 0 || this.sendQueue.items.length > 0;
       if (hadQueue && !hasQueue) {
         sendWindowEvent(QUEUE_EVENT, { hasQueue: false });
       }
@@ -290,7 +292,7 @@ export default () => {
     _flushQueue(deadline: Deadline) {
       const done = this.flushSendQueue(deadline);
 
-      if (!done || this.queue.length === 0) {
+      if (!done || this.queue.items.length === 0) {
         return;
       }
 
@@ -300,9 +302,20 @@ export default () => {
       // removed the element at all (and vice versa).
       const addedRemoved = new AddedRemoved();
 
+      const startQueueIndex = this.queue.index;
       let timesUp = false;
 
-      for (const [index, item] of this.queue.entries()) {
+      for (; this.queue.index < this.queue.items.length; this.queue.index++) {
+        if (
+          this.queue.index > startQueueIndex &&
+          deadline.timeRemaining() <= 0
+        ) {
+          timesUp = true;
+          break;
+        }
+
+        const item = this.queue.items[this.queue.index];
+
         // `.onclick` or similar changed.
         if (item.type === "prop") {
           const { hadListener, element } = item;
@@ -332,26 +345,20 @@ export default () => {
             addedRemoved.remove(item.element);
           }
         }
-
-        if (deadline.timeRemaining() <= 0) {
-          timesUp = true;
-          this.queue = this.queue.slice(index + 1);
-          break;
-        }
       }
 
       if (!timesUp) {
-        this.queue = [];
+        this.queue = makeEmptyQueue();
       }
 
       const { added, removed } = addedRemoved;
 
       for (const element of added) {
-        this.sendQueue.push({ added: true, element });
+        this.sendQueue.items.push({ added: true, element });
       }
 
       for (const element of removed) {
-        this.sendQueue.push({ added: false, element });
+        this.sendQueue.items.push({ added: false, element });
       }
 
       if (timesUp) {
@@ -362,21 +369,30 @@ export default () => {
     }
 
     flushSendQueue(deadline: Deadline): boolean {
-      for (const [index, item] of this.sendQueue.entries()) {
+      const startQueueIndex = this.sendQueue.index;
+      for (
+        ;
+        this.sendQueue.index < this.sendQueue.items.length;
+        this.sendQueue.index++
+      ) {
+        if (
+          this.sendQueue.index > startQueueIndex &&
+          deadline.timeRemaining() <= 0
+        ) {
+          this.requestIdleCallback();
+          return false;
+        }
+
+        const item = this.sendQueue.items[this.sendQueue.index];
+
         if (item.added) {
           sendElementEvent(CLICKABLE_EVENT, item.element);
         } else {
           sendElementEvent(UNCLICKABLE_EVENT, item.element);
         }
-
-        if (deadline.timeRemaining() <= 0) {
-          this.sendQueue = this.sendQueue.slice(index + 1);
-          this.requestIdleCallback();
-          return false;
-        }
       }
 
-      this.sendQueue = [];
+      this.sendQueue = makeEmptyQueue();
       return true;
     }
 
@@ -469,6 +485,18 @@ export default () => {
 
       return false;
     }
+  }
+
+  type Queue<T> = {|
+    items: Array<T>,
+    index: number,
+  |};
+
+  function makeEmptyQueue<T>(): Queue<T> {
+    return {
+      items: [],
+      index: 0,
+    };
   }
 
   class AddedRemoved<T> {

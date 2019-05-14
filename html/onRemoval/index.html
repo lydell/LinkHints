@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>all types</title>
+  </head>
+  <body>
+    <p><button id="remButton">Remove</button></p>
+    <p id="rem1">text</p>
+    <p id="rem2"><a href="https://example.com">link</a></p>
+    <p>To be able to observe this case easily, use really short deadline:</p>
+    <pre><code>this.flushQueue({ timeRemaining: () => 0 });</code></pre>
+    <p>
+      At first, this page should have 2 clickable elements. After clicking on
+      the Remove button, it should have 1 clicklable element. Check the
+      performance section in the options page!
+    </p>
+    <p>
+      This case is tricky because the link is removed from the paragraph after
+      the paragraph has already been removed from the DOM, but before we’ve had
+      a chance to run <code>.querySelectorAll("*")</code> on it. This is why we
+      need to observe all removed nodes with a separate MutationObserver until
+      the queue has been flushed.
+    </p>
+    <p>
+      Note: The case does only seem to trigger if clicking the button with the
+      <em>mouse.</em>
+    </p>
+    <script>
+      const rem1 = document.getElementById("rem1");
+      const rem2 = document.getElementById("rem2");
+      const remButton = document.getElementById("remButton");
+      const a = rem2.querySelector("a");
+
+      remButton.onclick = () => {
+        rem1.remove();
+        rem2.remove();
+        setTimeout(() => {
+          a.remove();
+        }, 0);
+      };
+    </script>
+  </body>
+</html>
