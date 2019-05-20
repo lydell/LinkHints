@@ -60,8 +60,10 @@ module.exports = {
         node: false,
       },
       globals: Object.assign({}, baseRules.browserEnv(), {
-        BROWSER: true,
-        BUILD_TIME: true,
+        BROWSER: false,
+        BUILD_TIME: false,
+        DEFAULT_LOG_LEVEL_CONFIG: false,
+        DEFAULT_STORAGE_SYNC: false,
         PROD: false,
         browser: false,
       }),

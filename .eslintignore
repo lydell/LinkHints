@@ -1,4 +1,4 @@
 !/**/.eslintrc.js
 !/*.js
-*.custom.js
+custom.config.*
 /src/compiled/

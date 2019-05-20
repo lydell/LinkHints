@@ -1,6 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
+import { mixedDict } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import type {
@@ -210,7 +211,7 @@ export default class BackgroundProgram {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
     try {
-      await this.updateOptions();
+      await this.updateOptions({ isInitial: true });
     } catch (error) {
       this.options.errors = [error.message];
     }
@@ -1720,7 +1721,17 @@ export default class BackgroundProgram {
     });
   }
 
-  async updateOptions() {
+  async updateOptions({ isInitial = false }: {| isInitial?: boolean |} = {}) {
+    if (!PROD) {
+      if (isInitial) {
+        const defaultStorageSync = DEFAULT_STORAGE_SYNC;
+        if (defaultStorageSync != null) {
+          await browser.storage.sync.clear();
+          await browser.storage.sync.set(mixedDict(defaultStorageSync));
+        }
+      }
+    }
+
     const info = await browser.runtime.getPlatformInfo();
     const mac = info.os === "mac";
     const defaults = getDefaults({ mac });

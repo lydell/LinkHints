@@ -10,7 +10,7 @@ export const CONTAINER_ID = "__SynthWebExt";
 
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
-export function decodeLogLevel(logLevel: string): LogLevel {
+export function decodeLogLevel(logLevel: mixed): LogLevel {
   switch (logLevel) {
     case "error":
     case "warn":
@@ -29,7 +29,9 @@ export const LOG_LEVELS = {
   debug: 3,
 };
 
-export const DEFAULT_LOG_LEVEL = ((PROD ? "error" : "log"): LogLevel);
+export const DEFAULT_LOG_LEVEL: LogLevel = decodeLogLevel(
+  DEFAULT_LOG_LEVEL_CONFIG
+);
 
 export function log(level: LogLevel, ...args: Array<any>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {

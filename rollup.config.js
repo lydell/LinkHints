@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 
+const optionalRequire = require("optional-require")(require);
 const rimraf = require("rimraf");
 const commonjs = require("rollup-plugin-commonjs");
 const prettier = require("rollup-plugin-prettier");
@@ -12,7 +13,14 @@ const sucrase = require("rollup-plugin-sucrase");
 
 const config = require("./project.config");
 
+const customConfig = optionalRequire("./custom.config") || {};
+
 const PROD = config.browser != null;
+
+const {
+  DEFAULT_LOG_LEVEL = PROD ? "error" : "log",
+  DEFAULT_STORAGE_SYNC = null,
+} = customConfig;
 
 setup();
 
@@ -175,6 +183,8 @@ function makeGlobals() {
         : JSON.stringify(config.browser),
     // Note: BUILD_TIME might vary between different files.
     BUILD_TIME: JSON.stringify(Date.now()),
+    DEFAULT_LOG_LEVEL_CONFIG: JSON.stringify(DEFAULT_LOG_LEVEL),
+    DEFAULT_STORAGE_SYNC: JSON.stringify(DEFAULT_STORAGE_SYNC),
     PROD: JSON.stringify(PROD),
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
