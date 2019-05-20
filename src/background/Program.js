@@ -1366,6 +1366,9 @@ export default class BackgroundProgram {
         for (const tabState2 of this.tabState.values()) {
           tabState2.perf = [];
         }
+        if (!PROD) {
+          await browser.storage.local.remove("perf");
+        }
         break;
 
       case "ToggleKeyboardCapture": {
