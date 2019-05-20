@@ -7,7 +7,7 @@ module.exports = config => ({
     // Use Nightly.
     firefox: "nightly",
     // This is a useful start page.
-    startUrl: ["about:debugging"],
+    startUrl: ["about:debugging#/runtime/this-firefox"],
     pref: [
       // Allow accessing about:config without the warning screen.
       "general.warnOnAboutConfig=false",
