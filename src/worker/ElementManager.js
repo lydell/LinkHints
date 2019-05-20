@@ -328,8 +328,8 @@ export default class ElementManager {
     this.visibleElements.clear();
     this.visibleFrames.clear();
     // `WeakSet`s don’t have a `.clear()` method.
-    // this.elementsWithClickListeners.clear();
-    // this.elementsWithScrollbars.clear();
+    this.elementsWithClickListeners = new WeakSet();
+    this.elementsWithScrollbars = new WeakSet();
     this.idleCallbackId = undefined;
     this.resets.reset();
     sendInjectedMessage(MESSAGE_RESET);
