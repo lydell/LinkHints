@@ -1,18 +1,9 @@
 // @flow strict-local
 
-import {
-  array,
-  constant,
-  fieldAndThen,
-  map,
-  number,
-  record,
-  repr,
-  string,
-} from "tiny-decoders";
+import { array, constant, fieldAndThen, record, string } from "tiny-decoders";
 
 import { type ElementTypes, decodeElementTypes } from "../shared/hints";
-import type { Box } from "../shared/main";
+import { type Box, finiteNumber } from "../shared/main";
 
 export type FrameMessage =
   | {|
@@ -55,8 +46,6 @@ function getFrameMessageDecoder(type: string): mixed => FrameMessage {
   }
 }
 
-const finiteNumber: mixed => number = map(number, finite);
-
 const decodeViewports: mixed => Array<Box> = array(
   record({
     x: finiteNumber,
@@ -65,10 +54,3 @@ const decodeViewports: mixed => Array<Box> = array(
     height: finiteNumber,
   })
 );
-
-function finite(value: number): number {
-  if (!Number.isFinite(value)) {
-    throw new TypeError(`Expected a finite number, but got: ${repr(value)}`);
-  }
-  return value;
-}

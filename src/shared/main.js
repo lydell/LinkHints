@@ -1,6 +1,6 @@
 // @flow
 
-import { repr } from "tiny-decoders";
+import { map, number, repr } from "tiny-decoders";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -465,4 +465,21 @@ export function deepEqual(a: mixed, b: mixed): boolean {
   }
 
   return false;
+}
+
+export const finiteNumber: mixed => number = map(number, finite);
+
+function finite(value: number): number {
+  if (!Number.isFinite(value)) {
+    throw new TypeError(`Expected a finite number, but got: ${repr(value)}`);
+  }
+  return value;
+}
+
+export function normalizeFiniteNumber(
+  value: string,
+  defaultValue: number
+): string {
+  const parsed = parseFloat(value);
+  return String(Number.isFinite(parsed) ? parsed : defaultValue);
 }

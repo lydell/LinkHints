@@ -11,13 +11,19 @@ import {
   tMeta as tMetaBackground,
 } from "../background/Program";
 import { t as tRenderer, tMeta as tMetaRenderer } from "../renderer/Program";
-import { deepEqual, log } from "../shared/main";
-import { type TweakableValue } from "../shared/tweakable";
+import {
+  Resets,
+  addListener,
+  log,
+  normalizeFiniteNumber,
+} from "../shared/main";
+import { type TweakableValue, stringArrayToSet } from "../shared/tweakable";
 import {
   t as tElementManager,
   tMeta as tMetaElementManager,
 } from "../worker/ElementManager";
 import Field from "./Field";
+import StringSetEditor, { equalStringSets } from "./StringSetEditor";
 import TextInput from "./TextInput";
 
 const ALL_TWEAKABLES = [
@@ -26,6 +32,14 @@ const ALL_TWEAKABLES = [
   [tElementManager, tMetaElementManager],
 ];
 
+const ALL_KEYS: Set<string> = new Set(
+  [].concat(
+    ...ALL_TWEAKABLES.map(([, tMeta]) =>
+      Object.keys(tMeta.defaults).map(key => `${tMeta.namespace}.${key}`)
+    )
+  )
+);
+
 type Props = {|
   before?: React.Node,
 |};
@@ -33,6 +47,25 @@ type Props = {|
 type State = {||};
 
 export default class Tweakable extends React.Component<Props, State> {
+  resets: Resets = new Resets();
+
+  componentDidMount() {
+    this.resets.add(
+      addListener(browser.storage.onChanged, (changes, areaName) => {
+        if (areaName === "sync") {
+          const didUpdate = Object.keys(changes).some(key => ALL_KEYS.has(key));
+          if (didUpdate) {
+            this.forceUpdate();
+          }
+        }
+      })
+    );
+  }
+
+  componentWillUnmount() {
+    this.resets.reset();
+  }
+
   render() {
     const { before } = this.props;
 
@@ -89,9 +122,11 @@ function TweakableField<T: TweakableValue>({
             id={id}
             style={{ width: "33%" }}
             savedValue={String(value)}
-            normalize={newValue => normalizeNumber(newValue, defaultValue)}
+            normalize={newValue =>
+              normalizeFiniteNumber(newValue, defaultValue)
+            }
             save={newValue => {
-              log("log", "SAVE", newValue);
+              save(fullKey, Number(newValue));
             }}
           />
         )}
@@ -109,8 +144,12 @@ function TweakableField<T: TweakableValue>({
             id={id}
             style={{ width: "100%" }}
             savedValue={value}
+            normalize={newValue => {
+              const trimmed = newValue.trim();
+              return trimmed === "" ? defaultValue : trimmed;
+            }}
             save={newValue => {
-              log("log", "SAVE", newValue);
+              save(fullKey, newValue);
             }}
           />
         )}
@@ -122,27 +161,16 @@ function TweakableField<T: TweakableValue>({
     return (
       <Field
         {...fieldProps}
-        changed={
-          !deepEqual(
-            normalizeStringSet(value),
-            normalizeStringSet(defaultValue)
-          )
-        }
+        changed={!equalStringSets(value, defaultValue)}
         render={({ id }) => (
-          <div className="SpacedVertical">
-            {Array.from(value)
-              .sort()
-              .map((item, index) => (
-                <TextInput
-                  key={index}
-                  id={index === 0 ? id : undefined}
-                  savedValue={item}
-                  save={newValue => {
-                    log("log", "SAVE", newValue);
-                  }}
-                />
-              ))}
-          </div>
+          <StringSetEditor
+            id={id}
+            savedValue={value}
+            save={newValue => {
+              const newSet = stringArrayToSet(newValue);
+              save(fullKey, newSet.size === 0 ? defaultValue : newValue);
+            }}
+          />
         )}
       />
     );
@@ -163,11 +191,8 @@ function TweakableField<T: TweakableValue>({
   );
 }
 
-function normalizeNumber(value: string, defaultValue: number): string {
-  const parsed = parseFloat(value);
-  return String(Number.isFinite(parsed) ? parsed : defaultValue);
-}
-
-function normalizeStringSet(set: Set<string>): Array<string> {
-  return Array.from(set).sort();
+function save(key: string, value: mixed) {
+  browser.storage.sync.set({ [key]: value }).catch(error => {
+    log("error", "TweakableField", "Failed to save.", error);
+  });
 }

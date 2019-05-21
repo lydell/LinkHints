@@ -1,8 +1,8 @@
 // @flow strict-local
 
-import { array, map, number, repr, string } from "tiny-decoders";
+import { array, map, repr, string } from "tiny-decoders";
 
-import { addListener, log } from "./main";
+import { addListener, finiteNumber, log } from "./main";
 
 export type TweakableValue = string | number | Set<string>;
 
@@ -33,11 +33,14 @@ export function tweakable(
         if (value == null) {
           mapping[key] = original;
         } else if (typeof original === "string") {
-          mapping[key] = string(value);
+          mapping[key] = map(string, val => val.trim())(value);
         } else if (typeof original === "number") {
-          mapping[key] = number(value);
+          mapping[key] = finiteNumber(value);
         } else if (original instanceof Set) {
-          mapping[key] = map(array(string), arr => new Set(arr))(value);
+          mapping[key] = map(
+            array(string),
+            arr => new Set(stringArrayToSet(arr))
+          )(value);
         } else {
           throw new TypeError(
             `Unknown type. Expected a string, number or a Set of string, but got: ${repr(
@@ -86,7 +89,7 @@ export function tweakable(
           if (fullKey.startsWith(keyPrefix)) {
             const key = fullKey.slice(keyPrefix.length);
             if ({}.hasOwnProperty.call(defaults, key)) {
-              result[key] = changes[key].newValue;
+              result[key] = changes[fullKey].newValue;
             }
           }
           return result;
@@ -102,4 +105,13 @@ export function tweakable(
     loaded,
     unlisten,
   };
+}
+
+export function stringArrayToSet(arr: Array<string>): Set<string> {
+  return new Set(
+    arr
+      .map(item => item.trim())
+      .filter(item => item !== "")
+      .sort()
+  );
 }
