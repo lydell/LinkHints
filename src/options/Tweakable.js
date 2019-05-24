@@ -5,6 +5,7 @@
 // @flow strict-local
 
 import * as React from "preact";
+import { map, string } from "tiny-decoders";
 
 import {
   t as tBackground,
@@ -26,10 +27,26 @@ import Field from "./Field";
 import StringSetEditor, { equalStringSets } from "./StringSetEditor";
 import TextInput from "./TextInput";
 
+type Validator = ?(mixed) => void;
+
+type Validators = { [string]: Validator };
+
+const validatorsElementManager: {
+  [key: $Keys<typeof tElementManager>]: Validator,
+} = {
+  SELECTOR_IMAGE: map(string, value => {
+    document.querySelector(value);
+  }),
+};
+
 const ALL_TWEAKABLES = [
-  [tBackground, tMetaBackground],
-  [tRenderer, tMetaRenderer],
-  [tElementManager, tMetaElementManager],
+  [tBackground, tMetaBackground, ({}: Validators)],
+  [tRenderer, tMetaRenderer, ({}: Validators)],
+  [
+    tElementManager,
+    tMetaElementManager,
+    ({ ...validatorsElementManager }: Validators),
+  ],
 ];
 
 const ALL_KEYS: Set<string> = new Set(
@@ -39,6 +56,8 @@ const ALL_KEYS: Set<string> = new Set(
     )
   )
 );
+
+console.log(Array.from(ALL_KEYS).join("\n"));
 
 type Props = {|
   before?: React.Node,
@@ -75,7 +94,7 @@ export default class Tweakable extends React.Component<Props, State> {
 
         {before}
 
-        {ALL_TWEAKABLES.map(([t, tMeta]) =>
+        {ALL_TWEAKABLES.map(([t, tMeta, validators]) =>
           Object.keys(tMeta.defaults)
             .sort()
             .map(key => {
@@ -86,6 +105,7 @@ export default class Tweakable extends React.Component<Props, State> {
                   name={key}
                   value={t[key]}
                   defaultValue={tMeta.defaults[key]}
+                  validator={validators[key]}
                 />
               );
             })
@@ -100,11 +120,13 @@ function TweakableField<T: TweakableValue>({
   name,
   value,
   defaultValue,
+  validator,
 }: {|
   namespace: string,
   name: string,
   value: T,
   defaultValue: T,
+  validator: ?(mixed) => void,
 |}) {
   const fullKey = `${namespace}.${name}`;
   const fieldProps = {
@@ -126,7 +148,7 @@ function TweakableField<T: TweakableValue>({
               normalizeFiniteNumber(newValue, defaultValue)
             }
             save={newValue => {
-              save(fullKey, Number(newValue));
+              save(fullKey, Number(newValue), validator);
             }}
           />
         )}
@@ -149,7 +171,7 @@ function TweakableField<T: TweakableValue>({
               return trimmed === "" ? defaultValue : trimmed;
             }}
             save={newValue => {
-              save(fullKey, newValue);
+              save(fullKey, newValue, validator);
             }}
           />
         )}
@@ -168,7 +190,11 @@ function TweakableField<T: TweakableValue>({
             savedValue={value}
             save={newValue => {
               const newSet = stringArrayToSet(newValue);
-              save(fullKey, newSet.size === 0 ? defaultValue : newValue);
+              save(
+                fullKey,
+                newSet.size === 0 ? defaultValue : newValue,
+                validator
+              );
             }}
           />
         )}
@@ -191,8 +217,13 @@ function TweakableField<T: TweakableValue>({
   );
 }
 
-function save(key: string, value: mixed) {
-  browser.storage.sync.set({ [key]: value }).catch(error => {
+async function save(key: string, value: mixed, validator: ?(mixed) => void) {
+  try {
+    if (validator != null) {
+      validator(value);
+    }
+    await browser.storage.sync.set({ [key]: value });
+  } catch (error) {
     log("error", "TweakableField", "Failed to save.", error);
-  });
+  }
 }
