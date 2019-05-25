@@ -17,10 +17,7 @@ const customConfig = optionalRequire("./custom.config") || {};
 
 const PROD = config.browser != null;
 
-const {
-  DEFAULT_LOG_LEVEL = PROD ? "error" : "log",
-  DEFAULT_STORAGE_SYNC = null,
-} = customConfig;
+const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = customConfig;
 
 setup();
 

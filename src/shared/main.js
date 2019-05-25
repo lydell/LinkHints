@@ -29,9 +29,9 @@ export const LOG_LEVELS = {
   debug: 3,
 };
 
-export const DEFAULT_LOG_LEVEL: LogLevel = decodeLogLevel(
-  DEFAULT_LOG_LEVEL_CONFIG
-);
+export const DEFAULT_LOG_LEVEL: LogLevel = PROD
+  ? "error"
+  : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
 export function log(level: LogLevel, ...args: Array<any>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
