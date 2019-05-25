@@ -37,6 +37,7 @@ import {
   decodeLogLevel,
   deepEqual,
   log,
+  normalizeUnsignedInt,
   unreachable,
 } from "../shared/main";
 import type {
@@ -49,7 +50,6 @@ import {
   type PartialOptions,
   importOptions,
   normalizeChars,
-  normalizeNonNegativeInteger,
 } from "../shared/options";
 import { type TabsPerf } from "../shared/perf";
 import Attachment from "./Attachment";
@@ -537,10 +537,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       disabled={!options.autoActivate}
                       savedValue={String(options.overTypingDuration)}
                       normalize={value =>
-                        normalizeNonNegativeInteger(
-                          value,
-                          defaults.overTypingDuration
-                        )
+                        normalizeUnsignedInt(value, defaults.overTypingDuration)
                       }
                       save={value => {
                         this.saveOptions({ overTypingDuration: Number(value) });

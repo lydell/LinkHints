@@ -5,7 +5,6 @@
 // @flow strict-local
 
 import * as React from "preact";
-import { map, string } from "tiny-decoders";
 
 import {
   t as tBackground,
@@ -16,9 +15,11 @@ import {
   Resets,
   addListener,
   log,
-  normalizeFiniteNumber,
+  normalizeUnsignedFloat,
+  normalizeUnsignedInt,
+  unreachable,
 } from "../shared/main";
-import { type TweakableValue, stringArrayToSet } from "../shared/tweakable";
+import { type TweakableValue, normalizeStringArray } from "../shared/tweakable";
 import {
   t as tElementManager,
   tMeta as tMetaElementManager,
@@ -27,26 +28,10 @@ import Field from "./Field";
 import StringSetEditor, { equalStringSets } from "./StringSetEditor";
 import TextInput from "./TextInput";
 
-type Validator = ?(mixed) => void;
-
-type Validators = { [string]: Validator };
-
-const validatorsElementManager: {
-  [key: $Keys<typeof tElementManager>]: Validator,
-} = {
-  SELECTOR_IMAGE: map(string, value => {
-    document.querySelector(value);
-  }),
-};
-
 const ALL_TWEAKABLES = [
-  [tBackground, tMetaBackground, ({}: Validators)],
-  [tRenderer, tMetaRenderer, ({}: Validators)],
-  [
-    tElementManager,
-    tMetaElementManager,
-    ({ ...validatorsElementManager }: Validators),
-  ],
+  [tBackground, tMetaBackground],
+  [tRenderer, tMetaRenderer],
+  [tElementManager, tMetaElementManager],
 ];
 
 const ALL_KEYS: Set<string> = new Set(
@@ -56,8 +41,6 @@ const ALL_KEYS: Set<string> = new Set(
     )
   )
 );
-
-console.log(Array.from(ALL_KEYS).join("\n"));
 
 type Props = {|
   before?: React.Node,
@@ -94,7 +77,7 @@ export default class Tweakable extends React.Component<Props, State> {
 
         {before}
 
-        {ALL_TWEAKABLES.map(([t, tMeta, validators]) =>
+        {ALL_TWEAKABLES.map(([t, tMeta]) =>
           Object.keys(tMeta.defaults)
             .sort()
             .map(key => {
@@ -105,7 +88,7 @@ export default class Tweakable extends React.Component<Props, State> {
                   name={key}
                   value={t[key]}
                   defaultValue={tMeta.defaults[key]}
-                  validator={validators[key]}
+                  error={tMeta.errors[key]}
                 />
               );
             })
@@ -120,108 +103,177 @@ function TweakableField<T: TweakableValue>({
   name,
   value,
   defaultValue,
-  validator,
+  error,
 }: {|
   namespace: string,
   name: string,
   value: T,
   defaultValue: T,
-  validator: ?(mixed) => void,
+  error: ?string,
 |}) {
   const fullKey = `${namespace}.${name}`;
   const fieldProps = {
     id: fullKey,
     label: `${namespace}: ${name}`,
+    description:
+      error != null ? (
+        <div className="Error SpacedVertical">
+          <p>There was an error with the saved value. Using default instead.</p>
+          <pre>{error}</pre>
+        </div>
+      ) : (
+        undefined
+      ),
   };
 
-  if (typeof value === "number" && typeof defaultValue === "number") {
-    return (
-      <Field
-        {...fieldProps}
-        changed={value !== defaultValue}
-        render={({ id }) => (
-          <TextInput
-            id={id}
-            style={{ width: "33%" }}
-            savedValue={String(value)}
-            normalize={newValue =>
-              normalizeFiniteNumber(newValue, defaultValue)
-            }
-            save={newValue => {
-              save(fullKey, Number(newValue), validator);
-            }}
+  switch (value.type) {
+    case "UnsignedInt":
+      if (defaultValue.type === "UnsignedInt") {
+        return (
+          <Field
+            {...fieldProps}
+            changed={value.value !== defaultValue.value}
+            render={({ id }) => (
+              <TextInput
+                id={id}
+                style={{ width: "33%" }}
+                savedValue={String(value.value)}
+                normalize={newValue =>
+                  normalizeUnsignedInt(newValue, defaultValue.value)
+                }
+                save={newValue => {
+                  save(fullKey, Number(newValue));
+                }}
+              />
+            )}
           />
-        )}
-      />
-    );
+        );
+      }
+      break;
+
+    case "UnsignedFloat":
+      if (defaultValue.type === "UnsignedFloat") {
+        return (
+          <Field
+            {...fieldProps}
+            changed={value.value !== defaultValue.value}
+            render={({ id }) => (
+              <TextInput
+                id={id}
+                style={{ width: "33%" }}
+                savedValue={String(value.value)}
+                normalize={newValue =>
+                  normalizeUnsignedFloat(newValue, defaultValue.value)
+                }
+                save={newValue => {
+                  save(fullKey, Number(newValue));
+                }}
+              />
+            )}
+          />
+        );
+      }
+      break;
+
+    case "StringSet":
+      if (defaultValue.type === "StringSet") {
+        return (
+          <Field
+            {...fieldProps}
+            changed={!equalStringSets(value.value, defaultValue.value)}
+            render={({ id }) => (
+              <StringSetEditor
+                id={id}
+                savedValue={value.value}
+                save={newValue => {
+                  const newArray = normalizeStringArray(newValue);
+                  save(
+                    fullKey,
+                    newArray.length === 0
+                      ? Array.from(defaultValue.value)
+                      : newValue
+                  );
+                }}
+              />
+            )}
+          />
+        );
+      }
+      break;
+
+    case "ElementTypeSet":
+      if (defaultValue.type === "ElementTypeSet") {
+        const stringValue: Set<string> = new Set(value.value);
+        const defaulStringValue: Set<string> = new Set(defaultValue.value);
+        return (
+          <Field
+            {...fieldProps}
+            changed={!equalStringSets(stringValue, defaulStringValue)}
+            render={({ id }) => (
+              <StringSetEditor
+                id={id}
+                savedValue={stringValue}
+                save={newValue => {
+                  const newArray = normalizeStringArray(newValue);
+                  save(
+                    fullKey,
+                    newArray.length === 0
+                      ? Array.from(defaultValue.value)
+                      : newValue
+                  );
+                }}
+              />
+            )}
+          />
+        );
+      }
+      break;
+
+    case "SelectorString":
+      if (defaultValue.type === "SelectorString") {
+        return (
+          <Field
+            {...fieldProps}
+            changed={value.value !== defaultValue.value}
+            render={({ id }) => (
+              <TextInput
+                id={id}
+                style={{ width: "100%" }}
+                savedValue={value.value}
+                normalize={newValue => {
+                  const trimmed = newValue.trim();
+                  return trimmed === "" ? defaultValue.value : trimmed;
+                }}
+                save={newValue => {
+                  save(fullKey, newValue);
+                }}
+              />
+            )}
+          />
+        );
+      }
+      break;
+
+    default:
+      unreachable(value.type, value);
   }
 
-  if (typeof value === "string" && typeof defaultValue === "string") {
-    return (
-      <Field
-        {...fieldProps}
-        changed={value !== defaultValue}
-        render={({ id }) => (
-          <TextInput
-            id={id}
-            style={{ width: "100%" }}
-            savedValue={value}
-            normalize={newValue => {
-              const trimmed = newValue.trim();
-              return trimmed === "" ? defaultValue : trimmed;
-            }}
-            save={newValue => {
-              save(fullKey, newValue, validator);
-            }}
-          />
-        )}
-      />
-    );
-  }
-
-  if (value instanceof Set && defaultValue instanceof Set) {
-    return (
-      <Field
-        {...fieldProps}
-        changed={!equalStringSets(value, defaultValue)}
-        render={({ id }) => (
-          <StringSetEditor
-            id={id}
-            savedValue={value}
-            save={newValue => {
-              const newSet = stringArrayToSet(newValue);
-              save(
-                fullKey,
-                newSet.size === 0 ? defaultValue : newValue,
-                validator
-              );
-            }}
-          />
-        )}
-      />
-    );
-  }
-
-  const types = new Set(
-    [value, defaultValue].map(val => ({}.toString.call(val)))
-  );
   return (
     <Field
       {...fieldProps}
       span
       changed={false}
       render={() => (
-        <p className="Error">Unknown type {Array.from(types).join(" / ")}.</p>
+        <p className="Error">
+          Value/defaultValue type mismatch: {value.type}/{defaultValue.type}.
+        </p>
       )}
     />
   );
 }
 
-async function save(key: string, value: mixed, validator: ?(mixed) => void) {
+async function save(key: string, value: mixed) {
   try {
-    if (validator != null) {
-      validator(value);
-    }
     await browser.storage.sync.set({ [key]: value });
   } catch (error) {
     log("error", "TweakableField", "Failed to save.", error);

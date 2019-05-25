@@ -2,18 +2,91 @@
 
 import { array, map, repr, string } from "tiny-decoders";
 
-import { addListener, finiteNumber, log } from "./main";
+import { type ElementType, decodeElementType } from "./hints";
+import {
+  addListener,
+  decodeUnsignedFloat,
+  decodeUnsignedInt,
+  log,
+  unreachable,
+} from "./main";
 
-export type TweakableValue = string | number | Set<string>;
+type UnsignedInt = {|
+  type: "UnsignedInt",
+  value: number,
+|};
+
+type UnsignedFloat = {|
+  type: "UnsignedFloat",
+  value: number,
+|};
+
+type StringSet = {|
+  type: "StringSet",
+  value: Set<string>,
+|};
+
+type ElementTypeSet = {|
+  type: "ElementTypeSet",
+  value: Set<ElementType>,
+|};
+
+type SelectorString = {|
+  type: "SelectorString",
+  value: string,
+|};
+
+export type TweakableValue =
+  | UnsignedInt
+  | UnsignedFloat
+  | StringSet
+  | ElementTypeSet
+  | SelectorString;
 
 export type TweakableMapping = { [string]: TweakableValue };
 
 export type TweakableMeta = {|
   namespace: string,
   defaults: TweakableMapping,
+  errors: { [string]: ?string },
   loaded: Promise<void>,
   unlisten: () => void,
 |};
+
+export function unsignedInt(value: number): UnsignedInt {
+  return {
+    type: "UnsignedInt",
+    value,
+  };
+}
+
+export function unsignedFloat(value: number): UnsignedFloat {
+  return {
+    type: "UnsignedFloat",
+    value,
+  };
+}
+
+export function stringSet(value: Set<string>): StringSet {
+  return {
+    type: "StringSet",
+    value,
+  };
+}
+
+export function elementTypeSet(value: Set<ElementType>): ElementTypeSet {
+  return {
+    type: "ElementTypeSet",
+    value,
+  };
+}
+
+export function selectorString(value: string): SelectorString {
+  return {
+    type: "SelectorString",
+    value,
+  };
+}
 
 export function tweakable(
   namespace: string,
@@ -22,6 +95,7 @@ export function tweakable(
   const prefix = "tweakable";
   const keyPrefix = `${namespace}.`;
   const defaults = { ...mapping };
+  const errors: { [$Keys<typeof mapping>]: ?string } = {};
 
   function update(data: { [string]: mixed }) {
     for (const [key, value] of Object.entries(data)) {
@@ -29,33 +103,59 @@ export function tweakable(
         if (!{}.hasOwnProperty.call(defaults, key)) {
           throw new TypeError(`Unknown key: ${repr(key)}`);
         }
-        const original = defaults[key];
+
+        const original: TweakableValue = defaults[key];
+
         if (value == null) {
           mapping[key] = original;
-        } else if (typeof original === "string") {
-          mapping[key] = map(string, val => val.trim())(value);
-        } else if (typeof original === "number") {
-          mapping[key] = finiteNumber(value);
-        } else if (original instanceof Set) {
-          mapping[key] = map(
-            array(string),
-            arr => new Set(stringArrayToSet(arr))
-          )(value);
-        } else {
-          throw new TypeError(
-            `Unknown type. Expected a string, number or a Set of string, but got: ${repr(
-              value
-            )}`
-          );
+          continue;
         }
+
+        switch (original.type) {
+          case "UnsignedInt":
+            mapping[key] = {
+              type: "UnsignedInt",
+              value: decodeUnsignedInt(value),
+            };
+            break;
+
+          case "UnsignedFloat":
+            mapping[key] = {
+              type: "UnsignedFloat",
+              value: decodeUnsignedFloat(value),
+            };
+            break;
+
+          case "StringSet":
+            mapping[key] = {
+              type: "StringSet",
+              value: decodeStringSet(string)(value),
+            };
+            break;
+
+          case "ElementTypeSet":
+            mapping[key] = {
+              type: "ElementTypeSet",
+              value: decodeStringSet(map(string, decodeElementType))(value),
+            };
+            break;
+
+          case "SelectorString":
+            mapping[key] = {
+              type: "SelectorString",
+              value: map(string, val => {
+                document.querySelector(val);
+                return val;
+              })(value),
+            };
+            break;
+
+          default:
+            unreachable(original.type, original);
+        }
+        errors[key] = undefined;
       } catch (error) {
-        log("error", prefix, `Failed to decode ${JSON.stringify(key)}.`, {
-          key,
-          value,
-          namespace,
-          mapping,
-          error,
-        });
+        errors[key] = error.message;
       }
     }
   }
@@ -102,16 +202,22 @@ export function tweakable(
   return {
     namespace,
     defaults,
+    errors,
     loaded,
     unlisten,
   };
 }
 
-export function stringArrayToSet(arr: Array<string>): Set<string> {
-  return new Set(
-    arr
-      .map(item => item.trim())
-      .filter(item => item !== "")
-      .sort()
+export function normalizeStringArray(arr: Array<string>): Array<string> {
+  return arr
+    .map(item => item.trim())
+    .filter(item => item !== "")
+    .sort();
+}
+
+function decodeStringSet<T: string>(decoder: mixed => T): mixed => Set<T> {
+  return map(
+    array(string),
+    arr => new Set(array(decoder)(normalizeStringArray(arr)))
   );
 }

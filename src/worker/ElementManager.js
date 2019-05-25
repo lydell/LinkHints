@@ -20,7 +20,14 @@ import {
   walkTextNodes,
 } from "../shared/main";
 import type { Durations, Stats, TimeTracker } from "../shared/perf";
-import { tweakable } from "../shared/tweakable";
+import {
+  elementTypeSet,
+  selectorString,
+  stringSet,
+  tweakable,
+  unsignedFloat,
+  unsignedInt,
+} from "../shared/tweakable";
 import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,
@@ -72,17 +79,17 @@ export const t = {
   // of those with `IntersectionObserver`, scrolling is noticeably laggy. On my
   // computer, the lag starts somewhere between 10K and 20K tracked links.
   // Tracking at most 10K should be enough for regular sites.
-  MAX_INTERSECTION_OBSERVED_ELEMENTS: 10e3,
+  MAX_INTERSECTION_OBSERVED_ELEMENTS: unsignedInt(10e3),
 
-  ELEMENT_TYPES_LOW_QUALITY: new Set<string>(["clickable-event"]),
+  ELEMENT_TYPES_LOW_QUALITY: elementTypeSet(new Set(["clickable-event"])),
 
   // Give worse hints to scrollable elements and (selectable) frames. They are
   // usually very large by nature, but not that commonly used.
-  ELEMENT_TYPES_WORSE: new Set<string>(["scrollable", "selectable"]),
+  ELEMENT_TYPES_WORSE: elementTypeSet(new Set(["scrollable", "selectable"])),
 
   // Elements this many pixels high or taller always get their hint placed at the
   // very left edge.
-  MIN_HEIGHT_BOX: 110, // px
+  MIN_HEIGHT_BOX: unsignedFloat(110), // px
 
   // Avoid placing hints too far to the right side. The first non-empty text node
   // of an element does not necessarily have to come first, due to CSS. For
@@ -90,84 +97,93 @@ export const t = {
   // number to the right. That number is usually positioned using `float: right;`
   // and due to how floats work it then needs to come _before_ the label in DOM
   // order. This avoids targeting such text.
-  MAX_HINT_X_PERCENTAGE_OF_WIDTH: 0.75,
+  MAX_HINT_X_PERCENTAGE_OF_WIDTH: unsignedFloat(0.75),
 
   // Maximum area for elements with only click listeners. Elements larger than
   // this are most likely not clickable, and only used for event delegation.
-  MAX_CLICKABLE_EVENT_AREA: 1e6, // px
+  MAX_CLICKABLE_EVENT_AREA: unsignedFloat(1e6), // px
 
-  PROTOCOLS_LINK: new Set<string>(
-    [
-      "http:",
-      "https:",
-      "ftp:",
-      "chrome-extension:",
-      "moz-extension:",
-      // Firefox does not allow opening `file://` URLs in new tabs, but Chrome
-      // does. Both allow _clicking_ them.
-      // See: <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create>
-      BROWSER === "chrome" ? "file:" : undefined,
-    ].filter(Boolean)
+  PROTOCOLS_LINK: stringSet(
+    new Set(
+      [
+        "http:",
+        "https:",
+        "ftp:",
+        "chrome-extension:",
+        "moz-extension:",
+        // Firefox does not allow opening `file://` URLs in new tabs, but Chrome
+        // does. Both allow _clicking_ them.
+        // See: <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create>
+        BROWSER === "chrome" ? "file:" : undefined,
+      ].filter(Boolean)
+    )
   ),
 
   // http://w3c.github.io/aria/#widget_roles
-  ROLES_CLICKABLE: new Set<string>([
-    "button",
-    "checkbox",
-    "gridcell",
-    "link",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "option",
-    "radio",
-    "searchbox",
-    "spinbutton",
-    "switch",
-    "tab",
-    "textbox",
-    "treeitem",
-    // Omitted since they don’t seem useful to click:
-    // "progressbar",
-    // "scrollbar",
-    // "separator",
-    // "slider",
-    // "tabpanel",
-  ]),
+  ROLES_CLICKABLE: stringSet(
+    new Set([
+      "button",
+      "checkbox",
+      "gridcell",
+      "link",
+      "menuitem",
+      "menuitemcheckbox",
+      "menuitemradio",
+      "option",
+      "radio",
+      "searchbox",
+      "spinbutton",
+      "switch",
+      "tab",
+      "textbox",
+      "treeitem",
+      // Omitted since they don’t seem useful to click:
+      // "progressbar",
+      // "scrollbar",
+      // "separator",
+      // "slider",
+      // "tabpanel",
+    ])
+  ),
 
   // "true" indicates that contenteditable on. Chrome also supports
   // "plaintext-only". There may be more modes in the future, such as "caret", so
   // it’s better to only list the values that indicate that an element _isn’t_
   // contenteditable.
-  VALUES_NON_CONTENTEDITABLE: new Set<string>([
-    // The default value. If a parent is contenteditable, it means that this
-    // element is as well (and `element.isContentEditable` is true). But we only
-    // want hints for the “root” contenteditable element.
-    "inherit",
-    // Explicitly turned off:
-    "false",
-  ]),
+  VALUES_NON_CONTENTEDITABLE: stringSet(
+    new Set([
+      // The default value. If a parent is contenteditable, it means that this
+      // element is as well (and `element.isContentEditable` is true). But we only
+      // want hints for the “root” contenteditable element.
+      "inherit",
+      // Explicitly turned off:
+      "false",
+    ])
+  ),
 
-  VALUES_SCROLLABLE_OVERFLOW: new Set<string>(["auto", "scroll"]),
+  VALUES_SCROLLABLE_OVERFLOW: stringSet(new Set(["auto", "scroll"])),
 
-  MIN_SIZE_FRAME: 6, // px
-  MIN_SIZE_TEXT_RECT: 2, // px
-  MIN_SIZE_ICON: 10, // px
+  MIN_SIZE_FRAME: unsignedFloat(6), // px
+  MIN_SIZE_TEXT_RECT: unsignedFloat(2), // px
+  MIN_SIZE_ICON: unsignedFloat(10), // px
 
-  ATTRIBUTES_CLICKABLE,
+  ATTRIBUTES_CLICKABLE: stringSet(ATTRIBUTES_CLICKABLE),
 
-  ATTRIBUTES_MUTATION: new Set<string>([
-    "contenteditable",
-    "href",
-    "role",
-    ...CLICKABLE_EVENT_PROPS,
-    ...ATTRIBUTES_CLICKABLE,
-  ]),
+  ATTRIBUTES_MUTATION: stringSet(
+    new Set([
+      "contenteditable",
+      "href",
+      "role",
+      ...CLICKABLE_EVENT_PROPS,
+      ...ATTRIBUTES_CLICKABLE,
+    ])
+  ),
 
   // Find actual images as well as icon font images. Matches for example “Icon”,
   // “glyphicon”, “fa” and “fa-thumbs-up” but not “face or “alfa”.
-  SELECTOR_IMAGE:
-    "img, svg, [class*='icon' i], [class~='fa'], [class^='fa-'], [class*=' fa-']",
+  SELECTOR_IMAGE: selectorString(
+    "img, svg, [class*='icon' i], [class~='fa'], [class^='fa-'], [class*=' fa-']"
+  ),
 };
 
 export const tMeta = tweakable("ElementManager", t);
@@ -293,7 +309,7 @@ export default class ElementManager {
     this.mutationObserver.observe(documentElement, {
       childList: true,
       subtree: true,
-      attributeFilter: Array.from(t.ATTRIBUTES_MUTATION),
+      attributeFilter: Array.from(t.ATTRIBUTES_MUTATION.value),
     });
 
     // Pick up all elements present in the initial HTML payload. Large HTML
@@ -612,7 +628,7 @@ export default class ElementManager {
       this.elements.set(element, type);
       if (!this.bailed) {
         this.intersectionObserver.observe(element);
-        if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS) {
+        if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS.value) {
           this.bail();
         }
       }
@@ -1037,8 +1053,8 @@ export default class ElementManager {
       // machine.
       const box = getVisibleBox(element.getBoundingClientRect(), viewports);
       return box != null &&
-        box.width > t.MIN_SIZE_FRAME &&
-        box.height > t.MIN_SIZE_FRAME
+        box.width > t.MIN_SIZE_FRAME.value &&
+        box.height > t.MIN_SIZE_FRAME.value
         ? element
         : undefined;
     }).filter(Boolean);
@@ -1076,7 +1092,7 @@ export default class ElementManager {
         // Note: For SVG elements, `.contentEditable` is `undefined`.
         if (
           element.contentEditable != null &&
-          !t.VALUES_NON_CONTENTEDITABLE.has(element.contentEditable)
+          !t.VALUES_NON_CONTENTEDITABLE.value.has(element.contentEditable)
         ) {
           return "textarea";
         }
@@ -1101,14 +1117,14 @@ export default class ElementManager {
         }
 
         const role = element.getAttribute("role");
-        if (role != null && t.ROLES_CLICKABLE.has(role)) {
+        if (role != null && t.ROLES_CLICKABLE.value.has(role)) {
           return "clickable";
         }
 
         if (
           hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element) ||
-          Array.from(t.ATTRIBUTES_CLICKABLE).some(attr =>
+          Array.from(t.ATTRIBUTES_CLICKABLE.value).some(attr =>
             element.hasAttribute(attr)
           )
         ) {
@@ -1170,7 +1186,7 @@ class Deduper {
     elements.push(visibleElement);
 
     const [bad, good] = partition(elements, ({ type }) =>
-      t.ELEMENT_TYPES_LOW_QUALITY.has(type)
+      t.ELEMENT_TYPES_LOW_QUALITY.value.has(type)
     );
 
     // If hints are positioned in the exact same spot, reject those of low
@@ -1216,7 +1232,8 @@ function getMeasurements(
   const allRects = Array.from(element.getClientRects());
   const filteredRects = allRects.filter(
     rect =>
-      rect.width >= t.MIN_SIZE_TEXT_RECT && rect.height >= t.MIN_SIZE_TEXT_RECT
+      rect.width >= t.MIN_SIZE_TEXT_RECT.value &&
+      rect.height >= t.MIN_SIZE_TEXT_RECT.value
   );
   // For links with only floated children _all_ rects might have 0 width/height.
   // In that case, use the "empty" ones after all. Floated children is handled
@@ -1226,7 +1243,7 @@ function getMeasurements(
   // Ignore elements with only click listeners that are really large. These are
   // most likely not clickable, and only used for event delegation.
   if (elementType === "clickable-event" && rects.length === 1) {
-    if (area(rects[0]) > t.MAX_CLICKABLE_EVENT_AREA) {
+    if (area(rects[0]) > t.MAX_CLICKABLE_EVENT_AREA.value) {
       return undefined;
     }
   }
@@ -1379,7 +1396,7 @@ function getSingleRectPoint({
   // _always_ placed there for consistency.
   if (
     elementType === "textarea" ||
-    (elementType !== "selectable" && rect.height >= t.MIN_HEIGHT_BOX)
+    (elementType !== "selectable" && rect.height >= t.MIN_HEIGHT_BOX.value)
   ) {
     return {
       ...getXY(visibleBox),
@@ -1510,11 +1527,11 @@ function getFirstImagePoint(
     // First try to find an image _child._ For example, <button
     // class="icon-button"><img></button>`. (This button should get the hint at
     // the image, not at the edge of the button.)
-    ...element.querySelectorAll(t.SELECTOR_IMAGE),
+    ...element.querySelectorAll(t.SELECTOR_IMAGE.value),
     // Then, see if the element itself is an image. For example, `<button
     // class="Icon Icon-search"></button>`. The element itself can also be an
     // `<img>` due to the `float` case in `getMeasurements`.
-    ...(element.matches(t.SELECTOR_IMAGE) ? [element] : []),
+    ...(element.matches(t.SELECTOR_IMAGE.value) ? [element] : []),
   ];
 
   // Some buttons on Twitter have two icons inside – one shown, one hidden (and
@@ -1530,7 +1547,7 @@ function getFirstImagePoint(
         point: {
           // The image might have padding around it.
           ...getBorderAndPaddingPoint(image, rect, visibleBox),
-          align: rect.height >= t.MIN_HEIGHT_BOX ? "left" : "right",
+          align: rect.height >= t.MIN_HEIGHT_BOX.value ? "left" : "right",
         },
         rect,
       };
@@ -1649,8 +1666,8 @@ function getBestNonEmptyTextPoint({
           const point = { ...getXY(rect), align };
           return (
             // Exclude screen reader only text.
-            rect.width >= t.MIN_SIZE_TEXT_RECT &&
-              rect.height >= t.MIN_SIZE_TEXT_RECT &&
+            rect.width >= t.MIN_SIZE_TEXT_RECT.value &&
+              rect.height >= t.MIN_SIZE_TEXT_RECT.value &&
               // Make sure that the text is inside the element.
               isAcceptable(point)
               ? rect
@@ -1706,7 +1723,10 @@ function getBestNonEmptyTextPoint({
   // instead. It is common to have a little icon before the text of buttons.
   // This avoids covering the icon with the hint.
   const isSingleLine = sameLineRects.length === rects.length;
-  if (isSingleLine && leftMostRect.left >= elementRect.left + t.MIN_SIZE_ICON) {
+  if (
+    isSingleLine &&
+    leftMostRect.left >= elementRect.left + t.MIN_SIZE_ICON.value
+  ) {
     const imagePoint = getFirstImagePoint(element, viewports);
     if (
       imagePoint != null &&
@@ -1723,7 +1743,7 @@ function getBestNonEmptyTextPoint({
 function isWithin(point: Point, box: Box): boolean {
   return (
     point.x >= box.x &&
-    point.x <= box.x + box.width * t.MAX_HINT_X_PERCENTAGE_OF_WIDTH &&
+    point.x <= box.x + box.width * t.MAX_HINT_X_PERCENTAGE_OF_WIDTH.value &&
     point.y >= box.y &&
     // Use `<`, not `<=`, since a point at `box.y + box.height` is located at
     // the first pixel _below_ the box.
@@ -1804,13 +1824,13 @@ function isScrollable(element: HTMLElement): boolean {
   return (
     // $FlowIgnore: See above.
     (element.scrollLeftMax > 0 &&
-      (t.VALUES_SCROLLABLE_OVERFLOW.has(
+      (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
         computedStyle.getPropertyValue("overflow-x")
       ) ||
         element === document.scrollingElement)) ||
     // $FlowIgnore: See above.
     (element.scrollTopMax > 0 &&
-      (t.VALUES_SCROLLABLE_OVERFLOW.has(
+      (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
         computedStyle.getPropertyValue("overflow-y")
       ) ||
         element === document.scrollingElement))
@@ -1898,7 +1918,9 @@ function hintWeight(
   // some types, such as scrollable elements, by using a logarithm with a higher
   // base. A tall scrollable element (1080px) gets a weight slightly smaller
   // than that of a small link (12px high).
-  const lg = t.ELEMENT_TYPES_WORSE.has(elementType) ? Math.log10 : Math.log2;
+  const lg = t.ELEMENT_TYPES_WORSE.value.has(elementType)
+    ? Math.log10
+    : Math.log2;
 
   return Math.max(1, lg(weight));
 }
@@ -1970,7 +1992,7 @@ function getLinkElementType(element: HTMLAnchorElement): ElementType {
       hrefAttr !== "#" &&
       // Exclude `javascript:`, `mailto:`, `tel:` and other protocols that
       // don’t make sense to open in a new tab.
-      t.PROTOCOLS_LINK.has(element.protocol)
+      t.PROTOCOLS_LINK.value.has(element.protocol)
       ? "link"
       : "clickable"
   );

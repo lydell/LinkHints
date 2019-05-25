@@ -41,7 +41,7 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
-import { tweakable } from "../shared/tweakable";
+import { tweakable, unsignedInt } from "../shared/tweakable";
 import { type Rule, applyStyles, parseCSS } from "./css";
 
 type HintSize = {|
@@ -51,7 +51,7 @@ type HintSize = {|
 |};
 
 export const t = {
-  MAX_IMMEDIATE_HINT_MOVEMENTS: 50,
+  MAX_IMMEDIATE_HINT_MOVEMENTS: unsignedInt(50),
 };
 
 export const tMeta = tweakable("Renderer", t);
@@ -425,7 +425,7 @@ export default class RendererProgram {
       this.maybeApplyStyles(element);
 
       if (
-        numEdgeElements < t.MAX_IMMEDIATE_HINT_MOVEMENTS &&
+        numEdgeElements < t.MAX_IMMEDIATE_HINT_MOVEMENTS.value &&
         maybeOutsideHorizontally
       ) {
         numEdgeElements = edgeElements.push(element);

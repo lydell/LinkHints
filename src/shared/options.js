@@ -6,7 +6,6 @@ import {
   map,
   mixedArray,
   mixedDict,
-  number,
   repr,
   string,
 } from "tiny-decoders";
@@ -26,6 +25,7 @@ import {
   type LogLevel,
   DEFAULT_LOG_LEVEL,
   decodeLogLevel,
+  decodeUnsignedInt,
   deepEqual,
 } from "./main";
 
@@ -60,7 +60,7 @@ export function makeOptionsDecoder(
     recordWithDefaultsAndErrors(defaults, {
       chars: map(string, validateChars),
       autoActivate: boolean,
-      overTypingDuration: map(number, nonNegativeInteger),
+      overTypingDuration: decodeUnsignedInt,
       css: string,
       logLevel: map(string, decodeLogLevel),
       useKeyTranslations: boolean,
@@ -186,23 +186,6 @@ export function normalizeChars(chars: string, defaultValue: string): string {
 
 function pruneChars(chars: string): string {
   return Array.from(new Set(Array.from(chars.replace(/\s/g, "")))).join("");
-}
-
-function nonNegativeInteger(value: number): number {
-  if (!(Number.isInteger(value) && value >= 0)) {
-    throw new TypeError(
-      `Expected a non-negative integer, but got: ${repr(value)}`
-    );
-  }
-  return value;
-}
-
-export function normalizeNonNegativeInteger(
-  value: string,
-  defaultValue: number
-): string {
-  const parsed = Math.max(0, Math.round(parseFloat(value)));
-  return String(Number.isFinite(parsed) ? parsed : defaultValue);
 }
 
 export function getDefaults({ mac }: {| mac: boolean |}): Options {

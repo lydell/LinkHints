@@ -3,7 +3,7 @@
 import { array, constant, fieldAndThen, record, string } from "tiny-decoders";
 
 import { type ElementTypes, decodeElementTypes } from "../shared/hints";
-import { type Box, finiteNumber } from "../shared/main";
+import { type Box, decodeUnsignedFloat } from "../shared/main";
 
 export type FrameMessage =
   | {|
@@ -48,9 +48,9 @@ function getFrameMessageDecoder(type: string): mixed => FrameMessage {
 
 const decodeViewports: mixed => Array<Box> = array(
   record({
-    x: finiteNumber,
-    y: finiteNumber,
-    width: finiteNumber,
-    height: finiteNumber,
+    x: decodeUnsignedFloat,
+    y: decodeUnsignedFloat,
+    width: decodeUnsignedFloat,
+    height: decodeUnsignedFloat,
   })
 );
