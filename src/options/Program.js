@@ -425,13 +425,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   used to match elements by their <em>text.</em> Lowercase vs
                   uppercase matters when typing <em>hint characters</em>, but
                   not when <em>filtering by text.</em>
+                  {isLowerCase && (
+                    <span>
+                      {" "}
+                      <strong>Note:</strong> The hints are <em>displayed</em>{" "}
+                      uppercase because it looks nicer. 😎
+                    </span>
+                  )}
                 </p>
-                {isLowerCase && (
-                  <p>
-                    <strong>Note:</strong> The hints are <em>displayed</em>{" "}
-                    uppercase because it looks nicer. 😎
-                  </p>
-                )}
               </div>
             }
             changed={options.chars !== defaults.chars}
