@@ -6,7 +6,9 @@ import type {
   FromPopup,
   ToBackground,
 } from "../shared/messages";
+import React from "./static-react";
 
+const META = META_CONFIG;
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
@@ -71,30 +73,54 @@ export default class PopupProgram {
       previous.remove();
     }
 
-    const container = document.createElement("div");
-    container.id = CONTAINER_ID;
-    container.style.padding = `0 20px`;
-    container.style.minWidth = "200px";
+    const container = (
+      <div id={CONTAINER_ID} className="Container">
+        <div>
+          <h1>
+            {META.name} {META.version}
+          </h1>
 
-    if (!isEnabled) {
-      const info = document.createElement("p");
-      info.style.minWidth = "250px";
-      info.style.textAlign = "center";
-      info.style.margin = "10px 0";
-      info.textContent = "Browser extensions are not allowed on this page.";
-      container.append(info);
-    }
+          <p>
+            <a href={META.homepage}>Homepage</a>
+          </p>
+        </div>
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Options";
-    button.onclick = () => {
-      browser.runtime.openOptionsPage().catch(error => {
-        log("error", "PopupProgram: Failed to open options page", error);
-      });
-    };
-    button.style.margin = "10px 0";
-    container.append(button);
+        {!isEnabled && (
+          <p>
+            <strong>Browser extensions are not allowed on this page.</strong>
+          </p>
+        )}
+
+        <p className="Buttons">
+          <button
+            type="button"
+            className="browser-style"
+            onClick={() => {
+              browser.runtime.openOptionsPage().catch(error => {
+                log(
+                  "error",
+                  "PopupProgram",
+                  "Failed to open options page",
+                  error
+                );
+              });
+            }}
+          >
+            Options
+          </button>
+
+          <button
+            type="button"
+            className="browser-style"
+            onClick={() => {
+              log("log", "PopupProgram", "TODO: Copy");
+            }}
+          >
+            Copy debug info
+          </button>
+        </p>
+      </div>
+    );
 
     if (document.body != null) {
       document.body.append(container);

@@ -34,8 +34,9 @@ module.exports = [
     title: `${config.meta.name} Popup`,
     html: config.popupHtml,
     js: [config.popup.output],
-    css: [],
+    css: [config.popupCss.output],
   }),
+  copy(config.popupCss),
   html({
     title: `${config.meta.name} Options`,
     html: config.optionsHtml,

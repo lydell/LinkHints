@@ -1,0 +1,38 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+}
+
+body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+p {
+  margin: 0;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+button.browser-style {
+  margin-bottom: 0;
+}
+
+.Container {
+  width: max-content;
+  margin: 20px;
+}
+
+.Container > * + * {
+  margin-top: 15px;
+}
+
+.Buttons > * + * {
+  margin-left: 15px;
+}

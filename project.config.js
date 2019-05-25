@@ -67,6 +67,10 @@ module.exports = {
     input: "popup/main.js",
     output: "compiled/popup.js",
   },
+  popupCss: {
+    input: "popup/popup.css",
+    output: "compiled/popup.css",
+  },
   popupHtml: "compiled/popup.html",
   options: {
     input: "options/main.js",
