@@ -14,6 +14,7 @@ type Props = {|
   changed: boolean,
   changedRight?: boolean,
   render: ({| id: string |}) => React.Node,
+  onReset?: () => void,
 |};
 
 export default function Field({
@@ -26,7 +27,21 @@ export default function Field({
   changed,
   changedRight = false,
   render,
+  onReset,
 }: Props) {
+  const reset =
+    onReset != null && changed ? (
+      <button
+        type="button"
+        className="Field-resetButton TextSmall"
+        onClick={onReset}
+      >
+        Reset
+      </button>
+    ) : (
+      undefined
+    );
+
   return (
     <div
       className={classlist("Field", "SpacedVertical", {
@@ -38,11 +53,15 @@ export default function Field({
     >
       <div>
         {span ? (
-          <span className="Field-label">{label}</span>
-        ) : (
-          <label htmlFor={id} className="Field-label">
+          <span className="Field-label">
             {label}
-          </label>
+            {reset}
+          </span>
+        ) : (
+          <span className="Field-label">
+            <label htmlFor={id}>{label}</label>
+            {reset}
+          </span>
         )}
 
         {render({ id })}

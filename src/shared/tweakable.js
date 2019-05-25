@@ -105,6 +105,7 @@ export function tweakable(
         }
 
         const original: TweakableValue = defaults[key];
+        errors[key] = undefined;
 
         if (value == null) {
           mapping[key] = original;
@@ -153,7 +154,6 @@ export function tweakable(
           default:
             unreachable(original.type, original);
         }
-        errors[key] = undefined;
       } catch (error) {
         errors[key] = error.message;
       }

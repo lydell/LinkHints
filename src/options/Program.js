@@ -1103,7 +1103,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       <select
                         id={id}
                         value={options.logLevel}
-                        style={{ width: "33%" }}
+                        style={{ width: "50%" }}
                         onChange={(
                           event: SyntheticEvent<HTMLSelectElement>
                         ) => {
@@ -1128,6 +1128,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         ))}
                       </select>
                     )}
+                    onReset={() => {
+                      this.saveOptions({ logLevel: defaults.logLevel });
+                    }}
                   />
                 }
               />

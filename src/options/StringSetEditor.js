@@ -14,21 +14,21 @@ type Props = {
 };
 
 type State = {|
-  value: Array<string>,
+  value: Array<string> | void,
 |};
 
 export default class StringSetEditor extends React.Component<Props, State> {
   timeoutId: ?TimeoutID = undefined;
 
   state = {
-    value: normalizeStringSet(this.props.savedValue),
+    value: undefined,
   };
 
   maybeNormalize() {
     if (this.timeoutId == null) {
       this.timeoutId = setTimeout(() => {
         this.timeoutId = undefined;
-        this.setState({ value: normalizeStringSet(this.props.savedValue) });
+        this.setState({ value: undefined });
       }, 0);
     }
   }
@@ -45,8 +45,8 @@ export default class StringSetEditor extends React.Component<Props, State> {
   }
 
   render() {
-    const { save, id } = this.props;
-    const { value } = this.state;
+    const { save, id, savedValue } = this.props;
+    const { value = normalizeStringSet(savedValue) } = this.state;
 
     const endsWithBlank =
       value.length > 0 && value[value.length - 1].trim() === "";
@@ -78,6 +78,15 @@ export default class StringSetEditor extends React.Component<Props, State> {
                     );
               this.setState({ value: newValue });
               save(newValue, reason);
+            }}
+            onKeyDown={event => {
+              const { target } = event;
+              if (target instanceof HTMLElement && event.key === "Enter") {
+                const next = target.nextElementSibling;
+                if (next instanceof HTMLInputElement) {
+                  next.select();
+                }
+              }
             }}
           />
         ))}

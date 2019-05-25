@@ -14,6 +14,7 @@ type Props = {
   save: ?(string, Reason) => void,
   textarea: boolean,
   className: string,
+  onKeyDown?: (SyntheticKeyboardEvent<HTMLInputElement>) => void,
   // ...restProps
 };
 
@@ -107,6 +108,7 @@ export default class TextInput extends React.Component<Props, State> {
       save,
       textarea,
       className,
+      onKeyDown,
       ...restProps
     } = this.props;
     const { value } = this.state;
@@ -139,8 +141,11 @@ export default class TextInput extends React.Component<Props, State> {
             }
           }
         }}
-        onKeyDown={() => {
+        onKeyDown={event => {
           this.storeSelection();
+          if (onKeyDown != null) {
+            onKeyDown(event);
+          }
         }}
         onMouseDown={() => {
           this.storeSelection();

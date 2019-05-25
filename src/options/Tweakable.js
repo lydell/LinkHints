@@ -112,18 +112,27 @@ function TweakableField<T: TweakableValue>({
   error: ?string,
 |}) {
   const fullKey = `${namespace}.${name}`;
+  const reset = () => {
+    save(fullKey, undefined);
+  };
   const fieldProps = {
     id: fullKey,
     label: `${namespace}: ${name}`,
     description:
       error != null ? (
         <div className="Error SpacedVertical">
-          <p>There was an error with the saved value. Using default instead.</p>
+          <p>
+            There was an error with the saved value. Using default instead.{" "}
+            <button type="button" onClick={reset}>
+              Remove
+            </button>
+          </p>
           <pre>{error}</pre>
         </div>
       ) : (
         undefined
       ),
+    onReset: reset,
   };
 
   switch (value.type) {
@@ -136,7 +145,7 @@ function TweakableField<T: TweakableValue>({
             render={({ id }) => (
               <TextInput
                 id={id}
-                style={{ width: "33%" }}
+                style={{ width: "50%" }}
                 savedValue={String(value.value)}
                 normalize={newValue =>
                   normalizeUnsignedInt(newValue, defaultValue.value)
@@ -160,7 +169,7 @@ function TweakableField<T: TweakableValue>({
             render={({ id }) => (
               <TextInput
                 id={id}
-                style={{ width: "33%" }}
+                style={{ width: "50%" }}
                 savedValue={String(value.value)}
                 normalize={newValue =>
                   normalizeUnsignedFloat(newValue, defaultValue.value)
@@ -186,13 +195,7 @@ function TweakableField<T: TweakableValue>({
                 id={id}
                 savedValue={value.value}
                 save={newValue => {
-                  const newArray = normalizeStringArray(newValue);
-                  save(
-                    fullKey,
-                    newArray.length === 0
-                      ? Array.from(defaultValue.value)
-                      : newValue
-                  );
+                  save(fullKey, normalizeStringArray(newValue));
                 }}
               />
             )}
@@ -214,13 +217,7 @@ function TweakableField<T: TweakableValue>({
                 id={id}
                 savedValue={stringValue}
                 save={newValue => {
-                  const newArray = normalizeStringArray(newValue);
-                  save(
-                    fullKey,
-                    newArray.length === 0
-                      ? Array.from(defaultValue.value)
-                      : newValue
-                  );
+                  save(fullKey, normalizeStringArray(newValue));
                 }}
               />
             )}
@@ -274,7 +271,11 @@ function TweakableField<T: TweakableValue>({
 
 async function save(key: string, value: mixed) {
   try {
-    await browser.storage.sync.set({ [key]: value });
+    if (value == null) {
+      await browser.storage.sync.remove(key);
+    } else {
+      await browser.storage.sync.set({ [key]: value });
+    }
   } catch (error) {
     log("error", "TweakableField", "Failed to save.", error);
   }

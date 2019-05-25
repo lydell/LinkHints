@@ -296,6 +296,18 @@ pre {
   margin-top: 0;
 }
 
+.Field-resetButton {
+  all: unset;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  color: var(--blue);
+  cursor: pointer;
+  margin-left: 10px;
+}
+
 .Field-description {
   margin-bottom: -2px;
 }
