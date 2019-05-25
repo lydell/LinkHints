@@ -9,11 +9,11 @@ type IconSizes = { [size: string]: string };
 module.exports = () =>
   toJSON({
     manifest_version: 2,
-    version: "0.0.0",
+    version: config.meta.version,
     name: "Synth",
     author: "Simon Lydell",
     description: "Click things on the web using the keyboard.",
-    homepage_url: "https://github.com/lydell/synth",
+    homepage_url: config.meta.homepage,
     browser_specific_settings: getBrowserSpecificSettings(config.browser),
     icons: getIcons(config.icons, config.browser),
     permissions: [

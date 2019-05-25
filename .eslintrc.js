@@ -64,6 +64,7 @@ module.exports = {
         BUILD_TIME: false,
         DEFAULT_LOG_LEVEL_CONFIG: false,
         DEFAULT_STORAGE_SYNC: false,
+        META_CONFIG: false,
         PROD: false,
         browser: false,
       }),

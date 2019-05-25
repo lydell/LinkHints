@@ -141,6 +141,13 @@ textarea {
 
 a {
   color: var(--blue);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus,
+a:active {
+  text-decoration: underline;
 }
 
 label {
@@ -328,6 +335,7 @@ pre {
 
 .Error a {
   color: inherit;
+  text-decoration: underline;
 }
 
 .Attachment {
@@ -391,7 +399,6 @@ pre {
 }
 
 .TestLink {
-  text-decoration: none;
   outline: none;
 }
 
@@ -641,6 +648,7 @@ pre {
   padding: var(--Field_padding) var(--Field_padding);
   color: inherit;
   font-weight: bold;
+  text-decoration: underline;
 }
 
 .ErrorsHeading-removeButton {
@@ -739,4 +747,19 @@ pre {
 
 .Toggle.is-open::before {
   transform: rotate(180deg);
+}
+
+.Branding {
+  display: flex;
+  align-items: center;
+  padding: var(--Field_padding);
+}
+
+.Branding-image {
+  flex-shrink: 0;
+  margin-right: var(--Field_padding);
+}
+
+.Branding-name {
+  font-weight: bold;
 }

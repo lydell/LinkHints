@@ -4,7 +4,14 @@ const currentBrowser = getBrowser();
 
 const ICON_SIZES = [16, 32, 48, 64, 96, 128, 256];
 
+const mainIcon = "compiled/icon.svg";
+
 module.exports = {
+  meta: {
+    version: "0.0.0",
+    homepage: "https://github.com/lydell/synth",
+    icon: `/${mainIcon}`,
+  },
   browser: currentBrowser,
   src: "src",
   dist: "dist",
@@ -20,6 +27,7 @@ module.exports = {
     "icons/*.*",
     ...browserSpecificIgnores(currentBrowser),
   ],
+  mainIcon,
   icons: {
     svg: makeIcons("svg-$normal", ".svg"),
     png: makeIcons("png-$normal", ".png"),
@@ -97,7 +105,6 @@ function needsPolyfill(browser: ?Browser): boolean {
   switch (browser) {
     case "firefox":
       return false;
-
     default:
       return true;
   }

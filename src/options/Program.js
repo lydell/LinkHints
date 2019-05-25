@@ -76,6 +76,8 @@ import Tweakable, {
   saveTweakable,
 } from "./Tweakable";
 
+const META = META_CONFIG;
+
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
   { name: "Font size", value: SUGGESTION_FONT_SIZE },
@@ -1201,6 +1203,24 @@ export default class OptionsProgram extends React.Component<Props, State> {
         </main>
 
         <aside className="Layout-sidebar">
+          <div className="Paper">
+            <div className="Branding">
+              <img src={META.icon} alt="" className="Branding-image" />
+              <div>
+                <p className="Branding-name">Synth {META.version}</p>
+                <p className="TextSmall">
+                  <a
+                    href={META.homepage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Homepage
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="Paper">
             <Field
               id="allOptions"

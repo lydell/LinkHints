@@ -350,6 +350,8 @@ module.exports = () => {
 
   const mainIcon = render(96, COLORS);
 
+  writeFileIfNeeded(`${config.src}/${config.mainIcon}`, mainIcon);
+
   writeFileIfNeeded(`${config.src}/${config.iconsTestPage}`, renderTestPage());
   writeFileIfNeeded(
     `${config.src}/${config.iconsChecksum}`,

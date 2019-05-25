@@ -10,4 +10,10 @@ declare var DEFAULT_LOG_LEVEL_CONFIG: mixed;
 
 declare var DEFAULT_STORAGE_SYNC: mixed;
 
+declare var META_CONFIG: {|
+  version: string,
+  homepage: string,
+  icon: string,
+|};
+
 declare var PROD: boolean;
