@@ -332,7 +332,3 @@ export function saveTweakable(data: { [string]: mixed }): Promise<void> {
   const [tweakableData] = partitionTweakable(data);
   return browser.storage.sync.set(tweakableData);
 }
-
-export function resetAllTweakable(): Promise<void> {
-  return browser.storage.sync.remove(Array.from(ALL_KEYS));
-}

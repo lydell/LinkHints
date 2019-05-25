@@ -73,7 +73,6 @@ import Tweakable, {
   getTweakableExport,
   hasChangedTweakable,
   partitionTweakable,
-  resetAllTweakable,
   saveTweakable,
 } from "./Tweakable";
 
@@ -276,26 +275,21 @@ export default class OptionsProgram extends React.Component<Props, State> {
     });
   }
 
-  async resetOptions() {
-    try {
-      this.setState(state => ({
-        options:
-          state.options == null
-            ? undefined
-            : {
-                ...state.options,
-                values: state.options.defaults,
-                errors: [],
-              },
-        hasSaved: false,
-      }));
-      this.sendMessage({
-        type: "ResetOptions",
-      });
-      await resetAllTweakable();
-    } catch (error) {
-      log("error", "OptionsProgram#resetOptions", "Failed to reset.", error);
-    }
+  resetOptions() {
+    this.setState(state => ({
+      options:
+        state.options == null
+          ? undefined
+          : {
+              ...state.options,
+              values: state.options.defaults,
+              errors: [],
+            },
+      hasSaved: false,
+    }));
+    this.sendMessage({
+      type: "ResetOptions",
+    });
   }
 
   async importOptions() {
