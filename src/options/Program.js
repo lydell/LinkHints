@@ -778,7 +778,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             <tr>
                               <th>Key</th>
                               <td>
-                                {lastKeypress.key}
+                                {viewKey(lastKeypress.key)}
                                 {!isRecognized(lastKeypress.key)
                                   ? " (ignored)"
                                   : null}
@@ -889,8 +889,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                   >
                                     {code}
                                   </td>
-                                  <td>{unshifted}</td>
-                                  <td>{shifted}</td>
+                                  <td>{viewKey(unshifted)}</td>
+                                  <td>{viewKey(shifted)}</td>
                                   <td>
                                     <button
                                       type="button"
@@ -1483,4 +1483,20 @@ function toISODateString(date: Date): string {
     2,
     "0"
   )}-${String(date.getMonth()).padStart(2, "0")}`;
+}
+
+function viewKey(key: string): string {
+  if (key === " ") {
+    return "Space";
+  }
+
+  if (/^\s$/.test(key)) {
+    return `U+${key
+      .charCodeAt(0)
+      .toString(16)
+      .padStart(4, "0")
+      .toUpperCase()}`;
+  }
+
+  return key;
 }
