@@ -480,7 +480,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
                   <button
                     type="button"
-                    style={{ flex: "1 1 50%" }}
+                    style={{ flex: "1 1 50%", whiteSpace: "nowrap" }}
                     onClick={() => {
                       const chars = isLowerCase
                         ? options.chars.toUpperCase()
@@ -1230,7 +1230,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
               span
               changed={false}
               render={() => (
-                <div className="SpacedVertical">
+                <div className="SpacedVertical" style={{ maxWidth: 320 }}>
                   <div className="Spaced">
                     <button
                       type="button"

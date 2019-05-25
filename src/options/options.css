@@ -13,6 +13,12 @@
   --button_border-width: 2px;
 }
 
+@media (max-width: 1199px) {
+  :root {
+    --Field_padding: 18px;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -183,25 +189,36 @@ pre {
 }
 
 .Layout {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  margin: 50px 15px;
-}
-
-.Layout-main {
-  max-width: 800px;
+  margin: 15px;
 }
 
 .Layout-sidebar {
-  width: 320px;
-  position: sticky;
-  top: var(--Field_padding);
-  margin-left: var(--Field_padding);
+  margin-top: var(--Field_padding);
 }
 
 .Layout-sidebar > * + * {
   margin-top: var(--Field_padding);
+}
+
+@media (min-width: 1020px) {
+  .Layout {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin: 50px 15px;
+  }
+
+  .Layout-main {
+    max-width: 800px;
+  }
+
+  .Layout-sidebar {
+    width: 320px;
+    margin-top: 0;
+    position: sticky;
+    top: var(--Field_padding);
+    margin-left: var(--Field_padding);
+  }
 }
 
 .Paper {
@@ -621,6 +638,7 @@ pre {
   z-index: 1;
   top: calc(100% - var(--button_border-width));
   right: 0;
+  min-width: 100%;
   border: var(--button_border-width) solid var(--blue);
   background-color: white;
   padding: 24px;
