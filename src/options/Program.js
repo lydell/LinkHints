@@ -1157,7 +1157,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
             </Details>
           </div>
 
-          <div id="errors" />
+          <div
+            id="errors"
+            className={classlist({ ErrorsSpacing: !expandedDebug })}
+          />
           {errors.length > 0 && (
             <div className="ErrorsHeading" style={{ zIndex: MAX_Z_INDEX }}>
               <a href="#errors" className="ErrorsHeading-link">
