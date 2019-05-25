@@ -14,7 +14,7 @@ module.exports = {
     author: "Simon Lydell",
     description: "Click things on the web using the keyboard.",
     homepage: "https://github.com/lydell/synth",
-    icon: `/${mainIcon}`,
+    icon: mainIcon,
   },
   browser: currentBrowser,
   src: "src",

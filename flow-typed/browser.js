@@ -166,6 +166,7 @@ declare var browser: {|
       ((extensionId: string, ConnectInfo) => Port),
     getManifest(): any,
     getPlatformInfo(): Promise<PlatformInfo>,
+    getURL(string): string,
     openOptionsPage(): Promise<void>,
     sendMessage(message: any): Promise<any>,
     onConnect: OnEvent<(Port) => void>,

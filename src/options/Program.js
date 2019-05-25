@@ -1205,7 +1205,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
         <aside className="Layout-sidebar">
           <div className="Paper">
             <div className="Branding">
-              <img src={META.icon} alt="" className="Branding-image" />
+              <img
+                src={browser.runtime.getURL(META.icon)}
+                alt=""
+                className="Branding-image"
+              />
               <div>
                 <p className="Branding-name">
                   {META.name} {META.version}
