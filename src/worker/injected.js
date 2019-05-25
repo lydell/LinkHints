@@ -24,14 +24,14 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 );
 
 // Common prefix for events. It’s important to create a name unique from
-// previous versions of Synth, in case this script hangs around after an update
-// (it’s not possible to do cleanups before disabling an extension in Firefox).
-// We don’t want the old version to interfere with the new one. This uses
-// `BUILD_TIME` rather than `makeRandomToken()` so that all frames share the
-// same event name. Clickable elements created in this frame but inserted into
-// another frame need to dispatch an event in their parent window rather than
-// this one. Finally, the `\uffff` is there to make the events sort last in the
-// element inspector in Firefox when clicking the “event” button next to the
+// previous versions of the extension, in case this script hangs around after an
+// update (it’s not possible to do cleanups before disabling an extension in
+// Firefox). We don’t want the old version to interfere with the new one. This
+// uses `BUILD_TIME` rather than `makeRandomToken()` so that all frames share
+// the same event name. Clickable elements created in this frame but inserted
+// into another frame need to dispatch an event in their parent window rather
+// than this one. Finally, the `\uffff` is there to make the events sort last in
+// the element inspector in Firefox when clicking the “event” button next to the
 // `<html>` element, making it easier for developers to find their own events.
 const prefix = `\uffff__SynthWebExt_${BUILD_TIME}_`;
 
@@ -82,11 +82,15 @@ export default () => {
   const CustomEvent2 = CustomEvent;
   const HTMLElement2 = HTMLElement;
   // Don't use the usual `log` function here, too keep this file small.
-  const { error: logError } = console;
+  const { error: consoleLogError } = console;
   const { setAttribute } = Element.prototype;
   const { dispatchEvent } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
+
+  function logError(...args: Array<mixed>) {
+    consoleLogError("[synth]", ...args);
+  }
 
   type Deadline = { timeRemaining: () => number };
 
@@ -210,7 +214,7 @@ export default () => {
   }
 
   function logHookError(error: Error, obj: { [string]: mixed }, name: string) {
-    logError(`[synth]: Failed to run hook for ${name} on`, obj, error);
+    logError(`Failed to run hook for ${name} on`, obj, error);
   }
 
   type ClickListenersByElement = Map<HTMLElement, OptionsByListener>;
@@ -702,7 +706,7 @@ export default () => {
     ) {
       // Silently ignore wrong secrets in production.
       if (!PROD) {
-        logError("[synth]: Secret mismatch", {
+        logError("Secret mismatch", {
           actual: secret,
           expected: SECRET,
           message,
@@ -728,7 +732,7 @@ export default () => {
       default:
         // Silently ignore unknown messages in production.
         if (!PROD) {
-          logError("[synth]: Unknown message", message);
+          logError("Unknown message", message);
         }
     }
   }
@@ -747,7 +751,7 @@ export default () => {
         // No need to pass in a secret here (see the `external` function).
         window[name](MESSAGE_RESET);
       } catch (error) {
-        logError(`[synth]: Failed to reset "${name}"`, error);
+        logError(`Failed to reset "${name}"`, error);
       }
     }
   }

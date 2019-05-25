@@ -12,6 +12,9 @@ declare var DEFAULT_STORAGE_SYNC: mixed;
 
 declare var META_CONFIG: {|
   version: string,
+  name: string,
+  slug: string,
+  author: string,
   homepage: string,
   icon: string,
 |};

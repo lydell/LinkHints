@@ -342,7 +342,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     saveFile(
       JSON.stringify(data, undefined, 2),
-      `synth-options-${toISODateString(new Date())}.json`,
+      `${META.slug}-options-${toISODateString(new Date())}.json`,
       "application/json"
     );
   }
@@ -1207,7 +1207,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
             <div className="Branding">
               <img src={META.icon} alt="" className="Branding-image" />
               <div>
-                <p className="Branding-name">Synth {META.version}</p>
+                <p className="Branding-name">
+                  {META.name} {META.version}
+                </p>
                 <p className="TextSmall">
                   <a
                     href={META.homepage}

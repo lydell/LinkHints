@@ -414,12 +414,12 @@ export default class WorkerProgram {
 
   // This is run in the capture phase of the keydown event, overriding any site
   // shortcuts. The initial idea was to run in the bubble phase (mostly) and let
-  // sites use `event.preventDefault()` to override Synth's shortcuts (just like
-  // any other browser shortcut). However, duckduckgo.com has "j/k" shortcuts
-  // for navigation, but don't check for the alt key and don't call
-  // `event.preventDefault()`, making it impossible to use alt-j as a Synth
+  // sites use `event.preventDefault()` to override the extension shortcuts
+  // (just like any other browser shortcut). However, duckduckgo.com has "j/k"
+  // shortcuts for navigation, but don't check for the alt key and don't call
+  // `event.preventDefault()`, making it impossible to use alt-j as an extension
   // shortcut without causing side-effects. This feels like a common thing, so
-  // (at least for now) the Synth shortcuts always do their thing (making it
+  // (at least for now) the extension shortcuts always do their thing (making it
   // impossible to trigger a site shortcut using the same keys).
   onKeydown(event: KeyboardEvent) {
     const prefix = "WorkerProgram#onKeydown";

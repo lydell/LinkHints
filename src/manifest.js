@@ -10,9 +10,9 @@ module.exports = () =>
   toJSON({
     manifest_version: 2,
     version: config.meta.version,
-    name: "Synth",
-    author: "Simon Lydell",
-    description: "Click things on the web using the keyboard.",
+    name: config.meta.name,
+    author: config.meta.author,
+    description: config.meta.description,
     homepage_url: config.meta.homepage,
     browser_specific_settings: getBrowserSpecificSettings(config.browser),
     icons: getIcons(config.icons, config.browser),
@@ -70,7 +70,7 @@ function getBrowserSpecificSettings(browser: ?Browser): mixed {
     default:
       return {
         gecko: {
-          id: "synth@lydell.github.io",
+          id: `${config.meta.slug}@lydell.github.io`,
         },
       };
   }

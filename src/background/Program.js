@@ -369,8 +369,8 @@ export default class BackgroundProgram {
         // Clear the tab state when navigating to another page. This is
         // especially useful when changing the URL of a tab to one where
         // WebExtensions aren't allowed to run. In that case we don't want to
-        // leave behind unnecessary tab state, making it look like Synth is
-        // running in that tab.
+        // leave behind unnecessary tab state, making it look like the extension
+        // is running in that tab.
         if (info.frameId === TOP_FRAME_ID) {
           this.deleteTabState(info.tabId);
         }
@@ -577,7 +577,7 @@ export default class BackgroundProgram {
         );
         break;
 
-      // When clicking a link using Synth that causes a page load (no
+      // When clicking a link using the extension that causes a page load (no
       // `.preventDefault()`, no internal fragment identifier, no `javascript:`
       // protocol, etc), exit hints mode. This is especially nice for the
       // "ManyClick" mode since it makes the hints go away immediately when
@@ -1685,13 +1685,13 @@ export default class BackgroundProgram {
   }
 
   async updateIcon(tabId: number) {
-    // If there's a `tabState` for this tab, Synth is enabled for sure.
+    // If there's a `tabState` for this tab, the extension is enabled for sure.
     let enabled = this.tabState.has(tabId);
 
     // If not, check if we’re allowed to execute content scripts on this page.
     // The `tabState` might not have had a chance to be created yet. In Chrome
-    // this check fails for the Synth Options page, making the above tab state
-    // check required.
+    // this check fails for the extension options page, making the above tab
+    // state check required.
     if (!enabled) {
       try {
         await browser.tabs.executeScript(tabId, {

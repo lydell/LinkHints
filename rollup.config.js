@@ -31,13 +31,13 @@ module.exports = [
   template(config.manifest),
   template(config.iconsCompilation),
   html({
-    title: "Synth Popup",
+    title: `${config.meta.name} Popup`,
     html: config.popupHtml,
     js: [config.popup.output],
     css: [],
   }),
   html({
-    title: "Synth Options",
+    title: `${config.meta.name} Options`,
     html: config.optionsHtml,
     // Content scripts don’t run in the options page, so manually include them.
     js: [config.worker.output, config.renderer.output, config.options.output],
