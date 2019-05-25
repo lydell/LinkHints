@@ -545,6 +545,8 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
   return options;
 }
 
+export const DEBUG_PREFIX = "debug.";
+
 export function diffOptions(
   defaults: FlatOptions,
   fullOptions: FlatOptions,
@@ -563,7 +565,9 @@ export function diffOptions(
   ]);
 
   for (const key of allKeys) {
-    if (
+    if (key.startsWith(DEBUG_PREFIX)) {
+      continue;
+    } else if (
       {}.hasOwnProperty.call(defaults, key) &&
       !{}.hasOwnProperty.call(fullOptions, key)
     ) {

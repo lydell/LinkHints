@@ -19,6 +19,7 @@ import {
   normalizeUnsignedInt,
   unreachable,
 } from "../shared/main";
+import { DEBUG_PREFIX } from "../shared/options";
 import { type TweakableValue, normalizeStringArray } from "../shared/tweakable";
 import {
   t as tElementManager,
@@ -34,10 +35,12 @@ const ALL_TWEAKABLES = [
   [tElementManager, tMetaElementManager],
 ];
 
-export const ALL_KEYS: Set<string> = new Set(
+const ALL_KEYS: Set<string> = new Set(
   [].concat(
     ...ALL_TWEAKABLES.map(([, tMeta]) =>
-      Object.keys(tMeta.defaults).map(key => `${tMeta.namespace}.${key}`)
+      Object.keys(tMeta.defaults).map(
+        key => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`
+      )
     )
   )
 );
@@ -116,7 +119,7 @@ function TweakableField<T: TweakableValue>({
   changed: boolean,
   error: ?string,
 |}) {
-  const fullKey = `${namespace}.${name}`;
+  const fullKey = `${DEBUG_PREFIX}${namespace}.${name}`;
 
   const reset = () => {
     save(fullKey, undefined);
@@ -297,7 +300,7 @@ export function getTweakableExport(): { [string]: mixed } {
             const { [key]: changed = false } = tMeta.changed;
             return changed
               ? [
-                  `${tMeta.namespace}.${key}`,
+                  `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
                   value instanceof Set ? Array.from(value) : value,
                 ]
               : undefined;

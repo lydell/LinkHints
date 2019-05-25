@@ -11,6 +11,7 @@ import {
   log,
   unreachable,
 } from "./main";
+import { DEBUG_PREFIX } from "./options";
 
 type UnsignedInt = {|
   type: "UnsignedInt",
@@ -95,7 +96,7 @@ export function tweakable(
   mapping: TweakableMapping
 ): TweakableMeta {
   const prefix = "tweakable";
-  const keyPrefix = `${namespace}.`;
+  const keyPrefix = `${DEBUG_PREFIX}${namespace}.`;
   const defaults = { ...mapping };
   const changed: { [$Keys<typeof mapping>]: boolean } = {};
   const errors: { [$Keys<typeof mapping>]: ?string } = {};
