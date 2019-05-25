@@ -2,14 +2,13 @@
 
 import * as React from "preact";
 
-import { deepEqual } from "../shared/main";
 import TextInput from "./TextInput";
 
 type Reason = "input" | "blur";
 
 type Props = {
   savedValue: Set<string>,
-  save: (Array<string>, Reason) => void,
+  save: (Set<string>, Reason) => void,
   id?: string,
 };
 
@@ -46,7 +45,7 @@ export default class StringSetEditor extends React.Component<Props, State> {
 
   render() {
     const { save, id, savedValue } = this.props;
-    const { value = normalizeStringSet(savedValue) } = this.state;
+    const { value = Array.from(savedValue) } = this.state;
 
     const endsWithBlank =
       value.length > 0 && value[value.length - 1].trim() === "";
@@ -77,7 +76,7 @@ export default class StringSetEditor extends React.Component<Props, State> {
                       index2 === index ? newItem : item2
                     );
               this.setState({ value: newValue });
-              save(newValue, reason);
+              save(new Set(newValue), reason);
             }}
             onKeyDown={event => {
               const { target } = event;
@@ -93,12 +92,4 @@ export default class StringSetEditor extends React.Component<Props, State> {
       </div>
     );
   }
-}
-
-function normalizeStringSet(set: Set<string>): Array<string> {
-  return Array.from(set).sort();
-}
-
-export function equalStringSets(a: Set<string>, b: Set<string>): boolean {
-  return deepEqual(normalizeStringSet(a), normalizeStringSet(b));
 }

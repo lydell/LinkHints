@@ -604,7 +604,7 @@ export function diffOptions(
 }
 
 export function importOptions(
-  data: mixed,
+  flatOptions: FlatOptions,
   options: Options,
   defaults: Options
 ): {|
@@ -613,7 +613,6 @@ export function importOptions(
   errors: Array<string>,
 |} {
   try {
-    const flatOptions = mixedDict(data);
     const keyErrors = Object.keys(unflattenOptions(flatOptions))
       .map(key =>
         ({}.hasOwnProperty.call(defaults, key)

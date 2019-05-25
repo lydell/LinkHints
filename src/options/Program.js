@@ -5,6 +5,7 @@ import {
   array,
   boolean,
   map,
+  mixedDict,
   number,
   optional,
   record,
@@ -68,7 +69,13 @@ import KeyboardShortcuts, {
 import Perf from "./Perf";
 import TestLinks from "./TestLinks";
 import TextInput from "./TextInput";
-import Tweakable from "./Tweakable";
+import Tweakable, {
+  getTweakableExport,
+  hasChangedTweakable,
+  partitionTweakable,
+  resetAllTweakable,
+  saveTweakable,
+} from "./Tweakable";
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -95,6 +102,7 @@ type State = {|
   cssSuggestion: string,
   importData: {|
     successCount: ?number,
+    tweakableCount: ?number,
     errors: Array<string>,
   |},
   perf: TabsPerf,
@@ -123,6 +131,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     cssSuggestion: CSS_SUGGESTIONS[0].value,
     importData: {
       successCount: undefined,
+      tweakableCount: undefined,
       errors: [],
     },
     perf: {},
@@ -267,21 +276,26 @@ export default class OptionsProgram extends React.Component<Props, State> {
     });
   }
 
-  resetOptions() {
-    this.setState(state => ({
-      options:
-        state.options == null
-          ? undefined
-          : {
-              ...state.options,
-              values: state.options.defaults,
-              errors: [],
-            },
-      hasSaved: false,
-    }));
-    this.sendMessage({
-      type: "ResetOptions",
-    });
+  async resetOptions() {
+    try {
+      this.setState(state => ({
+        options:
+          state.options == null
+            ? undefined
+            : {
+                ...state.options,
+                values: state.options.defaults,
+                errors: [],
+              },
+        hasSaved: false,
+      }));
+      this.sendMessage({
+        type: "ResetOptions",
+      });
+      await resetAllTweakable();
+    } catch (error) {
+      log("error", "OptionsProgram#resetOptions", "Failed to reset.", error);
+    }
   }
 
   async importOptions() {
@@ -293,37 +307,45 @@ export default class OptionsProgram extends React.Component<Props, State> {
     try {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
+      const [tweakableData, otherData] = partitionTweakable(mixedDict(data));
       const { options: newOptions, successCount, errors } = importOptions(
-        data,
+        otherData,
         options,
         defaults
       );
       this.setState({
         importData: {
           successCount,
+          tweakableCount: Object.keys(tweakableData).length,
           errors,
         },
       });
       if (newOptions != null) {
         this.saveOptions(newOptions);
       }
+      await saveTweakable(tweakableData);
     } catch (error) {
-      this.setState({
+      this.setState(state => ({
         importData: {
-          successCount: 0,
+          ...state.importData,
           errors: [`The file is invalid: ${error.message}`],
         },
-      });
+      }));
     }
   }
 
   exportOptions() {
     const { options: optionsData } = this.state;
-    if (optionsData == null) {
-      return;
-    }
+
+    const tweakableExport = getTweakableExport();
+
+    const data = {
+      ...(optionsData != null ? optionsData.raw : {}),
+      ...tweakableExport,
+    };
+
     saveFile(
-      JSON.stringify(optionsData.raw, undefined, 2),
+      JSON.stringify(data, undefined, 2),
       `synth-options-${toISODateString(new Date())}.json`,
       "application/json"
     );
@@ -352,7 +374,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
     const { values: options, defaults, mac } = optionsData;
     const errors = importData.errors.concat(optionsData.errors);
 
-    const usingDefaults = deepEqual(defaults, options);
+    const usingDefaults =
+      deepEqual(defaults, options) && !hasChangedTweakable();
 
     const charsPresets = [
       { name: "QWERTY (default)", value: defaults.chars },
@@ -1093,6 +1116,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
               </div>
 
               <Tweakable
+                onUpdate={() => {
+                  this.forceUpdate();
+                }}
                 before={
                   <Field
                     key="logLevel"
@@ -1204,6 +1230,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                           <div style={{ whiteSpace: "nowrap" }}>
                             <ImportSummary
                               success={importData.successCount || 0}
+                              tweakable={importData.tweakableCount || 0}
                               errors={importData.errors.length}
                             />
                           </div>

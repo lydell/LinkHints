@@ -25,7 +25,7 @@ import {
   tMeta as tMetaElementManager,
 } from "../worker/ElementManager";
 import Field from "./Field";
-import StringSetEditor, { equalStringSets } from "./StringSetEditor";
+import StringSetEditor from "./StringSetEditor";
 import TextInput from "./TextInput";
 
 const ALL_TWEAKABLES = [
@@ -34,7 +34,7 @@ const ALL_TWEAKABLES = [
   [tElementManager, tMetaElementManager],
 ];
 
-const ALL_KEYS: Set<string> = new Set(
+export const ALL_KEYS: Set<string> = new Set(
   [].concat(
     ...ALL_TWEAKABLES.map(([, tMeta]) =>
       Object.keys(tMeta.defaults).map(key => `${tMeta.namespace}.${key}`)
@@ -44,6 +44,7 @@ const ALL_KEYS: Set<string> = new Set(
 
 type Props = {|
   before?: React.Node,
+  onUpdate: () => void,
 |};
 
 type State = {||};
@@ -57,7 +58,7 @@ export default class Tweakable extends React.Component<Props, State> {
         if (areaName === "sync") {
           const didUpdate = Object.keys(changes).some(key => ALL_KEYS.has(key));
           if (didUpdate) {
-            this.forceUpdate();
+            this.props.onUpdate();
           }
         }
       })
@@ -81,6 +82,7 @@ export default class Tweakable extends React.Component<Props, State> {
           Object.keys(tMeta.defaults)
             .sort()
             .map(key => {
+              const { [key]: changed = false } = tMeta.changed;
               return (
                 <TweakableField
                   key={`${tMeta.namespace}.${key}`}
@@ -88,6 +90,7 @@ export default class Tweakable extends React.Component<Props, State> {
                   name={key}
                   value={t[key]}
                   defaultValue={tMeta.defaults[key]}
+                  changed={changed}
                   error={tMeta.errors[key]}
                 />
               );
@@ -103,21 +106,26 @@ function TweakableField<T: TweakableValue>({
   name,
   value,
   defaultValue,
+  changed,
   error,
 }: {|
   namespace: string,
   name: string,
   value: T,
   defaultValue: T,
+  changed: boolean,
   error: ?string,
 |}) {
   const fullKey = `${namespace}.${name}`;
+
   const reset = () => {
     save(fullKey, undefined);
   };
+
   const fieldProps = {
     id: fullKey,
     label: `${namespace}: ${name}`,
+    changed,
     description:
       error != null ? (
         <div className="Error SpacedVertical">
@@ -141,7 +149,6 @@ function TweakableField<T: TweakableValue>({
         return (
           <Field
             {...fieldProps}
-            changed={value.value !== defaultValue.value}
             render={({ id }) => (
               <TextInput
                 id={id}
@@ -165,7 +172,6 @@ function TweakableField<T: TweakableValue>({
         return (
           <Field
             {...fieldProps}
-            changed={value.value !== defaultValue.value}
             render={({ id }) => (
               <TextInput
                 id={id}
@@ -189,7 +195,6 @@ function TweakableField<T: TweakableValue>({
         return (
           <Field
             {...fieldProps}
-            changed={!equalStringSets(value.value, defaultValue.value)}
             render={({ id }) => (
               <StringSetEditor
                 id={id}
@@ -206,16 +211,13 @@ function TweakableField<T: TweakableValue>({
 
     case "ElementTypeSet":
       if (defaultValue.type === "ElementTypeSet") {
-        const stringValue: Set<string> = new Set(value.value);
-        const defaulStringValue: Set<string> = new Set(defaultValue.value);
         return (
           <Field
             {...fieldProps}
-            changed={!equalStringSets(stringValue, defaulStringValue)}
             render={({ id }) => (
               <StringSetEditor
                 id={id}
-                savedValue={stringValue}
+                savedValue={new Set(value.value)}
                 save={newValue => {
                   save(fullKey, normalizeStringArray(newValue));
                 }}
@@ -231,7 +233,6 @@ function TweakableField<T: TweakableValue>({
         return (
           <Field
             {...fieldProps}
-            changed={value.value !== defaultValue.value}
             render={({ id }) => (
               <TextInput
                 id={id}
@@ -259,7 +260,6 @@ function TweakableField<T: TweakableValue>({
     <Field
       {...fieldProps}
       span
-      changed={false}
       render={() => (
         <p className="Error">
           Value/defaultValue type mismatch: {value.type}/{defaultValue.type}.
@@ -279,4 +279,60 @@ async function save(key: string, value: mixed) {
   } catch (error) {
     log("error", "TweakableField", "Failed to save.", error);
   }
+}
+
+export function hasChangedTweakable(): boolean {
+  return ALL_TWEAKABLES.some(([, tMeta]) =>
+    Object.values(tMeta.changed).some(Boolean)
+  );
+}
+
+export function getTweakableExport(): { [string]: mixed } {
+  return []
+    .concat(
+      ...ALL_TWEAKABLES.map(([t, tMeta]) =>
+        Object.keys(tMeta.defaults)
+          .map(key => {
+            const { value } = t[key];
+            const { [key]: changed = false } = tMeta.changed;
+            return changed
+              ? [
+                  `${tMeta.namespace}.${key}`,
+                  value instanceof Set ? Array.from(value) : value,
+                ]
+              : undefined;
+          })
+          .filter(Boolean)
+      )
+    )
+    .reduce((result, [key, value]) => {
+      result[key] = value;
+      return result;
+    }, {});
+}
+
+export function partitionTweakable(data: {
+  [string]: mixed,
+}): [{ [string]: mixed }, { [string]: mixed }] {
+  const tweakableData = {};
+  const otherData = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (ALL_KEYS.has(key)) {
+      tweakableData[key] = value;
+    } else {
+      otherData[key] = value;
+    }
+  }
+
+  return [tweakableData, otherData];
+}
+
+export function saveTweakable(data: { [string]: mixed }): Promise<void> {
+  const [tweakableData] = partitionTweakable(data);
+  return browser.storage.sync.set(tweakableData);
+}
+
+export function resetAllTweakable(): Promise<void> {
+  return browser.storage.sync.remove(Array.from(ALL_KEYS));
 }
