@@ -1,3 +1,5 @@
+/* eslint-disable react/jsx-key */
+/* eslint-disable react/no-unknown-property */
 // @flow strict-local
 
 // NOTE: If you make changes in this file you need to save twice for the changes
@@ -141,18 +143,16 @@ function render(
 
     const [x2, y2] = go({ fromPoint: [x1, y1], angle, length: sparkLength });
 
-    return tag(
-      "line",
-      {
-        x1: float(x1),
-        y1: float(y1),
-        x2: float(x2),
-        y2: float(y2),
-        stroke: colors.pointer,
-        "stroke-width": float(Math.max(1, sparkWidth)),
-        "stroke-linecap": "round",
-      },
-      []
+    return (
+      <line
+        x1={float(x1)}
+        y1={float(y1)}
+        x2={float(x2)}
+        y2={float(y2)}
+        stroke={colors.pointer}
+        stroke-width={float(Math.max(1, sparkWidth))}
+        stroke-linecap="round"
+      />
     );
   });
 
@@ -163,79 +163,66 @@ function render(
   const edgesRadius = integer(Math.max(2, size * (1 / 12)));
   const surfaceRadius = integer(Math.max(2, size * (1 / 16)));
 
-  return tag(
-    "svg",
-    {
-      xmlns: "http://www.w3.org/2000/svg",
-      viewBox: `0 0 ${size} ${size}`,
-      width: String(size),
-      height: String(size),
-    },
-    [
-      tag("g", { opacity: String(opacity) }, [
-        tag(
-          "rect",
-          {
-            x: "0",
-            y: "0",
-            width: integer(size),
-            height: integer(size),
-            rx: edgesRadius,
-            ry: edgesRadius,
-            fill: colors.edges,
-          },
-          []
-        ),
-        tag(
-          "rect",
-          {
-            x: integer(surfaceRect.left),
-            y: integer(surfaceRect.top),
-            width: integer(surfaceRect.width),
-            height: integer(surfaceRect.height),
-            rx: surfaceRadius,
-            ry: surfaceRadius,
-            fill: colors.surface,
-          },
-          []
-        ),
-        tag(
-          "polygon",
-          {
-            points: pointerPointsString,
-            fill: colors.pointer,
-          },
-          []
-        ),
-        ...sparks,
-      ]),
-    ]
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox={`0 0 ${size} ${size}`}
+      width={String(size)}
+      height={String(size)}
+    >
+      <g opacity={String(opacity)}>
+        <rect
+          x="0"
+          y="0"
+          width={integer(size)}
+          height={integer(size)}
+          rx={edgesRadius}
+          ry={edgesRadius}
+          fill={colors.edges}
+        />
+        <rect
+          x={integer(surfaceRect.left)}
+          y={integer(surfaceRect.top)}
+          width={integer(surfaceRect.width)}
+          height={integer(surfaceRect.height)}
+          rx={surfaceRadius}
+          ry={surfaceRadius}
+          fill={colors.surface}
+        />
+        <polygon points={pointerPointsString} fill={colors.pointer} />
+        {sparks}
+      </g>
+    </svg>
   );
 }
 
-function tag(
-  name: string,
-  attributes: { [key: string]: string },
-  children: Array<string>
-): string {
-  const attributesString = Object.entries(attributes)
-    .map(([key, value]) => `${key}="${String(value)}"`)
-    .join(" ");
-  return [
-    "<",
-    name,
-    ...(attributesString === "" ? [] : [" ", attributesString]),
-    ...(children.length === 0
-      ? [" />"]
-      : [
-          ">\n",
-          ...children.map(child => `${indent(child)}\n`),
-          "</",
-          name,
-          ">",
-        ]),
-  ].join("");
-}
+const React = {
+  createElement(
+    tag: string,
+    attributes: ?{ [key: string]: string },
+    ...nestedChildren: Array<string | Array<string>>
+  ): string {
+    const children = [].concat(...nestedChildren);
+    const attributesString = Object.entries(attributes)
+      .filter(([key]) => !key.startsWith("__"))
+      .map(([key, value]) => `${key}="${String(value)}"`)
+      .join(" ");
+    return [
+      "<",
+      tag,
+      ...(attributesString === "" ? [] : [" ", attributesString]),
+      ...(children.length === 0
+        ? [" />"]
+        : [
+            ">\n",
+            ...children.map(child => `${indent(child)}\n`),
+            "</",
+            tag,
+            ">",
+          ]),
+    ].join("");
+  },
+};
 
 function indent(string: string): string {
   return string.replace(/^(?!$)/gm, "  ");
@@ -252,62 +239,66 @@ function integer(number: number): string {
   return String(Math.round(number));
 }
 
-function renderTestPage() {
-  return `
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Icons</title>
-    <style>
-      body {
-        display: flex;
-        flex-direction: column;
-        margin: 0;
-        min-height: 100vh;
-      }
-
-      .container {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 10px;
-      }
-
-      .container > * + * {
-        margin-left: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    ${testContainer(config.icons, BACKGROUND_COLORS.light)}
-    ${testContainer(config.icons, BACKGROUND_COLORS.dark)}
-    ${testContainer(config.iconsDisabled, BACKGROUND_COLORS.light)}
-    ${testContainer(config.iconsDisabled, BACKGROUND_COLORS.dark)}
-    <script>
-      for (const img of document.querySelectorAll("img")) {
-        img.width /= window.devicePixelRatio;
-      }
-    </script>
-  </body>
-</html>
-  `.trim();
+const testStyles = `
+body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-height: 100vh;
 }
 
-type IconsList = Array<[number, string]>;
+.container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
 
-export type Icons = {| svg: IconsList, png: IconsList |};
+.container > * + * {
+  margin-left: 10px;
+}
+`.trim();
 
-function testContainer(icons: Icons, color: string): string {
-  return `
-<div class="container" style="background-color: ${color};">
-  ${[]
-    .concat(...icons.svg.map((icon, index) => [icon, icons.png[index]]))
-    .map(([size, path]) => `<img src="../${path}" width="${size}">`)
-    .join("\n  ")}
-</div>
-  `.trim();
+const testScript = `
+for (const img of document.querySelectorAll("img")) {
+  img.width /= window.devicePixelRatio;
+}
+`.trim();
+
+function renderTestPage() {
+  const variations = [
+    [config.icons, BACKGROUND_COLORS.light],
+    [config.icons, BACKGROUND_COLORS.dark],
+    [config.iconsDisabled, BACKGROUND_COLORS.light],
+    [config.iconsDisabled, BACKGROUND_COLORS.dark],
+  ];
+
+  const doc = (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>Icons</title>
+        <style>{testStyles}</style>
+      </head>
+      <body>
+        {variations.map(([icons, color]) => (
+          <div class="container" style={`background-color: ${color};`}>
+            {[]
+              .concat(
+                ...icons.svg.map((icon, index) => [icon, icons.png[index]])
+              )
+              .map(([size, path]) => (
+                <img src={`../${path}`} width={integer(size)} />
+              ))}
+          </div>
+        ))}
+        <script>{testScript}</script>
+      </body>
+    </html>
+  );
+
+  return `<!doctype html>\n${doc}`;
 }
 
 function checksum(string: string): string {
