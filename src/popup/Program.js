@@ -162,12 +162,11 @@ async function copyDebugInfo() {
       {
         version: META.version,
         browser: BROWSER,
-        buildTime: BUILD_TIME,
         userAgent: navigator.userAgent,
-        language: navigator.language,
         browserInfo,
         platformInfo,
         storage,
+        language: navigator.language,
         layout,
       },
       undefined,
