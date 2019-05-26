@@ -36,3 +36,12 @@ button.browser-style {
 .Buttons > * + * {
   margin-left: 15px;
 }
+
+.Error {
+  font-weight: bold;
+  color: red;
+}
+
+.Error:empty {
+  display: none;
+}

@@ -12,6 +12,7 @@ const META = META_CONFIG;
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
+  debugInfo: string = "Debug info was never loaded.";
   resets: Resets = new Resets();
 
   constructor() {
@@ -23,10 +24,16 @@ export default class PopupProgram {
     ]);
   }
 
-  start() {
+  async start() {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     this.sendMessage({ type: "PopupScriptAdded" });
+
+    try {
+      this.debugInfo = await getDebugInfo();
+    } catch (error) {
+      this.debugInfo = `Failed to get debug info: ${error.message}`;
+    }
   }
 
   stop() {
@@ -73,6 +80,13 @@ export default class PopupProgram {
       previous.remove();
     }
 
+    const errorElement = <p className="Error" />;
+
+    function showError(error: ?Error) {
+      errorElement.textContent =
+        error != null ? error.message : "An unknown error ocurred.";
+    }
+
     const container = (
       <div id={CONTAINER_ID} className="Container">
         <div>
@@ -96,8 +110,12 @@ export default class PopupProgram {
             type="button"
             className="browser-style"
             onClick={async () => {
-              await openOptionsPage();
-              window.close();
+              try {
+                await browser.runtime.openOptionsPage();
+                window.close();
+              } catch (error) {
+                showError(error);
+              }
             }}
           >
             Options
@@ -107,13 +125,19 @@ export default class PopupProgram {
             type="button"
             className="browser-style"
             onClick={async () => {
-              await copyDebugInfo();
-              window.close();
+              try {
+                await navigator.clipboard.writeText(this.debugInfo);
+                window.close();
+              } catch (error) {
+                showError(error);
+              }
             }}
           >
             Copy debug info
           </button>
         </p>
+
+        {errorElement}
       </div>
     );
 
@@ -130,50 +154,41 @@ function wrapMessage(message: FromPopup): ToBackground {
   };
 }
 
-async function openOptionsPage() {
-  try {
-    await browser.runtime.openOptionsPage();
-  } catch (error) {
-    log("error", "PopupProgram", "Failed to open options page", error);
-  }
-}
+async function getDebugInfo(): Promise<string> {
+  const [browserInfo, platformInfo, storage, layoutMap] = await Promise.all([
+    typeof browser.runtime.getBrowserInfo === "function"
+      ? browser.runtime.getBrowserInfo()
+      : null,
+    browser.runtime.getPlatformInfo(),
+    browser.storage.sync.get(),
+    // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
+    navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
+  ]);
 
-async function copyDebugInfo() {
-  try {
-    const [browserInfo, platformInfo, storage, layoutMap] = await Promise.all([
-      typeof browser.runtime.getBrowserInfo === "function"
-        ? browser.runtime.getBrowserInfo()
-        : null,
-      browser.runtime.getPlatformInfo(),
-      browser.storage.sync.get(),
-      // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
-      navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
-    ]);
+  const layout =
+    layoutMap != null
+      ? Array.from(layoutMap).reduce((result, [code, key]) => {
+          result[code] = key;
+          return result;
+        }, {})
+      : null;
 
-    const layout =
-      layoutMap != null
-        ? Array.from(layoutMap).reduce((result, [code, key]) => {
-            result[code] = key;
-            return result;
-          }, {})
-        : null;
+  const info = JSON.stringify(
+    {
+      version: META.version,
+      browser: BROWSER,
+      userAgent: navigator.userAgent,
+      browserInfo,
+      platformInfo,
+      storage,
+      language: navigator.language,
+      layout,
+    },
+    undefined,
+    2
+  );
 
-    const info = JSON.stringify(
-      {
-        version: META.version,
-        browser: BROWSER,
-        userAgent: navigator.userAgent,
-        browserInfo,
-        platformInfo,
-        storage,
-        language: navigator.language,
-        layout,
-      },
-      undefined,
-      2
-    );
-
-    const markdown = `
+  return `
 <details>
 <summary>Debug info</summary>
 
@@ -183,9 +198,4 @@ ${info}
 
 </details>
     `.trim();
-
-    await navigator.clipboard.writeText(markdown);
-  } catch (error) {
-    log("error", "PopupProgram", "Failed to copy debug info.", error);
-  }
 }

@@ -23,8 +23,6 @@ module.exports = () =>
       "<all_urls>",
       // Needed to store options.
       "storage",
-      // Needed for the “Copy debug info” button.
-      "clipboardWrite",
     ],
     browser_action: {
       browser_style: true,
