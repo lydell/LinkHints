@@ -5,7 +5,7 @@ const React = {
     tag: string,
     attributes: ?{
       className?: string | void,
-      onClick?: (() => void) | void,
+      onClick?: (() => mixed) | void,
       [string]: string | void,
     },
     ...children: Array<string | HTMLElement | void | null | boolean>

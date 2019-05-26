@@ -95,15 +95,9 @@ export default class PopupProgram {
           <button
             type="button"
             className="browser-style"
-            onClick={() => {
-              browser.runtime.openOptionsPage().catch(error => {
-                log(
-                  "error",
-                  "PopupProgram",
-                  "Failed to open options page",
-                  error
-                );
-              });
+            onClick={async () => {
+              await openOptionsPage();
+              window.close();
             }}
           >
             Options
@@ -112,8 +106,9 @@ export default class PopupProgram {
           <button
             type="button"
             className="browser-style"
-            onClick={() => {
-              log("log", "PopupProgram", "TODO: Copy");
+            onClick={async () => {
+              await copyDebugInfo();
+              window.close();
             }}
           >
             Copy debug info
@@ -133,4 +128,65 @@ function wrapMessage(message: FromPopup): ToBackground {
     type: "FromPopup",
     message,
   };
+}
+
+async function openOptionsPage() {
+  try {
+    await browser.runtime.openOptionsPage();
+  } catch (error) {
+    log("error", "PopupProgram", "Failed to open options page", error);
+  }
+}
+
+async function copyDebugInfo() {
+  try {
+    const [browserInfo, platformInfo, storage, layoutMap] = await Promise.all([
+      typeof browser.runtime.getBrowserInfo === "function"
+        ? browser.runtime.getBrowserInfo()
+        : null,
+      browser.runtime.getPlatformInfo(),
+      browser.storage.sync.get(),
+      // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
+      navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
+    ]);
+
+    const layout =
+      layoutMap != null
+        ? Array.from(layoutMap).reduce((result, [code, key]) => {
+            result[code] = key;
+            return result;
+          }, {})
+        : null;
+
+    const info = JSON.stringify(
+      {
+        version: META.version,
+        browser: BROWSER,
+        buildTime: BUILD_TIME,
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        browserInfo,
+        platformInfo,
+        storage,
+        layout,
+      },
+      undefined,
+      2
+    );
+
+    const markdown = `
+<details>
+<summary>Debug info</summary>
+
+\`\`\`json
+${info}
+\`\`\`
+
+</details>
+    `.trim();
+
+    await navigator.clipboard.writeText(markdown);
+  } catch (error) {
+    log("error", "PopupProgram", "Failed to copy debug info.", error);
+  }
 }

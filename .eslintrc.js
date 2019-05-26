@@ -67,6 +67,7 @@ module.exports = {
         META_CONFIG: false,
         PROD: false,
         browser: false,
+        navigator: false,
       }),
       rules: {
         "simple-import-sort/sort": "error",

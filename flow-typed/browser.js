@@ -30,6 +30,13 @@ declare type OnEvent<Listener, Options = void> = {|
   hasListener: Listener => boolean,
 |};
 
+declare type BrowserInfo = {|
+  name: string,
+  vendor: string,
+  version: string,
+  buildID: string,
+|};
+
 declare type PlatformArch = "arm" | "x86-32" | "x86-64";
 
 declare type PlatformInfo = {|
@@ -164,6 +171,7 @@ declare var browser: {|
     connect: (() => Port) &
       (ConnectInfo => Port) &
       ((extensionId: string, ConnectInfo) => Port),
+    getBrowserInfo(): Promise<BrowserInfo>,
     getManifest(): any,
     getPlatformInfo(): Promise<PlatformInfo>,
     getURL(string): string,
