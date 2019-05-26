@@ -4,11 +4,11 @@ const React = {
   createElement(
     tag: string,
     attributes: ?{
-      className?: string | void,
-      onClick?: (() => mixed) | void,
-      [string]: string | void,
+      className?: ?string,
+      onClick?: ?(MouseEvent<HTMLElement>) => mixed,
+      [string]: ?string,
     },
-    ...children: Array<string | HTMLElement | void | null | boolean>
+    ...children: Array<?(string | HTMLElement | boolean)>
   ): HTMLElement {
     const element = document.createElement(tag);
 
