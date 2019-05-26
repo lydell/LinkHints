@@ -15,7 +15,7 @@
     "flow:check": "flow check",
     "eslint": "eslint .",
     "eslint:fix": "npm run eslint -- --fix",
-    "prettier": "prettier --check \"**/*.{css,js,md,yml}\"",
+    "prettier": "prettier --check \"**/*.{css,html,js,md,yml}\"",
     "prettier:fix": "prettier --write \"**/*.{css,html,js,md,yml}\"",
     "test": "run-s eslint prettier flow:check build:chrome build:firefox"
   },
