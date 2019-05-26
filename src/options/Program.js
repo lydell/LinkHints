@@ -342,7 +342,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     saveFile(
       JSON.stringify(data, undefined, 2),
-      `${META.slug}-options-${toISODateString(new Date())}.json`,
+      `LinkHints-options-${toISODateString(new Date())}.json`,
       "application/json"
     );
   }

@@ -33,7 +33,7 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // than this one. Finally, the `\uffff` is there to make the events sort last in
 // the element inspector in Firefox when clicking the “event” button next to the
 // `<html>` element, making it easier for developers to find their own events.
-const prefix = `\uffff__SynthWebExt_${BUILD_TIME}_`;
+const prefix = `\uffff__LinkHintsWebExt_${BUILD_TIME}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
@@ -55,7 +55,7 @@ export const EVENT_ATTRIBUTE = `data-${prefix.replace(/\W/g, "")}Event`;
 // syntax error. Since we make the injected variable both non-writable and
 // non-configurable it is impossible to overwrite it so we _have_ to use
 // a new name when installing an update.
-export const INJECTED_VAR = `__SynthWebExt_${BUILD_TIME}\0`;
+export const INJECTED_VAR = `__LinkHintsWebExt_${BUILD_TIME}\0`;
 export const INJECTED_VAR_PATTERN = RegExp(
   `^${INJECTED_VAR.replace(/\d+/, "\\d+").replace(/\0/, "\\0")}$`
 );
@@ -89,7 +89,7 @@ export default () => {
   const { get: mapGet } = Map.prototype;
 
   function logError(...args: Array<mixed>) {
-    consoleLogError("[synth]", ...args);
+    consoleLogError("[LinkHints]", ...args);
   }
 
   type Deadline = { timeRemaining: () => number };

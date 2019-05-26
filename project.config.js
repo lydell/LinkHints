@@ -9,11 +9,10 @@ const mainIcon = "compiled/icon.svg";
 module.exports = {
   meta: {
     version: "0.0.0",
-    name: "Synth",
-    slug: "synth",
+    name: "Link Hints",
     author: "Simon Lydell",
-    description: "Click things on the web using the keyboard.",
-    homepage: "https://github.com/lydell/synth",
+    description: "Click with your keyboard.",
+    homepage: "https://github.com/lydell/LinkHints",
     icon: mainIcon,
   },
   browser: currentBrowser,
