@@ -8,11 +8,119 @@
       name="description"
       content="A browser extension that lets you click with your keyboard."
     />
+    <style>
+      :root {
+        --grey-leia: #f7f7f7;
+        --grey-han: #bbb;
+        --grey-luke: #767676;
+        --blue: #2b4eed;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        background-repeat: no-repeat;
+      }
+
+      html {
+        background-color: var(--grey-leia);
+        color: black;
+        font-family: sans-serif;
+        font-size: var(--font-size);
+        line-height: 1.25;
+      }
+
+      body {
+        margin: 0;
+        font-size: inherit;
+        font-family: inherit;
+      }
+
+      header {
+        padding: 50px;
+        background-color: var(--blue);
+        background-image: linear-gradient(
+            65deg,
+            transparent 10%,
+            rgba(255, 255, 255, 0.1) calc(10% + 1px) 22%,
+            transparent calc(22% + 1px)
+          ),
+          linear-gradient(
+            130deg,
+            transparent 20%,
+            rgba(0, 0, 0, 0.15) calc(20% + 1px) 50%,
+            transparent calc(50% + 1px)
+          ),
+          linear-gradient(
+            -155deg,
+            transparent 5%,
+            rgba(255, 255, 255, 0.1) calc(5% + 1px) 25%,
+            transparent calc(25% + 1px)
+          ),
+          linear-gradient(
+            -110deg,
+            transparent 35%,
+            rgba(255, 255, 255, 0.05) calc(35% + 1px) 55%,
+            transparent calc(55% + 1px)
+          ),
+          linear-gradient(
+            145deg,
+            transparent 60%,
+            rgba(0, 0, 0, 0.1) calc(60% + 1px) 75%,
+            transparent calc(75% + 1px)
+          ),
+          linear-gradient(
+            155deg,
+            transparent 0%,
+            rgba(0, 0, 0, 0.1) calc(0% + 1px) 10%,
+            transparent calc(10% + 1px)
+          );
+        color: white;
+      }
+
+      .Container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 0 15px;
+      }
+
+      .Button {
+        all: unset;
+        font-family: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        line-height: inherit;
+        background-color: var(--blue);
+        color: white;
+        border-radius: 6px;
+        padding: 5px 8px;
+        border: 3px solid rgba(0, 0, 0, 0.3);
+        border-top-width: 2px;
+        border-bottom-width: 4px;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
-    <h1>Link Hints</h1>
-    <p>Click with your keyboard.</p>
-    <p>Experimental browser extension.</p>
-    <p><a href="https://github.com/lydell/LinkHints">GitHub repository</a></p>
+    <header>
+      <div class="Container">
+        <h1>Link Hints</h1>
+        <p>Click with your keyboard.</p>
+        <div>
+          <a href="#TODO" class="Button">Install for Firefox</a>
+          <a href="#TODO" class="Button">Install for Chrome</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="Container">
+      <p>Experimental browser extension.</p>
+      <p>
+        <a href="https://github.com/lydell/LinkHints">GitHub repository</a>
+      </p>
+    </main>
   </body>
 </html>
