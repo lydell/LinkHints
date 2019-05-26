@@ -155,12 +155,19 @@ function wrapMessage(message: FromPopup): ToBackground {
 }
 
 async function getDebugInfo(): Promise<string> {
-  const [browserInfo, platformInfo, storage, layoutMap] = await Promise.all([
+  const [
+    browserInfo,
+    platformInfo,
+    storageSync,
+    storageLocal,
+    layoutMap,
+  ] = await Promise.all([
     typeof browser.runtime.getBrowserInfo === "function"
       ? browser.runtime.getBrowserInfo()
       : null,
     browser.runtime.getPlatformInfo(),
     browser.storage.sync.get(),
+    browser.storage.local.get(),
     // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
     navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
   ]);
@@ -180,7 +187,8 @@ async function getDebugInfo(): Promise<string> {
       userAgent: navigator.userAgent,
       browserInfo,
       platformInfo,
-      storage,
+      "storage.sync": storageSync,
+      "storage.local": storageLocal,
       language: navigator.language,
       layout,
     },
