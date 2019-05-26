@@ -12,7 +12,7 @@ module.exports = {
     name: "Link Hints",
     author: "Simon Lydell",
     description: "Click with your keyboard.",
-    homepage: "https://github.com/lydell/LinkHints",
+    homepage: "https://lydell.github.io/LinkHints",
     icon: mainIcon,
   },
   browser: currentBrowser,
