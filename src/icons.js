@@ -97,7 +97,10 @@ function toRadians(degrees: number): number {
 function render(
   size: number,
   colors: Colors,
-  { opacity = 1 }: {| opacity: number |} = {}
+  {
+    opacity = 1,
+    pointer: shouldDrawPointer = true,
+  }: {| opacity?: number, pointer?: boolean |} = {}
 ): string {
   const surfaceRect = {
     left: size * (1 / 8),
@@ -189,8 +192,10 @@ function render(
           ry={surfaceRadius}
           fill={colors.surface}
         />
-        <polygon points={pointerPointsString} fill={colors.pointer} />
-        {sparks}
+        {shouldDrawPointer && (
+          <polygon points={pointerPointsString} fill={colors.pointer} />
+        )}
+        {shouldDrawPointer && sparks}
       </g>
     </svg>
   );
@@ -200,9 +205,12 @@ const React = {
   createElement(
     tag: string,
     attributes: ?{ [key: string]: string },
-    ...nestedChildren: Array<string | Array<string>>
+    ...nestedChildren: Array<?(string | boolean | Array<?(string | boolean)>)>
   ): string {
-    const children = [].concat(...nestedChildren);
+    const children = []
+      .concat(...nestedChildren)
+      .map(child => (typeof child === "string" ? child : undefined))
+      .filter(Boolean);
     const attributesString = Object.entries(attributes)
       .filter(([key]) => !key.startsWith("__"))
       .map(([key, value]) => `${key}="${String(value)}"`)
@@ -348,6 +356,9 @@ module.exports = () => {
     `${config.src}/${config.iconsChecksum}`,
     makeChecksumFile(checksum(mainIcon))
   );
+
+  writeFileIfNeeded("docs/keycap.svg", render(48, COLORS, { pointer: false }));
+  writeFileIfNeeded("docs/keycap-logo.svg", render(48, COLORS));
 
   return mainIcon;
 };

@@ -37,7 +37,7 @@
         font-family: inherit;
       }
 
-      header {
+      .Header {
         padding: 50px;
         background-color: var(--blue);
         background-image: linear-gradient(
@@ -79,6 +79,13 @@
         color: white;
       }
 
+      .Header-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
       .Container {
         max-width: 980px;
         margin: 0 auto;
@@ -87,6 +94,7 @@
 
       .Button {
         all: unset;
+        display: inline-block;
         font-family: inherit;
         font-family: inherit;
         font-size: inherit;
@@ -102,17 +110,205 @@
         border-bottom-width: 4px;
         cursor: pointer;
       }
+
+      .Title {
+        animation: FadeIn 500ms 3000ms ease-out backwards;
+      }
+
+      .Buttons {
+        animation: FadeIn 500ms 3500ms ease-out backwards;
+      }
+
+      .Keyboard {
+        --size: 48px;
+        --spacing: 10px;
+      }
+
+      .Keyboard > div {
+        display: flex;
+      }
+
+      .Keyboard > div:nth-child(2) {
+        margin-left: calc(var(--size) / 4 + var(--spacing) / 2);
+      }
+
+      .Keyboard > div:nth-child(3) {
+        margin-left: calc(var(--size) * 3 / 4 + var(--spacing));
+      }
+
+      .Keyboard > div + div {
+        margin-top: var(--spacing);
+      }
+
+      .Keyboard > div > div {
+        --stagger: 0ms;
+        --animation-appear: KeyAppear 800ms var(--stagger) ease both;
+        width: 48px;
+        height: 48px;
+        background-image: url("./keycap.svg");
+        animation: var(--animation-appear),
+          KeyFade 500ms 1900ms ease-out forwards;
+      }
+
+      .Keyboard > div > div + div {
+        margin-left: var(--spacing);
+      }
+
+      .Keyboard > div > div.Keyboard-logo {
+        --animation: 500ms 2200ms ease-out backwards;
+        animation: var(--animation-appear);
+        position: relative;
+      }
+
+      .Keyboard > div > div.Keyboard-logo::before {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        box-shadow: 0 0 10px 10px var(--blue), 0 0 50px 20px white;
+        animation: KeyGlow var(--animation);
+      }
+
+      .Keyboard > div > div.Keyboard-logo::after {
+        content: url("./keycap-logo.svg");
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        animation: FadeIn var(--animation);
+      }
+
+      .Keyboard > div > div:nth-child(2) {
+        --stagger: 80ms;
+      }
+
+      .Keyboard > div > div:nth-child(3) {
+        --stagger: 160ms;
+      }
+
+      .Keyboard > div > div:nth-child(4) {
+        --stagger: 240ms;
+      }
+
+      .Keyboard > div > div:nth-child(5) {
+        --stagger: 320ms;
+      }
+
+      .Keyboard > div > div:nth-child(6) {
+        --stagger: 400ms;
+      }
+
+      .Keyboard > div > div:nth-child(7) {
+        --stagger: 480ms;
+      }
+
+      .Keyboard > div > div:nth-child(8) {
+        --stagger: 560ms;
+      }
+
+      .Keyboard > div > div:nth-child(9) {
+        --stagger: 640ms;
+      }
+
+      .Keyboard > div > div:nth-child(10) {
+        --stagger: 720ms;
+      }
+
+      .Keyboard > div > div:nth-child(11) {
+        --stagger: 800ms;
+      }
+
+      .Keyboard > div > div:nth-child(12) {
+        --stagger: 880ms;
+      }
+
+      @keyframes KeyAppear {
+        0% {
+          opacity: 0;
+          transform: translateY(100px);
+        }
+      }
+
+      @keyframes KeyFade {
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      @keyframes KeyGlow {
+        0% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+      }
+
+      @keyframes FadeIn {
+        0% {
+          opacity: 0;
+        }
+      }
     </style>
   </head>
   <body>
-    <header>
-      <div class="Container">
-        <h1>Link Hints</h1>
-        <p>Click with your keyboard.</p>
-        <div>
+    <header class="Header">
+      <div class="Header-inner Container">
+        <div class="Title">
+          <h1>Link Hints</h1>
+          <p>Click with your keyboard.</p>
+        </div>
+
+        <div class="Keyboard">
+          <div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div class="Keyboard-logo"></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+
+        <p class="Buttons">
           <a href="#TODO" class="Button">Install for Firefox</a>
           <a href="#TODO" class="Button">Install for Chrome</a>
-        </div>
+        </p>
       </div>
     </header>
 
