@@ -157,11 +157,11 @@
       }
 
       .Header-titleWrapper {
-        animation: FadeIn 500ms 3000ms ease-out backwards;
+        animation: FadeIn 500ms 1250ms ease-out backwards;
       }
 
       .Header-buttons {
-        animation: FadeIn 500ms 3500ms ease-out backwards;
+        animation: FadeIn 500ms 1250ms ease-out backwards;
         margin: 0;
         display: flex;
       }
@@ -199,7 +199,7 @@
         height: var(--size);
         background-image: url("./keycap.svg");
         animation: var(--animation-appear),
-          KeyFade 500ms 1900ms ease-out forwards;
+          KeyFade 400ms 1000ms ease-out forwards;
       }
 
       .Keyboard > div > div + div {
@@ -207,7 +207,7 @@
       }
 
       .Keyboard > div > div.Keyboard-logo {
-        --animation: 500ms 2200ms ease-out backwards;
+        --animation: 500ms 1150ms ease-out backwards;
         animation: var(--animation-appear);
         position: relative;
       }
@@ -236,54 +236,39 @@
         animation: FadeIn var(--animation);
       }
 
-      .Keyboard > div > div:nth-child(2) {
-        --stagger: 80ms;
-      }
-
-      .Keyboard > div > div:nth-child(3) {
-        --stagger: 160ms;
-      }
-
-      .Keyboard > div > div:nth-child(4) {
-        --stagger: 240ms;
-      }
-
-      .Keyboard > div > div:nth-child(5) {
-        --stagger: 320ms;
-      }
-
-      .Keyboard > div > div:nth-child(6) {
-        --stagger: 400ms;
-      }
-
-      .Keyboard > div > div:nth-child(7) {
+      .Keyboard > div > div:nth-child(12) {
         --stagger: 480ms;
       }
 
-      .Keyboard > div > div:nth-child(8) {
-        --stagger: 560ms;
-      }
-
-      .Keyboard > div > div:nth-child(9) {
-        --stagger: 640ms;
-      }
-
-      .Keyboard > div > div:nth-child(10) {
-        --stagger: 720ms;
-      }
-
+      .Keyboard > div > div:nth-child(1),
       .Keyboard > div > div:nth-child(11) {
-        --stagger: 800ms;
+        --stagger: 400ms;
       }
 
-      .Keyboard > div > div:nth-child(12) {
-        --stagger: 880ms;
+      .Keyboard > div > div:nth-child(2),
+      .Keyboard > div > div:nth-child(10) {
+        --stagger: 320ms;
+      }
+
+      .Keyboard > div > div:nth-child(3),
+      .Keyboard > div > div:nth-child(9) {
+        --stagger: 240ms;
+      }
+
+      .Keyboard > div > div:nth-child(4),
+      .Keyboard > div > div:nth-child(8) {
+        --stagger: 160ms;
+      }
+
+      .Keyboard > div > div:nth-child(5),
+      .Keyboard > div > div:nth-child(7) {
+        --stagger: 80ms;
       }
 
       @keyframes KeyAppear {
         0% {
           opacity: 0;
-          transform: translateY(100px);
+          transform: translateY(100px) scale(0.2); 
         }
       }
 
