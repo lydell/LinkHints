@@ -62,14 +62,39 @@
         font-weight: inherit;
         letter-spacing: inherit;
         line-height: inherit;
-        background-color: var(--blue);
-        color: white;
-        border-radius: 6px;
-        padding: 5px 8px;
-        border: 3px solid rgba(0, 0, 0, 0.3);
-        border-top-width: 2px;
-        border-bottom-width: 4px;
+        color: black;
+        font-weight: bold;
+        padding: 0.5em 2em;
+        border-radius: 5px;
+        box-shadow: 1px 2px 5px 1px rgba(0, 0, 0, 0.5);
         cursor: pointer;
+        transition: background-color 200ms;
+        position: relative;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .Button::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.8);
+      }
+
+      .Button:hover,
+      .Button:focus,
+      .Button:active {
+        background-color: white;
+        outline: none;
+      }
+
+      .Button:active {
+        box-shadow: 1px 2px 3px 0 rgba(0, 0, 0, 0.5);
       }
 
       .Header {
@@ -142,7 +167,7 @@
       }
 
       .Header-buttons > * + * {
-        margin-left: 1rem;
+        margin-left: 1.5rem;
       }
 
       .Keyboard {
