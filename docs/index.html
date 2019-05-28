@@ -23,24 +23,57 @@
       *::after {
         box-sizing: border-box;
         background-repeat: no-repeat;
+        /* animation-duration: 1ms !important;
+        animation-delay: 0s !important; */
       }
 
       html {
         background-color: var(--grey-leia);
         color: black;
-        font-family: sans-serif;
-        font-size: var(--font-size);
-        line-height: 1.25;
+        font-family: DejaVu Sans, Verdana, sans-serif;
+        line-height: 1.2;
       }
 
       body {
         margin: 0;
-        font-size: inherit;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
+      }
+
+      .Container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 0 15px;
+      }
+
+      .Button {
+        all: unset;
+        display: inline-block;
         font-family: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        line-height: inherit;
+        background-color: var(--blue);
+        color: white;
+        border-radius: 6px;
+        padding: 5px 8px;
+        border: 3px solid rgba(0, 0, 0, 0.3);
+        border-top-width: 2px;
+        border-bottom-width: 4px;
+        cursor: pointer;
       }
 
       .Header {
-        padding: 50px;
+        padding: 5rem 0;
         background-color: var(--blue);
         background-image: linear-gradient(
             65deg,
@@ -88,42 +121,34 @@
         text-align: center;
       }
 
-      .Container {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 0 15px;
+      .Header-title {
+        font-size: 3.125rem;
+        margin: 0;
       }
 
-      .Button {
-        all: unset;
-        display: inline-block;
-        font-family: inherit;
-        font-family: inherit;
-        font-size: inherit;
-        font-weight: inherit;
-        letter-spacing: inherit;
-        line-height: inherit;
-        background-color: var(--blue);
-        color: white;
-        border-radius: 6px;
-        padding: 5px 8px;
-        border: 3px solid rgba(0, 0, 0, 0.3);
-        border-top-width: 2px;
-        border-bottom-width: 4px;
-        cursor: pointer;
+      .Header-subTitle {
+        font-size: 1.5rem;
+        margin: 0;
       }
 
-      .Title {
+      .Header-titleWrapper {
         animation: FadeIn 500ms 3000ms ease-out backwards;
       }
 
-      .Buttons {
+      .Header-buttons {
         animation: FadeIn 500ms 3500ms ease-out backwards;
+        margin: 0;
+        display: flex;
+      }
+
+      .Header-buttons > * + * {
+        margin-left: 1rem;
       }
 
       .Keyboard {
         --size: 48px;
         --spacing: 10px;
+        margin: 3rem;
       }
 
       .Keyboard > div {
@@ -145,8 +170,8 @@
       .Keyboard > div > div {
         --stagger: 0ms;
         --animation-appear: KeyAppear 800ms var(--stagger) ease both;
-        width: 48px;
-        height: 48px;
+        width: var(--size);
+        height: var(--size);
         background-image: url("./keycap.svg");
         animation: var(--animation-appear),
           KeyFade 500ms 1900ms ease-out forwards;
@@ -260,9 +285,9 @@
   <body>
     <header class="Header">
       <div class="Header-inner Container">
-        <div class="Title">
-          <h1>Link Hints</h1>
-          <p>Click with your keyboard.</p>
+        <div class="Header-titleWrapper">
+          <h1 class="Header-title">Link Hints</h1>
+          <p class="Header-subTitle">Click with your keyboard</p>
         </div>
 
         <div class="Keyboard">
@@ -307,7 +332,7 @@
           </div>
         </div>
 
-        <p class="Buttons">
+        <p class="Header-buttons">
           <a href="#TODO" class="Button">Install for Firefox</a>
           <a href="#TODO" class="Button">Install for Chrome</a>
         </p>
