@@ -167,12 +167,18 @@
       }
 
       .Header-buttons {
-        animation: FadeIn 500ms 1250ms ease-out backwards;
         margin: 0;
         display: flex;
       }
 
+      .Header-buttons > * {
+        --stagger: 0ms;
+        animation: ButtonAppear 500ms calc(1550ms + var(--stagger)) ease-out
+          backwards;
+      }
+
       .Header-buttons > * + * {
+        --stagger: 100ms;
         margin-left: 1.5rem;
       }
 
@@ -294,6 +300,21 @@
       @keyframes FadeIn {
         0% {
           opacity: 0;
+        }
+      }
+
+      @keyframes ButtonAppear {
+        0% {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        50% {
+          transform: translateY(-5px);
+        }
+
+        100% {
+          transform: translateY(0);
         }
       }
     </style>
