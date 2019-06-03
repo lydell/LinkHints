@@ -47,6 +47,46 @@
         font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
       }
 
+      nav {
+        background-color: var(--blue);
+        background-image: linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.2),
+          transparent 50%,
+          rgba(0, 0, 0, 0.2) 50%,
+          transparent 100%
+        );
+        color: white;
+        box-shadow: 0 -2px 10px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      nav > ul {
+        display: flex;
+        list-style: none;
+        margin: 0;
+      }
+
+      nav > ul > li {
+        width: calc(100% / 3);
+      }
+
+      nav > ul > li > a {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+        padding: 0.75em;
+        text-align: center;
+        transition: background-color 200ms;
+        animation: FadeIn 500ms 1700ms ease-out backwards;
+      }
+
+      nav > ul > li > a:hover,
+      nav > ul > li > a:focus,
+      nav > ul > li > a:active {
+        background-color: rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
       .Container {
         max-width: 980px;
         margin: 0 auto;
@@ -375,6 +415,18 @@
         </p>
       </div>
     </header>
+
+    <nav>
+      <ul class="Container">
+        <li>
+          <a href="https://github.com/lydell/LinkHints/issues/new"
+            >🐞 Report issue</a
+          >
+        </li>
+        <li><a href="https://github.com/lydell/LinkHints">📦 GitHub</a></li>
+        <li><a href="./tutorial.html">📖 Tutorial</a></li>
+      </ul>
+    </nav>
 
     <main class="Container">
       <p>Experimental browser extension.</p>
