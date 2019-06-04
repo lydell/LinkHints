@@ -72,6 +72,20 @@
         margin-top: 1em;
       }
 
+      kbd {
+        display: inline-block;
+        min-width: 1.6em;
+        padding: 0 4px;
+        border: 2px solid var(--grey-luke);
+        border-radius: 3px;
+        background-color: white;
+        text-align: center;
+        font-size: 0.8em;
+        font-family: inherit;
+        font-style: normal;
+        font-weight: normal;
+      }
+
       nav {
         background-color: blue;
         background-color: var(--blue);
@@ -118,6 +132,14 @@
         background-color: rgba(0, 0, 0, 0.2);
         outline: none;
         text-decoration: none;
+      }
+
+      .KeyboardShortcut {
+        white-space: nowrap;
+      }
+
+      .KeyboardShortcut > * + * {
+        margin-left: 1px;
       }
 
       .Container {
@@ -548,6 +570,28 @@
         padding: 0.5em 1.5em;
         font-weight: bold;
       }
+
+      .Shortcuts {
+        padding: 0;
+        margin: 0;
+        margin-bottom: 3rem;
+        columns: 2;
+        column-gap: 3rem;
+      }
+
+      .Shortcuts > li {
+        list-style: none;
+        display: flex;
+        align-items: center;
+      }
+
+      .Shortcuts > li + li {
+        margin-top: 0.5em;
+      }
+
+      .Shortcuts > li > * + * {
+        margin-left: 0.5em;
+      }
     </style>
   </head>
   <body>
@@ -743,10 +787,50 @@
         </figure>
       </div>
 
-      <p>
-        <em>Link Hints</em> is an extension that complements your browser with
-        the missing shortcuts for clicking.
-      </p>
+      <ul class="Shortcuts">
+        <li>
+          <span class="KeyboardShortcut"><kbd>Alt</kbd><kbd>J</kbd></span>
+          <span>Click links, buttons and other clickable things.</span>
+        </li>
+        <li>
+          <span class="KeyboardShortcut"><kbd>Alt</kbd><kbd>K</kbd></span>
+          <span>Open link in new tab.</span>
+        </li>
+        <li>
+          <span class="KeyboardShortcut"><kbd>Alt</kbd><kbd>L</kbd></span>
+          <span>Open link in new tab and switch to it.</span>
+        </li>
+        <li>
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>J</kbd></span
+          >
+          <span>Click many things.</span>
+        </li>
+        <li>
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>K</kbd></span
+          >
+          <span>Open many links.</span>
+        </li>
+        <li>
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
+          >
+          <span>Select element.</span>
+        </li>
+      </ul>
     </main>
+
+    <script>
+      if (/mac|iPhone|iPad|iPod/i.test(navigator.platform)) {
+        [].forEach.call(document.getElementsByTagName("kbd"), function(kbd) {
+          if (kbd.textContent === "Alt") {
+            kbd.textContent = "⌥";
+          } else if (kbd.textContent === "Shift") {
+            kbd.textContent = "⇧";
+          }
+        });
+      }
+    </script>
   </body>
 </html>
