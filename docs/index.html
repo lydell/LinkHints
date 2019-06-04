@@ -51,6 +51,27 @@
         font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
       }
 
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+
+      a:hover,
+      a:focus,
+      a:active {
+        text-decoration: underline;
+      }
+
+      figure {
+        margin: 0;
+      }
+
+      figcaption {
+        text-align: center;
+        font-style: italic;
+        margin-top: 1em;
+      }
+
       nav {
         background-color: blue;
         background-color: var(--blue);
@@ -62,7 +83,7 @@
           transparent 100%
         );
         color: white;
-        box-shadow: 0 -2px 10px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
       }
 
       nav > ul {
@@ -76,6 +97,7 @@
       }
 
       nav > ul > li > a {
+        --border: 1px solid rgba(255, 255, 255, 0.2);
         display: block;
         color: inherit;
         text-decoration: none;
@@ -83,6 +105,11 @@
         text-align: center;
         transition: background-color 200ms;
         animation: FadeIn 500ms 1700ms ease-out backwards;
+        border-left: var(--border);
+      }
+
+      nav > ul > li:last-child > a {
+        border-right: var(--border);
       }
 
       nav > ul > li > a:hover,
@@ -90,6 +117,7 @@
       nav > ul > li > a:active {
         background-color: rgba(0, 0, 0, 0.2);
         outline: none;
+        text-decoration: none;
       }
 
       .Container {
@@ -135,6 +163,7 @@
       .Button:active {
         background-color: white;
         outline: none;
+        text-decoration: none;
       }
 
       .Button:active {
@@ -363,6 +392,162 @@
           transform: translateY(0);
         }
       }
+
+      .hint {
+        font-size: 12px;
+        padding: 2px;
+        color: black;
+        background-color: #f6ff00;
+        border: solid 1px rgba(0, 0, 0, 0.5);
+        text-transform: uppercase;
+        font-weight: bold;
+        line-height: 1;
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .highlighted {
+        background-color: lime;
+      }
+
+      .matchedText {
+        position: relative;
+      }
+
+      .matchedText::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-bottom: 2px solid #ef0fff;
+        box-sizing: border-box;
+      }
+
+      .status {
+        font-size: 14px;
+        padding: 4px 6px;
+        color: white;
+        background-color: black;
+        box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
+        bottom: 0;
+        right: 0;
+        line-height: 1;
+        position: absolute;
+      }
+
+      .rel {
+        position: relative;
+      }
+
+      .Demos {
+        display: flex;
+        margin: 3rem 0;
+      }
+
+      .Demos > * {
+        width: 50%;
+      }
+
+      .Demos > * + * {
+        margin-left: 3rem;
+      }
+
+      .Demo {
+        pointer-events: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        background-color: white;
+        box-shadow: 1px 2px 5px 1px rgba(0, 0, 0, 0.5);
+        padding: 1.5em;
+        position: relative;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI,
+          Roboto, DejaVu Sans, Verdana, sans-serif;
+      }
+
+      @supports (-moz-appearance: meterbar) {
+        .Demo {
+          font: menu;
+        }
+      }
+
+      .Demo-inner,
+      figcaption {
+        animation: FadeIn 1000ms 1800ms ease-out backwards;
+      }
+
+      .Demo-inner > * + * {
+        margin-top: 1rem;
+      }
+
+      .Demo-box {
+        padding: 0 1em;
+      }
+
+      .Demo-box > :first-child {
+        font-size: 1.4em;
+        margin-bottom: 0.2em;
+      }
+
+      .Demo a {
+        position: relative;
+      }
+
+      .Demo-box p {
+        margin: 0;
+      }
+
+      .Demo-box > :last-child > * {
+        font-size: 0.8em;
+      }
+
+      .Demo-box > :last-child > * + * {
+        --margin: 1.5em;
+        margin-left: var(--margin);
+        position: relative;
+      }
+
+      .Demo-box > :last-child > * + *::before {
+        --size: 3px;
+        content: "";
+        position: absolute;
+        top: calc(50% - var(--size) / 2);
+        left: calc(var(--margin) / -2 - var(--size));
+        width: var(--size);
+        height: var(--size);
+        background-color: var(--grey-han);
+        border-radius: 50%;
+      }
+
+      .Demo-bar {
+        display: flex;
+      }
+
+      .Demo-bar > * + * {
+        margin-left: 1em;
+      }
+
+      .Demo-input {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--grey-han);
+        border-radius: 0.5em;
+        padding: 0.5em 1em;
+        flex: 1;
+      }
+
+      .Demo-button {
+        background-color: var(--blue);
+        color: white;
+        border-radius: 0.5em;
+        padding: 0.5em 1.5em;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -435,9 +620,132 @@
     </nav>
 
     <main class="Container">
-      <p>Experimental browser extension.</p>
+      <div class="Demos">
+        <figure>
+          <div class="Demo" aria-hidden="true">
+            <div class="Demo-inner">
+              <div class="Demo-bar">
+                <div class="Demo-input" onclick="">
+                  <span class="rel"
+                    ><span class="hint">F</span>lorem ipsum</span
+                  >
+                </div>
+                <div class="Demo-button" onclick="">
+                  <span class="rel"><span class="hint">J</span>Setar</span>
+                </div>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a><span class="hint">D</span>Lorem ipsum</a>
+                </p>
+                <p>Dolor sit amet, consectetur adipiscing elit.</p>
+                <p>
+                  <a><span class="hint">L</span>Sed do</a>
+                  <a><span class="hint">R</span>Eiuslab</a>
+                  <a><span class="hint">O</span>Tempor</a>
+                </p>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a><span class="hint">K</span>Incididunt ut labore</a>
+                </p>
+                <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
+                <p>
+                  <a><span class="hint">A</span>Quis nostrud</a>
+                  <a><span class="hint">E</span>Exercitation</a>
+                  <a><span class="hint">H</span>Ullamco</a>
+                </p>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a><span class="hint">S</span>Laboris nisi ut aliquip</a>
+                </p>
+                <p>
+                  Ex ea commodo consequat. Duis aute irure dolor in
+                  reprehenderit.
+                </p>
+                <p>
+                  <a><span class="hint">U</span>In voluptate</a>
+                  <a><span class="hint">I</span>Velit esse</a>
+                  <a><span class="hint">W</span>Cillum</a>
+                </p>
+              </div>
+            </div>
+          </div>
+          <figcaption>Click using <em>hints.</em></figcaption>
+        </figure>
+
+        <figure>
+          <div class="Demo" aria-hidden="true">
+            <div class="Demo-inner">
+              <div class="Demo-bar">
+                <div class="Demo-input" onclick="">
+                  lorem ipsum
+                </div>
+                <div class="Demo-button" onclick="">
+                  Setar
+                </div>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a>Lorem ipsum</a>
+                </p>
+                <p>Dolor sit amet, consectetur adipiscing elit.</p>
+                <p>
+                  <a>Sed do</a>
+                  <a
+                    ><span class="hint highlighted">F</span>Eius<span
+                      class="matchedText"
+                      >lab</span
+                    ></a
+                  >
+                  <a>Tempor</a>
+                </p>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a
+                    >Incididunt ut
+                    <span class="matchedText"
+                      ><span class="hint">J</span>lab</span
+                    >ore</a
+                  >
+                </p>
+                <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
+                <p>
+                  <a>Quis nostrud</a>
+                  <a>Exercitation</a>
+                  <a>Ullamco</a>
+                </p>
+              </div>
+              <div class="Demo-box">
+                <p>
+                  <a
+                    ><span class="matchedText"
+                      ><span class="hint">D</span>Lab</span
+                    >oris nisi ut aliquip</a
+                  >
+                </p>
+                <p>
+                  Ex ea commodo consequat. Duis aute irure dolor in
+                  reprehenderit.
+                </p>
+                <p>
+                  <a>In voluptate</a>
+                  <a>Velit esse</a>
+                  <a>Cillum</a>
+                </p>
+              </div>
+              <span class="status">lab</span>
+            </div>
+          </div>
+          <figcaption>Filter by text.</figcaption>
+        </figure>
+      </div>
+
       <p>
-        <a href="https://github.com/lydell/LinkHints">GitHub repository</a>
+        <em>Link Hints</em> is an extension that complements your browser with
+        the missing shortcuts for clicking.
       </p>
     </main>
   </body>
