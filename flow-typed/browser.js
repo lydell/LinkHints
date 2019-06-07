@@ -69,9 +69,9 @@ declare type StorageArea = {|
   get: ((
     keys?: null | string | Array<string>
   ) => Promise<{ [string]: mixed }>) &
-    (<T: { [string]: any }>(T) => Promise<{ [$Keys<T>]: mixed }>),
+    (<T: { +[string]: any }>(T) => Promise<{ [$Keys<T>]: mixed }>),
   getBytesInUse(keys?: null | string | Array<string>): Promise<number>,
-  set({ [string]: any }): Promise<void>,
+  set({ +[string]: any }): Promise<void>,
   remove(string | Array<string>): Promise<void>,
   clear(): Promise<void>,
 |};

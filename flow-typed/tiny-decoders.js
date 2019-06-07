@@ -7,9 +7,9 @@ declare module "tiny-decoders" {
 
   declare export function string(value: mixed): string;
 
-  declare export function mixedArray(value: mixed): Array<mixed>;
+  declare export function mixedArray(value: mixed): $ReadOnlyArray<mixed>;
 
-  declare export function mixedDict(value: mixed): { [string]: mixed };
+  declare export function mixedDict(value: mixed): { +[string]: mixed };
 
   declare export function constant<T: boolean | number | string | void | null>(
     constantValue: T
