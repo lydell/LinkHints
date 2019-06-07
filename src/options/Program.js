@@ -734,9 +734,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             {
                               keyTranslationsInput: {
                                 ...keyTranslationsInput,
-                                text: `${
-                                  keyTranslationsInput.text
-                                } ${finalKey}`.trimLeft(),
+                                text: `${keyTranslationsInput.text} ${finalKey}`.trimLeft(),
                                 lastKeypress: keypress,
                               },
                             },

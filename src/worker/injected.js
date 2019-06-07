@@ -165,7 +165,6 @@ export default () => {
                 try {
                   // Remember that `hook` can be called with _anything,_ because the
                   // user can pass invalid arguments and use `.call`.
-                  // $FlowIgnore: `hook` isn't undefined here.
                   const result = hook(orig, this, ...args);
                   if (result != null && typeof result.then === "function") {
                     result.then(undefined, error => {
