@@ -31,7 +31,7 @@
         background-color: var(--grey-leia);
         color: black;
         font-family: DejaVu Sans, Verdana, sans-serif;
-        line-height: 1.2;
+        line-height: 1.4;
       }
 
       body {
@@ -42,11 +42,6 @@
         display: block;
       }
 
-      main > * {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
-      }
-
       h1,
       h2,
       h3,
@@ -54,6 +49,24 @@
       h5,
       h6 {
         font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
+        margin: 0;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      main > * {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+      }
+
+      section > * + * {
+        margin-top: 1em;
       }
 
       a {
@@ -853,6 +866,121 @@
         </li>
       </ul>
 
+      <section>
+        <h2>What is Link Hints?</h2>
+        <p>
+          Link Hints is a browser extension that complements the built-in
+          keyboard shortcuts with ones for clicking.
+        </p>
+        <p>
+          Press <span class="KeyboardShortcut"><kbd>Alt</kbd><kbd>J</kbd></span
+          >. This makes little yellow boxes with letters, called
+          <dfn>hints,</dfn> appear next to links (and other clickable things).
+          Type the letters to click the link. Alternatively, type a bit of the
+          link text while holding <kbd>Shift</kbd>.
+        </p>
+        <p>
+          There are a few variations on the above shortcut for opening links in
+          new tabs or selecting text.
+        </p>
+        <p>The keyboard shortcuts and hints are fully customizable.</p>
+      </section>
+
+      <section>
+        <h2>How is Link Hints different?</h2>
+        <p>
+          Using hints to click links is not at all a new idea. What does Link
+          Hints bring to the table?
+        </p>
+        <p>
+          Link Hints keeps track of all clickable elements in the background
+          when your browser is idle. This makes hints appear quickly regardless
+          of page size.
+        </p>
+        <p>
+          Other than accurately finding clickable elements, Link Hints also
+          focuses on placing the hints intuitively and being generally easy to
+          use and configure.
+        </p>
+      </section>
+
+      <section>
+        <h2>How do I copy links?</h2>
+        <p>
+          Use
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
+          >
+          to select the link. Press
+          <span class="KeyboardShortcut"><kbd>Ctrl</kbd><kbd>C</kbd></span> to
+          copy the now selected text. Open the context menu and choose “Copy
+          Link Location” or similar to copy the link URL.
+        </p>
+        <p>
+          On Windows and Linux, the context menu is usually opened by pressing
+          the <kbd>Menu</kbd> key or
+          <span class="KeyboardShortcut"><kbd>Shift</kbd><kbd>F10</kbd></span
+          >. On Mac, press
+          <span class="KeyboardShortcut"
+            ><kbd class="keep">Ctrl</kbd><kbd>F2</kbd></span
+          >
+          to focus the menu bar, which gives access to all of the commands in
+          the context menu.
+        </p>
+
+        <p>
+          Tip: Type the underlined character (“access key”) of a menu item to
+          activate it.
+        </p>
+
+        <p>
+          The idea is to keep the number of keyboard shortcuts in Link Hints
+          low, and use the context menu for less common tasks.
+        </p>
+      </section>
+
+      <section>
+        <h2>What is the story behind Link Hints?</h2>
+        <p>
+          2013 <a href="Link Hints ">Simon Lydell</a> started contributing to
+          the <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
+          extension, making significant work on its link hinting feature. After
+          a while, he became the main developer.
+        </p>
+        <p>
+          When VimFx was discontinued in 2017 (due to Firefox dropping their old
+          extension system in favor of cross-browser <em>Web Extensions</em>),
+          Simon started thinking about making a new extension, porting his
+          favorite feature of VimFx – link hinting.
+        </p>
+        <p>
+          During experimentation in the early 2018, a way of keeping track of
+          clickable elements in the background was discovered (for the
+          technically interested, a combination of
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver"
+            >MutationObserver</a
+          >,
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver"
+            >IntersectionObserver</a
+          >
+          and
+          <a
+            href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback"
+            >requestIdleCallback</a
+          >). This showed potential for greatly improving on the VimFx link
+          hinting.
+        </p>
+        <p>
+          A couple of months later, the first commit of Link Hints was made
+          (then called “Synth”). Soon it was stable enough to be used for
+          day-to-day browsing. After more than a year of development and
+          real-world usage and experimentation, Link Hints is planned to be
+          released during the second half of 2019.
+        </p>
+      </section>
+
       <p id="note">
         🚧 Link hints is under development and is not yet released. 🚧
       </p>
@@ -860,13 +988,19 @@
 
     <script>
       if (/mac|iPhone|iPad|iPod/i.test(navigator.platform)) {
-        [].forEach.call(document.getElementsByTagName("kbd"), function(kbd) {
+        [].forEach.call(document.querySelectorAll("kbd:not(.keep)"), function(
+          kbd
+        ) {
           if (kbd.textContent === "Alt") {
             kbd.textContent = "⌥";
             kbd.title = "Option/Alt";
           } else if (kbd.textContent === "Shift") {
             kbd.textContent = "⇧";
             kbd.title = "Shift";
+          } else if (kbd.textContent === "Ctrl") {
+            // Ctrl shortcuts are generally Cmd shortcuts on Mac.
+            kbd.textContent = "⌘";
+            kbd.title = "Command";
           }
         });
       }
