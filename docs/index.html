@@ -42,6 +42,11 @@
         display: block;
       }
 
+      main > * {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+      }
+
       h1,
       h2,
       h3,
@@ -145,7 +150,8 @@
 
       .Container {
         max-width: 980px;
-        margin: 0 auto;
+        margin-left: auto;
+        margin-right: auto;
         padding: 0 15px;
       }
 
@@ -258,6 +264,7 @@
       .Header-subTitle {
         font-size: 1.4375rem;
         margin: 0;
+        margin-top: 1rem;
       }
 
       .Header-titleWrapper {
@@ -468,7 +475,6 @@
 
       .Demos {
         display: flex;
-        margin: 3rem 0;
       }
 
       .Demos > * {
@@ -497,11 +503,6 @@
         .Demo {
           font: menu;
         }
-      }
-
-      .Demo-inner,
-      figcaption {
-        animation: FadeIn 1000ms 1800ms ease-out backwards;
       }
 
       .Demo-inner > * + * {
@@ -574,8 +575,6 @@
 
       .Shortcuts {
         padding: 0;
-        margin: 0;
-        margin-bottom: 3rem;
         columns: 2;
         column-gap: 3rem;
       }
@@ -593,6 +592,25 @@
       .Shortcuts > li > * + * {
         margin-left: 0.5em;
       }
+
+      .Reasons {
+        display: flex;
+        list-style: none;
+        padding: 0;
+      }
+
+      .Reasons > li {
+        width: calc(100% / 3);
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .Reasons .emoji {
+        display: block;
+        margin-bottom: 1rem;
+        font-size: 4rem;
+        font-weight: normal;
+      }
     </style>
   </head>
   <body>
@@ -600,7 +618,9 @@
       <div class="Header-inner Container">
         <div class="Header-titleWrapper">
           <h1 class="Header-title">Link Hints</h1>
-          <p class="Header-subTitle">Click with your keyboard</p>
+          <p class="Header-subTitle">
+            A browser extension that lets you click with your keyboard.
+          </p>
         </div>
 
         <div class="Keyboard">
@@ -665,6 +685,12 @@
     </nav>
 
     <main class="Container">
+      <ul class="Reasons">
+        <li><span class="emoji">💻</span>Have a bad touchpad?</li>
+        <li><span class="emoji">🖱</span>Trouble using a mouse?</li>
+        <li><span class="emoji">⌨️</span>Love keyboard shortcuts?</li>
+      </ul>
+
       <div class="Demos">
         <figure>
           <div class="Demo" aria-hidden="true">
