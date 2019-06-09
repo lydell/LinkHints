@@ -850,8 +850,10 @@
         [].forEach.call(document.getElementsByTagName("kbd"), function(kbd) {
           if (kbd.textContent === "Alt") {
             kbd.textContent = "⌥";
+            kbd.title = "Option/Alt";
           } else if (kbd.textContent === "Shift") {
             kbd.textContent = "⇧";
+            kbd.title = "Shift";
           }
         });
       }
