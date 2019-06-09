@@ -611,6 +611,15 @@
         font-size: 4rem;
         font-weight: normal;
       }
+
+      #note {
+        background-color: var(--blue);
+        color: white;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-align: center;
+        padding: 3rem;
+      }
     </style>
   </head>
   <body>
@@ -666,8 +675,8 @@
         </div>
 
         <p class="Header-buttons">
-          <a href="#TODO" class="Button">Add to Firefox</a>
-          <a href="#TODO" class="Button">Add to Chrome</a>
+          <a href="#note" class="Button">Add to Firefox</a>
+          <a href="#note" class="Button">Add to Chrome</a>
         </p>
       </div>
     </header>
@@ -843,6 +852,10 @@
           <span>Select element.</span>
         </li>
       </ul>
+
+      <p id="note">
+        🚧 Link hints is under development and is not yet released. 🚧
+      </p>
     </main>
 
     <script>
