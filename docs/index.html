@@ -153,6 +153,17 @@
         text-decoration: none;
       }
 
+      @media (max-width: 499px) {
+        nav > ul > li {
+          width: auto;
+          flex: 1 1 auto;
+        }
+
+        nav .emoji {
+          display: none;
+        }
+      }
+
       .KeyboardShortcut {
         white-space: nowrap;
       }
@@ -165,7 +176,11 @@
         max-width: 980px;
         margin-left: auto;
         margin-right: auto;
-        padding: 0 15px;
+        padding: 0 3rem;
+      }
+
+      .Container--noPadding {
+        padding: 0 !important;
       }
 
       .Button {
@@ -213,6 +228,7 @@
       }
 
       .Header {
+        overflow: hidden;
         padding: 5rem 0;
         background-color: blue;
         background-color: var(--blue);
@@ -280,6 +296,16 @@
         margin-top: 1rem;
       }
 
+      @media (max-width: 599px) {
+        .Header-title {
+          font-size: 2.5rem;
+        }
+
+        .Header-subTitle {
+          font-size: 1.1rem;
+        }
+      }
+
       .Header-titleWrapper {
         animation: FadeIn 500ms 1250ms ease-out backwards;
       }
@@ -293,6 +319,7 @@
         --stagger: 0ms;
         animation: ButtonAppear 500ms calc(1550ms + var(--stagger)) ease-out
           backwards;
+        min-width: 13rem;
       }
 
       .Header-buttons > * + * {
@@ -607,22 +634,59 @@
       }
 
       .Reasons {
-        display: flex;
         list-style: none;
         padding: 0;
-      }
-
-      .Reasons > li {
-        width: calc(100% / 3);
-        text-align: center;
         font-weight: bold;
       }
 
-      .Reasons .emoji {
-        display: block;
-        margin-bottom: 1rem;
-        font-size: 4rem;
-        font-weight: normal;
+      @media (min-width: 500px) {
+        .Reasons {
+          display: flex;
+        }
+
+        .Reasons > li {
+          width: calc(100% / 3);
+          text-align: center;
+        }
+
+        .Reasons > li + li {
+          margin-left: 1rem;
+        }
+
+        .Reasons .emoji {
+          display: block;
+          margin-bottom: 1rem;
+          font-size: 4rem;
+          font-weight: normal;
+        }
+      }
+
+      @media (max-width: 499px) {
+        .Reasons > li {
+          display: flex;
+          align-items: center;
+        }
+
+        .Reasons > li + li {
+          margin-top: 1rem;
+        }
+
+        .Reasons .emoji {
+          display: inline-block;
+          width: 3rem;
+          margin-right: 1rem;
+          text-align: center;
+          font-size: 2rem;
+        }
+
+        .Header-buttons {
+          flex-direction: column;
+        }
+
+        .Header-buttons > * + * {
+          margin-left: 0;
+          margin-top: 1rem;
+        }
       }
 
       #note {
@@ -632,6 +696,94 @@
         font-size: 1.5rem;
         text-align: center;
         padding: 3rem;
+      }
+
+      @media (max-width: 799px) {
+        .Keyboard {
+          transform: scale(0.8);
+          margin: 2rem 0;
+        }
+
+        .Container {
+          padding: 0 2rem;
+        }
+
+        .Demos > * + * {
+          margin-left: 2rem;
+        }
+
+        .Shortcuts {
+          column-gap: 2rem;
+        }
+      }
+
+      @media (max-width: 649px) {
+        h2 {
+          font-size: 1.2rem;
+        }
+
+        .Container {
+          padding: 0 1rem;
+        }
+
+        .Demos > * + * {
+          margin-left: 1rem;
+        }
+
+        .Shortcuts {
+          column-gap: 1rem;
+        }
+      }
+
+      @media (max-width: 599px) {
+        .Header {
+          padding: 3rem 0;
+        }
+
+        .Keyboard {
+          transform: scale(0.6);
+          margin: 1rem 0;
+        }
+
+        .Keyboard > div > div:last-child {
+          display: none;
+        }
+
+        .Demos {
+          display: block;
+        }
+
+        .Demos > * {
+          width: 100%;
+        }
+
+        .Demos > * + * {
+          margin-left: 0;
+          margin-top: 3rem;
+        }
+
+        .Shortcuts {
+          columns: 1;
+        }
+
+        .Shortcuts > li:nth-child(4) {
+          margin-top: 3rem;
+        }
+      }
+
+      @media (max-width: 399px) {
+        .Keyboard {
+          transform: scale(0.8);
+          margin-bottom: 2rem;
+        }
+
+        .Keyboard > div > div:last-child {
+          display: block;
+        }
+
+        .Shortcuts {
+          padding-right: 2rem;
+        }
       }
     </style>
   </head>
@@ -695,14 +847,20 @@
     </header>
 
     <nav>
-      <ul class="Container">
+      <ul class="Container Container--noPadding">
         <li>
           <a href="https://github.com/lydell/LinkHints/issues/new"
-            >🐞 Report issue</a
+            ><span class="emoji">🐞</span> Report issue</a
           >
         </li>
-        <li><a href="https://github.com/lydell/LinkHints">📦 GitHub</a></li>
-        <li><a href="./tutorial.html">📖 Tutorial</a></li>
+        <li>
+          <a href="https://github.com/lydell/LinkHints"
+            ><span class="emoji">📦</span> GitHub</a
+          >
+        </li>
+        <li>
+          <a href="./tutorial.html"><span class="emoji">📖</span> Tutorial</a>
+        </li>
       </ul>
     </nav>
 
@@ -744,14 +902,14 @@
                 </p>
                 <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
                 <p>
-                  <a><span class="hint">A</span>Quis nostrud</a>
+                  <a><span class="hint">A</span>Nostrud</a>
                   <a><span class="hint">E</span>Exercitation</a>
                   <a><span class="hint">H</span>Ullamco</a>
                 </p>
               </div>
               <div class="Demo-box">
                 <p>
-                  <a><span class="hint">S</span>Laboris nisi ut aliquip</a>
+                  <a><span class="hint">S</span>Laboris nisi aliquip</a>
                 </p>
                 <p>
                   Ex ea commodo consequat. Duis aute irure dolor in
@@ -804,7 +962,7 @@
                 </p>
                 <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
                 <p>
-                  <a>Quis nostrud</a>
+                  <a>Nostrud</a>
                   <a>Exercitation</a>
                   <a>Ullamco</a>
                 </p>
@@ -813,7 +971,7 @@
                 <p>
                   <a
                     ><span class="hint">D</span
-                    ><span class="matchedText">Lab</span>oris nisi ut aliquip</a
+                    ><span class="matchedText">Lab</span>oris nisi aliquip</a
                   >
                 </p>
                 <p>
