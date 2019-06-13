@@ -338,18 +338,22 @@
 
       .Keyboard > div,
       .Keyboard > div > div {
-        margin: 0.625rem;
-        margin-right: 0;
-        margin-bottom: 0;
+        margin: 0.3125rem;
       }
 
-      .Keyboard > div:nth-child(1) {
-        margin-left: 0;
+      .Keyboard > div {
         margin-top: 0;
+        margin-bottom: 0;
+        margin-right: 0;
+      }
+
+      .Keyboard > div:nth-child(1),
+      .Keyboard > div:nth-child(1) > div:first-child {
+        margin-left: 0;
       }
 
       .Keyboard > div:nth-child(2) {
-        margin-left: 0.3125rem;
+        margin-left: 0;
         padding-left: 0.25em;
       }
 
@@ -360,7 +364,6 @@
       .Keyboard > div > div {
         --stagger: 0ms;
         --animation-appear: KeyAppear 800ms var(--stagger) ease both;
-        margin-top: 0;
         width: 1em;
         height: 1em;
         background-image: url("./keycap.svg");
@@ -369,8 +372,12 @@
           KeyFade 400ms 1000ms ease-out forwards;
       }
 
-      .Keyboard > div > div:first-child {
-        margin-left: 0;
+      .Keyboard > div:first-child > div {
+        margin-top: 0;
+      }
+
+      .Keyboard > div:last-child > div {
+        margin-bottom: 0;
       }
 
       .Keyboard > div > div.Keyboard-logo {
