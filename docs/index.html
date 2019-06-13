@@ -328,8 +328,7 @@
       }
 
       .Keyboard {
-        --size: 3rem;
-        --spacing: 0.625rem;
+        font-size: 3rem;
         margin: 3rem;
       }
 
@@ -337,31 +336,41 @@
         display: flex;
       }
 
+      .Keyboard > div,
+      .Keyboard > div > div {
+        margin: 0.625rem;
+        margin-right: 0;
+        margin-bottom: 0;
+      }
+
+      .Keyboard > div:nth-child(1) {
+        margin-left: 0;
+        margin-top: 0;
+      }
+
       .Keyboard > div:nth-child(2) {
-        margin-left: calc(var(--size) / 4 + var(--spacing) / 2);
+        margin-left: 0.3125rem;
+        padding-left: 0.25em;
       }
 
       .Keyboard > div:nth-child(3) {
-        margin-left: calc(var(--size) * 3 / 4 + var(--spacing));
-      }
-
-      .Keyboard > div + div {
-        margin-top: var(--spacing);
+        padding-left: 0.75em;
       }
 
       .Keyboard > div > div {
         --stagger: 0ms;
         --animation-appear: KeyAppear 800ms var(--stagger) ease both;
-        width: var(--size);
-        height: var(--size);
+        margin-top: 0;
+        width: 1em;
+        height: 1em;
         background-image: url("./keycap.svg");
         background-size: contain;
         animation: var(--animation-appear),
           KeyFade 400ms 1000ms ease-out forwards;
       }
 
-      .Keyboard > div > div + div {
-        margin-left: var(--spacing);
+      .Keyboard > div > div:first-child {
+        margin-left: 0;
       }
 
       .Keyboard > div > div.Keyboard-logo {
@@ -575,19 +584,18 @@
       }
 
       .Demo-box > :last-child > * + * {
-        --margin: 1.5em;
-        margin-left: var(--margin);
+        margin-left: 1.5rem;
         position: relative;
       }
 
       .Demo-box > :last-child > * + *::before {
-        --size: 3px;
+        font-size: 3px;
         content: "";
         position: absolute;
-        top: calc(50% - var(--size) / 2);
-        left: calc(var(--margin) / -2 - var(--size));
-        width: var(--size);
-        height: var(--size);
+        top: calc(50% - 0.5em);
+        left: calc(1.5rem / -2 - 1em);
+        width: 1em;
+        height: 1em;
         background-color: var(--grey-han);
         border-radius: 50%;
       }
