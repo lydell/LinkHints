@@ -1,6 +1,6 @@
 ---
 name: 5. Bug report
-about: Some other problem than the above
+about: Some other problem than the above.
 title: ''
 labels: ''
 assignees: ''
