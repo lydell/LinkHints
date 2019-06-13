@@ -11,24 +11,15 @@
       content="A browser extension that lets you click with your keyboard."
     />
     <style>
-      :root {
-        --grey-leia: #f7f7f7;
-        --grey-han: #bbb;
-        --grey-luke: #767676;
-        --blue: #2b4eed;
-      }
-
       *,
       *::before,
       *::after {
         box-sizing: border-box;
         background-repeat: no-repeat;
-        /* animation-duration: 1ms !important;
-        animation-delay: 0s !important; */
       }
 
       html {
-        background-color: var(--grey-leia);
+        background-color: #f7f7f7;
         color: black;
         font-family: DejaVu Sans, Verdana, sans-serif;
         line-height: 1.4;
@@ -70,7 +61,7 @@
       }
 
       a {
-        color: var(--blue);
+        color: #2b4eed;
         text-decoration: none;
       }
 
@@ -94,7 +85,7 @@
         display: inline-block;
         min-width: 1.615em;
         padding: 0 0.308em;
-        border: 2px solid var(--grey-luke);
+        border: 2px solid #767676;
         border-radius: 3px;
         background-color: white;
         text-align: center;
@@ -105,8 +96,7 @@
       }
 
       nav {
-        background-color: blue;
-        background-color: var(--blue);
+        background-color: #2b4eed;
         background-image: linear-gradient(
           to bottom,
           rgba(255, 255, 255, 0.2),
@@ -129,7 +119,6 @@
       }
 
       nav > ul > li > a {
-        --border: 1px solid rgba(255, 255, 255, 0.2);
         display: block;
         color: inherit;
         text-decoration: none;
@@ -137,12 +126,14 @@
         text-align: center;
         transition: background-color 200ms;
         animation: FadeIn 500ms 1700ms ease-out backwards;
-        border-left: var(--border);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: none;
+        border-bottom: none;
         background-clip: padding-box;
       }
 
-      nav > ul > li:last-child > a {
-        border-right: var(--border);
+      nav > ul > li + li > a {
+        border-left: none;
       }
 
       nav > ul > li > a:hover,
@@ -230,8 +221,7 @@
       .Header {
         overflow: hidden;
         padding: 5rem 0;
-        background-color: blue;
-        background-color: var(--blue);
+        background-color: #2b4eed;
         background-image: linear-gradient(
             65deg,
             transparent 15%,
@@ -395,7 +385,7 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        box-shadow: 0 0 0.625rem 0.625rem var(--blue), 0 0 3rem 1.25rem white;
+        box-shadow: 0 0 0.625rem 0.625rem #2b4eed, 0 0 3rem 1.25rem white;
         animation: KeyGlow var(--animation);
       }
 
@@ -603,7 +593,7 @@
         left: calc(1.5rem / -2 - 1em);
         width: 1em;
         height: 1em;
-        background-color: var(--grey-han);
+        background-color: #bbb;
         border-radius: 50%;
       }
 
@@ -618,7 +608,7 @@
       .Demo-input {
         display: flex;
         align-items: center;
-        border: 1px solid var(--grey-han);
+        border: 1px solid #bbb;
         border-radius: 0.5em;
         padding: 0.5em 1em;
         flex: 1;
@@ -627,7 +617,7 @@
       }
 
       .Demo-button {
-        background-color: var(--blue);
+        background-color: #2b4eed;
         color: white;
         border-radius: 0.5em;
         padding: 0.5em 1.5em;
@@ -711,7 +701,7 @@
       }
 
       #note {
-        background-color: var(--blue);
+        background-color: #2b4eed;
         color: white;
         font-weight: bold;
         font-size: 1.5rem;
