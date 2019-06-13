@@ -2,7 +2,7 @@
 
 <img src="icon.svg" alt="" align="left" style="margin-right: 1em;">
 
-> A browser extension that lets you click with your keyboard.
+A browser extension that lets you click with your keyboard.
 
 **[Website] | [Tutorial] | [Contributing]**
 
@@ -10,7 +10,7 @@
 
 [add to chrome]: https://lydell.github.io/LinkHints#note
 [add to firefox]: https://lydell.github.io/LinkHints#note
-[contributing]: https://github.com/lydell/LinkHints/blob/master/package.json
+[contributing]: https://github.com/lydell/LinkHints/blob/master/CONTRIBUTING.md
 [travis-badge]: https://travis-ci.com/lydell/LinkHints.svg?branch=master
 [travis-link]: https://travis-ci.com/lydell/LinkHints
 [tutorial]: https://lydell.github.io/LinkHints/tutorial.html
