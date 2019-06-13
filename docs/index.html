@@ -92,8 +92,8 @@
 
       kbd {
         display: inline-block;
-        min-width: 1.625em;
-        padding: 0 4px;
+        min-width: 1.615em;
+        padding: 0 0.308em;
         border: 2px solid var(--grey-luke);
         border-radius: 3px;
         background-color: white;
@@ -115,7 +115,7 @@
           transparent 100%
         );
         color: white;
-        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 0.625rem 0 rgba(0, 0, 0, 0.3);
       }
 
       nav > ul {
@@ -153,7 +153,7 @@
         text-decoration: none;
       }
 
-      @media (max-width: 499px) {
+      @media (max-width: 31em) {
         nav > ul > li {
           width: auto;
           flex: 1 1 auto;
@@ -173,7 +173,7 @@
       }
 
       .Container {
-        max-width: 980px;
+        max-width: 61rem;
         margin-left: auto;
         margin-right: auto;
         padding: 0 3rem;
@@ -194,7 +194,7 @@
         font-weight: bold;
         text-decoration: none;
         padding: 0.5em 2em;
-        border-radius: 5px;
+        border-radius: 0.3125em;
         box-shadow: 1px 2px 5px 1px rgba(0, 0, 0, 0.5);
         cursor: pointer;
         transition: background-color 200ms;
@@ -211,7 +211,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        filter: blur(10px);
+        filter: blur(0.625rem);
         background-color: rgba(255, 255, 255, 0.8);
       }
 
@@ -296,7 +296,7 @@
         margin-top: 1rem;
       }
 
-      @media (max-width: 599px) {
+      @media (max-width: 37em) {
         .Header-title {
           font-size: 2.5rem;
         }
@@ -328,8 +328,8 @@
       }
 
       .Keyboard {
-        --size: 48px;
-        --spacing: 10px;
+        --size: 3rem;
+        --spacing: 0.625rem;
         margin: 3rem;
       }
 
@@ -355,6 +355,7 @@
         width: var(--size);
         height: var(--size);
         background-image: url("./keycap.svg");
+        background-size: contain;
         animation: var(--animation-appear),
           KeyFade 400ms 1000ms ease-out forwards;
       }
@@ -378,18 +379,20 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        box-shadow: 0 0 10px 10px var(--blue), 0 0 50px 20px white;
+        box-shadow: 0 0 0.625rem 0.625rem var(--blue), 0 0 3rem 1.25rem white;
         animation: KeyGlow var(--animation);
       }
 
       .Keyboard > div > div.Keyboard-logo::after {
-        content: url("./keycap-logo.svg");
+        content: "";
         position: absolute;
         z-index: 2;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
+        background-image: url("./keycap-logo.svg");
+        background-size: contain;
         animation: FadeIn var(--animation);
       }
 
@@ -425,7 +428,7 @@
       @keyframes KeyAppear {
         0% {
           opacity: 0;
-          transform: translateY(100px) scale(0.2);
+          transform: translateY(6rem) scale(0.2);
         }
       }
 
@@ -451,11 +454,11 @@
       @keyframes ButtonAppear {
         0% {
           opacity: 0;
-          transform: translateY(10px);
+          transform: translateY(0.625rem);
         }
 
         50% {
-          transform: translateY(-5px);
+          transform: translateY(-0.3125rem);
         }
 
         100% {
@@ -464,8 +467,8 @@
       }
 
       .hint {
-        font-size: 12px;
-        padding: 2px;
+        font-size: 0.75rem;
+        padding: 0.167em;
         color: black;
         background-color: #f6ff00;
         border: solid 1px rgba(0, 0, 0, 0.5);
@@ -498,8 +501,8 @@
       }
 
       .status {
-        font-size: 14px;
-        padding: 4px 6px;
+        font-size: 0.875rem;
+        padding: 0.286em 0.429em;
         color: white;
         background-color: black;
         box-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -542,6 +545,7 @@
       @supports (-moz-appearance: meterbar) {
         .Demo {
           font: menu;
+          font-size: 1em;
         }
       }
 
@@ -603,6 +607,8 @@
         border-radius: 0.5em;
         padding: 0.5em 1em;
         flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
       }
 
       .Demo-button {
@@ -639,7 +645,7 @@
         font-weight: bold;
       }
 
-      @media (min-width: 500px) {
+      @media (min-width: 31.0625em) {
         .Reasons {
           display: flex;
         }
@@ -661,7 +667,7 @@
         }
       }
 
-      @media (max-width: 499px) {
+      @media (max-width: 31em) {
         .Reasons > li {
           display: flex;
           align-items: center;
@@ -698,7 +704,7 @@
         padding: 3rem;
       }
 
-      @media (max-width: 799px) {
+      @media (max-width: 50em) {
         .Keyboard {
           transform: scale(0.8);
           margin: 2rem 0;
@@ -717,7 +723,7 @@
         }
       }
 
-      @media (max-width: 649px) {
+      @media (max-width: 44em) {
         h2 {
           font-size: 1.875rem;
         }
@@ -735,7 +741,7 @@
         }
       }
 
-      @media (max-width: 599px) {
+      @media (max-width: 40em) {
         .Header {
           padding: 3rem 0;
         }
@@ -771,7 +777,7 @@
         }
       }
 
-      @media (max-width: 399px) {
+      @media (max-width: 25em) {
         .Keyboard {
           transform: scale(0.8);
           margin-bottom: 2rem;
