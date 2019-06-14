@@ -85,8 +85,8 @@
         display: inline-block;
         min-width: 1.615em;
         padding: 0 0.308em;
-        border: 2px solid #767676;
-        border-radius: 3px;
+        border: 0.154em solid #767676;
+        border-radius: 0.231em;
         background-color: white;
         text-align: center;
         font-size: 0.8125em;
@@ -652,6 +652,19 @@
         font-weight: bold;
       }
 
+      .ToolbarButton,
+      .ToolbarButtonFaded {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        background-image: url("./keycap-logo.svg");
+        background-size: contain;
+      }
+
+      .ToolbarButtonFaded {
+        opacity: 0.5;
+      }
+
       @media (min-width: 31.0625em) {
         .Reasons {
           display: flex;
@@ -1107,6 +1120,154 @@
         <p>
           The idea is to keep the number of keyboard shortcuts in Link Hints
           low, and use the context menu for less common tasks.
+        </p>
+      </section>
+
+      <section>
+        <h2>Why doesn’t Link Hints work on some pages?</h2>
+        <p>
+          Browser extensions are not allowed to run on some pages, such as
+          Chrome’s and Firefox’s extension stores, the New Tab page and internal
+          settings pages.
+        </p>
+        <p>
+          The Link Hints toolbar button is faded out to indicate this. Regular
+          look: <span class="ToolbarButton"></span>. Faded:
+          <span class="ToolbarButtonFaded"></span>.
+        </p>
+        <p>Other possible reasons include:</p>
+        <ul>
+          <li>You’re using Responsive Design Mode in Firefox.</li>
+          <li>
+            The site is using some fancy technique that Link Hints does not
+            support yet, or there’s a bug in Link Hints. Please
+            <a href="https://github.com/lydell/LinkHints/issues/new/choose"
+              >report an issue</a
+            >!
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Why don’t some elements get hints?</h2>
+        <p>Finding which elements should get hints is tricky business.</p>
+        <p>
+          First off, Link Hints need a clue from the site that an element is
+          clickable. If the site is using <em>semantic markup</em> that’s easy.
+          If it isn’t, Link Hints still tries to detect which elements have
+          click listeners attached to them.
+        </p>
+        <p>
+          Sometimes, though, there’s nothing at all showing that the element is
+          clickable. In such cases, the best thing would be if the site could
+          change their markup to be more accessible. That would be a win not
+          only for Link Hints users, but also for screen reader users and for
+          accessibility in general.
+        </p>
+        <p>
+          Link Hints has special workarounds for some sites such as Twitter and
+          Gmail, but such hacks should be kept to a minimum.
+        </p>
+        <p>
+          It could also be that the element is legit clickable, but an
+          improvement is needed in Link Hints’ detection logic.
+        </p>
+        <p>
+          Finally, it could also be that Link Hints did identify the element as
+          clickable, but thought that it wasn’t visible. For example, Link Hints
+          avoids giving hints to elements behind dropdown menus, but it could of
+          course be confused.
+        </p>
+        <p>
+          Feel free to
+          <a href="https://github.com/lydell/LinkHints/issues/new/choose"
+            >report issues</a
+          >
+          about missing hints!
+        </p>
+      </section>
+
+      <section>
+        <h2>
+          Why don’t some hints do anything?
+        </h2>
+        <p>
+          Some actions, like entering Fullscreen mode or copying text, are
+          restricted so that websites cannot abuse them. These actions can only
+          be performed after a <em>real</em> click or a built-in browser
+          keyboard shortcut.
+        </p>
+        <p>
+          Link Hints sends “fake” clicks to elements when you use hints, which
+          means that they can’t trigger Fullscreen or Copy.
+        </p>
+        <p>
+          As of this writing there’s nothing a browser extension can do about
+          this. The workaround is to first try to click a button with hints. If
+          nothing happened, the button should at least have been focused, which
+          means that you can press <kbd>Enter</kbd> to activate it.
+        </p>
+        <p>
+          As a last resort, you could try focusing a nearby element with
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
+          >
+          and then use <kbd>Tab</kbd> to get to the button. Finally, use
+          <kbd>Enter</kbd> to activate it.
+        </p>
+        <p>
+          For buttons that do other things than Fullscreen and Copy, there could
+          also be other reasons.
+        </p>
+        <ul>
+          <li>
+            There are two hints on top of each other and you actually need to
+            activate the lower one. Try pressing <kbd>Tab</kbd> while the hints
+            are shown to toggle which one is on top.
+          </li>
+          <li>
+            The element is a false positive. Link Hints shouldn’t have given it
+            a hint, but unfortunately did anyway.
+          </li>
+          <li>
+            The site is using some fancy technique that Link Hints does not
+            support yet, or there’s a bug in Link Hints.
+          </li>
+        </ul>
+        <p>
+          If you encounter one of the cases in the above list, please
+          <a href="https://github.com/lydell/LinkHints/issues/new/choose"
+            >report an issue</a
+          >!
+        </p>
+      </section>
+
+      <section>
+        <h2>
+          Why is
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
+          >
+          slower?
+        </h2>
+        <p>
+          Link Hints keeps track of <em>clickable</em> elements in the
+          background. So usually Link Hints already knows which elements to
+          create hints for.
+        </p>
+        <p>
+          <span class="KeyboardShortcut"
+            ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
+          >
+          works with a lot more elements than <em>clickable</em> elements. As of
+          this writing, it goes through <em>all</em> elements on the page each
+          time. There might be a way to optimize this, but so far it hasn’t
+          been.
+        </p>
+        <p>
+          Luckily, the shortcut is mostly pretty fast. It can slow down on
+          larger, more complicated pages, but on the other hand it isn’t the
+          most used shortcut either.
         </p>
       </section>
 
