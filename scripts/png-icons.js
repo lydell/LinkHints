@@ -1,8 +1,5 @@
 // @flow strict-local
 
-const path = require("path");
-
-const mkdirp = require("mkdirp");
 const spawn = require("cross-spawn");
 
 const config = require("../project.config");
@@ -24,8 +21,6 @@ function run() {
 }
 
 function svgToPng(svgPath, pngPath) {
-  mkdirp.sync(path.dirname(pngPath));
-
   spawn.sync("inkscape", ["-z", "-e", pngPath, svgPath], {
     stdio: "inherit",
   });

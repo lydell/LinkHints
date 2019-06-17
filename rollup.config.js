@@ -3,9 +3,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const mkdirp = require("mkdirp");
+const fsExtra = require("fs-extra");
 const optionalRequire = require("optional-require")(require);
-const rimraf = require("rimraf");
 const commonjs = require("rollup-plugin-commonjs");
 const prettier = require("rollup-plugin-prettier");
 const replace = require("rollup-plugin-replace");
@@ -18,7 +17,9 @@ const customConfig = optionalRequire("./custom.config") || {};
 
 const PROD = config.browser != null;
 
-const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = customConfig;
+const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
+  ? {}
+  : customConfig;
 
 setup();
 
@@ -61,26 +62,12 @@ module.exports = [
 
 function setup() {
   console.time("setup");
-  rimraf.sync(config.compiled);
-  copyPngIcons();
+  fsExtra.removeSync(config.compiled);
+  fsExtra.copySync(
+    `${config.src}/${config.iconsDir}`,
+    `${config.compiled}/${config.iconsDir}`
+  );
   console.timeEnd("setup");
-}
-
-function copyPngIcons() {
-  const pngIcons = [...config.icons.png, ...config.iconsDisabled.png];
-
-  const dirs = new Set(pngIcons.map(([, iconPath]) => path.dirname(iconPath)));
-
-  for (const dir of dirs) {
-    mkdirp.sync(`${config.compiled}/${dir}`);
-  }
-
-  for (const [, iconPath] of pngIcons) {
-    fs.copyFileSync(
-      `${config.src}/${iconPath}`,
-      `${config.compiled}/${iconPath}`
-    );
-  }
 }
 
 function js({ input, output } /*: {| input: string, output: string |} */) {
@@ -198,8 +185,10 @@ function makeGlobals() {
       config.browser == null
         ? `(navigator.userAgent.includes("Firefox") ? "firefox" : "chrome")`
         : JSON.stringify(config.browser),
-    // Note: BUILD_TIME might vary between different files.
-    BUILD_TIME: JSON.stringify(Date.now()),
+    // Note: BUILD_ID might vary between different files.
+    BUILD_ID: JSON.stringify(
+      PROD ? config.meta.version.replace(/\W/g, "_") : String(Date.now())
+    ),
     DEFAULT_LOG_LEVEL_CONFIG: JSON.stringify(DEFAULT_LOG_LEVEL),
     DEFAULT_STORAGE_SYNC: JSON.stringify(DEFAULT_STORAGE_SYNC),
     META_CONFIG: JSON.stringify(config.meta),

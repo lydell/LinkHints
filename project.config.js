@@ -25,6 +25,7 @@ module.exports = {
     ...browserSpecificIgnores(currentBrowser),
   ],
   faviconSizes: FAVICON_SIZES,
+  iconsDir: "icons",
   mainIcon,
   icons: {
     svg: makeIcons("svg-$normal", ".svg"),

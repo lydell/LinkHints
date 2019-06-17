@@ -52,7 +52,7 @@ The most important files:
 - `web-ext-config.js` configures [web-ext], both for building and for running in Firefox.
 - `custom.config.example.js` can be copied into `custom.config.js` to customize `web-ext run` as well as default options for development.
 - `src/manifest.js` is called via Rollup and generates `manifest.json`. In fact, all `.js` files directly inside `src/` are called via Rollup and generate other files.
-- `src/icons.js` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
+- `src/icons.js` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape] and [OptiPNG]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
 - `src/html.js` generates HTML files. All HTML files are very minimal. JavaScript is used to render content.
 
 Compilation pipeline:
@@ -155,6 +155,7 @@ Note: If you regularly develop for Chrome, you might want to run `npm run build:
 [flow]: https://flow.org/
 [inkscape]: https://inkscape.org/
 [node.js]: https://nodejs.org/
+[optipng]: http://optipng.sourceforge.net/
 [preact]: https://preactjs.com/
 [prettier]: https://prettier.io/
 [rollup]: https://rollupjs.org/

@@ -58,7 +58,7 @@ module.exports = {
       globals: {
         ...baseRules.browserEnv(),
         BROWSER: false,
-        BUILD_TIME: false,
+        BUILD_ID: false,
         DEFAULT_LOG_LEVEL_CONFIG: false,
         DEFAULT_STORAGE_SYNC: false,
         META_CONFIG: false,

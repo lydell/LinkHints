@@ -1,7 +1,9 @@
 // @flow
 
 declare module "cross-spawn" {
+  import typeof childProcess from "child_process";
+
   declare module.exports: {
-    sync(string, Array<string>, Object): void,
+    sync: $PropertyType<childProcess, "spawnSync">,
   };
 }

@@ -9,7 +9,7 @@
 const fs = require("fs");
 const crypto = require("crypto");
 
-const writeFile = require("write");
+const fsExtra = require("fs-extra");
 
 const config = require("../project.config");
 
@@ -331,7 +331,7 @@ function writeFileIfNeeded(filepath: string, content: string) {
     needed = true;
   }
   if (needed) {
-    writeFile.sync(filepath, content);
+    fsExtra.outputFileSync(filepath, content);
   }
 }
 
