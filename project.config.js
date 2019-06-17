@@ -4,7 +4,7 @@ const currentBrowser = getBrowser();
 
 const ICON_SIZES = [16, 32, 48, 64, 96, 128, 256];
 
-const mainIcon = "compiled/icon.svg";
+const mainIcon = "icons/main.svg";
 
 module.exports = {
   meta: {
@@ -17,17 +17,10 @@ module.exports = {
   },
   browser: currentBrowser,
   src: "src",
+  compiled: "compiled",
   dist: currentBrowser == null ? "dist" : `dist-${currentBrowser}`,
-  rimraf: "{src/compiled,src/icons/!(png-*|*.js)}",
   webextIgnoreFiles: [
-    `*.js`,
-    // Having both of the following two patterns might seem redundant. The first
-    // is needed to make sure make sure changing non-compiled JS files don’t
-    // trigger the web-ext watcher during development. The second excludes empty
-    // directories from the production build.
-    `./!(compiled)/**/*.js`,
-    `./!(compiled|icons|manifest.json)`,
-    "icons/*.*",
+    "icons/*.!(svg)",
     ...browserSpecificIgnores(currentBrowser),
   ],
   mainIcon,
@@ -48,38 +41,38 @@ module.exports = {
   needsPolyfill: needsPolyfill(currentBrowser),
   polyfill: {
     input: "../node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
-    output: "compiled/browser-polyfill.js",
+    output: "browser-polyfill.js",
   },
   background: {
     input: "background/main.js",
-    output: "compiled/background.js",
+    output: "background.js",
   },
   worker: {
     input: "worker/main.js",
-    output: "compiled/worker.js",
+    output: "worker.js",
   },
   renderer: {
     input: "renderer/main.js",
-    output: "compiled/renderer.js",
+    output: "renderer.js",
   },
   popup: {
     input: "popup/main.js",
-    output: "compiled/popup.js",
+    output: "popup.js",
   },
   popupCss: {
     input: "popup/popup.css",
-    output: "compiled/popup.css",
+    output: "popup.css",
   },
-  popupHtml: "compiled/popup.html",
+  popupHtml: "popup.html",
   options: {
     input: "options/main.js",
-    output: "compiled/options.js",
+    output: "options.js",
   },
   optionsCss: {
     input: "options/options.css",
-    output: "compiled/options.css",
+    output: "options.css",
   },
-  optionsHtml: "compiled/options.html",
+  optionsHtml: "options.html",
   manifest: {
     input: "manifest.js",
     output: "manifest.json",

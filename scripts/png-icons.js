@@ -11,7 +11,7 @@ function run() {
   for (const icons of [config.icons, config.iconsDisabled]) {
     for (const [index, [, svg]] of icons.svg.entries()) {
       const [, png] = icons.png[index];
-      const svgPath = `${config.src}/${svg}`;
+      const svgPath = `${config.compiled}/${svg}`;
       const pngPath = `${config.src}/${png}`;
 
       mkdirp.sync(path.dirname(pngPath));

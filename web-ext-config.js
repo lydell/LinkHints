@@ -11,7 +11,7 @@ const {
 } = customConfig;
 
 module.exports = applyCustomConfig({
-  sourceDir: config.src,
+  sourceDir: config.compiled,
   artifactsDir: config.dist,
   build: {
     overwriteDest: true,

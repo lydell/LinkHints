@@ -1,5 +1,4 @@
 /.*
 !/.eslintrc.js
 *.custom.js
-/src/compiled/
-/src/icons/test.html
+/compiled/

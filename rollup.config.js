@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 
+const mkdirp = require("mkdirp");
 const optionalRequire = require("optional-require")(require);
 const rimraf = require("rimraf");
 const commonjs = require("rollup-plugin-commonjs");
@@ -53,14 +54,32 @@ module.exports = [
     input: `${config.src}/${entry.input}`,
     output: {
       ...entry.output,
-      file: `${config.src}/${entry.output.file}`,
+      file: `${config.compiled}/${entry.output.file}`,
       indent: false,
     },
   }));
 
 function setup() {
-  if (PROD) {
-    rimraf.sync(config.rimraf);
+  console.time("setup");
+  rimraf.sync(config.compiled);
+  copyPngIcons();
+  console.timeEnd("setup");
+}
+
+function copyPngIcons() {
+  const pngIcons = [...config.icons.png, ...config.iconsDisabled.png];
+
+  const dirs = new Set(pngIcons.map(([, iconPath]) => path.dirname(iconPath)));
+
+  for (const dir of dirs) {
+    mkdirp.sync(`${config.compiled}/${dir}`);
+  }
+
+  for (const [, iconPath] of pngIcons) {
+    fs.copyFileSync(
+      `${config.src}/${iconPath}`,
+      `${config.compiled}/${iconPath}`
+    );
   }
 }
 

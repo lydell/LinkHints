@@ -343,15 +343,21 @@ module.exports = () => {
 
   for (const [icons, options] of all) {
     for (const [size, path] of icons) {
-      writeFileIfNeeded(`${config.src}/${path}`, render(size, COLORS, options));
+      writeFileIfNeeded(
+        `${config.compiled}/${path}`,
+        render(size, COLORS, options)
+      );
     }
   }
 
   const mainIcon = render(96, COLORS);
 
-  writeFileIfNeeded(`${config.src}/${config.mainIcon}`, mainIcon);
+  writeFileIfNeeded(`${config.compiled}/${config.mainIcon}`, mainIcon);
 
-  writeFileIfNeeded(`${config.src}/${config.iconsTestPage}`, renderTestPage());
+  writeFileIfNeeded(
+    `${config.compiled}/${config.iconsTestPage}`,
+    renderTestPage()
+  );
   writeFileIfNeeded(
     `${config.src}/${config.iconsChecksum}`,
     makeChecksumFile(checksum(mainIcon))

@@ -33,16 +33,30 @@ If you’d like to make a pull request, here’s what you need to know.
 ## File overview
 
 - The repo root contains mostly configuration files.
-- `src/` contains the source code for the extension, as well as some other things – we’ll come back to that.
-- `dist-chrome/` and `dist-firefox/` are generated and contain production builds of the extension.
+- `src/` contains the source code for the extension.
 - `scripts/` contains a couple of build scripts.
 - `html/` contains lots of test pages for the extension.
 - `docs/` is served on <https://lydell.github.io/LinkHints/>.
 
+These directories are generated and gitignored:
+
+- `compiled/` is the compiled version of `src/`.
+- `dist-chrome/` and `dist-firefox/` contains production builds of the extension.
+
+Compilation pipeline:
+
+```
+       project.config.js                                     .--> dist-chrome/
+       rollup.config.js                 web-ext-config.js   /
+src/ ---------------------> compiled/ ----------------------
+                                                            \
+                                                             '--> dist-firefox/
+```
+
 ## Development
 
-When developing, you need to start a watcher that compiles the code as you
-change it:
+When developing, you need to start a watcher (Rollup) that compiles the code
+as you change it:
 
 ```
 npm run watch
@@ -62,7 +76,7 @@ auto-reloading.
 1. Open `chrome://extensions`.
 2. Enable “Developer mode” there.
 3. Click “Load unpacked”
-4. Choose the `src/` directory in this repo.
+4. Choose the `compiled/` directory in this repo.
 
 Link Hints should now be installed. You need to press the refresh button after
 you make changes to the code.

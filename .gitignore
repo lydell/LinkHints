@@ -1,7 +1,4 @@
 custom.config.js
 /node_modules/
-/src/compiled/
-/src/icons/*.html
-/src/icons/**/*.svg
-/src/manifest.json
+/compiled/
 /dist*/
