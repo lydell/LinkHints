@@ -12,11 +12,11 @@
     "web-ext": "sucrase-node node_modules/.bin/web-ext",
     "flow": "flow",
     "flow:check": "flow check",
-    "eslint": "eslint .",
-    "eslint:fix": "npm run eslint -- --fix",
-    "prettier": "prettier --check \"**/*.{css,html,js,md,yml}\"",
-    "prettier:fix": "prettier --write \"**/*.{css,html,js,md,yml}\"",
-    "test": "run-s eslint prettier flow:check build:chrome build:firefox"
+    "eslint": "eslint . --fix",
+    "eslint:check": "eslint .",
+    "prettier": "prettier --write \"**/*.{css,html,js,md,yml}\"",
+    "prettier:check": "prettier --check \"**/*.{css,html,js,md,yml}\"",
+    "test": "run-s eslint:check prettier:check flow:check build:chrome build:firefox"
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",

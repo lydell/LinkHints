@@ -11,8 +11,8 @@ If you’d like to make a pull request, here’s what you need to know.
 ## Requirements
 
 - [Node.js] 12 with npm 6.
-- Latest Chrome or Chromium.
-- Latest Firefox Developer Edition or Firefox Nightly.
+- Latest [Chrome] or [Chromium].
+- Latest [Firefox Developer Edition] or [Firefox Nightly].
 
 ## Get started
 
@@ -23,12 +23,13 @@ If you’d like to make a pull request, here’s what you need to know.
 ## Technology used
 
 - [web-ext] for building and linting, and for developing in Firefox.
-- [Rollup] for `import`/`export` and npm packages.
+- [Rollup] for `import`/`export` and npm package support.
 - [Flow] for type checking.
 - [ESLint] for linting.
 - [Prettier] for automatic code formatting.
 - [Sucrase] for compiling Flow type annotation and JSX.
 - [Preact] for easily making the options UI.
+- [WebExtension Polyfill] for using the `browser` API both in Chrome and Firefox.
 
 ## File overview
 
@@ -37,11 +38,22 @@ If you’d like to make a pull request, here’s what you need to know.
 - `scripts/` contains a couple of build scripts.
 - `html/` contains lots of test pages for the extension.
 - `docs/` is served on <https://lydell.github.io/LinkHints/>.
+- `flow-typed/` contains [Flow library definitions].
 
 These directories are generated and gitignored:
 
 - `compiled/` is the compiled version of `src/`.
 - `dist-chrome/` and `dist-firefox/` contains production builds of the extension.
+
+The most important files:
+
+- `project.config.js` contains information about the whole project, all in one place. Other config files and build scripts read from it. For example, it maps entrypoint files in `src/` to output files in `compiled/`.
+- `rollup.config.js` defines how `compiled/` is made. Rollup compiles and bundles JavaScript; generates `manifest.json`, HTML files and SVG icons; copies the [WebExtension Polyfill], CSS files, and PNG icons; and defines a couple of global variables (see also `flow-typed/globals.js`).
+- `web-ext-config.js` configures [web-ext], both for building and for running in Firefox.
+- `custom.config.example.js` can be copied into `custom.config.js` to customize `web-ext run` as well as default options for development.
+- `src/manifest.js` is called via Rollup and generates `manifest.json`. In fact, all `.js` files directly inside `src/` are called via Rollup and generate other files.
+- `src/icons.js` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
+- `src/html.js` generates HTML files. All HTML files are very minimal. JavaScript is used to render content.
 
 Compilation pipeline:
 
@@ -53,39 +65,101 @@ src/ ---------------------> compiled/ ----------------------
                                                              '--> dist-firefox/
 ```
 
+Code structure:
+
+- `src/background/` contains the main code of the extension.
+- `src/worker/` is loaded into every frame of every tab and is responsible for listening to key presses and keeping track of clickable elements.
+- `src/renderer/` is loaded into the top frame of every tab and draws the link hints and text underlines.
+- `src/popup/` renders the toolbar button popup.
+- `src/options/` renders the options UI.
+- `src/shared/` contains functions and types shared by all of the above.
+
+All of the above directories, except `src/shared/`, have a `Program.js` file with a `Program` class inside. The different “programs” talk to each by exchanging messages with `src/background/`. The messages are defined in `src/shared/messages.js`. The `Program.js` files are bootstrapped from the `main.js` files next to them, which are the main entrypoints.
+
 ## Development
 
-When developing, you need to start a watcher (Rollup) that compiles the code
-as you change it:
+When developing, you need to start a watcher (Rollup) that compiles the code as you change it:
 
 ```
 npm run watch
 ```
 
-### Firefox
+It is recommended to set up [Flow], [ESLint] and [Prettier] integrations in your editor. You can also run these tools from the command line:
 
-```
-npm run firefox
-```
+- `npm run flow`
+- `npm run eslint`
+- `npm run prettier`
 
-That should open a new Firefox profile with Link Hints pre-installed and with
-auto-reloading.
+See `package.json` for details and additional scripts.
 
 ### Chrome
 
 1. Open `chrome://extensions`.
 2. Enable “Developer mode” there.
-3. Click “Load unpacked”
+3. Click “Load unpacked”.
 4. Choose the `compiled/` directory in this repo.
 
-Link Hints should now be installed. You need to press the refresh button after
-you make changes to the code.
+Link Hints should now be installed. You need to press the refresh button after you make changes to the code.
 
+It is recommended to mainly develop in Firefox since it automatically reloads when code is changed.
+
+### Firefox
+
+Open Firefox, with a new profile where Link Hints is pre-installed:
+
+```
+npm run firefox
+```
+
+The extension is automatically reloaded when files inside `compiled/` change.
+
+The above command is a wrapper around `web-ext run`. To customize how Firefox is run, copy `custom.config.example.js` to `custom.config.js`. The latter file is gitignored, so you can change it however you wish.
+
+## Installation
+
+If you want to install a locally built version of Link Hints, follow these instructions.
+
+### Chrome
+
+You can install Link Hints as an “unpacked” extension, as mentioned in the [Development](#development) section.
+
+However, for daily use you might not want to depend on the `compiled/` directory to always exist and contain correct files. For example, if you run `npm run build:firefox`, the `compiled/` directory will contain Firefox-specific code and won’t work in Chrome.
+
+The alternative is to pack the extension and install that.
+
+1. Run `npm run build:chrome`.
+2. Open `chrome://extensions`.
+3. Enable “Developer mode” there.
+4. Drag and drop `dist-chrome/link_hints-X.X.X.crx` into the page. (Note: `.crx`, not `.zip`.)
+
+Note: The first time you run `npm run build:chrome`, the file `dist-chrome/key.pem` is generated. Keep that file. Otherwise Chrome will install a duplicate Link Hints rather than update the previous version the next time you build and install.
+
+### Firefox
+
+Note: Regular Firefox does not allow installing _unsigned_ extensions. You can [sign the extension][sign] yourself, but it’s easier to use [Firefox Developer Edition] instead. (You can also use [Firefox Nightly] or [unbranded builds]).
+
+1. Run `npm run build:firefox`.
+2. Go to `about:config`.
+3. Set `xpinstall.signatures.required` to `false`. (Note: This does not work in regular Firefox – see above.)
+4. Go to `File > Open File…` or press `ctrl+O`.
+5. Choose `dist-firefox/link_hints-X.X.X.xpi`. (Note: `.xpi`, not `.zip`.)
+
+Note: If you regularly develop for Chrome, you might want to run `npm run build:firefox && npm run compile` instead of just `npm run build:firefox`. Otherwise your `compiled/` directory will contain Firefox-specific code that won’t work in Chrome. `npm run compile` is like `npm run watch` but it only runs once and does not start watching for changes.
+
+[chrome]: https://www.google.com/chrome/
+[chromium]: https://www.chromium.org
 [eslint]: https://eslint.org/
+[firefox developer edition]: https://www.mozilla.org/firefox/developer/
+[firefox nightly]: https://nightly.mozilla.org/
+[flow library definitions]: https://flow.org/en/docs/libdefs/creation/
 [flow]: https://flow.org/
+[inkscape]: https://inkscape.org/
 [node.js]: https://nodejs.org/
 [preact]: https://preactjs.com/
 [prettier]: https://prettier.io/
 [rollup]: https://rollupjs.org/
+[sign]: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Getting_started_with_web-ext#Signing_your_extension_for_self-distribution
 [sucrase]: https://github.com/alangpierce/sucrase
+[unbranded builds]: https://wiki.mozilla.org/Add-ons/Extension_Signing#Unbranded_Builds
 [web-ext]: https://github.com/mozilla/web-ext
+[webextension polyfill]: https://github.com/mozilla/webextension-polyfill
