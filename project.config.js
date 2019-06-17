@@ -2,7 +2,8 @@
 
 const currentBrowser = getBrowser();
 
-const ICON_SIZES = [16, 32, 48, 64, 96, 128, 256];
+const FAVICON_SIZES = [16, 32];
+const ICON_SIZES = [...FAVICON_SIZES, 48, 64, 96, 128, 256];
 
 const mainIcon = "icons/main.svg";
 
@@ -23,6 +24,7 @@ module.exports = {
     "icons/*.!(svg)",
     ...browserSpecificIgnores(currentBrowser),
   ],
+  faviconSizes: FAVICON_SIZES,
   mainIcon,
   icons: {
     svg: makeIcons("svg-$normal", ".svg"),
