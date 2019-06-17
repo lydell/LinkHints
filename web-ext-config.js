@@ -6,15 +6,16 @@ const config = require("./project.config");
 
 const customConfig = optionalRequire("./custom.config") || {};
 
-const {
-  webExt: applyCustomConfig = webExtConfig => webExtConfig,
-} = customConfig;
-
-module.exports = applyCustomConfig({
+module.exports = {
   sourceDir: config.compiled,
   artifactsDir: config.dist,
+  ignoreFiles: config.webextIgnoreFiles,
   build: {
     overwriteDest: true,
   },
-  ignoreFiles: config.webextIgnoreFiles,
-});
+  lint: {
+    warningsAsErrors: true,
+  },
+  run: customConfig.run || {},
+  sign: customConfig.sign || {},
+};
