@@ -1,6 +1,6 @@
 ---
 name: 3. Misplaced hint
-about: A hint appeard in a strange place.
+about: A hint appeared in a strange place.
 title: Misplaced hint on <INSERT SITE HERE>
 labels: misplaced hint
 assignees: ''
