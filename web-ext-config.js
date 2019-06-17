@@ -12,8 +12,7 @@ const {
 
 module.exports = applyCustomConfig({
   sourceDir: config.src,
-  artifactsDir:
-    config.browser == null ? config.dist : `${config.dist}-${config.browser}`,
+  artifactsDir: config.dist,
   build: {
     overwriteDest: true,
   },

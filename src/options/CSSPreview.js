@@ -104,14 +104,12 @@ export default class CSSPreview extends React.Component<Props, State> {
       highlighted = false,
       hidden = false,
     }: {|
-      /* eslint-disable react/require-default-props */
       left: number,
       top: number,
       matchedChars?: string,
       chars: string,
       highlighted?: boolean,
       hidden?: boolean,
-      /* eslint-enable react/require-default-props */
     |}) => {
       hintZIndex--;
       const hasMatchedChars = matchedChars !== "";

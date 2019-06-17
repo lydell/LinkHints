@@ -10,7 +10,7 @@ If you’d like to make a pull request, here’s what you need to know.
 
 Requirements:
 
-- [Node.js] 10 with npm 6.
+- [Node.js] 12 with npm 6.
 - Chrome or Chromium.
 - Firefox Developer Edition or Firefox Nightly.
 

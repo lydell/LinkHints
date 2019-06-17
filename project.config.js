@@ -17,7 +17,7 @@ module.exports = {
   },
   browser: currentBrowser,
   src: "src",
-  dist: "dist",
+  dist: currentBrowser == null ? "dist" : `dist-${currentBrowser}`,
   rimraf: "{src/compiled,src/icons/!(png-*|*.js)}",
   webextIgnoreFiles: [
     `*.js`,

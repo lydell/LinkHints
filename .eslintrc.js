@@ -16,36 +16,32 @@ module.exports = {
     es6: true,
     node: true,
   },
-  rules: Object.assign(
-    {},
-    baseRules({ flow: true, import: true, react: true }),
-    {
-      "babel/no-invalid-this": "error",
-      "import/no-restricted-paths": [
-        "error",
-        {
-          basePath: "src",
-          // Disallow these dirs from importing from each other.
-          zones: makeRestrictedPathsZones([
-            "background",
-            "options",
-            "popup",
-            "renderer",
-            "worker",
-          ]),
-        },
-      ],
-      "no-console": "error",
-      "no-invalid-this": "off",
-      "no-script-url": "off",
-      "prettier/prettier": "error",
-      "require-await": "error",
-      "react/require-default-props": "off",
-    }
-  ),
+  rules: {
+    ...baseRules({ flow: true, import: true, react: true }),
+    "babel/no-invalid-this": "error",
+    "import/no-restricted-paths": [
+      "error",
+      {
+        basePath: "src",
+        // Disallow these dirs from importing from each other.
+        zones: makeRestrictedPathsZones([
+          "background",
+          "options",
+          "popup",
+          "renderer",
+          "worker",
+        ]),
+      },
+    ],
+    "no-invalid-this": "off",
+    "no-script-url": "off",
+    "prettier/prettier": "error",
+    "require-await": "error",
+    "react/require-default-props": "off",
+  },
   overrides: [
     {
-      files: [".*.js", "*.config.js", "web-ext-*.js"],
+      files: [".*.js", "*.config.js", "web-ext-*.js", "scripts/*.js"],
       rules: {
         "flowtype/require-parameter-type": "off",
         "flowtype/require-return-type": "off",
@@ -54,12 +50,13 @@ module.exports = {
       },
     },
     {
-      files: ["src/*/**/*.js", "html/**/*.js"],
+      files: ["src/*/**/*.js"],
       env: {
         es6: true,
         node: false,
       },
-      globals: Object.assign({}, baseRules.browserEnv(), {
+      globals: {
+        ...baseRules.browserEnv(),
         BROWSER: false,
         BUILD_TIME: false,
         DEFAULT_LOG_LEVEL_CONFIG: false,
@@ -68,9 +65,21 @@ module.exports = {
         PROD: false,
         browser: false,
         navigator: false,
-      }),
+      },
       rules: {
+        "no-console": "error",
         "simple-import-sort/sort": "error",
+      },
+    },
+    {
+      files: ["html/**/*.js"],
+      env: {
+        es6: true,
+        node: false,
+      },
+      globals: baseRules.browserEnv(),
+      rules: {
+        "flowtype/require-parameter-type": "off",
       },
     },
   ],
