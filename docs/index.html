@@ -112,10 +112,12 @@
         display: flex;
         list-style: none;
         margin: 0;
+        --animation: FadeIn 500ms 1700ms ease-out backwards;
+        animation: var(--animation);
       }
 
       nav > ul > li {
-        width: calc(100% / 3);
+        width: calc(100% / 4);
       }
 
       nav > ul > li > a {
@@ -125,8 +127,6 @@
         padding: 0.75em;
         text-align: center;
         transition: background-color 200ms;
-        --animation: FadeIn 500ms 1700ms ease-out backwards;
-        animation: var(--animation);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-top: none;
         border-bottom: none;
@@ -143,6 +143,16 @@
         background-color: rgba(0, 0, 0, 0.2);
         outline: none;
         text-decoration: none;
+      }
+
+      @media (max-width: 44em) {
+        nav > ul > li:nth-child(3) {
+          display: none;
+        }
+
+        nav > ul > li {
+          width: calc(100% / 3);
+        }
       }
 
       @media (max-width: 31em) {
@@ -171,8 +181,10 @@
         padding: 0 3rem;
       }
 
-      .Container--noPadding {
-        padding: 0 !important;
+      @media (max-width: 55em) {
+        .Container--noPaddingSmall {
+          padding: 0 !important;
+        }
       }
 
       .Button {
@@ -873,15 +885,20 @@
     </header>
 
     <nav>
-      <ul class="Container Container--noPadding">
-        <li>
-          <a href="https://github.com/lydell/LinkHints/issues/new/choose"
-            ><span class="emoji">🐞</span> Report issue</a
-          >
-        </li>
+      <ul class="Container Container--noPaddingSmall">
         <li>
           <a href="https://github.com/lydell/LinkHints"
             ><span class="emoji">📦</span> GitHub</a
+          >
+        </li>
+        <li>
+          <a href="https://github.com/lydell/LinkHints/issues/1"
+            ><span class="emoji">📝</span> Changelog</a
+          >
+        </li>
+        <li>
+          <a href="https://github.com/lydell/LinkHints/issues/new/choose"
+            ><span class="emoji">🐞</span> Report issue</a
           >
         </li>
         <li>
