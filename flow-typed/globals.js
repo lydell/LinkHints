@@ -10,12 +10,11 @@ declare var DEFAULT_LOG_LEVEL_CONFIG: mixed;
 
 declare var DEFAULT_STORAGE_SYNC: mixed;
 
-declare var META_CONFIG: {|
-  version: string,
-  name: string,
-  author: string,
-  homepage: string,
-  icon: string,
-|};
+declare var META_HOMEPAGE: string;
+declare var META_ICON: string;
+declare var META_NAME: string;
+declare var META_SLUG: string;
+declare var META_TUTORIAL: string;
+declare var META_VERSION: string;
 
 declare var PROD: boolean;

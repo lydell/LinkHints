@@ -12,7 +12,7 @@ const config = require("../project.config");
 
 const BASE_DIR = path.join(__dirname, "..");
 const DIST = path.join(BASE_DIR, config.dist);
-const DIST_FILE_BASE = path.join(DIST, `link_hints-${config.meta.version}`);
+const DIST_FILE_BASE = path.join(DIST, config.meta.webExtBaseName);
 const ZIP_FILE = `${DIST_FILE_BASE}.zip`;
 const XPI_FILE = `${DIST_FILE_BASE}.xpi`;
 const CRX_FILE = `${DIST_FILE_BASE}.crx`;
@@ -94,7 +94,7 @@ Steps to reproduce this build:
 4. Output is now available in \`dist-firefox/\`.
 
 Commit: ${getGitCommit()}
-Repo: https://github.com/lydell/LinkHints
+Repo: ${config.meta.repo}
 
 [Node.js]: https://nodejs.org/
   `.trim();

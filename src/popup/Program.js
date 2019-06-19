@@ -8,7 +8,6 @@ import type {
 } from "../shared/messages";
 import React from "./static-react";
 
-const META = META_CONFIG;
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
@@ -91,11 +90,11 @@ export default class PopupProgram {
       <div id={CONTAINER_ID} className="Container">
         <div>
           <h1>
-            {META.name} {META.version}
+            {META_NAME} {META_VERSION}
           </h1>
 
           <p>
-            <a href={META.homepage}>Homepage</a>
+            <a href={META_HOMEPAGE}>Homepage</a>
           </p>
         </div>
 
@@ -182,7 +181,7 @@ async function getDebugInfo(): Promise<string> {
 
   const info = JSON.stringify(
     {
-      version: META.version,
+      version: META_VERSION,
       browser: BROWSER,
       userAgent: navigator.userAgent,
       browserInfo,

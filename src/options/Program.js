@@ -76,8 +76,6 @@ import Tweakable, {
   saveTweakable,
 } from "./Tweakable";
 
-const META = META_CONFIG;
-
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
   { name: "Font size", value: SUGGESTION_FONT_SIZE },
@@ -342,7 +340,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     saveFile(
       JSON.stringify(data, undefined, 2),
-      `LinkHints-options-${toISODateString(new Date())}.json`,
+      `${META_SLUG}-options-${toISODateString(new Date())}.json`,
       "application/json"
     );
   }
@@ -1204,17 +1202,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
           <div className="Paper">
             <div className="Branding">
               <img
-                src={browser.runtime.getURL(META.icon)}
+                src={browser.runtime.getURL(META_ICON)}
                 alt=""
                 className="Branding-image"
               />
               <div>
                 <p className="Branding-name">
-                  {META.name} {META.version}
+                  {META_NAME} {META_VERSION}
                 </p>
                 <p className="TextSmall">
                   <a
-                    href={META.homepage}
+                    href={META_HOMEPAGE}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

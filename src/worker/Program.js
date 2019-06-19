@@ -83,6 +83,8 @@ export default class WorkerProgram {
     );
     await this.elementManager.start();
 
+    this.markTutorial();
+
     // See `RendererProgram#start`.
     try {
       await browser.runtime.sendMessage(
@@ -710,6 +712,20 @@ export default class WorkerProgram {
         .filter(Boolean),
       rects,
     });
+  }
+
+  // Let the tutorial page know that Link Hints is installed, so it can toggle
+  // some content.
+  markTutorial() {
+    if (
+      window.location.origin + window.location.pathname === META_TUTORIAL ||
+      (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) != null)
+    ) {
+      const { documentElement } = document;
+      if (documentElement != null) {
+        documentElement.classList.add("is-installed");
+      }
+    }
   }
 }
 

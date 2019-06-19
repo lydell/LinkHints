@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="LinkHintsTutorial">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,8 +10,20 @@
       name="description"
       content="A tutorial for the Link Hints browser extension."
     />
+    <style>
+      html.is-installed .not-installed,
+      html:not(.is-installed) .installed {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <p>The tutorial isn’t done yet. Check back later!</p>
+    <div class="not-installed">
+      <p>You don’t seem to have installed Link Hints yet.</p>
+    </div>
+    <div class="installed">
+      <p>Thank you for installing Link Hints!</p>
+    </div>
   </body>
 </html>

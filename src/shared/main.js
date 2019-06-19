@@ -6,7 +6,7 @@ import { map, number, repr } from "tiny-decoders";
 // something goes wrong and a rogue container is left behind it's always
 // possible to find and remove it if the ID is known. Also, RendererProgram and
 // ElementManager might not get the same random number.
-export const CONTAINER_ID = "__LinkHintsWebExt";
+export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
@@ -41,7 +41,7 @@ export function log(level: LogLevel, ...args: Array<any>) {
   const method = getLogMethod(level);
   method.call(
     console,
-    "[LinkHints]",
+    `[${META_SLUG}]`,
     new Date().toISOString(),
     window.location.protocol.endsWith("-extension:")
       ? ""

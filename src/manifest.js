@@ -70,7 +70,7 @@ function getBrowserSpecificSettings(browser: ?Browser): mixed {
     default:
       return {
         gecko: {
-          id: `linkhints@lydell.github.io`,
+          id: config.meta.geckoId,
         },
       };
   }

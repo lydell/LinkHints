@@ -191,7 +191,12 @@ function makeGlobals() {
     ),
     DEFAULT_LOG_LEVEL_CONFIG: JSON.stringify(DEFAULT_LOG_LEVEL),
     DEFAULT_STORAGE_SYNC: JSON.stringify(DEFAULT_STORAGE_SYNC),
-    META_CONFIG: JSON.stringify(config.meta),
+    META_HOMEPAGE: JSON.stringify(config.meta.homepage),
+    META_ICON: JSON.stringify(config.meta.icon),
+    META_NAME: JSON.stringify(config.meta.name),
+    META_SLUG: JSON.stringify(config.meta.slug),
+    META_TUTORIAL: JSON.stringify(config.meta.tutorial),
+    META_VERSION: JSON.stringify(config.meta.version),
     PROD: JSON.stringify(PROD),
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the

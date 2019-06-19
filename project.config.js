@@ -1,20 +1,27 @@
 // @flow strict-local
 
-const currentBrowser = getBrowser();
+const VERSION = "0.0.0";
 
 const FAVICON_SIZES = [16, 32];
 const ICON_SIZES = [...FAVICON_SIZES, 48, 64, 96, 128, 256];
 
 const mainIcon = "icons/main.svg";
 
+const currentBrowser = getBrowser();
+
 module.exports = {
   meta: {
-    version: "0.0.0",
+    version: VERSION,
     name: "Link Hints",
+    slug: "LinkHints",
     author: "Simon Lydell",
     description: "Click with your keyboard.",
     homepage: "https://lydell.github.io/LinkHints",
+    tutorial: "https://lydell.github.io/LinkHints/tutorial.html",
+    repo: "https://github.com/lydell/LinkHints",
     icon: mainIcon,
+    webExtBaseName: `link_hints-${VERSION}`,
+    geckoId: "linkhints@lydell.github.io",
   },
   browser: currentBrowser,
   src: "src",
