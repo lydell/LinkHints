@@ -77,8 +77,6 @@ export default class Tweakable extends React.Component<Props, State> {
 
     return (
       <div>
-        <div />
-
         {before}
 
         {ALL_TWEAKABLES.map(([t, tMeta]) =>

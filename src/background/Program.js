@@ -181,6 +181,7 @@ export default class BackgroundProgram {
     };
 
     bind(this, [
+      [this.maybeOpenTutorial, { catch: true }],
       [this.maybeReopenOptions, { catch: true }],
       [this.onKeyboardShortcut, { catch: true }],
       [this.onMessage, { catch: true }],
@@ -242,6 +243,7 @@ export default class BackgroundProgram {
 
     browser.browserAction.setBadgeBackgroundColor({ color: BADGE_COLOR });
 
+    this.maybeOpenTutorial();
     this.maybeReopenOptions();
 
     // Firefox automatically loads content scripts into existing tabs, while
@@ -1933,6 +1935,17 @@ export default class BackgroundProgram {
       } else {
         browser.storage.local.remove("optionsPage");
       }
+    }
+  }
+
+  async maybeOpenTutorial() {
+    const { tutorialShown } = await browser.storage.local.get("tutorialShown");
+    if (tutorialShown !== true) {
+      await browser.tabs.create({
+        active: true,
+        url: META_TUTORIAL,
+      });
+      await browser.storage.local.set({ tutorialShown: true });
     }
   }
 

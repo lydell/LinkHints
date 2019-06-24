@@ -108,6 +108,7 @@ type State = {|
   expandedPerfTabIds: Array<string>,
   expandedPerf: boolean,
   expandedDebug: boolean,
+  localStorageCleared: ?Date,
 |};
 
 export default class OptionsProgram extends React.Component<Props, State> {
@@ -137,6 +138,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     expandedPerfTabIds: [],
     expandedPerf: false,
     expandedDebug: false,
+    localStorageCleared: undefined,
   };
 
   constructor(props: Props) {
@@ -145,6 +147,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     bind(this, [
       [this.onMessage, { catch: true }],
       [this.onScroll, { catch: true }],
+      [this.resetLocalStorage, { catch: true }],
       [this.restorePosition, { catch: true }],
       [this.savePerf, { catch: true }],
       [this.savePosition, { catch: true }],
@@ -345,6 +348,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
     );
   }
 
+  async resetLocalStorage() {
+    await browser.storage.local.clear();
+    this.setState({ localStorageCleared: new Date() });
+  }
+
   render() {
     const {
       options: optionsData,
@@ -359,6 +367,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       expandedPerfTabIds,
       expandedPerf,
       expandedDebug,
+      localStorageCleared,
     } = this.state;
 
     if (optionsData == null) {
@@ -1113,44 +1122,74 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   this.forceUpdate();
                 }}
                 before={
-                  <Field
-                    key="logLevel"
-                    id="logLevel"
-                    label="Log level"
-                    changed={options.logLevel !== defaults.logLevel}
-                    render={({ id }) => (
-                      <select
-                        id={id}
-                        value={options.logLevel}
-                        style={{ width: "50%" }}
-                        onChange={(
-                          event: SyntheticEvent<HTMLSelectElement>
-                        ) => {
-                          const { value } = event.currentTarget;
-                          try {
-                            const logLevel = decodeLogLevel(value);
-                            this.saveOptions({ logLevel });
-                          } catch (error) {
-                            log(
-                              "error",
-                              "OptionsProgram#render",
-                              "Failed to decode logLevel.",
-                              error
-                            );
-                          }
-                        }}
-                      >
-                        {Object.keys(LOG_LEVELS).map(level => (
-                          <option key={level} value={level}>
-                            {level.slice(0, 1).toUpperCase() + level.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    onReset={() => {
-                      this.saveOptions({ logLevel: defaults.logLevel });
-                    }}
-                  />
+                  <div>
+                    <div />
+
+                    <Field
+                      id="clearLocal"
+                      label="Local storage"
+                      changed={false}
+                      render={() => (
+                        <div className="Spaced Spaced--center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              this.resetLocalStorage();
+                            }}
+                          >
+                            Clear
+                          </button>
+                          {localStorageCleared != null && (
+                            <p>
+                              Last cleared:{" "}
+                              {localStorageCleared.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      onReset={() => {
+                        this.saveOptions({ logLevel: defaults.logLevel });
+                      }}
+                    />
+
+                    <Field
+                      id="logLevel"
+                      label="Log level"
+                      changed={options.logLevel !== defaults.logLevel}
+                      render={({ id }) => (
+                        <select
+                          id={id}
+                          value={options.logLevel}
+                          style={{ width: "50%" }}
+                          onChange={(
+                            event: SyntheticEvent<HTMLSelectElement>
+                          ) => {
+                            const { value } = event.currentTarget;
+                            try {
+                              const logLevel = decodeLogLevel(value);
+                              this.saveOptions({ logLevel });
+                            } catch (error) {
+                              log(
+                                "error",
+                                "OptionsProgram#render",
+                                "Failed to decode logLevel.",
+                                error
+                              );
+                            }
+                          }}
+                        >
+                          {Object.keys(LOG_LEVELS).map(level => (
+                            <option key={level} value={level}>
+                              {level.slice(0, 1).toUpperCase() + level.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      onReset={() => {
+                        this.saveOptions({ logLevel: defaults.logLevel });
+                      }}
+                    />
+                  </div>
                 }
               />
             </Details>
