@@ -1,0 +1,117 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+}
+
+html {
+  background-color: #f7f7f7;
+  color: black;
+  font-family: DejaVu Sans, Verdana, sans-serif;
+  line-height: 1.4;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  display: block;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
+  margin: 0;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+p {
+  margin: 0;
+}
+
+main > * {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+section > * + * {
+  margin-top: 1em;
+}
+
+a {
+  color: #2b4eed;
+  text-decoration: none;
+}
+
+a:hover,
+a:focus,
+a:active {
+  text-decoration: underline;
+}
+
+figure {
+  margin: 0;
+}
+
+figcaption {
+  text-align: center;
+  font-style: italic;
+  margin-top: 1em;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.615em;
+  padding: 0 0.308em;
+  border: 0.154em solid #767676;
+  border-radius: 0.231em;
+  background-color: white;
+  text-align: center;
+  font-size: 0.8125em;
+  font-family: inherit;
+  font-style: normal;
+  font-weight: normal;
+}
+
+.KeyboardShortcut {
+  white-space: nowrap;
+}
+
+.KeyboardShortcut > * + * {
+  margin-left: 1px;
+}
+
+.Container {
+  max-width: 61rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 3rem;
+}
+
+@media (max-width: 55em) {
+  .Container--noPaddingSmall {
+    padding: 0 !important;
+  }
+}
+
+.ToolbarButton,
+.ToolbarButtonDisabled {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-image: url("./keycap-logo.svg");
+  background-size: contain;
+}
+
+.ToolbarButtonDisabled {
+  background-image: url("./keycap-logo-disabled.svg");
+}

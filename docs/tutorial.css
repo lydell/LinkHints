@@ -1,0 +1,4 @@
+html.is-installed .not-installed,
+html:not(.is-installed) .installed {
+  display: none;
+}
