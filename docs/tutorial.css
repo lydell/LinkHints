@@ -2,3 +2,7 @@ html.is-installed .not-installed,
 html:not(.is-installed) .installed {
   display: none;
 }
+
+nav {
+    margin-top: 3rem;
+}
