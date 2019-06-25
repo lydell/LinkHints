@@ -665,7 +665,7 @@
       }
 
       .ToolbarButton,
-      .ToolbarButtonFaded {
+      .ToolbarButtonDisabled {
         display: inline-block;
         width: 1em;
         height: 1em;
@@ -673,8 +673,8 @@
         background-size: contain;
       }
 
-      .ToolbarButtonFaded {
-        opacity: 0.5;
+      .ToolbarButtonDisabled {
+        background-image: url("./keycap-logo-disabled.svg");
       }
 
       @media (min-width: 31.0625em) {
@@ -1150,7 +1150,7 @@
         <p>
           The Link Hints toolbar button is faded out to indicate this. Regular
           look: <span class="ToolbarButton"></span>. Faded:
-          <span class="ToolbarButtonFaded"></span>.
+          <span class="ToolbarButtonDisabled"></span>.
         </p>
         <p>Other possible reasons include:</p>
         <ul>

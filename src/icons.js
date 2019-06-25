@@ -335,10 +335,13 @@ function writeFileIfNeeded(filepath: string, content: string) {
   }
 }
 
+const OPTIONS_NORMAL = { opacity: 1 };
+const OPTIONS_DISABLED = { opacity: 0.5 };
+
 module.exports = () => {
   const all = [
-    [config.icons.svg, { opacity: 1 }],
-    [config.iconsDisabled.svg, { opacity: 0.5 }],
+    [config.icons.svg, OPTIONS_NORMAL],
+    [config.iconsDisabled.svg, OPTIONS_DISABLED],
   ];
 
   for (const [icons, options] of all) {
@@ -363,8 +366,15 @@ module.exports = () => {
     makeChecksumFile(checksum(mainIcon))
   );
 
-  writeFileIfNeeded("docs/keycap.svg", render(48, COLORS, { pointer: false }));
-  writeFileIfNeeded("docs/keycap-logo.svg", render(48, COLORS));
+  writeFileIfNeeded(
+    "docs/keycap.svg",
+    render(48, COLORS, { ...OPTIONS_NORMAL, pointer: false })
+  );
+  writeFileIfNeeded("docs/keycap-logo.svg", render(48, COLORS, OPTIONS_NORMAL));
+  writeFileIfNeeded(
+    "docs/keycap-logo-disabled.svg",
+    render(48, COLORS, OPTIONS_DISABLED)
+  );
 
   return mainIcon;
 };
