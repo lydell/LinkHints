@@ -255,8 +255,10 @@
         </li>
       </ul>
 
+      <div class="QuickLinks"></div>
+
       <section>
-        <h2>What is Link Hints?</h2>
+        <h2 id="what">What is Link Hints?</h2>
         <p>
           Link Hints is a browser extension that complements the built-in
           keyboard shortcuts with ones for clicking.
@@ -276,7 +278,7 @@
       </section>
 
       <section>
-        <h2>How is Link Hints different?</h2>
+        <h2 id="differences">How is Link Hints different?</h2>
         <p>
           Using hints to click links is not at all a new idea. What does Link
           Hints bring to the table?
@@ -294,7 +296,7 @@
       </section>
 
       <section>
-        <h2>How do I copy links?</h2>
+        <h2 id="copy-links">How do I copy links?</h2>
         <p>
           Use
           <span class="KeyboardShortcut"
@@ -329,7 +331,7 @@
       </section>
 
       <section>
-        <h2>Why doesn’t Link Hints work on some pages?</h2>
+        <h2 id="issues">Why doesn’t Link Hints work on some pages?</h2>
         <p>
           Browser extensions are not allowed to run on some pages, such as
           Chrome’s and Firefox’s extension stores, the New Tab page and internal
@@ -345,10 +347,10 @@
           <li>
             The web page area is not focused. The Link Hints shortcuts only work
             when the web page area is focused, not when the address bar or the
-            dev tools or any other part of the browser has focus. To move
-            focus back to the page, either click somewhere on the page with
-            the mouse, or press <kbd>F6</kbd> one or two times. This isn’t
-            ideal, but part of the limitations of browser extensions.
+            dev tools or any other part of the browser has focus. To move focus
+            back to the page, either click somewhere on the page with the mouse,
+            or press <kbd>F6</kbd> one or two times. This isn’t ideal, but part
+            of the limitations of browser extensions.
           </li>
           <li>You’re using Responsive Design Mode in Firefox.</li>
           <li>
@@ -362,7 +364,7 @@
       </section>
 
       <section>
-        <h2>Why don’t some elements get hints?</h2>
+        <h2 id="missing-hints">Why don’t some elements get hints?</h2>
         <p>Finding which elements should get hints is tricky business.</p>
         <p>
           First off, Link Hints need a clue from the site that an element is
@@ -401,7 +403,7 @@
       </section>
 
       <section>
-        <h2>
+        <h2 id="hint-does-nothing">
           Why don’t some hints do anything?
         </h2>
         <p>
@@ -456,7 +458,7 @@
       </section>
 
       <section>
-        <h2>
+        <h2 id="performance">
           Why is
           <span class="KeyboardShortcut"
             ><kbd>Alt</kbd><kbd>Shift</kbd><kbd>L</kbd></span
@@ -485,7 +487,7 @@
       </section>
 
       <section>
-        <h2>What is the story behind Link Hints?</h2>
+        <h2 id="story">What is the story behind Link Hints?</h2>
         <p>
           In 2013 <a href="Link Hints ">Simon Lydell</a> started contributing to
           the <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
@@ -549,6 +551,42 @@
           }
         });
       }
+
+      (function() {
+        var quickLinks = document.querySelector(".QuickLinks");
+        var ul = document.createElement("ul");
+        var map = new Map();
+        var intersectionObserver =
+          typeof IntersectionObserver !== "undefined"
+            ? new IntersectionObserver(
+                function(entries) {
+                  entries.forEach(function(entry) {
+                    var a = map.get(entry.target);
+                    if (a != null) {
+                      a.classList.toggle("is-visible", entry.isIntersecting);
+                    }
+                  });
+                },
+                { rootMargin: "-32px" }
+              )
+            : undefined;
+        [].forEach.call(document.querySelectorAll("section > h2"), function(
+          heading
+        ) {
+          var li = document.createElement("li");
+          var a = document.createElement("a");
+          var hash = "#" + heading.id;
+          a.href = hash;
+          a.textContent = hash;
+          li.appendChild(a);
+          ul.appendChild(li);
+          if (intersectionObserver != null) {
+            map.set(heading.parentNode, a);
+            intersectionObserver.observe(heading.parentNode);
+          }
+        });
+        quickLinks.appendChild(ul);
+      })();
     </script>
   </body>
 </html>

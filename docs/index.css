@@ -594,6 +594,37 @@ nav > ul > li > a:active {
   }
 }
 
+.QuickLinks > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 81em) {
+  .QuickLinks {
+    position: sticky;
+    top: 0;
+    width: 15vw;
+    transform: translateX(-100%);
+  }
+
+  .QuickLinks > ul {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 4rem 0;
+    padding-right: 1rem;
+  }
+
+  .QuickLinks a.is-visible {
+    font-weight: bold;
+  }
+}
+
 #note {
   background-color: #2b4eed;
   color: white;
