@@ -38,11 +38,6 @@ p {
   margin: 0;
 }
 
-main > * {
-  margin-top: 3rem;
-  margin-bottom: 3rem;
-}
-
 section > * + * {
   margin-top: 1em;
 }
@@ -88,19 +83,6 @@ kbd {
 
 .KeyboardShortcut > * + * {
   margin-left: 1px;
-}
-
-.Container {
-  max-width: 61rem;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 3rem;
-}
-
-@media (max-width: 55em) {
-  .Container--noPaddingSmall {
-    padding: 0 !important;
-  }
 }
 
 .ToolbarButton,
