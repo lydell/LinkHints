@@ -25,7 +25,8 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+code {
   font-family: DejaVu Sans Mono, Lucida Console, Andale Mono, monospace;
   margin: 0;
 }
@@ -51,6 +52,14 @@ a:hover,
 a:focus,
 a:active {
   text-decoration: underline;
+}
+
+code {
+  display: inline-block;
+  font-size: inherit;
+  background-color: #f7f7f7;
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
 }
 
 figure {
@@ -96,4 +105,23 @@ kbd {
 
 .ToolbarButtonDisabled {
   background-image: url("./keycap-logo-disabled.svg");
+}
+
+.Shortcuts {
+  padding: 0;
+  column-gap: 3rem;
+}
+
+.Shortcuts > li {
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.Shortcuts > li + li {
+  margin-top: 0.5em;
+}
+
+.Shortcuts > li > * + * {
+  margin-left: 0.5em;
 }

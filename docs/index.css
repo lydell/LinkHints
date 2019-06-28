@@ -537,23 +537,7 @@ nav > ul > li > a:active {
 }
 
 .Shortcuts {
-  padding: 0;
   columns: 2;
-  column-gap: 3rem;
-}
-
-.Shortcuts > li {
-  list-style: none;
-  display: flex;
-  align-items: center;
-}
-
-.Shortcuts > li + li {
-  margin-top: 0.5em;
-}
-
-.Shortcuts > li > * + * {
-  margin-left: 0.5em;
 }
 
 .Reasons {
