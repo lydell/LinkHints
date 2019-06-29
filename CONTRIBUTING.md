@@ -28,7 +28,7 @@ If you’d like to make a pull request, here’s what you need to know.
 - [ESLint] for linting.
 - [Prettier] for automatic code formatting.
 - [Sucrase] for compiling Flow type annotation and JSX.
-- [Preact] for easily making the options UI.
+- [Preact] for easily making the options UI and the website.
 - [WebExtension Polyfill] for using the `browser` API both in Chrome and Firefox.
 
 ## File overview
@@ -55,6 +55,7 @@ The most important files:
 - `src/manifest.js` is called via Rollup and generates `manifest.json`. In fact, all `.js` files directly inside `src/` are called via Rollup and generate other files.
 - `src/icons.js` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape] and [OptiPNG]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
 - `src/html.js` generates HTML files. All HTML files are very minimal. JavaScript is used to render content.
+- `src/css.js` injects the colors defined in `project.config.js` into CSS files.
 
 Compilation pipeline:
 
