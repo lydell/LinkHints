@@ -10,7 +10,7 @@ type Props = {
   open?: boolean,
   onChange?: boolean => void,
   className?: string,
-  // ...restProps passed on to the `<button>`.
+  ...
 };
 
 type State = {|
@@ -23,7 +23,7 @@ export default class ButtonsWithPopup extends React.Component<Props, State> {
   };
 
   resets: Resets = new Resets();
-  rootRef: { current: HTMLDivElement | null } = React.createRef();
+  rootRef: {| current: HTMLDivElement | null |} = React.createRef();
 
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { open = this.state.open } = this.props;

@@ -4,7 +4,7 @@ const config = require("../project.config");
 
 type IconsList = Array<[number, string]>;
 type Icons = {| svg: IconsList, png: IconsList |};
-type IconSizes = { [size: string]: string };
+type IconSizes = { [size: string]: string, ... };
 
 module.exports = () =>
   toJSON({
@@ -58,7 +58,7 @@ module.exports = () =>
     ],
   });
 
-function toJSON(obj: { [string]: mixed }): string {
+function toJSON(obj: { [string]: mixed, ... }): string {
   return JSON.stringify(obj, undefined, 2);
 }
 

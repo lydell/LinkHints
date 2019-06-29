@@ -57,8 +57,8 @@ type State = {|
 |};
 
 export default class CSSPreview extends React.Component<Props, State> {
-  containerRef: { current: HTMLDivElement | null } = React.createRef();
-  filterByText: { current: HTMLDivElement | null } = React.createRef();
+  containerRef: {| current: HTMLDivElement | null |} = React.createRef();
+  filterByText: {| current: HTMLDivElement | null |} = React.createRef();
 
   state = {
     textRects: [],

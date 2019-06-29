@@ -15,9 +15,9 @@ import Field from "./Field";
 import KeyboardShortcut, { hasShift } from "./KeyboardShortcut";
 
 type ShortcutError =
-  | { type: "UnrecognizedKey" }
-  | { type: "MissingModifier", shift: boolean }
-  | { type: "OtherShortcutConflict", otherMapping: KeyboardMapping };
+  | {| type: "UnrecognizedKey" |}
+  | {| type: "MissingModifier", shift: boolean |}
+  | {| type: "OtherShortcutConflict", otherMapping: KeyboardMapping |};
 
 type Props = {|
   id: string,

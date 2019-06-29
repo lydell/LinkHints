@@ -288,7 +288,7 @@ export function hasChangedTweakable(): boolean {
   );
 }
 
-export function getTweakableExport(): { [string]: mixed } {
+export function getTweakableExport(): { [string]: mixed, ... } {
   return []
     .concat(
       ...ALL_TWEAKABLES.map(([t, tMeta]) =>
@@ -314,7 +314,8 @@ export function getTweakableExport(): { [string]: mixed } {
 
 export function partitionTweakable(data: {
   +[string]: mixed,
-}): [{ [string]: mixed }, { [string]: mixed }] {
+  ...,
+}): [{ [string]: mixed, ... }, { [string]: mixed, ... }] {
   const tweakableData = {};
   const otherData = {};
 
@@ -329,7 +330,7 @@ export function partitionTweakable(data: {
   return [tweakableData, otherData];
 }
 
-export function saveTweakable(data: { [string]: mixed }): Promise<void> {
+export function saveTweakable(data: { [string]: mixed, ... }): Promise<void> {
   const [tweakableData] = partitionTweakable(data);
   return browser.storage.sync.set(tweakableData);
 }

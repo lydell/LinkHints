@@ -8,7 +8,7 @@ type Props = {
   label?: React.Node,
   content?: React.Node,
   children: React.Node,
-  // ...restProps
+  ...
 };
 
 export default function Attachment({

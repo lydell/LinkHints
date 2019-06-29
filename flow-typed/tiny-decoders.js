@@ -9,7 +9,7 @@ declare module "tiny-decoders" {
 
   declare export function mixedArray(value: mixed): $ReadOnlyArray<mixed>;
 
-  declare export function mixedDict(value: mixed): { +[string]: mixed };
+  declare export function mixedDict(value: mixed): {| +[string]: mixed |};
 
   declare export function constant<T: boolean | number | string | void | null>(
     constantValue: T
@@ -19,15 +19,15 @@ declare module "tiny-decoders" {
 
   declare export function dict<T>(
     decoder: (mixed) => T
-  ): mixed => { [string]: T };
+  ): mixed => {| [string]: T |};
 
   declare type ExtractDecoderType = <T, U>((mixed) => T | U) => T | U;
 
-  declare export function group<T: {}>(
+  declare export function group<T: { ... }>(
     mapping: T
   ): mixed => $ObjMap<T, ExtractDecoderType>;
 
-  declare export function record<T: {}>(
+  declare export function record<T: { ... }>(
     mapping: T
   ): mixed => $ObjMap<T, ExtractDecoderType>;
 

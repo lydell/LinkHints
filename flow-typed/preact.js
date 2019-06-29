@@ -1,8 +1,8 @@
 // @flow strict-local
 
 declare module "preact" {
-  declare module.exports: {
+  declare module.exports: {|
     ...$Exports<"react">,
     ...$Exports<"react-dom">,
-  };
+  |};
 }

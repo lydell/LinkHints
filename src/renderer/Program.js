@@ -286,7 +286,7 @@ export default class RendererProgram {
     }
   }
 
-  updateContainer(viewport: { +width: number, +height: number }) {
+  updateContainer(viewport: { +width: number, +height: number, ... }) {
     const container = this.container.element;
 
     setStyles(container, {
@@ -779,7 +779,10 @@ function getHintPosition({
   hint: string,
   hintMeasurements: HintMeasurements,
   viewport: Box,
-|}): {| styles: { [string]: string }, maybeOutsideHorizontally: boolean |} {
+|}): {|
+  styles: { [string]: string, ... },
+  maybeOutsideHorizontally: boolean,
+|} {
   const width = Math.ceil(
     hintSize.widthBase + hintSize.widthPerLetter * hint.length
   );

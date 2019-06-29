@@ -4,10 +4,11 @@ include_warnings=true
 
 [lints]
 all=error
-dynamic-export=off
+implicit-inexact-object=error
 unclear-type=off
 
 [strict]
+implicit-inexact-object
 sketchy-null
 sketchy-number
 untyped-type-import

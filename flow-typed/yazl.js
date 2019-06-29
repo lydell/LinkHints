@@ -12,7 +12,7 @@ declare module "yazl" {
     on(string, Function): void;
   }
 
-  declare module.exports: {
+  declare module.exports: {|
     ZipFile: typeof ZipFile,
-  };
+  |};
 }

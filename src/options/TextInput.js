@@ -15,7 +15,7 @@ type Props = {
   textarea: boolean,
   className: string,
   onKeyDown?: (SyntheticKeyboardEvent<HTMLInputElement>) => void,
-  // ...restProps
+  ...
 };
 
 type State = {|

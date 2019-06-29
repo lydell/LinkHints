@@ -51,7 +51,7 @@ export type Options = {|
 
 export type PartialOptions = $Shape<Options>;
 
-export type FlatOptions = { [string]: mixed };
+export type FlatOptions = { [string]: mixed, ... };
 
 export function makeOptionsDecoder(
   defaults: Options
@@ -111,9 +111,9 @@ export function makeOptionsDecoder(
 
 function separateKeyTranslationsAndErrors(
   name: string,
-  keyTranslationsWithErrors: { [string]: KeyPair | TypeError }
-): [{ [string]: KeyPair }, Array<[string, Error]>] {
-  const keyTranslations: { [string]: KeyPair } = {};
+  keyTranslationsWithErrors: { [string]: KeyPair | TypeError, ... }
+): [{ [string]: KeyPair, ... }, Array<[string, Error]>] {
+  const keyTranslations: { [string]: KeyPair, ... } = {};
   const errors: Array<[string, Error]> = [];
 
   for (const key of Object.keys(keyTranslationsWithErrors)) {
@@ -387,7 +387,7 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
 
 type ExtractDecoderType = <T, U>((mixed) => T | U) => T | U;
 
-function recordWithDefaultsAndErrors<T: {}>(
+function recordWithDefaultsAndErrors<T: { ... }>(
   defaults: $ObjMap<T, ExtractDecoderType>,
   mapping: T
 ): mixed => [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
@@ -435,10 +435,10 @@ function arrayWithErrors<T>(
 // This also ignores `null` values.
 export function dictWithErrors<T>(
   decoder: mixed => T
-): mixed => { [string]: T | TypeError } {
+): mixed => { [string]: T | TypeError, ... } {
   return function dictWithErrorsDecoder(
     value: mixed
-  ): { [string]: T | TypeError } {
+  ): { [string]: T | TypeError, ... } {
     const obj = mixedDict(value);
     const keys = Object.keys(obj);
     const result = {};

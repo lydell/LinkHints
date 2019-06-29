@@ -204,7 +204,7 @@ function render(
 const React = {
   createElement(
     tag: string,
-    attributes: ?{ [key: string]: string },
+    attributes: ?{ [key: string]: string, ... },
     ...nestedChildren: Array<?(string | boolean | Array<?(string | boolean)>)>
   ): string {
     const children = []

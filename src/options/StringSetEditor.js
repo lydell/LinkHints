@@ -6,11 +6,11 @@ import TextInput from "./TextInput";
 
 type Reason = "input" | "blur";
 
-type Props = {
+type Props = {|
   savedValue: Set<string>,
   save: (Set<string>, Reason) => void,
   id?: string,
-};
+|};
 
 type State = {|
   value: Array<string> | void,

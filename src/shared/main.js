@@ -96,7 +96,7 @@ Example:
     }
 */
 export function bind(
-  object: { [string]: mixed },
+  object: { [string]: mixed, ... },
   methods: Array<Method | [Method, {| log?: boolean, catch?: boolean |}]>
 ) {
   for (const item of methods) {
@@ -150,7 +150,7 @@ export function addEventListener(
   target: EventTarget,
   eventName: string,
   listener: Function,
-  options: { [string]: mixed } = {}
+  options: { [string]: mixed, ... } = {}
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
   target.addEventListener(eventName, listener, fullOptions);
@@ -163,6 +163,7 @@ export function addListener<Listener, Options>(
   target: {
     addListener: (Listener, options?: Options) => void,
     removeListener: Listener => void,
+    ...
   },
   listener: Listener,
   options?: Options
@@ -296,7 +297,10 @@ export function getViewport(): Box {
   };
 }
 
-export function setStyles(element: HTMLElement, styles: { [string]: string }) {
+export function setStyles(
+  element: HTMLElement,
+  styles: { [string]: string, ... }
+) {
   for (const [property, value] of Object.entries(styles)) {
     // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
@@ -397,7 +401,7 @@ export function getTextRects({
 }
 
 export function classlist(
-  ...args: Array<string | { [string]: boolean }>
+  ...args: Array<string | { [string]: boolean, ... }>
 ): string {
   return []
     .concat(

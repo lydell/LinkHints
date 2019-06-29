@@ -61,7 +61,7 @@ export const decodePerf: mixed => Perf = array(
   })
 );
 
-export type TabsPerf = { [tabId: string]: Perf };
+export type TabsPerf = { [tabId: string]: Perf, ... };
 
 export const decodeTabsPerf: mixed => TabsPerf = dict(decodePerf);
 

@@ -7,6 +7,7 @@ const React = {
       className?: ?string,
       onClick?: ?(MouseEvent<HTMLElement>) => mixed,
       [string]: ?string,
+      ...
     },
     ...children: Array<?(string | HTMLElement | boolean)>
   ): HTMLElement {

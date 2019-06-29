@@ -2137,7 +2137,7 @@ async function getCurrentTab(): Promise<Tab> {
 
 type IconType = "normal" | "disabled";
 
-function getIcons(type: IconType): { [string]: string } {
+function getIcons(type: IconType): { [string]: string, ... } {
   const manifest = browser.runtime.getManifest();
   return Object.entries(manifest.browser_action.default_icon).reduce(
     (result, [key, value]) => {

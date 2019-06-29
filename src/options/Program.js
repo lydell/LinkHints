@@ -114,7 +114,7 @@ type State = {|
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets = new Resets();
   hiddenErrors: Array<string> = [];
-  keysTableRef: { current: HTMLDivElement | null } = React.createRef();
+  keysTableRef: {| current: HTMLDivElement | null |} = React.createRef();
   hasRestoredPosition: boolean = false;
 
   state = {

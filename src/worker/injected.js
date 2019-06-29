@@ -92,7 +92,7 @@ export default () => {
     consoleLogError(`[${META_SLUG}]`, ...args);
   }
 
-  type Deadline = { timeRemaining: () => number };
+  type Deadline = { timeRemaining: () => number, ... };
 
   const infiniteDeadline: Deadline = {
     timeRemaining: () => Infinity,
@@ -125,7 +125,7 @@ export default () => {
     // 2. We don't want developers to see strange things in the console when
     //    they debug stuff.
     hookInto(
-      obj: { [string]: mixed },
+      obj: { [string]: mixed, ... },
       name: string,
       hook: ?Function = undefined
     ) {
@@ -212,7 +212,11 @@ export default () => {
     }
   }
 
-  function logHookError(error: Error, obj: { [string]: mixed }, name: string) {
+  function logHookError(
+    error: Error,
+    obj: { [string]: mixed, ... },
+    name: string
+  ) {
     logError(`Failed to run hook for ${name} on`, obj, error);
   }
 

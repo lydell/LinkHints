@@ -188,12 +188,12 @@ export const t = {
 
 export const tMeta = tweakable("ElementManager", t);
 
-type Record = {
+type Record = {|
   addedNodes: Array<Node>,
   removedNodes: Array<Node>,
   attributeName: ?string,
   target: Node,
-};
+|};
 
 type QueueItem =
   | {|
@@ -234,7 +234,7 @@ const PROBE_STYLES = {
   height: "1px",
 };
 
-type Deadline = { timeRemaining: () => number };
+type Deadline = { timeRemaining: () => number, ... };
 
 const infiniteDeadline: Deadline = {
   timeRemaining: () => Infinity,
@@ -391,7 +391,7 @@ export default class ElementManager {
 
   queueRecords(
     records: Array<MutationRecord> | Array<Record>,
-    { removalsOnly = false }: { removalsOnly?: boolean } = {}
+    { removalsOnly = false }: {| removalsOnly?: boolean |} = {}
   ) {
     this.queueItem({
       type: "Records",
