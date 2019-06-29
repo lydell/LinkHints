@@ -19,18 +19,16 @@ import {
   SUGGESTION_VIMIUM,
 } from "../shared/css";
 import {
-  type KeyPair,
-  type KeyTranslations,
   type KeyboardMapping,
+  type KeyPair,
   type Keypress,
+  type KeyTranslations,
   type NormalizedKeypress,
   isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
-  LOG_LEVELS,
-  Resets,
   addEventListener,
   addListener,
   bind,
@@ -38,7 +36,9 @@ import {
   decodeLogLevel,
   deepEqual,
   log,
+  LOG_LEVELS,
   normalizeUnsignedInt,
+  Resets,
   unreachable,
 } from "../shared/main";
 import type {

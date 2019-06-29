@@ -2,7 +2,7 @@
 
 import * as React from "preact";
 
-import { Resets, addEventListener, classlist } from "../shared/main";
+import { addEventListener, classlist, Resets } from "../shared/main";
 
 type Props = {
   buttonContent: React.Node,

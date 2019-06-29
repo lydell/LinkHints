@@ -211,10 +211,13 @@ const React = {
       .concat(...nestedChildren)
       .map(child => (typeof child === "string" ? child : undefined))
       .filter(Boolean);
-    const attributesString = Object.entries(attributes)
-      .filter(([key]) => !key.startsWith("__"))
-      .map(([key, value]) => `${key}="${String(value)}"`)
-      .join(" ");
+    const attributesString =
+      attributes != null
+        ? Object.entries(attributes)
+            .filter(([key]) => !key.startsWith("__"))
+            .map(([key, value]) => `${key}="${String(value)}"`)
+            .join(" ")
+        : "";
     return [
       "<",
       tag,

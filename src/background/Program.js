@@ -19,13 +19,13 @@ import {
   type NormalizedKeypress,
 } from "../shared/keyboard";
 import {
-  Resets,
   addListener,
   bind,
   isMixedCase,
   log,
   makeRandomToken,
   partition,
+  Resets,
   splitEnteredText,
   unreachable,
 } from "../shared/main";
@@ -54,9 +54,9 @@ import {
   type Perf,
   type Stats,
   type TabsPerf,
+  decodeTabsPerf,
   MAX_PERF_ENTRIES,
   TimeTracker,
-  decodeTabsPerf,
 } from "../shared/perf";
 import { tweakable, unsignedInt } from "../shared/tweakable";
 

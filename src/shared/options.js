@@ -11,22 +11,22 @@ import {
 } from "tiny-decoders";
 
 import {
+  type KeyboardMapping,
   type KeyPair,
   type KeyTranslations,
-  type KeyboardMapping,
-  EN_US_QWERTY_TRANSLATIONS,
-  decodeKeyPair,
   decodeKeyboardMapping,
   decodeKeyboardMappingWithModifiers,
+  decodeKeyPair,
   deserializeShortcut,
+  EN_US_QWERTY_TRANSLATIONS,
   serializeShortcut,
 } from "./keyboard";
 import {
   type LogLevel,
-  DEFAULT_LOG_LEVEL,
   decodeLogLevel,
   decodeUnsignedInt,
   deepEqual,
+  DEFAULT_LOG_LEVEL,
 } from "./main";
 
 export type OptionsData = {|

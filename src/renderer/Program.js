@@ -24,13 +24,13 @@ import type {
 } from "../shared/hints";
 import {
   type Box,
-  CONTAINER_ID,
-  Resets,
   addEventListener,
   addListener,
   bind,
+  CONTAINER_ID,
   getViewport,
   log,
+  Resets,
   setStyles,
   unreachable,
   waitForPaint,

@@ -7,22 +7,22 @@ import {
   type VisibleElement,
 } from "../shared/hints";
 import {
-  type KeyTranslations,
   type KeyboardMapping,
   type KeyboardMode,
+  type KeyTranslations,
   isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
   type Box,
-  Resets,
   addEventListener,
   addListener,
   bind,
   getTextRects,
   getViewport,
   log,
+  Resets,
   unreachable,
 } from "../shared/main";
 import type {
@@ -31,8 +31,8 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
-import ElementManager from "./ElementManager";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
+import ElementManager from "./ElementManager";
 
 type CurrentElements = {|
   elements: Array<VisibleElement>,

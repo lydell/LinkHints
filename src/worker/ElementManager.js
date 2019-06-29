@@ -9,12 +9,12 @@ import type {
 } from "../shared/hints";
 import {
   type Box,
-  Resets,
   addEventListener,
   bind,
   getVisibleBox,
   log,
   partition,
+  Resets,
   setStyles,
   unreachable,
   walkTextNodes,

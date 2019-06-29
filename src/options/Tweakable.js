@@ -12,11 +12,11 @@ import {
 } from "../background/Program";
 import { t as tRenderer, tMeta as tMetaRenderer } from "../renderer/Program";
 import {
-  Resets,
   addListener,
   log,
   normalizeUnsignedFloat,
   normalizeUnsignedInt,
+  Resets,
   unreachable,
 } from "../shared/main";
 import { DEBUG_PREFIX } from "../shared/options";

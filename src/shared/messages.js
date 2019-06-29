@@ -7,10 +7,10 @@ import type {
   HintUpdate,
 } from "./hints";
 import type {
-  KeyTranslations,
   KeyboardAction,
   KeyboardMapping,
   KeyboardMode,
+  KeyTranslations,
   NormalizedKeypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";

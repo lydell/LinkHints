@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { Resets, addListener, bind, log, unreachable } from "../shared/main";
+import { addListener, bind, log, Resets, unreachable } from "../shared/main";
 import type {
   FromBackground,
   FromPopup,
