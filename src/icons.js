@@ -6,12 +6,13 @@
 // to appear in Firefox when running `npm start` due to a hacky cache busting
 // technique.
 
-const fs = require("fs");
-const crypto = require("crypto");
+import crypto from "crypto";
+import fs from "fs";
+import fsExtra from "fs-extra";
+import React from "preact";
+import renderToString from "preact-render-to-string";
 
-const fsExtra = require("fs-extra");
-
-const config = require("../project.config");
+import config from "../project.config";
 
 type Point = [number, number];
 
@@ -22,14 +23,14 @@ type Colors = {|
 |};
 
 const COLORS = {
-  pointer: "#323234",
+  pointer: config.colors.badge,
   edges: "#bebebe",
   surface: "#ddd",
 };
 
 const BACKGROUND_COLORS = {
   light: "#f5f6f7",
-  dark: "#323234",
+  dark: config.colors.badge,
 };
 
 // start
@@ -166,7 +167,7 @@ function render(
   const edgesRadius = integer(Math.max(2, size * (1 / 12)));
   const surfaceRadius = integer(Math.max(2, size * (1 / 16)));
 
-  return (
+  return renderToString(
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox={`0 0 ${size} ${size}`}
@@ -197,46 +198,10 @@ function render(
         )}
         {shouldDrawPointer && sparks}
       </g>
-    </svg>
+    </svg>,
+    undefined,
+    { xml: true }
   );
-}
-
-const React = {
-  createElement(
-    tag: string,
-    attributes: ?{ [key: string]: string, ... },
-    ...nestedChildren: Array<?(string | boolean | Array<?(string | boolean)>)>
-  ): string {
-    const children = []
-      .concat(...nestedChildren)
-      .map(child => (typeof child === "string" ? child : undefined))
-      .filter(Boolean);
-    const attributesString =
-      attributes != null
-        ? Object.entries(attributes)
-            .filter(([key]) => !key.startsWith("__"))
-            .map(([key, value]) => `${key}="${String(value)}"`)
-            .join(" ")
-        : "";
-    return [
-      "<",
-      tag,
-      ...(attributesString === "" ? [] : [" ", attributesString]),
-      ...(children.length === 0
-        ? [" />"]
-        : [
-            ">\n",
-            ...children.map(child => `${indent(child)}\n`),
-            "</",
-            tag,
-            ">",
-          ]),
-    ].join("");
-  },
-};
-
-function indent(string: string): string {
-  return string.replace(/^(?!$)/gm, "  ");
 }
 
 function float(number: number): string {
@@ -290,7 +255,7 @@ function renderTestPage() {
       <head>
         <meta charset="utf-8" />
         <title>Icons</title>
-        <style>{testStyles}</style>
+        <style dangerouslySetInnerHTML={{ __html: testStyles }} />
       </head>
       <body>
         {variations.map(([icons, color]) => (
@@ -304,12 +269,12 @@ function renderTestPage() {
               ))}
           </div>
         ))}
-        <script>{testScript}</script>
+        <script dangerouslySetInnerHTML={{ __html: testScript }} />
       </body>
     </html>
   );
 
-  return `<!doctype html>\n${doc}`;
+  return `<!DOCTYPE html>${renderToString(doc)}`;
 }
 
 function checksum(string: string): string {
@@ -340,8 +305,9 @@ function writeFileIfNeeded(filepath: string, content: string) {
 
 const OPTIONS_NORMAL = { opacity: 1 };
 const OPTIONS_DISABLED = { opacity: 0.5 };
+const KEYCAP_SIZE = 48;
 
-module.exports = () => {
+export default () => {
   const all = [
     [config.icons.svg, OPTIONS_NORMAL],
     [config.iconsDisabled.svg, OPTIONS_DISABLED],
@@ -370,13 +336,16 @@ module.exports = () => {
   );
 
   writeFileIfNeeded(
-    "docs/keycap.svg",
-    render(48, COLORS, { ...OPTIONS_NORMAL, pointer: false })
+    `${config.docs.compiled}/${config.docs.iconsDir}/${config.docs.icons.keycap}`,
+    render(KEYCAP_SIZE, COLORS, { ...OPTIONS_NORMAL, pointer: false })
   );
-  writeFileIfNeeded("docs/keycap-logo.svg", render(48, COLORS, OPTIONS_NORMAL));
   writeFileIfNeeded(
-    "docs/keycap-logo-disabled.svg",
-    render(48, COLORS, OPTIONS_DISABLED)
+    `${config.docs.compiled}/${config.docs.iconsDir}/${config.docs.icons.icon}`,
+    render(KEYCAP_SIZE, COLORS, OPTIONS_NORMAL)
+  );
+  writeFileIfNeeded(
+    `${config.docs.compiled}/${config.docs.iconsDir}/${config.docs.icons.iconDisabled}`,
+    render(KEYCAP_SIZE, COLORS, OPTIONS_DISABLED)
   );
 
   return mainIcon;

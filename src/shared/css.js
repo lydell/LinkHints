@@ -17,12 +17,6 @@ export const MAX_Z_INDEX = 2147483647;
 
 export const SHRUGGIE = "¯\\_(ツ)_/¯";
 
-const GREEN = "lime";
-// The purple used in Firefox for findbar "Highlight all" matches.
-const PURPLE = "#ef0fff";
-// The yellow used in Chrome for findbar matches.
-const YELLOW = "#f6ff00";
-
 export const CONTAINER_STYLES = {
   all: "unset",
   position: "fixed",
@@ -44,7 +38,7 @@ export const CSS = `
   font-size: 12px;
   padding: 2px;
   color: black;
-  background-color: ${YELLOW};
+  background-color: ${COLOR_YELLOW};
   border: solid 1px rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
   font-weight: bold;
@@ -52,7 +46,7 @@ export const CSS = `
 }
 
 .${HIGHLIGHTED_HINT_CLASS} {
-  background-color: ${GREEN};
+  background-color: ${COLOR_GREEN};
 }
 
 .${MATCHED_CHARS_CLASS} {
@@ -60,7 +54,7 @@ export const CSS = `
 }
 
 .${TEXT_RECT_CLASS} {
-  border-bottom: 2px solid ${PURPLE};
+  border-bottom: 2px solid ${COLOR_PURPLE};
   box-sizing: border-box;
 }
 

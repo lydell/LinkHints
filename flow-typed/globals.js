@@ -6,6 +6,11 @@ declare var BROWSER: Browser;
 
 declare var BUILD_ID: string;
 
+declare var COLOR_BADGE: string;
+declare var COLOR_GREEN: string;
+declare var COLOR_PURPLE: string;
+declare var COLOR_YELLOW: string;
+
 declare var DEFAULT_LOG_LEVEL_CONFIG: mixed;
 
 declare var DEFAULT_STORAGE_SYNC: mixed;

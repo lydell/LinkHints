@@ -49,7 +49,7 @@ h3 {
 
 .Button {
   display: inline-block;
-  background-color: #2b4eed;
+  background-color: blue;
   color: white;
   font-weight: bold;
   padding: 0.75em 2.5em;
@@ -81,7 +81,7 @@ h3 {
 }
 
 .Info {
-  background-color: #f7f7f7;
+  background-color: lightgrey;
   padding: 1.5rem;
 }
 
@@ -109,6 +109,10 @@ h3 {
 
 .Pagination a:focus::after {
   content: "]";
+}
+
+.Pagination a + a {
+  margin-left: 0.4375em;
 }
 
 .Choices button {
@@ -146,11 +150,12 @@ h3 {
   transform: translate(-50%, -50%) translateY(-0.125em) rotate(45deg);
 }
 
-.Salad input {
-  transform: scale(1.5);
+.Choices > button + button {
+  margin-left: 1em;
 }
 
 .Salad label {
+  margin-left: 0.5em;
   margin-right: 2em;
 }
 
@@ -286,7 +291,7 @@ h3 {
 
   .Step:target > a::after,
   .Step:target ~ .Step > a {
-    color: #bbb;
+    color: grey;
   }
 
   .Step > a:hover::before,

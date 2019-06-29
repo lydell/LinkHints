@@ -1,8 +1,8 @@
 // @flow strict-local
 
-const spawn = require("cross-spawn");
+import spawn from "cross-spawn";
 
-const config = require("../project.config");
+import config from "../project.config";
 
 function run() {
   for (const icons of [config.icons, config.iconsDisabled]) {
@@ -12,11 +12,11 @@ function run() {
     }
   }
 
-  const faviconSources = config.icons.svg.filter(([size]) =>
-    config.faviconSizes.includes(size)
-  );
-  for (const [size, svg] of faviconSources) {
-    svgToPng(`${config.compiled}/${svg}`, `docs/favicon-${size}.png`);
+  for (const { input, output } of config.docs.favicons) {
+    svgToPng(
+      `${config.compiled}/${input}`,
+      `${config.docs.src}/${config.docs.iconsDir}/${output}`
+    );
   }
 }
 

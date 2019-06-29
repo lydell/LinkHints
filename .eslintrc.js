@@ -36,8 +36,10 @@ module.exports = {
     "no-invalid-this": "off",
     "no-script-url": "off",
     "prettier/prettier": "error",
-    "require-await": "error",
     "react/require-default-props": "off",
+    "react/self-closing-comp": "error",
+    "require-await": "error",
+    "simple-import-sort/sort": "error",
   },
   overrides: [
     {
@@ -46,7 +48,6 @@ module.exports = {
         "flowtype/require-parameter-type": "off",
         "flowtype/require-return-type": "off",
         "flowtype/require-valid-file-annotation": "off",
-        "import/order": ["error", { "newlines-between": "always" }],
       },
     },
     {
@@ -60,6 +61,10 @@ module.exports = {
         BROWSER: false,
         browser: false,
         BUILD_ID: false,
+        COLOR_BADGE: false,
+        COLOR_GREEN: false,
+        COLOR_PURPLE: false,
+        COLOR_YELLOW: false,
         DEFAULT_LOG_LEVEL_CONFIG: false,
         DEFAULT_STORAGE_SYNC: false,
         META_HOMEPAGE: false,
@@ -73,7 +78,28 @@ module.exports = {
       },
       rules: {
         "no-console": "error",
-        "simple-import-sort/sort": "error",
+      },
+    },
+    {
+      files: ["*.es5.js"],
+      parser: "espree",
+      parserOptions: { ecmaVersion: 5 },
+      env: {
+        es6: false,
+        node: false,
+      },
+      globals: baseRules.browserEnv(),
+      rules: {
+        "flowtype/require-parameter-type": "off",
+        "no-implicit-globals": "off",
+        "no-var": "off",
+        "object-shorthand": "off",
+        "prefer-const": "off",
+        "prefer-destructuring": "off",
+        "prefer-rest-params": "off",
+        "prefer-spread": "off",
+        "prefer-template": "off",
+        strict: "off",
       },
     },
     {

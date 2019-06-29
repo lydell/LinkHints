@@ -6,7 +6,7 @@
 }
 
 html {
-  background-color: #f7f7f7;
+  background-color: lightgrey;
   color: black;
   font-family: DejaVu Sans, Verdana, sans-serif;
   line-height: 1.4;
@@ -35,6 +35,20 @@ h2 {
   font-size: 2rem;
 }
 
+h2 > a {
+  position: relative;
+}
+
+h2 > a:not(:hover):not(:focus):not(:active) {
+  color: inherit;
+}
+
+h2 > a:hover::after,
+h2 > a:focus::after,
+h2 > a:active::after {
+  content: " #";
+}
+
 p {
   margin: 0;
 }
@@ -44,7 +58,7 @@ section > * + * {
 }
 
 a {
-  color: #2b4eed;
+  color: blue;
   text-decoration: none;
 }
 
@@ -57,7 +71,7 @@ a:active {
 code {
   display: inline-block;
   font-size: inherit;
-  background-color: #f7f7f7;
+  background-color: lightgrey;
   padding: 0.125em 0.25em;
   border-radius: 0.25em;
 }
@@ -76,7 +90,7 @@ kbd {
   display: inline-block;
   min-width: 1.615em;
   padding: 0 0.308em;
-  border: 0.154em solid #767676;
+  border: 0.154em solid darkgrey;
   border-radius: 0.231em;
   background-color: white;
   text-align: center;
@@ -99,12 +113,12 @@ kbd {
   display: inline-block;
   width: 1em;
   height: 1em;
-  background-image: url("./keycap-logo.svg");
+  background-image: url(icon);
   background-size: contain;
 }
 
 .ToolbarButtonDisabled {
-  background-image: url("./keycap-logo-disabled.svg");
+  background-image: url(iconDisabled);
 }
 
 .Shortcuts {

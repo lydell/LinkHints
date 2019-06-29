@@ -1,6 +1,9 @@
 // @flow strict-local
 
-module.exports = ({
+import React from "preact";
+import renderToString from "preact-render-to-string";
+
+export default ({
   title,
   polyfill,
   js,
@@ -10,18 +13,23 @@ module.exports = ({
   polyfill: ?string,
   js: Array<string>,
   css: Array<string>,
-|}) =>
-  `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>${title}</title>
-    ${css.map(href => `<link rel="stylesheet" href="${href}">`).join("\n    ")}
-  </head>
-  <body>
-    ${polyfill == null ? "" : `<script src="${polyfill}"></script>`}
-    ${js.map(src => `<script src="${src}"></script>`).join("\n    ")}
-  </body>
-</html>
-  `.trim();
+|}) => {
+  const doc = (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>{title}</title>
+        {css.map(href => (
+          <link key={href} rel="stylesheet" href={href} />
+        ))}
+      </head>
+      <body>
+        {polyfill != null && <script src={polyfill} />}
+        {js.map(src => (
+          <script key={src} src={src} />
+        ))}
+      </body>
+    </html>
+  );
+  return `<!DOCTYPE html>${renderToString(doc)}`;
+};

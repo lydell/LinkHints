@@ -37,12 +37,13 @@ If you’d like to make a pull request, here’s what you need to know.
 - `src/` contains the source code for the extension.
 - `scripts/` contains a couple of build scripts.
 - `html/` contains lots of test pages for the extension.
-- `docs/` is served on <https://lydell.github.io/LinkHints/>.
+- `docs/` contains the source code for the website (<https://lydell.github.io/LinkHints/>).
 - `flow-typed/` contains [Flow library definitions].
 
 These directories are generated and gitignored:
 
 - `compiled/` is the compiled version of `src/`.
+- `compiled-docs/` is the compiled version of `docs/` and is served on <https://lydell.github.io/LinkHints/>.
 - `dist-chrome/` and `dist-firefox/` contains production builds of the extension.
 
 The most important files:
@@ -114,6 +115,10 @@ npm run firefox
 The extension is automatically reloaded when files inside `compiled/` change.
 
 The above command is a wrapper around `web-ext run`. To customize how Firefox is run, copy `custom.config.example.js` to `custom.config.js`. The latter file is gitignored, so you can change it however you wish.
+
+### Website
+
+Open `compiled-docs/index.html` in a browser.
 
 ## Installation
 

@@ -1,14 +1,13 @@
 // @flow strict-local
 
-const path = require("path");
-const fs = require("fs");
+import spawn from "cross-spawn";
+import crx3 from "crx3";
+import fs from "fs";
+import path from "path";
+import readdirp from "readdirp";
+import { ZipFile } from "yazl";
 
-const spawn = require("cross-spawn");
-const crx3 = require("crx3");
-const { ZipFile } = require("yazl");
-const readdirp = require("readdirp");
-
-const config = require("../project.config");
+import config from "../project.config";
 
 const BASE_DIR = path.join(__dirname, "..");
 const DIST = path.join(BASE_DIR, config.dist);
@@ -51,6 +50,10 @@ function relative(filePath): string {
 
 async function makeSourceCodeBundle() {
   const files = [
+    ".eslintignore",
+    ".eslintrc.js",
+    ".flowconfig",
+    ".prettierignore",
     "LICENSE",
     "package-lock.json",
     "package.json",
@@ -60,7 +63,7 @@ async function makeSourceCodeBundle() {
     "web-ext-config.js",
   ].map(file => path.join(BASE_DIR, file));
 
-  const dirs = ["scripts", "src"];
+  const dirs = ["docs", "flow-typed", "scripts", "src"];
 
   const asyncFiles = await Promise.all(dirs.map(dir => getAllFilesInDir(dir)));
   const allFiles = files.concat(...asyncFiles);
@@ -94,10 +97,11 @@ Steps to reproduce this build:
 4. Output is now available in \`dist-firefox/\`.
 
 Commit: ${getGitCommit()}
+
 Repo: ${config.meta.repo}
 
-[Node.js]: https://nodejs.org/
-  `.trim();
+[node.js]: https://nodejs.org/
+  `.replace(/^ *\n| *$/g, "");
 }
 
 function getGitCommit(): string {
@@ -116,7 +120,7 @@ function getGitCommit(): string {
     throw new Error(result.stderr);
   }
 
-  return String(result.stdout);
+  return String(result.stdout).trim();
 }
 
 async function getAllFilesInDir(dir: string): Promise<Array<string>> {

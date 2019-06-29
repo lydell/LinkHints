@@ -2,4 +2,5 @@
 custom.config.js
 /node_modules/
 /compiled/
+/compiled-docs/
 /dist*/

@@ -5,6 +5,7 @@ const path = require("path");
 
 const fsExtra = require("fs-extra");
 const optionalRequire = require("optional-require")(require);
+const React = require("preact");
 const commonjs = require("rollup-plugin-commonjs");
 const prettier = require("rollup-plugin-prettier");
 const replace = require("rollup-plugin-replace");
@@ -12,10 +13,11 @@ const resolve = require("rollup-plugin-node-resolve");
 const sucrase = require("rollup-plugin-sucrase");
 
 const config = require("./project.config");
+const transformCSS = require("./src/css").default;
 
 const customConfig = optionalRequire("./custom.config") || {};
 
-const PROD = config.browser != null;
+const PROD = config.prod;
 
 const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
   ? {}
@@ -23,8 +25,7 @@ const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
 
 setup();
 
-// $FlowIgnore: Flow wants a type annotation here, but that’s just annoying.
-module.exports = [
+const main = [
   js(config.background),
   js(config.worker),
   js(config.renderer),
@@ -38,7 +39,7 @@ module.exports = [
     js: [config.popup.output],
     css: [config.popupCss.output],
   }),
-  copy(config.popupCss),
+  css(config.popupCss),
   html({
     title: `${config.meta.name} Options`,
     html: config.optionsHtml,
@@ -46,7 +47,7 @@ module.exports = [
     js: [config.worker.output, config.renderer.output, config.options.output],
     css: [config.optionsCss.output],
   }),
-  copy(config.optionsCss),
+  css(config.optionsCss),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
   .filter(Boolean)
@@ -60,13 +61,52 @@ module.exports = [
     },
   }));
 
+const docs = [
+  css(config.docs.sharedCss),
+  template(config.docs.index),
+  css(config.docs.indexCss),
+  template(config.docs.tutorial),
+  css(config.docs.tutorialCss),
+]
+  .filter(Boolean)
+  .map(entry => ({
+    ...entry,
+    input: `${config.docs.src}/${entry.input}`,
+    output: {
+      ...entry.output,
+      file: `${config.docs.compiled}/${entry.output.file}`,
+      indent: false,
+    },
+  }));
+
+// $FlowIgnore: Flow wants a type annotation here, but that’s just annoying.
+module.exports = main.concat(docs);
+
 function setup() {
   console.time("setup");
+
   fsExtra.removeSync(config.compiled);
+  fsExtra.removeSync(config.docs.compiled);
+
   fsExtra.copySync(
     `${config.src}/${config.iconsDir}`,
     `${config.compiled}/${config.iconsDir}`
   );
+  fsExtra.copySync(
+    `${config.docs.src}/${config.docs.iconsDir}`,
+    `${config.docs.compiled}/${config.docs.iconsDir}`
+  );
+
+  const { createElement } = React;
+
+  React.createElement = (nodeName, attributes, ...children) => {
+    if (attributes) {
+      delete attributes.__source;
+      delete attributes.__self;
+    }
+    return createElement(nodeName, attributes, ...children);
+  };
+
   console.timeEnd("setup");
 }
 
@@ -98,7 +138,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
 
 // `input` must be a JavaScript file containing:
 //
-//     module.exports = data => compile(data)
+//     export default data => compile(data)
 //
 // The function must return a string, and may optionally use `data`. Whatever
 // string is returned will end up in `output`.
@@ -113,7 +153,7 @@ function template(
     data?: mixed,
   |} */
 ) {
-  let content = "";
+  let content = undefined;
   return {
     input,
     output: {
@@ -121,15 +161,33 @@ function template(
       format: "es",
     },
     treeshake: false,
+    external: id => !id.startsWith("."),
     plugins: [
+      sucrase({
+        transforms: ["flow", "jsx"],
+        production: true,
+      }),
+      resolve(),
+      commonjs(),
       {
         name: "template",
         load: (id /*: string */) => {
-          delete require.cache[id];
-          content = require(id)(data);
-          return "0";
+          if (content == null) {
+            const dir = path.dirname(id);
+            for (const key of Object.keys(require.cache)) {
+              if (key.startsWith(dir)) {
+                delete require.cache[key];
+              }
+            }
+            content = require(id).default(data);
+          }
+          return null;
         },
-        renderChunk: () => ({ code: content, map: undefined }),
+        renderChunk: () => {
+          const chunk = { code: content, map: undefined };
+          content = undefined;
+          return chunk;
+        },
       },
     ],
   };
@@ -157,7 +215,10 @@ function html(
   });
 }
 
-function copy({ input, output } /*: {| input: string, output: string, |} */) {
+function copy(
+  { input, output } /*: {| input: string, output: string, |} */,
+  transform /*: string => string */ = string => string
+) {
   let content = "";
   return {
     input,
@@ -170,13 +231,17 @@ function copy({ input, output } /*: {| input: string, output: string, |} */) {
       {
         name: "copy",
         load: (id /*: string */) => {
-          content = fs.readFileSync(id, "utf8");
+          content = transform(fs.readFileSync(id, "utf8"));
           return "0";
         },
         renderChunk: () => ({ code: content, map: undefined }),
       },
     ],
   };
+}
+
+function css({ input, output } /*: {| input: string, output: string, |} */) {
+  return copy({ input, output }, transformCSS);
 }
 
 function makeGlobals() {
@@ -189,6 +254,10 @@ function makeGlobals() {
     BUILD_ID: JSON.stringify(
       PROD ? config.meta.version.replace(/\W/g, "_") : String(Date.now())
     ),
+    COLOR_BADGE: JSON.stringify(config.colors.badge),
+    COLOR_GREEN: JSON.stringify(config.colors.green),
+    COLOR_PURPLE: JSON.stringify(config.colors.purple),
+    COLOR_YELLOW: JSON.stringify(config.colors.yellow),
     DEFAULT_LOG_LEVEL_CONFIG: JSON.stringify(DEFAULT_LOG_LEVEL),
     DEFAULT_STORAGE_SYNC: JSON.stringify(DEFAULT_STORAGE_SYNC),
     META_HOMEPAGE: JSON.stringify(config.meta.homepage),

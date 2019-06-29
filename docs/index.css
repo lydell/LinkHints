@@ -4,7 +4,7 @@ main > * {
 }
 
 nav {
-  background-color: #2b4eed;
+  background-color: blue;
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.2),
@@ -134,7 +134,7 @@ nav > ul > li > a:active {
 .Header {
   overflow: hidden;
   padding: 5rem 0;
-  background-color: #2b4eed;
+  background-color: blue;
   background-image: linear-gradient(
       65deg,
       transparent 15%,
@@ -269,7 +269,7 @@ nav > ul > li > a:active {
   --animation-appear: KeyAppear 800ms var(--stagger) ease both;
   width: 1em;
   height: 1em;
-  background-image: url("./keycap.svg");
+  background-image: url(keycap);
   background-size: contain;
   animation: var(--animation-appear), KeyFade 400ms 1000ms ease-out forwards;
 }
@@ -282,13 +282,13 @@ nav > ul > li > a:active {
   margin-bottom: 0;
 }
 
-.Keyboard > div > div.Keyboard-logo {
+.Keyboard > div > div.Keyboard-icon {
   --animation: 500ms 1150ms ease-out backwards;
   animation: var(--animation-appear);
   position: relative;
 }
 
-.Keyboard > div > div.Keyboard-logo::before {
+.Keyboard > div > div.Keyboard-icon::before {
   content: "";
   position: absolute;
   z-index: 1;
@@ -297,11 +297,11 @@ nav > ul > li > a:active {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 0 0 0.625rem 0.625rem #2b4eed, 0 0 3rem 1.25rem white;
+  box-shadow: 0 0 0.625rem 0.625rem blue, 0 0 3rem 1.25rem white;
   animation: KeyGlow var(--animation);
 }
 
-.Keyboard > div > div.Keyboard-logo::after {
+.Keyboard > div > div.Keyboard-icon::after {
   content: "";
   position: absolute;
   z-index: 2;
@@ -309,7 +309,7 @@ nav > ul > li > a:active {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("./keycap-logo.svg");
+  background-image: url(icon);
   background-size: contain;
   animation: FadeIn var(--animation);
 }
@@ -388,7 +388,7 @@ nav > ul > li > a:active {
   font-size: 0.75rem;
   padding: 0.167em;
   color: black;
-  background-color: #f6ff00;
+  background-color: yellow;
   border: solid 1px rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
   font-weight: bold;
@@ -400,7 +400,7 @@ nav > ul > li > a:active {
 }
 
 .highlighted {
-  background-color: lime;
+  background-color: green;
 }
 
 .matchedText {
@@ -414,7 +414,7 @@ nav > ul > li > a:active {
   left: 0;
   width: 100%;
   height: 100%;
-  border-bottom: 2px solid #ef0fff;
+  border-bottom: 2px solid purple;
   box-sizing: border-box;
 }
 
@@ -428,10 +428,6 @@ nav > ul > li > a:active {
   right: 0;
   line-height: 1;
   position: absolute;
-}
-
-.rel {
-  position: relative;
 }
 
 .Demos {
@@ -502,10 +498,10 @@ nav > ul > li > a:active {
   content: "";
   position: absolute;
   top: calc(50% - 0.5em);
-  left: calc(1.5rem / -2 - 1em);
+  left: calc(1.5rem / -2 - 0.5em);
   width: 1em;
   height: 1em;
-  background-color: #bbb;
+  background-color: grey;
   border-radius: 50%;
 }
 
@@ -520,7 +516,7 @@ nav > ul > li > a:active {
 .Demo-input {
   display: flex;
   align-items: center;
-  border: 1px solid #bbb;
+  border: 1px solid grey;
   border-radius: 0.5em;
   padding: 0.5em 1em;
   flex: 1;
@@ -529,11 +525,15 @@ nav > ul > li > a:active {
 }
 
 .Demo-button {
-  background-color: #2b4eed;
+  background-color: blue;
   color: white;
   border-radius: 0.5em;
   padding: 0.5em 1.5em;
   font-weight: bold;
+}
+
+.Demo-relative {
+  position: relative;
 }
 
 .Shortcuts {
@@ -628,7 +628,7 @@ nav > ul > li > a:active {
 }
 
 #note {
-  background-color: #2b4eed;
+  background-color: blue;
   color: white;
   font-weight: bold;
   font-size: 1.5rem;

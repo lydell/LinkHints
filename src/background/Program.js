@@ -132,9 +132,6 @@ type HintInput =
       type: "Backspace",
     |};
 
-// This is the same color as the pointer in the icon.
-const BADGE_COLOR = "#323234";
-
 // As far as I can tell, the top frameId is always 0. This is also mentioned here:
 // https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/Tabs/executeScript
 // “frameId: Optional integer. The frame where the code should be injected.
@@ -241,7 +238,7 @@ export default class BackgroundProgram {
       this.updateIcon(tab.id);
     }
 
-    browser.browserAction.setBadgeBackgroundColor({ color: BADGE_COLOR });
+    browser.browserAction.setBadgeBackgroundColor({ color: COLOR_BADGE });
 
     this.maybeOpenTutorial();
     this.maybeReopenOptions();
