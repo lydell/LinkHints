@@ -115,7 +115,8 @@ h3 {
   margin-left: 0.4375em;
 }
 
-.Choices button {
+.Choices a {
+  display: inline-block;
   min-width: 10em;
   font-family: inherit;
   font-size: inherit;
@@ -124,6 +125,8 @@ h3 {
   line-height: inherit;
   color: black;
   font-weight: bold;
+  text-align: center;
+  text-decoration: none;
   background: none;
   padding: 0.5em 2em;
   border: 0.125em solid black;
@@ -132,12 +135,12 @@ h3 {
   position: relative;
 }
 
-.Choices button:focus {
+.Choices a:focus {
   background-color: black;
   color: white;
 }
 
-.Choices button:focus::before {
+.Choices a:focus::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -150,7 +153,7 @@ h3 {
   transform: translate(-50%, -50%) translateY(-0.125em) rotate(45deg);
 }
 
-.Choices > button + button {
+.Choices > a + a {
   margin-left: 1em;
 }
 

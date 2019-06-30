@@ -143,9 +143,9 @@ const STEPS = [
           filter by letters.
         </p>
         <p className="Choices">
-          <button type="button">iPhone</button>
-          <button type="button">iPad</button>
-          <button type="button">iMac</button>
+          <a tabIndex="-1">iPhone</a>
+          <a tabIndex="-1">iPad</a>
+          <a tabIndex="-1">iMac</a>
         </p>
         <Info title="Tip!">
           <p>
