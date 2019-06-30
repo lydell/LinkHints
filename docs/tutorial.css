@@ -76,6 +76,13 @@ h3 {
   align-items: flex-start;
 }
 
+/* Internet Explorer workaround. */
+@media screen and (min-width: 0\0) {
+  .Step-inner {
+    display: block;
+  }
+}
+
 .Step-inner > * + * {
   margin-top: 1em;
 }
@@ -338,7 +345,7 @@ h3 {
   }
 
   .Step-inner > .Button:last-child {
-    display: block;
+    display: inline-block;
     margin-top: auto;
     align-self: flex-end;
     border-top: 2rem solid transparent;
