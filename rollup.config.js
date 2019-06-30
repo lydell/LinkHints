@@ -99,10 +99,15 @@ function setup() {
 
   const { createElement } = React;
 
+  // Workarounds for preact-render-to-string unwanted attributes.
   React.createElement = (nodeName, attributes, ...children) => {
     if (attributes) {
       delete attributes.__source;
       delete attributes.__self;
+      if (attributes.htmlFor != null) {
+        attributes.for = attributes.htmlFor;
+        delete attributes.htmlFor;
+      }
     }
     return createElement(nodeName, attributes, ...children);
   };
