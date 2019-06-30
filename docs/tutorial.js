@@ -340,7 +340,7 @@ function Intro() {
 
       <section className="not-installed">
         <p>
-          <strong>️You don’t seem to have installed Link Hints yet.</strong>
+          <strong>You don’t seem to have installed Link Hints yet.</strong>
         </p>
         <p>
           You can still go through the tutorial, but you’ll get more out of it
