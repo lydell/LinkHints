@@ -172,13 +172,13 @@ const STEPS = [
         <p>Check these boxes. Press {shortcuts.ExitHintsMode} when done.</p>
         <p className="Salad">
           <input type="checkbox" id="lettuce" />
-          <label htmlFor="lettuce">🥬 Lettuce</label>
+          <label htmlFor="lettuce">🥬&nbsp;Lettuce</label>
           <input type="checkbox" id="cucumber" />
-          <label htmlFor="cucumber">🥒 Cucumber</label>
+          <label htmlFor="cucumber">🥒&nbsp;Cucumber</label>
           <input type="checkbox" id="tomato" />
-          <label htmlFor="tomato">🍅 Tomato</label>
+          <label htmlFor="tomato">🍅&nbsp;Tomato</label>
           <output>
-            🥗 <strong>Enjoy your salad!</strong>{" "}
+            🥗&nbsp;<strong>Enjoy your salad!</strong>{" "}
           </output>
         </p>
         <br />

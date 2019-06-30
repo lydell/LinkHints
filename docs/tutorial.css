@@ -116,8 +116,7 @@ h3 {
 }
 
 .Choices a {
-  display: inline-block;
-  min-width: 10em;
+  display: block;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
@@ -133,6 +132,12 @@ h3 {
   border-radius: 0;
   cursor: pointer;
   position: relative;
+}
+
+@media (min-width: 40em) {
+  .Choices a {
+    min-width: 10em;
+  }
 }
 
 .Choices a:focus {
@@ -154,7 +159,7 @@ h3 {
 }
 
 .Choices > a + a {
-  margin-left: 1em;
+  margin-top: 1em;
 }
 
 .Salad label {
@@ -168,6 +173,20 @@ h3 {
 
 .Salad :checked ~ :checked ~ :checked ~ output {
   display: inline;
+}
+
+@media (max-width: 45em) {
+  .Salad label:nth-of-type(2)::after {
+    content: "\A";
+    white-space: pre;
+  }
+}
+
+@media (max-width: 30em) {
+  .Salad label::after {
+    content: "\A";
+    white-space: pre;
+  }
 }
 
 .large,
@@ -324,6 +343,15 @@ h3 {
     align-self: flex-end;
     border-top: 2rem solid transparent;
     background-clip: padding-box;
+  }
+
+  .Choices a {
+    display: inline-block;
+  }
+
+  .Choices > a + a {
+    margin-top: 0;
+    margin-left: 1em;
   }
 
   .large,
