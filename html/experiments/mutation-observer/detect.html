@@ -16,6 +16,7 @@
     <button onclick="addLi({ removeElement: true, removeListener: true })">
       add and immediately remove li and listener
     </button>
+    <button onclick="this.disabled = !this.disabled">Toggle disabled</button>
 
     <ul id="ul"></ul>
 
@@ -25,11 +26,13 @@
         for (const record of records) {
           console.log("added:", record.addedNodes);
           console.log("removed:", record.removedNodes);
+          console.log("attributes:", record.attributeName);
         }
       });
       obs.observe(document.documentElement, {
         childList: true,
         subtree: true,
+        attributes: true,
       });
 
       function logClick() {

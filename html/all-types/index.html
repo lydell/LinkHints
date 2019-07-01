@@ -24,8 +24,8 @@
       <button type="button" id="clickEverything">
         Add click listeners to everything
       </button>
-      <button type="button" id="diableEverything">
-        Disable buttons and inputs
+      <button type="button" id="disableEverything">
+        Disable form-related elements
       </button>
     </p>
 
@@ -42,9 +42,9 @@
         }
       };
 
-      diableEverything.onclick = () => {
+      disableEverything.onclick = () => {
         for (const element of document.querySelectorAll(
-          "button, input[type='button']"
+          "button, input, select, textarea, option, optgroup, fieldset"
         )) {
           element.disabled = true;
         }

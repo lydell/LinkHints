@@ -172,6 +172,7 @@ export const t = {
   ATTRIBUTES_MUTATION: stringSet(
     new Set([
       "contenteditable",
+      "disabled",
       "href",
       "role",
       ...CLICKABLE_EVENT_PROPS,
@@ -1061,6 +1062,10 @@ export default class ElementManager {
   }
 
   getElementType(element: HTMLElement): ?ElementType {
+    if (isDisabled(element)) {
+      return undefined;
+    }
+
     switch (element.nodeName) {
       case "A":
         return element instanceof HTMLAnchorElement
@@ -1926,6 +1931,10 @@ function hintWeight(
 }
 
 function getElementTypeSelectable(element: HTMLElement): ?ElementType {
+  if (isDisabled(element)) {
+    return undefined;
+  }
+
   switch (element.nodeName) {
     // Links _could_ be marked as "clickable" as well for simplicity, but
     // marking them as "link" allows opening them in a new tab by holding alt
@@ -1995,5 +2004,15 @@ function getLinkElementType(element: HTMLAnchorElement): ElementType {
       t.PROTOCOLS_LINK.value.has(element.protocol)
       ? "link"
       : "clickable"
+  );
+}
+
+function isDisabled(element: HTMLElement): boolean {
+  return (
+    (element instanceof HTMLButtonElement ||
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLTextAreaElement) &&
+    element.disabled
   );
 }
