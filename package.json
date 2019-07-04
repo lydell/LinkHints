@@ -48,7 +48,7 @@
     "preact-render-to-string": "4.1.0",
     "prettier": "1.18.2",
     "readdirp": "3.0.2",
-    "rollup": "1.16.3",
+    "rollup": "1.16.6",
     "rollup-plugin-commonjs": "10.0.1",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-prettier": "0.6.0",

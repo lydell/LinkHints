@@ -3,8 +3,3 @@
 custom.config.*
 /compiled/
 /compiled-docs/
-
-# TODO: Remove these when this PR has been released:
-# https://github.com/babel/babel/pull/10132
-/flow-typed/cross-spawn.js
-/flow-typed/yazl.js
