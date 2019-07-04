@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>target with event listeners</title>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      let counter = 0;
+
+      link({});
+
+      br();
+
+      link({ stopPropagation: { at: "window", how: "capture" } });
+      link({ stopPropagation: { at: "element", how: "bubble" } });
+      link({ stopPropagation: { at: "window", how: "bubble" } });
+
+      br();
+
+      link({ stopImmediatePropagation: { at: "window", how: "capture" } });
+      link({
+        preventDefault: { at: "window", how: "capture" },
+        stopImmediatePropagation: { at: "window", how: "capture" },
+      });
+      link({
+        returnValue: { at: "window", how: "capture" },
+        stopImmediatePropagation: { at: "window", how: "capture" },
+      });
+
+      br();
+
+      link({ preventDefault: { at: "window", how: "capture" } });
+      link({ preventDefault: { at: "element", how: "bubble" } });
+      link({ preventDefault: { at: "window", how: "bubble" } });
+
+      br();
+
+      link({ cancelBubble: { at: "window", how: "capture" } });
+      link({ cancelBubble: { at: "container", how: "capture" } });
+      link({ cancelBubble: { at: "element", how: "capture" } });
+      link({ cancelBubble: { at: "element", how: "bubble" } });
+      link({ cancelBubble: { at: "container", how: "bubble" } });
+      link({ cancelBubble: { at: "window", how: "bubble" } });
+
+      br();
+
+      link({ returnValue: { at: "window", how: "capture" } });
+      link({ returnValue: { at: "container", how: "capture" } });
+      link({ returnValue: { at: "element", how: "capture" } });
+      link({ returnValue: { at: "element", how: "bubble" } });
+      link({ returnValue: { at: "container", how: "bubble" } });
+      link({ returnValue: { at: "window", how: "bubble" } });
+
+      br();
+
+      link({ returnFalse: { at: "window", how: "inline" } });
+      link({ returnFalse: { at: "container", how: "inline" } });
+      link({ returnFalse: { at: "element", how: "inline" } });
+
+      br();
+
+      link({
+        preventDefault: { at: "window", how: "capture" },
+        stopPropagation: { at: "window", how: "capture" },
+      });
+      link({
+        returnValue: { at: "element", how: "bubble" },
+        cancelBubble: { at: "element", how: "bubble" },
+      });
+      link({ returnValue: { at: "window", how: "bubble" } });
+
+      br();
+
+      link({
+        stopPropagation: { at: "element", how: "bubble" },
+        returnFalse: { at: "element", how: "inline" },
+      });
+
+      function link(options) {
+        const {
+          preventDefault,
+          returnValue,
+          returnFalse,
+          stopPropagation,
+          stopImmediatePropagation,
+          cancelBubble,
+        } = options;
+        const p = document.createElement("p");
+        const a = document.createElement("a");
+        a.href = `https://example.com/${counter}`;
+        a.target = "_blank";
+        a.textContent = `Link ${counter}: ${getFeaturesString(options) ||
+          "(regular)"}`;
+
+        if (preventDefault) {
+          add(preventDefault, a, event => {
+            event.preventDefault();
+          });
+        }
+
+        if (returnValue) {
+          add(returnValue, a, event => {
+            event.returnValue = false;
+          });
+        }
+
+        if (returnFalse) {
+          add(returnFalse, a, () => false);
+        }
+
+        if (stopPropagation) {
+          add(stopPropagation, a, event => {
+            event.stopPropagation();
+          });
+        }
+
+        if (stopImmediatePropagation) {
+          add(stopImmediatePropagation, a, event => {
+            event.stopImmediatePropagation();
+          });
+        }
+
+        if (cancelBubble) {
+          add(cancelBubble, a, event => {
+            event.cancelBubble = true;
+          });
+        }
+
+        p.append(a);
+        container.append(p);
+        counter++;
+      }
+
+      function add({ at, how }, element, fn) {
+        const target = getTarget(at, element);
+
+        switch (how) {
+          case "bubble":
+          case "capture":
+            target.addEventListener(
+              "click",
+              event => {
+                if (event.target === element) {
+                  fn(event);
+                }
+              },
+              target === "capture"
+            );
+            break;
+
+          case "inline":
+            if (target === element) {
+              element.onclick = fn;
+            } else {
+              const previous = target.onclick;
+              target.onclick = event =>
+                event.target === element
+                  ? fn(event)
+                  : previous != null
+                  ? previous(event)
+                  : undefined;
+            }
+            break;
+
+          default:
+            throw new TypeError(`Unknown: ${how}`);
+        }
+      }
+
+      function getTarget(at, element) {
+        switch (at) {
+          case "window":
+            return window;
+          case "container":
+            return container;
+          case "element":
+            return element;
+          default:
+            throw new TypeError(`Unknown: ${at}`);
+        }
+      }
+
+      function getFeaturesString(options) {
+        return Object.entries(options)
+          .filter(([, value]) => value != null)
+          .map(([key, { at, how }]) => `${key}=${at}/${how}`)
+          .join(" | ");
+      }
+
+      function br() {
+        container.append(document.createElement("br"));
+      }
+    </script>
+  </body>
+</html>

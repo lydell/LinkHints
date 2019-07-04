@@ -73,6 +73,7 @@ type TabState = {|
   keyboardMode: KeyboardModeBackground,
   perf: Perf,
   isOptionsPage: boolean,
+  isPinned: boolean,
 |};
 
 type HintsState =
@@ -236,7 +237,7 @@ export default class BackgroundProgram {
         browser.tabs.onUpdated,
         this.onTabUpdated,
         // Chrome doesn’t support filters.
-        BROWSER === "firefox" ? { properties: ["status"] } : undefined
+        BROWSER === "firefox" ? { properties: ["status", "pinned"] } : undefined
       ),
       addListener(browser.tabs.onRemoved, this.onTabRemoved)
     );
@@ -316,7 +317,7 @@ export default class BackgroundProgram {
       : browser.tabs.sendMessage(tabId, message, { frameId }));
   }
 
-  onMessage(message: ToBackground, sender: MessageSender) {
+  async onMessage(message: ToBackground, sender: MessageSender) {
     // `info` can be missing when the message comes from for example the popup
     // (which isn’t associated with a tab). The worker script can even load in
     // an `about:blank` frame somewhere when hovering the browserAction!
@@ -324,7 +325,10 @@ export default class BackgroundProgram {
 
     const tabStateRaw =
       info == null ? undefined : this.tabState.get(info.tabId);
-    const tabState = tabStateRaw == null ? makeEmptyTabState() : tabStateRaw;
+    const tabState =
+      tabStateRaw == null
+        ? await makeEmptyTabState(info != null ? info.tabId : undefined)
+        : tabStateRaw;
 
     if (info != null && tabStateRaw == null) {
       const { [info.tabId.toString()]: perf = [] } = this.restoredTabsPerf;
@@ -591,6 +595,32 @@ export default class BackgroundProgram {
         if (tabState.hintsState.type === "Hinting") {
           this.sendRendererMessage({ type: "Unpeek" }, { tabId: info.tabId });
         }
+        break;
+
+      case "OpenNewTabs":
+        if (BROWSER === "firefox") {
+          if (message.urls.length === 1) {
+            browser.tabs
+              .create({
+                active: true,
+                url: message.urls[0],
+                openerTabId: info.tabId,
+              })
+              .catch(error => {
+                log(
+                  "error",
+                  "BackgroundProgram#onWorkerMessage",
+                  "OpenNewTabs",
+                  "Failed to open new tab:",
+                  error,
+                  message.urls
+                );
+              });
+          } else {
+            openNewTabs(info.tabId, message.urls);
+          }
+        }
+
         break;
 
       default:
@@ -1073,7 +1103,9 @@ export default class BackgroundProgram {
     // real. I considered keeping track of where to open tabs manually for
     // Chrome, but the logic for where to open tabs turned out to be too
     // complicated to replicate in a good way, and there does not seem to be a
-    // downside of using the fake ctrl-click method in Chrome.
+    // downside of using the fake ctrl-click method in Chrome. In fact, there’s
+    // even an upside to the ctrl-click method: The HTTP Referer header is sent,
+    // just as if you had clicked the link for real.
     if (BROWSER === "chrome") {
       this.sendWorkerMessage(
         {
@@ -1380,7 +1412,7 @@ export default class BackgroundProgram {
         }
         break;
 
-      case "ToggleKeyboardCapture": {
+      case "ToggleKeyboardCapture":
         tabState.keyboardMode = message.capture
           ? { type: "Capture" }
           : { type: "FromHintsState" };
@@ -1389,7 +1421,6 @@ export default class BackgroundProgram {
           frameId: "all_frames",
         });
         break;
-      }
 
       default:
         unreachable(message.type, message);
@@ -1704,6 +1735,14 @@ export default class BackgroundProgram {
       tabState.isOptionsPage = false;
       this.updateOptionsPageData();
     }
+
+    if (tabState != null && changeInfo.pinned != null) {
+      tabState.isPinned = changeInfo.pinned;
+      this.sendWorkerMessage(this.makeWorkerState(tabState), {
+        tabId,
+        frameId: "all_frames",
+      });
+    }
   }
 
   onTabRemoved(tabId: number) {
@@ -1882,6 +1921,7 @@ export default class BackgroundProgram {
         : {},
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       mac: this.options.mac,
+      isPinned: tabState.isPinned,
     };
 
     const getKeyboardShortcuts = shortcuts =>
@@ -2021,8 +2061,8 @@ export default class BackgroundProgram {
   }
 }
 
-// This is a function (not a constant), because of mutation.
-function makeEmptyTabState(): TabState {
+async function makeEmptyTabState(tabId: ?number): Promise<TabState> {
+  const tab = tabId != null ? await browser.tabs.get(tabId) : undefined;
   return {
     hintsState: {
       type: "Idle",
@@ -2031,6 +2071,7 @@ function makeEmptyTabState(): TabState {
     keyboardMode: { type: "FromHintsState" },
     perf: [],
     isOptionsPage: false,
+    isPinned: tab != null ? tab.pinned : false,
   };
 }
 
@@ -2070,28 +2111,29 @@ function getElementTypes(mode: HintsMode): ElementTypes {
   }
 }
 
-function shouldCombineHints(
-  mode: HintsMode,
-  element: ElementWithHint
-): boolean {
+function getCombiningUrl(mode: HintsMode, element: ElementWithHint): ?string {
   switch (mode) {
     case "Click":
-      return shouldCombineHintsForClick(element);
+      return shouldCombineHintsForClick(element)
+        ? element.urlWithTarget
+        : undefined;
 
     case "BackgroundTab":
-      return true;
+      return element.url;
 
     case "ForegroundTab":
-      return true;
+      return element.url;
 
     case "ManyClick":
-      return shouldCombineHintsForClick(element);
+      return shouldCombineHintsForClick(element)
+        ? element.urlWithTarget
+        : undefined;
 
     case "ManyTab":
-      return true;
+      return element.url;
 
     case "Select":
-      return false;
+      return undefined;
 
     default:
       return unreachable(mode);
@@ -2163,6 +2205,27 @@ async function getCurrentTab(): Promise<Tab> {
     );
   }
   return tabs[0];
+}
+
+// Open a bunch of tabs, and then focus the first of them.
+async function openNewTabs(tabId: number, urls: Array<string>) {
+  try {
+    const newTabs = await Promise.all(
+      urls.map(url =>
+        browser.tabs.create({
+          active: false,
+          url,
+          openerTabId: tabId,
+        })
+      )
+    );
+    const firstNewTab = newTabs[0];
+    if (firstNewTab != null) {
+      await browser.tabs.update(firstNewTab.id, { active: true });
+    }
+  } catch (error) {
+    log("error", "openNewTabs", "Failed to open new tabs:", error, urls);
+  }
 }
 
 type IconType = "normal" | "disabled";
@@ -2244,8 +2307,8 @@ function combineByHref(
   const rest: Array<ElementWithHint> = [];
 
   for (const element of elements) {
-    const { url } = element;
-    if (url != null && shouldCombineHints(mode, element)) {
+    const url = getCombiningUrl(mode, element);
+    if (url != null) {
       const previous = map.get(url);
       if (previous != null) {
         previous.push(element);
@@ -2513,6 +2576,7 @@ function mergeElements(
         weight: element.hintMeasurements.weight,
       },
       url: update.url,
+      urlWithTarget: update.urlWithTarget,
       text: update.text,
       // Keep the original text weight so that hints don't change.
       textWeight: element.textWeight,

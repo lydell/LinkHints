@@ -67,6 +67,7 @@ module.exports = {
         COLOR_YELLOW: false,
         DEFAULT_LOG_LEVEL_CONFIG: false,
         DEFAULT_STORAGE_SYNC: false,
+        exportFunction: false,
         META_HOMEPAGE: false,
         META_ICON: false,
         META_NAME: false,

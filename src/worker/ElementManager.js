@@ -1775,9 +1775,7 @@ function sendInjectedMessage(message: string) {
       }
       // I guess the page can read the secret via a MutationObserver, but at
       // least in the Firefox case the page shouldn't be able to read it. The
-      // page can't do much with the secret anyway. However, this probably runs
-      // so early that the page never has a chance to set up a MutationObserver
-      // in time.
+      // page can't do much with the secret anyway.
       const script = document.createElement("script");
       script.textContent = `window[${JSON.stringify(
         INJECTED_VAR

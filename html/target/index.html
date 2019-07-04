@@ -6,15 +6,113 @@
   </head>
   <body>
     <p>Tests of links with different target attributes.</p>
-    <p><a href="https://example.com">no target</a></p>
+    <p>
+      If two links have the same href and target they can get the same hints.
+      For some targets the frame must be the same as well.
+    </p>
+    <p>
+      Clicking links should not trigger the popup blocker. (In Firefox, clicking
+      target=someName links might, but that’s OK.)
+    </p>
+    <p>
+      Serve this page on localhost:5000 and pin the tab to try out how links
+      open in new tabs there.
+    </p>
+
+    <p>
+      <button onclick="window.open('https://example.com')">window.open</button>
+      <button
+        onclick="window.open('https://example.com', '_blank', 'resizable,scrollbars,status')"
+      >
+        window.open with target and features
+      </button>
+    </p>
+    <p>
+      <button onclick="window.open()">undefined window.open</button>
+      <button onclick="window.open('')">empty string window.open</button>
+      <button onclick="window.open('iframe1.html')">
+        relative window.open
+      </button>
+    </p>
+    <p>
+      <button
+        onclick="window.open({ toString() { throw new Error('No window.open for you!') } })"
+      >
+        throwing window.open
+      </button>
+      <button onclick="window.open('nope:///not/gonna/happen')">
+        weird protocol window.open
+      </button>
+    </p>
+    <p>
+      <button onclick="window.open('https://example.com', 'iframe1')">
+        iframe target window.open
+      </button>
+    </p>
+
+    <p><a href="http://example.com">no target and other hostname</a></p>
+    <p>
+      <a href="https://example.com"
+        >no target and other hostname and other protocol</a
+      >
+    </p>
+    <p><a href="http://sub.localhost:5000">no target and other subdomain</a></p>
+    <p><a href="http://localhost:5001">no target and other port number</a></p>
+    <p><a href="https://localhost:5000">no target and other protocol</a></p>
+    <p><a href="http://user:pass@localhost:5000">no target and user:pass</a></p>
     <p><a href="https://example.com" target="_self">target=_self</a></p>
     <p><a href="https://example.com" target="_blank">target=_blank</a></p>
+    <p>
+      <a
+        href="https://example.com/event1"
+        target="_blank"
+        onclick="console.log('Click _blank with inline return false'); return false"
+        >target=_blank with inline return false (and different URL)</a
+      >
+    </p>
+    <p>
+      <a
+        href="https://example.com/event2"
+        target="_blank"
+        onclick="window.event.preventDefault()"
+        >target=_blank with window.event.preventDefault() (and different URL)</a
+      >
+    </p>
+    <p>
+      <a href="https://example.com/event3" target="_blank" id="stopImmediate"
+        >target=_blank with event.stopImmediatePropagation() followed by
+        event.preventDefault() (and different URL)</a
+      >
+    </p>
+    <p>
+      <a
+        href="https://example.com/event4"
+        target="_blank"
+        onclick="window.open('https://example.com/open1'); window.open('https://example.com/open2', '')"
+        >target=_blank and two window.open (and different URL)</a
+      >
+    </p>
+
     <!-- prettier-ignore -->
     <P><A HREF="HTTPS://EXAMPLE.COM" TARGET="_BLANK">TARGET=_BLANK</A></P>
     <p><a href="https://example.com" target="_parent">target=_parent</a></p>
     <p><a href="https://example.com" target="_top">target=_top</a></p>
-    <p><a href="https://example.com" target="invalid">target=invalid</a></p>
+    <p><a href="https://example.com" target="_search">target=_search</a></p>
+    <p><a href="https://example.com" target="_media">target=_media</a></p>
+    <p><a href="https://example.com" target="unknown">target=unknown</a></p>
+    <p><a href="https://example.com" target=" ">target= (single space)</a></p>
     <p><a href="iframe2.html" target="iframe1">target=iframe1</a></p>
+    <p><a href="iframe2.html" target="iframe1">target=iframe1 (2)</a></p>
+    <p><a href="https://example.com" target="iframe2">target=iframe2</a></p>
+    <p><a href="https://example.com" target="IFRAME2">target=IFRAME2</a></p>
+
     <iframe src="iframe1.html" name="iframe1" width="500" height="500"></iframe>
+
+    <script>
+      stopImmediate.addEventListener("click", event => {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      });
+    </script>
   </body>
 </html>

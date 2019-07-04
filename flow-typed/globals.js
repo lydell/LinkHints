@@ -23,3 +23,5 @@ declare var META_TUTORIAL: string;
 declare var META_VERSION: string;
 
 declare var PROD: boolean;
+
+declare var exportFunction: any;

@@ -100,6 +100,10 @@ export type FromWorker =
     |}
   | {|
       type: "WindowBlur",
+    |}
+  | {|
+      type: "OpenNewTabs",
+      urls: Array<string>,
     |};
 
 export type ToWorker =
@@ -112,6 +116,7 @@ export type ToWorker =
       keyTranslations: KeyTranslations,
       oneTimeWindowMessageToken: string,
       mac: boolean,
+      isPinned: boolean,
     |}
   | {|
       type: "StartFindElements",

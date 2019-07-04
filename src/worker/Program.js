@@ -47,6 +47,7 @@ type CurrentElements = {|
 |};
 
 export default class WorkerProgram {
+  isPinned: boolean = true;
   keyboardShortcuts: Array<KeyboardMapping> = [];
   keyboardMode: KeyboardModeWorker = "Normal";
   keyTranslations: KeyTranslations = {};
@@ -132,6 +133,7 @@ export default class WorkerProgram {
     switch (message.type) {
       case "StateSync":
         log.level = message.logLevel;
+        this.isPinned = message.isPinned;
         this.keyboardShortcuts = message.keyboardShortcuts;
         this.keyboardMode = message.keyboardMode;
         this.keyTranslations = message.keyTranslations;
@@ -238,9 +240,10 @@ export default class WorkerProgram {
 
         const { element } = elementData;
 
-        const defaultNotPrevented = clickElement(element);
+        const defaultPrevented = this.clickElement(element);
 
-        if (defaultNotPrevented && elementData.type === "link") {
+        if (!defaultPrevented && elementData.type === "link") {
+          // I think it’s fine to send this even if the link opened in a new tab.
           this.sendMessage({ type: "ClickedLinkNavigatingToOtherPage" });
         }
 
@@ -349,7 +352,7 @@ export default class WorkerProgram {
       case "ClickFocusedElement": {
         const { activeElement } = document;
         if (activeElement != null) {
-          clickElement(activeElement);
+          this.clickElement(activeElement);
         }
         break;
       }
@@ -736,6 +739,69 @@ export default class WorkerProgram {
       }
     }
   }
+
+  clickElement(element: HTMLElement): boolean {
+    if (element instanceof HTMLMediaElement) {
+      element.focus();
+      if (element.paused) {
+        element.play();
+      } else {
+        element.pause();
+      }
+      return false;
+    }
+
+    let cleanup = undefined;
+
+    if (BROWSER === "firefox") {
+      cleanup = firefoxPopupBlockerWorkaround({
+        element,
+        isPinned: this.isPinned,
+      });
+    }
+
+    const rect = element.getBoundingClientRect();
+    const options = {
+      // Mimic real events as closely as possible.
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      detail: 1,
+      view: window,
+      // These seem to automatically set `x`, `y`, `pageX` and `pageY` as well.
+      // There’s also `screenX` and `screenY`, but we can’t know those.
+      clientX: Math.round(rect.left),
+      clientY: Math.round(rect.top + rect.height / 2),
+    };
+
+    // When clicking a link for real the focus happens between the mousedown and
+    // the mouseup, but moving this line between those two `.dispatchEvent` calls
+    // below causes dropdowns in gmail not to be triggered anymore.
+    element.focus();
+
+    // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
+    // requires the full mousedown+mouseup+click event sequence.
+    element.dispatchEvent(
+      new MouseEvent("mousedown", { ...options, buttons: 1 })
+    );
+    element.dispatchEvent(new MouseEvent("mouseup", options));
+    let defaultPrevented = !element.dispatchEvent(
+      new MouseEvent("click", options)
+    );
+
+    if (BROWSER === "firefox") {
+      if (cleanup != null) {
+        const result = cleanup();
+        defaultPrevented = result.pagePreventedDefault;
+        this.sendMessage({
+          type: "OpenNewTabs",
+          urls: result.urlsToOpenInNewTabs,
+        });
+      }
+    }
+
+    return defaultPrevented;
+  }
 }
 
 function wrapMessage(message: FromWorker): ToBackground {
@@ -943,72 +1009,16 @@ function visibleElementToElementReport(
       type === "link" && element instanceof HTMLAnchorElement
         ? element.href
         : undefined,
+    urlWithTarget:
+      type === "link" && element instanceof HTMLAnchorElement
+        ? getUrlWithTarget(element)
+        : undefined,
     text,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),
     hasClickListener,
     hintMeasurements: measurements,
   };
-}
-
-function clickElement(element: HTMLElement): boolean {
-  if (element instanceof HTMLMediaElement) {
-    element.focus();
-    if (element.paused) {
-      element.play();
-    } else {
-      element.pause();
-    }
-    return false;
-  }
-
-  // Programmatically clicking on an `<a href="..." target="_blank">` causes the
-  // popup blocker to block the new tab/window from opening. That's really
-  // annoying, so temporarily remove the `target`. The user can use the commands
-  // for opening links in new tabs instead if they want a new tab.
-  let target = undefined;
-  if (
-    element instanceof HTMLAnchorElement &&
-    element.target.toLowerCase() === "_blank"
-  ) {
-    ({ target } = element);
-    element.target = "";
-  }
-
-  const rect = element.getBoundingClientRect();
-  const options = {
-    // Mimic real events as closely as possible.
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-    detail: 1,
-    view: window,
-    // These seem to automatically set `x`, `y`, `pageX` and `pageY` as well.
-    // There’s also `screenX` and `screenY`, but we can’t know those.
-    clientX: Math.round(rect.left),
-    clientY: Math.round(rect.top + rect.height / 2),
-  };
-
-  // When clicking a link for real the focus happens between the mousedown and
-  // the mouseup, but moving this line between those two `.dispatchEvent` calls
-  // below causes dropdowns in gmail not to be triggered anymore.
-  element.focus();
-
-  // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
-  // requires the full mousedown+mouseup+click event sequence.
-  element.dispatchEvent(
-    new MouseEvent("mousedown", { ...options, buttons: 1 })
-  );
-  element.dispatchEvent(new MouseEvent("mouseup", options));
-  const defaultNotPrevented = element.dispatchEvent(
-    new MouseEvent("click", options)
-  );
-
-  if (element instanceof HTMLAnchorElement && target != null) {
-    element.target = target;
-  }
-
-  return defaultNotPrevented;
 }
 
 function getAllNewElements(records: Array<MutationRecord>): Array<HTMLElement> {
@@ -1110,4 +1120,305 @@ export function getTextRectsHelper({
   }
 
   return getTextRects({ element, viewports, words, checkElementAtPoint });
+}
+
+// Used to decide if two links can get the same hint. If they have the same href
+// and target they can. For some targets the frame must be the same as well.
+function getUrlWithTarget(link: HTMLAnchorElement): string {
+  const target = link.target.toLowerCase();
+
+  const [caseTarget, frameHref] =
+    target === "" || target === "_blank" || target === "_top"
+      ? [target, ""] // Case insensitive target, not frame specific.
+      : target === "_self" || target === "_parent"
+      ? [target, window.location.href] // Case insensitive target, frame specific.
+      : [link.target, window.location.href]; // Case sensitive target, frame specific.
+
+  // `|` is not a valid URL character, so it is safe to use as a separator.
+  return `${encodeURIComponent(caseTarget)}|${frameHref}|${link.href}`;
+}
+
+// In Firefox, programmatically clicking on an `<a href="..."
+// target="_blank">` (or on a link that goes to another site in a pinned
+// tab) causes the popup blocker to block the new tab/window from opening.
+// As a workaround, open such links in new tabs manually.
+// `target="someName"` can also trigger a new tab/window, but it can also
+// re-use `<iframe name="someName">` anywhere in the browsing context (not
+// just in the current frame), or re-use a previously opened tab/window with
+// "someName". Let’s not bother with those. They’re rare and it’s unclear
+// what we should do with them (where should they open?).
+// Similarly, `window.open` also triggers the popup blocker. It’s second
+// argument is similar to the `target` attribute on links.
+function firefoxPopupBlockerWorkaround({
+  element,
+  isPinned,
+}: {|
+  element: HTMLElement,
+  isPinned: boolean,
+|}): () => {|
+  pagePreventedDefault: boolean,
+  urlsToOpenInNewTabs: Array<string>,
+|} {
+  const prefix = "firefoxPopupBlockerWorkaround";
+  const resets = new Resets();
+
+  let linkUrl = undefined;
+
+  // If the link has `target="_blank"` (or the pinned tab stuff is true), then
+  // `event.preventDefault()` must _always_ be called, no matter what. Either
+  // the page or ourselves will do it. We have to wait doing it ourselves for as
+  // long as possible, though, to be able to detect `return false` from inline
+  // listeners.
+  let defaultPrevented: "NotPrevented" | "ByPage" | "ByUs" = "NotPrevented";
+
+  if (
+    element instanceof HTMLAnchorElement &&
+    (element.target.toLowerCase() === "_blank" ||
+      (isPinned && element.hostname !== window.location.hostname))
+  ) {
+    // Default to opening this link in a new tab.
+    linkUrl = element.href;
+
+    const override = (method, fn) => {
+      const { prototype } = window.wrappedJSObject.Event;
+      const original = prototype[method];
+      exportFunction(fn(original), prototype, { defineAs: method });
+      return () => {
+        prototype[method] = original;
+      };
+    };
+
+    const onPagePreventDefault = () => {
+      defaultPrevented = "ByPage";
+      // If the page prevents the default action, it does not want the link
+      // opened at all, so clear out `linkUrl`.
+      linkUrl = undefined;
+    };
+
+    // Since Firefox supports `event.cancelBubble = true` and `event.returnValue
+    // = false` things become a little complicated. I tried overriding those
+    // properties with getters/setters to be able to detect when they are set,
+    // but the `get`/`set` callback never seem to have been called. Instead, I
+    // came up with another solution.
+    //
+    // The browser goes through every event target from the top (`window`) down
+    // to `element`, and then up again. When visiting an event target, the
+    // browser calls all listeners registered on that target and calls them in
+    // order. If one of the listeners were to stop propagation, all remaining
+    // listeners for the current target will still be executed, but the browser
+    // won’t move on to the next targets.
+    //
+    // So we add a listener to each target, which will be the last listener for
+    // the target. This way we can inspect `event.defaultPrevented` to see if
+    // any previous listeners prevented the default action, and
+    // `event.cancelBubble` to see if any previous listeners stopped
+    // propagation.
+    for (const target of getAllEventTargetsUpwards(element)) {
+      for (const capture of [true, false]) {
+        resets.add(
+          addEventListener(
+            target,
+            "click",
+            // eslint-disable-next-line no-loop-func
+            event => {
+              // We’re already done – just skip remaining listeners.
+              if (defaultPrevented !== "NotPrevented") {
+                return;
+              }
+
+              // The page has prevented the default action via one of the following:
+              // - `event.preventDefault()`
+              // - `event.returnValue = false`
+              // - `return false` in an inline listener
+              if (event.defaultPrevented) {
+                log("log", prefix, "page preventDefault", event, target);
+                onPagePreventDefault();
+                return;
+              }
+
+              // The page has stopped propagation using one of the following:
+              // - `event.stopPropagation()`
+              // - `event.cancelBubble = true`
+              // We are the last listener to execute, so time to prevent default
+              // ourselves.
+              // (If the page uses `event.stopImmediatePropagation()` we never
+              // end up here – see below.)
+              if (event.cancelBubble || (target === window && !capture)) {
+                log(
+                  "log",
+                  prefix,
+                  "extension preventDefault because of stopPropagation",
+                  event,
+                  target
+                );
+                event.preventDefault();
+                defaultPrevented = "ByUs";
+                return;
+              }
+
+              // If the page never prevents the default action or stops
+              // propagation, then the event will eventually bubble up to
+              // `window` – the last target that the event visits. Then it’s
+              // time to prevent default ourselves, to avoid the popup blocker.
+              if (target === window && !capture) {
+                log(
+                  "log",
+                  prefix,
+                  "extension preventDefault because of bubbled to window",
+                  event,
+                  target
+                );
+                event.preventDefault();
+                defaultPrevented = "ByUs";
+              }
+            },
+            { capture, passive: false }
+          )
+        );
+      }
+    }
+
+    resets.add(
+      // The above approach breaks down if `event.stopImmediatePropagation()` is
+      // called. That method works just like `event.stopPropagation()`, but also
+      // tells the browser not to run any remaining listeners for the current
+      // target. This means that our listeners above won’t run. Instead, we have
+      // to override the `stopImmediatePropagation` method to detect when it is
+      // called.
+      override(
+        "stopImmediatePropagation",
+        originalStopImmediatePropagation =>
+          function stopImmediatePropagation(): mixed {
+            /* eslint-disable babel/no-invalid-this */
+            // We’re already done – just skip remaining listeners.
+            if (defaultPrevented !== "NotPrevented") {
+              return originalStopImmediatePropagation.call(this);
+            }
+
+            log("log", prefix, "page stopImmediatePropagation", this);
+
+            // If the page has already prevented the default action itself,
+            // things are easy. Not much more to do.
+            if (this.defaultPrevented) {
+              log("log", prefix, "page preventDefault", this);
+              onPagePreventDefault();
+              return originalStopImmediatePropagation.call(this);
+            }
+
+            // Otherwise, this is the last chance to prevent default, to make
+            // sure that the popup blocker isn’t triggered.
+            log(
+              "log",
+              prefix,
+              "extension preventDefault because of stopImmediatePropagation"
+            );
+            this.preventDefault();
+            defaultPrevented = "ByUs";
+
+            // But the page might call `event.preventDefault()` itself just
+            // after `event.stopImmediatePropagation()`. Override
+            // `preventDefault` so we can detect this, and not open a new tab if
+            // so. This won’t catch `event.returnValue = false` or `return
+            // false` in an inline listener, but hopefully that’s rare.
+            resets.add(
+              override(
+                "preventDefault",
+                originalPreventDefault =>
+                  function preventDefault(): mixed {
+                    log(
+                      "log",
+                      prefix,
+                      "page preventDefault after stopImmediatePropagation",
+                      this
+                    );
+                    onPagePreventDefault();
+                    return originalPreventDefault.call(this);
+                  }
+              )
+            );
+
+            return originalStopImmediatePropagation.call(this);
+            /* eslint-enable babel/no-invalid-this */
+          }
+      )
+    );
+  }
+
+  const urlsToOpenInNewTabs: Array<string> = [];
+
+  // Temporarily override `window.open`. (If the page has overridden
+  // `window.open` to something completely different, this breaks down a little.
+  // Hopefully that’s rare.)
+  const originalOpen = window.wrappedJSObject.open;
+  exportFunction(
+    function open(
+      url: mixed,
+      target: mixed,
+      features: mixed,
+      ...args: Array<mixed>
+    ): mixed {
+      // These may throw exceptions: `{ toString() { throw new Error } }`;
+      // If so – let that happen, just like standard `window.open`. If they
+      // throw we simply don’t continue.
+      // (If using just `String` rather than `window.wrappedJSObject.String`,
+      // the errors would not show up in the console.)
+      const toString = window.wrappedJSObject.String;
+      const urlString = toString(url);
+      const targetString = toString(target);
+      toString(features);
+
+      if (
+        // When clicking something with the mouse, Firefox only allows one
+        // `window.open` call – the rest are blocked by the popup blocker. This
+        // sounds reasonable – one wouldn’t want a button to open up 100 popups.
+        urlsToOpenInNewTabs.length < 1 &&
+        // All of these mean opening in a new tab/window.
+        (target === undefined ||
+          targetString === "" ||
+          targetString === "_blank")
+      ) {
+        const href =
+          url === undefined || urlString === ""
+            ? "about:blank"
+            : new URL(urlString, window.location.href).toString();
+        urlsToOpenInNewTabs.push(href);
+        log("log", prefix, "window.open", href);
+        // Since we don’t have access to the `window` of the to-be-opened tab,
+        // lie to the page and say that the window couldn’t be opened.
+        return null;
+      }
+
+      // eslint-disable-next-line babel/no-invalid-this
+      return originalOpen.call(this, url, target, features, ...args);
+    },
+    window.wrappedJSObject,
+    { defineAs: "open" }
+  );
+
+  return () => {
+    resets.reset();
+    window.wrappedJSObject.open = originalOpen;
+
+    const result = {
+      pagePreventedDefault: defaultPrevented === "ByPage",
+      urlsToOpenInNewTabs:
+        linkUrl != null
+          ? [linkUrl, ...urlsToOpenInNewTabs]
+          : urlsToOpenInNewTabs,
+    };
+
+    log("log", prefix, "result", result);
+    return result;
+  };
+}
+
+function* getAllEventTargetsUpwards(
+  fromElement: HTMLElement
+): Generator<EventTarget, void, void> {
+  let element = fromElement;
+  do {
+    yield element;
+  } while ((element = element.parentElement));
+  yield document;
+  yield window;
 }
