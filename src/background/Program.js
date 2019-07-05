@@ -42,6 +42,7 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
+  type Options,
   type OptionsData,
   type PartialOptions,
   diffOptions,
@@ -1741,7 +1742,8 @@ export default class BackgroundProgram {
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const unflattened = unflattenOptions(defaulted);
     const decoder = makeOptionsDecoder(defaults);
-    const [options, decodeErrors] = decoder(unflattened);
+    const decodeErrors: Array<string> = [];
+    const options: Options = decoder(unflattened, decodeErrors);
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,

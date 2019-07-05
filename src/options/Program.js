@@ -3,12 +3,12 @@
 import * as React from "preact";
 import {
   array,
+  autoRecord,
   boolean,
   map,
   mixedDict,
   number,
   optional,
-  record,
   string,
 } from "tiny-decoders";
 
@@ -1428,14 +1428,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
           map(array(string), ids =>
             ids.filter(id => ({}.hasOwnProperty.call(this.state.perf, id)))
           ),
-          []
+          ([]: Array<string>)
         ),
         expandedPerf: optional(boolean, false),
         expandedDebug: optional(boolean, false),
         scrollY: optional(number, 0),
       };
       const data = await browser.storage.local.get(Object.keys(recordProps));
-      const decoder = record(recordProps);
+      const decoder = autoRecord(recordProps);
       const { scrollY, expandedPerfTabIds, ...state } = decoder(data);
       this.setState({ ...state, expandedPerfTabIds }, () => {
         window.scrollTo(0, scrollY);

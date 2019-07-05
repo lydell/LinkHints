@@ -1,18 +1,18 @@
 // @flow strict-local
 
 import {
+  type Decoder,
+  array,
   boolean,
-  field,
+  dict,
   map,
-  mixedArray,
-  mixedDict,
+  record,
   repr,
   string,
 } from "tiny-decoders";
 
 import {
   type KeyboardMapping,
-  type KeyPair,
   type KeyTranslations,
   decodeKeyboardMapping,
   decodeKeyboardMappingWithModifiers,
@@ -53,97 +53,40 @@ export type PartialOptions = $Shape<Options>;
 
 export type FlatOptions = { [string]: mixed, ... };
 
-export function makeOptionsDecoder(
-  defaults: Options
-): mixed => [Options, Array<string>] {
-  return map(
-    recordWithDefaultsAndErrors(defaults, {
-      chars: map(string, validateChars),
-      autoActivate: boolean,
-      overTypingDuration: decodeUnsignedInt,
-      css: string,
-      logLevel: map(string, decodeLogLevel),
-      useKeyTranslations: boolean,
-      keyTranslations: dictWithErrors(decodeKeyPair),
-      normalKeyboardShortcuts: arrayWithErrors(
-        decodeKeyboardMappingWithModifiers
-      ),
-      hintsKeyboardShortcuts: arrayWithErrors(decodeKeyboardMapping),
+export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
+  return record(field => ({
+    chars: field("chars", map(string, validateChars), {
+      default: defaults.chars,
     }),
-    ([
-      {
-        keyTranslations,
-        normalKeyboardShortcuts,
-        hintsKeyboardShortcuts,
-        ...options
-      },
-      errors,
-    ]) => {
-      const [keys, keysErrors] = separateKeyTranslationsAndErrors(
-        "keyTranslations",
-        keyTranslations
-      );
-      const [normal, normalErrors] = separateMappingsAndErrors(
-        "normalKeyboardShortcuts",
-        normalKeyboardShortcuts
-      );
-      const [hints, hintsErrors] = separateMappingsAndErrors(
-        "hintsKeyboardShortcuts",
-        hintsKeyboardShortcuts
-      );
-      return [
-        {
-          ...options,
-          keyTranslations: keys,
-          normalKeyboardShortcuts: normal,
-          hintsKeyboardShortcuts: hints,
-        },
-        errors.concat(keysErrors, normalErrors, hintsErrors).map(
-          ([key, error]) =>
-            // Using `JSON.stringify` here instead of `repr` in order not to
-            // truncate the option name.
-            `Decode error for option ${JSON.stringify(key)}: ${error.message}`
-        ),
-      ];
-    }
-  );
-}
-
-function separateKeyTranslationsAndErrors(
-  name: string,
-  keyTranslationsWithErrors: { [string]: KeyPair | TypeError, ... }
-): [{ [string]: KeyPair, ... }, Array<[string, Error]>] {
-  const keyTranslations: { [string]: KeyPair, ... } = {};
-  const errors: Array<[string, Error]> = [];
-
-  for (const key of Object.keys(keyTranslationsWithErrors)) {
-    const item = keyTranslationsWithErrors[key];
-    if (item instanceof TypeError) {
-      errors.push([`${name}[${repr(key)}]`, item]);
-    } else {
-      keyTranslations[key] = item;
-    }
-  }
-
-  return [keyTranslations, errors];
-}
-
-function separateMappingsAndErrors(
-  name: string,
-  mappingsWithErrors: Array<KeyboardMapping | TypeError>
-): [Array<KeyboardMapping>, Array<[string, Error]>] {
-  const mappings: Array<KeyboardMapping> = [];
-  const errors: Array<[string, Error]> = [];
-
-  for (const [index, item] of mappingsWithErrors.entries()) {
-    if (item instanceof TypeError) {
-      errors.push([`${name}[${index}]`, item]);
-    } else {
-      mappings.push(item);
-    }
-  }
-
-  return [mappings, errors];
+    autoActivate: field("autoActivate", boolean, {
+      default: defaults.autoActivate,
+    }),
+    overTypingDuration: field("overTypingDuration", decodeUnsignedInt, {
+      default: defaults.overTypingDuration,
+    }),
+    css: field("css", string, {
+      default: defaults.css,
+    }),
+    logLevel: field("logLevel", map(string, decodeLogLevel), {
+      default: defaults.logLevel,
+    }),
+    useKeyTranslations: field("useKeyTranslations", boolean, {
+      default: defaults.useKeyTranslations,
+    }),
+    keyTranslations: field("keyTranslations", dict(decodeKeyPair, "skip"), {
+      default: defaults.keyTranslations,
+    }),
+    normalKeyboardShortcuts: field(
+      "normalKeyboardShortcuts",
+      array(decodeKeyboardMappingWithModifiers, "skip"),
+      { default: defaults.normalKeyboardShortcuts }
+    ),
+    hintsKeyboardShortcuts: field(
+      "hintsKeyboardShortcuts",
+      array(decodeKeyboardMapping, "skip"),
+      { default: defaults.hintsKeyboardShortcuts }
+    ),
+  }));
 }
 
 const MIN_CHARS = 2;
@@ -385,77 +328,6 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
   };
 }
 
-type ExtractDecoderType = <T, U>((mixed) => T | U) => T | U;
-
-function recordWithDefaultsAndErrors<T: { ... }>(
-  defaults: $ObjMap<T, ExtractDecoderType>,
-  mapping: T
-): mixed => [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
-  return function recordWithDefaultsAndErrorsDecoder(
-    value: mixed
-  ): [$ObjMap<T, ExtractDecoderType>, Array<[string, Error]>] {
-    const obj = mixedDict(value);
-    const keys = Object.keys(mapping);
-    const result = {};
-    const errors = [];
-    for (let index = 0; index < keys.length; index++) {
-      const key = keys[index];
-      const decoder = mapping[key];
-      try {
-        result[key] = decoder(obj[key]);
-      } catch (error) {
-        result[key] = defaults[key];
-        errors.push([key, error]);
-      }
-    }
-    return [result, errors];
-  };
-}
-
-// This also ignores `null` values.
-function arrayWithErrors<T>(
-  decoder: mixed => T
-): mixed => Array<T | TypeError> {
-  return function arrayWithErrorsDecoder(value: mixed): Array<T | TypeError> {
-    const arr = mixedArray(value);
-    const result = [];
-    for (let index = 0; index < arr.length; index++) {
-      if (arr[index] !== null) {
-        try {
-          result.push(field(index, decoder)(arr));
-        } catch (error) {
-          result.push(error);
-        }
-      }
-    }
-    return result;
-  };
-}
-
-// This also ignores `null` values.
-export function dictWithErrors<T>(
-  decoder: mixed => T
-): mixed => { [string]: T | TypeError, ... } {
-  return function dictWithErrorsDecoder(
-    value: mixed
-  ): { [string]: T | TypeError, ... } {
-    const obj = mixedDict(value);
-    const keys = Object.keys(obj);
-    const result = {};
-    for (let index = 0; index < keys.length; index++) {
-      const key = keys[index];
-      if (obj[key] !== null) {
-        try {
-          result[key] = field(key, decoder)(obj);
-        } catch (error) {
-          result[key] = error;
-        }
-      }
-    }
-    return result;
-  };
-}
-
 export function flattenOptions(options: Options): FlatOptions {
   const {
     keyTranslations,
@@ -630,7 +502,8 @@ export function importOptions(
     };
     const unflattened = unflattenOptions(updatedOptionsFlat);
     const decoder = makeOptionsDecoder(defaults);
-    const [newOptions, decodeErrors] = decoder(unflattened);
+    const decodeErrors: Array<string> = [];
+    const newOptions = decoder(unflattened, decodeErrors);
     const errors = keyErrors.concat(decodeErrors);
     return {
       options: newOptions,

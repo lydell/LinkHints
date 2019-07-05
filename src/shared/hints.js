@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { array, either, map, repr, string } from "tiny-decoders";
+import { type Decoder, array, either, map, repr, string } from "tiny-decoders";
 
 // Remember to keep `decodeElementType` below in sync.
 export type ElementType =
@@ -39,7 +39,7 @@ export function decodeElementTypesConstants(type: string): ElementTypes {
   }
 }
 
-export const decodeElementTypes: mixed => ElementTypes = either(
+export const decodeElementTypes: Decoder<ElementTypes> = either(
   map(string, decodeElementTypesConstants),
   array(map(string, decodeElementType))
 );

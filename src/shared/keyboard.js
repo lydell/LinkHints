@@ -1,11 +1,11 @@
 // @flow strict-local
 
 import {
+  type Decoder,
+  autoRecord,
   boolean,
-  field,
-  group,
   map,
-  record,
+  pair,
   repr,
   string,
 } from "tiny-decoders";
@@ -86,7 +86,7 @@ export type Shortcut = {|
   shift: boolean,
 |};
 
-const decodeShortcut: mixed => Shortcut = record({
+const decodeShortcut: Decoder<Shortcut> = autoRecord({
   key: string,
   alt: boolean,
   cmd: boolean,
@@ -156,12 +156,12 @@ export type KeyboardMapping = {|
   action: KeyboardAction,
 |};
 
-export const decodeKeyboardMapping: mixed => KeyboardMapping = record({
+export const decodeKeyboardMapping: Decoder<KeyboardMapping> = autoRecord({
   shortcut: decodeShortcut,
   action: map(string, decodeKeyboardAction),
 });
 
-export const decodeKeyboardMappingWithModifiers: mixed => KeyboardMapping = record(
+export const decodeKeyboardMappingWithModifiers: Decoder<KeyboardMapping> = autoRecord(
   {
     shortcut: map(decodeShortcut, requireModifier),
     action: map(string, decodeKeyboardAction),
@@ -194,13 +194,7 @@ export function decodeHintsMode(type: string): HintsMode {
 
 export type KeyPair = [string, string];
 
-export const decodeKeyPair: mixed => KeyPair = map(
-  group({
-    unshifted: field(0, string),
-    shifted: field(1, string),
-  }),
-  ({ unshifted, shifted }) => [unshifted, shifted]
-);
+export const decodeKeyPair: Decoder<KeyPair> = pair(string, string);
 
 export type KeyTranslations = { [code: string]: KeyPair, ... };
 

@@ -1,6 +1,13 @@
 // @flow strict-local
 
-import { array, constant, fieldAndThen, record, string } from "tiny-decoders";
+import {
+  type Decoder,
+  array,
+  autoRecord,
+  record,
+  repr,
+  string,
+} from "tiny-decoders";
 
 import { type ElementTypes, decodeElementTypes } from "../shared/hints";
 import { type Box, decodeUnsignedFloat } from "../shared/main";
@@ -18,36 +25,34 @@ export type FrameMessage =
       viewports: Array<Box>,
     |};
 
-export const decodeFrameMessage: mixed => FrameMessage = fieldAndThen(
-  "type",
-  string,
-  getFrameMessageDecoder
+export const decodeFrameMessage: Decoder<FrameMessage> = record(
+  (field, fieldError) => {
+    const type = field("type", string);
+
+    switch (type) {
+      case "FindElements":
+        return {
+          type: "FindElements",
+          token: "",
+          types: field("types", decodeElementTypes),
+          viewports: field("viewports", decodeViewports),
+        };
+
+      case "UpdateElements":
+        return {
+          type: "UpdateElements",
+          token: "",
+          viewports: field("viewports", decodeViewports),
+        };
+
+      default:
+        throw fieldError("type", `Unknown FrameMessage type: ${repr(type)}`);
+    }
+  }
 );
 
-function getFrameMessageDecoder(type: string): mixed => FrameMessage {
-  switch (type) {
-    case "FindElements":
-      return record({
-        type: constant("FindElements"),
-        token: () => "",
-        types: decodeElementTypes,
-        viewports: decodeViewports,
-      });
-
-    case "UpdateElements":
-      return record({
-        type: constant("UpdateElements"),
-        token: () => "",
-        viewports: decodeViewports,
-      });
-
-    default:
-      throw new Error(`Unknown FrameMessage type: ${type}`);
-  }
-}
-
-const decodeViewports: mixed => Array<Box> = array(
-  record({
+const decodeViewports: Decoder<Array<Box>> = array(
+  autoRecord({
     x: decodeUnsignedFloat,
     y: decodeUnsignedFloat,
     width: decodeUnsignedFloat,

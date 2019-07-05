@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { array, map, repr, string } from "tiny-decoders";
+import { type Decoder, array, map, repr, string } from "tiny-decoders";
 
 import { type ElementType, decodeElementType } from "./hints";
 import {
@@ -243,7 +243,7 @@ export function normalizeStringArray(
     .sort();
 }
 
-function decodeStringSet<T: string>(decoder: mixed => T): mixed => Set<T> {
+function decodeStringSet<T: string>(decoder: Decoder<T>): Decoder<Set<T>> {
   return map(
     array(string),
     arr => new Set(array(decoder)(normalizeStringArray(arr)))

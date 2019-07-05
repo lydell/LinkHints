@@ -1,6 +1,6 @@
 // @flow
 
-import { map, number, repr } from "tiny-decoders";
+import { type Decoder, map, number, repr } from "tiny-decoders";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -471,7 +471,7 @@ export function deepEqual(a: mixed, b: mixed): boolean {
   return false;
 }
 
-export const decodeUnsignedInt: mixed => number = map(number, value => {
+export const decodeUnsignedInt: Decoder<number> = map(number, value => {
   if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
     throw new TypeError(
       `Expected an unsigned finite integer, but got: ${repr(value)}`
@@ -492,7 +492,7 @@ export function normalizeUnsignedInt(
   );
 }
 
-export const decodeUnsignedFloat: mixed => number = map(number, value => {
+export const decodeUnsignedFloat: Decoder<number> = map(number, value => {
   if (!(Number.isFinite(value) && value >= 0)) {
     throw new TypeError(
       `Expected an unsigned finite float, but got: ${repr(value)}`
