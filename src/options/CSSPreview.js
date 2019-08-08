@@ -191,15 +191,13 @@ export default class CSSPreview extends React.Component<Props, State> {
               )}
 
               {HINT_VARIATIONS.map((variations, y) =>
-                []
-                  .concat(
-                    ...variations.map(([numMatched, numChars]) =>
-                      [false, true].map(highlighted => ({
-                        matchedChars: chars.slice(0, numMatched),
-                        chars: chars.slice(numMatched, numMatched + numChars),
-                        highlighted,
-                      }))
-                    )
+                variations
+                  .flatMap(([numMatched, numChars]) =>
+                    [false, true].map(highlighted => ({
+                      matchedChars: chars.slice(0, numMatched),
+                      chars: chars.slice(numMatched, numMatched + numChars),
+                      highlighted,
+                    }))
                   )
                   .map((props, x) =>
                     hint({

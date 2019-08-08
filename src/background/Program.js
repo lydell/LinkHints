@@ -2078,33 +2078,29 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
 function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
   const manifest = browser.runtime.getManifest();
 
-  const detailsList = [].concat(
-    ...manifest.content_scripts
-      .filter(script => script.matches.includes("<all_urls>"))
-      .map(script =>
-        script.js.map(file => ({
-          file,
-          allFrames: script.all_frames,
-          matchAboutBlank: script.match_about_blank,
-          runAt: script.run_at,
-        }))
-      )
-  );
+  const detailsList = manifest.content_scripts
+    .filter(script => script.matches.includes("<all_urls>"))
+    .flatMap(script =>
+      script.js.map(file => ({
+        file,
+        allFrames: script.all_frames,
+        matchAboutBlank: script.match_about_blank,
+        runAt: script.run_at,
+      }))
+    );
 
   return Promise.all(
-    [].concat(
-      ...tabs.map(tab =>
-        detailsList.map(async details => {
-          try {
-            return await browser.tabs.executeScript(tab.id, details);
-          } catch {
-            // If `executeScript` fails it means that the extension is not
-            // allowed to run content scripts in the tab. Example: most
-            // `chrome://*` pages. We don’t need to do anything in that case.
-            return [];
-          }
-        })
-      )
+    tabs.flatMap(tab =>
+      detailsList.map(async details => {
+        try {
+          return await browser.tabs.executeScript(tab.id, details);
+        } catch {
+          // If `executeScript` fails it means that the extension is not
+          // allowed to run content scripts in the tab. Example: most
+          // `chrome://*` pages. We don’t need to do anything in that case.
+          return [];
+        }
+      })
     )
   );
 }

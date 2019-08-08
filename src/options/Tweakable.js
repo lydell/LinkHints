@@ -36,11 +36,9 @@ const ALL_TWEAKABLES = [
 ];
 
 const ALL_KEYS: Set<string> = new Set(
-  [].concat(
-    ...ALL_TWEAKABLES.map(([, tMeta]) =>
-      Object.keys(tMeta.defaults).map(
-        key => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`
-      )
+  ALL_TWEAKABLES.flatMap(([, tMeta]) =>
+    Object.keys(tMeta.defaults).map(
+      key => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`
     )
   )
 );
@@ -289,27 +287,23 @@ export function hasChangedTweakable(): boolean {
 }
 
 export function getTweakableExport(): { [string]: mixed, ... } {
-  return []
-    .concat(
-      ...ALL_TWEAKABLES.map(([t, tMeta]) =>
-        Object.keys(tMeta.defaults)
-          .map(key => {
-            const { value } = t[key];
-            const { [key]: changed = false } = tMeta.changed;
-            return changed
-              ? [
-                  `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
-                  value instanceof Set ? Array.from(value) : value,
-                ]
-              : undefined;
-          })
-          .filter(Boolean)
-      )
-    )
-    .reduce((result, [key, value]) => {
-      result[key] = value;
-      return result;
-    }, {});
+  return ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
+    Object.keys(tMeta.defaults)
+      .map(key => {
+        const { value } = t[key];
+        const { [key]: changed = false } = tMeta.changed;
+        return changed
+          ? [
+              `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
+              value instanceof Set ? Array.from(value) : value,
+            ]
+          : undefined;
+      })
+      .filter(Boolean)
+  ).reduce((result, [key, value]) => {
+    result[key] = value;
+    return result;
+  }, {});
 }
 
 export function partitionTweakable(data: {

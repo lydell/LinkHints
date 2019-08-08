@@ -245,9 +245,7 @@ function durationsToRows(
   allDurations: Array<Durations>
 ): Array<{| heading: string, values: Array<string> |}> {
   const labels = new Set(
-    [].concat(
-      ...allDurations.map(durations => durations.map(([label]) => label))
-    )
+    allDurations.flatMap(durations => durations.map(([label]) => label))
   );
 
   return Array.from(labels, label => ({
@@ -265,9 +263,7 @@ function statsToRows(
   title: string,
   data: Array<{| heading: string, values: Array<string> |}>,
 |}> {
-  const urls = new Set(
-    [].concat(...allStats.map(stats => stats.map(({ url }) => url)))
-  );
+  const urls = new Set(allStats.flatMap(stats => stats.map(({ url }) => url)));
 
   return Array.from(urls, url => {
     const allData = allStats.map(stats => {

@@ -184,14 +184,12 @@ export default class WorkerProgram {
           indexes.includes(index)
         );
         const wordsSet = new Set(words);
-        const rects = [].concat(
-          ...elements.map(elementData =>
-            getTextRects({
-              element: elementData.element,
-              viewports: current.viewports,
-              words: wordsSet,
-            })
-          )
+        const rects = elements.flatMap(elementData =>
+          getTextRects({
+            element: elementData.element,
+            viewports: current.viewports,
+            words: wordsSet,
+          })
         );
 
         this.sendMessage({
@@ -684,18 +682,16 @@ export default class WorkerProgram {
     const rects =
       words.length === 0
         ? []
-        : [].concat(
-            ...elements
-              .filter((_elementData, index) => current.indexes.includes(index))
-              .filter(Boolean)
-              .map(({ element }) =>
-                getTextRects({
-                  element,
-                  viewports: current.viewports,
-                  words: wordsSet,
-                })
-              )
-          );
+        : elements
+            .filter((_elementData, index) => current.indexes.includes(index))
+            .filter(Boolean)
+            .flatMap(({ element }) =>
+              getTextRects({
+                element,
+                viewports: current.viewports,
+                words: wordsSet,
+              })
+            );
 
     current.updating = false;
 

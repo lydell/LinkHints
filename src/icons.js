@@ -260,10 +260,8 @@ function renderTestPage() {
       <body>
         {variations.map(([icons, color]) => (
           <div class="container" style={`background-color: ${color};`}>
-            {[]
-              .concat(
-                ...icons.svg.map((icon, index) => [icon, icons.png[index]])
-              )
+            {icons.svg
+              .flatMap((icon, index) => [icon, icons.png[index]])
               .map(([size, path]) => (
                 <img src={`../${path}`} width={integer(size)} />
               ))}

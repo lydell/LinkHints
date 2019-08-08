@@ -377,41 +377,37 @@ export function getTextRects({
     [0, 0]
   );
 
-  return [].concat(
-    ...ranges.map(({ range }) => {
-      const rects = range.getClientRects();
-      return Array.from(rects, rect => {
-        const box = getVisibleBox(rect, viewports);
-        if (box == null) {
-          return undefined;
-        }
-        if (!checkElementAtPoint) {
-          return box;
-        }
-        const elementAtPoint = document.elementFromPoint(
-          Math.round(box.x + box.width / 2 - offsetX),
-          Math.round(box.y + box.height / 2 - offsetY)
-        );
-        return elementAtPoint != null && element.contains(elementAtPoint)
-          ? box
-          : undefined;
-      }).filter(Boolean);
-    })
-  );
+  return ranges.flatMap(({ range }) => {
+    const rects = range.getClientRects();
+    return Array.from(rects, rect => {
+      const box = getVisibleBox(rect, viewports);
+      if (box == null) {
+        return undefined;
+      }
+      if (!checkElementAtPoint) {
+        return box;
+      }
+      const elementAtPoint = document.elementFromPoint(
+        Math.round(box.x + box.width / 2 - offsetX),
+        Math.round(box.y + box.height / 2 - offsetY)
+      );
+      return elementAtPoint != null && element.contains(elementAtPoint)
+        ? box
+        : undefined;
+    }).filter(Boolean);
+  });
 }
 
 export function classlist(
   ...args: Array<string | { [string]: boolean, ... }>
 ): string {
-  return []
-    .concat(
-      ...args.map(arg =>
-        typeof arg === "string"
-          ? arg
-          : Object.entries(arg)
-              .filter(([, enabled]) => enabled)
-              .map(([className]) => className)
-      )
+  return args
+    .flatMap(arg =>
+      typeof arg === "string"
+        ? arg
+        : Object.entries(arg)
+            .filter(([, enabled]) => enabled)
+            .map(([className]) => className)
     )
     .join(" ");
 }
