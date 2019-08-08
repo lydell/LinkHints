@@ -122,6 +122,7 @@ function js({ input, output } /*: {| input: string, output: string |} */) {
       file: output,
       format: "iife",
       sourcemap: !PROD,
+      externalLiveBindings: false,
     },
     plugins: [
       sucrase({
