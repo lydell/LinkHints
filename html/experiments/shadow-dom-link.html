@@ -7,12 +7,30 @@
   <body>
     <a href="#">normal link</a>
     <script>
+      const mutationObserver = new MutationObserver(records => {
+        console.log("Mutations:", records);
+      });
+      const mutationOptions = {
+        childList: true,
+        subtree: true,
+      };
+
+      const intersectionObserver = new IntersectionObserver(records => {
+        console.log("Intersections:", records);
+      });
+
+      mutationObserver.observe(document.documentElement, mutationOptions);
+
       const div = document.createElement("div");
-      const root = div.attachShadow({ mode: "open" });
+      const root = div.attachShadow({ mode: "closed" });
+      mutationObserver.observe(root, mutationOptions);
+
       const a = document.createElement("a");
       a.href = "#";
       a.textContent = "link in shadow dom";
+      intersectionObserver.observe(a);
       root.append(a);
+
       document.body.append(div);
     </script>
   </body>
