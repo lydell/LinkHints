@@ -24,6 +24,7 @@ import {
   log,
   Resets,
   unreachable,
+  waitForPaint,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -41,7 +42,6 @@ type CurrentElements = {|
   types: ElementTypes,
   indexes: Array<number>,
   words: Array<string>,
-  updating: boolean,
 |};
 
 export default class WorkerProgram {
@@ -602,17 +602,11 @@ export default class WorkerProgram {
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
   ) {
-    // In ManyClick mode and when refreshing hints we enter hints mode anew
-    // without exiting the “previous” hints mode. Make sure that any update
-    // polling (or the update from `onMutation`) don’t interfere with this
-    // report.
-    if (this.current != null) {
-      this.current.updating = true;
-    }
-
     const time = new TimeTracker();
 
-    const elementsWithNulls: Array<?VisibleElement> = await this.elementManager.getVisibleElements(
+    await waitForPaint();
+
+    const elementsWithNulls: Array<?VisibleElement> = this.elementManager.getVisibleElements(
       types,
       viewports,
       time
@@ -646,7 +640,6 @@ export default class WorkerProgram {
       types,
       indexes: [],
       words: [],
-      updating: false,
     };
 
     const { documentElement } = document;
@@ -659,20 +652,14 @@ export default class WorkerProgram {
     }
   }
 
-  async updateVisibleElements({
+  updateVisibleElements({
     current,
     oneTimeWindowMessageToken,
   }: {|
     current: CurrentElements,
     oneTimeWindowMessageToken: ?string,
   |}) {
-    if (current.updating) {
-      return;
-    }
-
-    current.updating = true;
-
-    const elements: Array<?VisibleElement> = await this.elementManager.getVisibleElements(
+    const elements: Array<?VisibleElement> = this.elementManager.getVisibleElements(
       current.types,
       current.viewports,
       new TimeTracker(),
@@ -711,8 +698,6 @@ export default class WorkerProgram {
                 words: wordsSet,
               })
             );
-
-    current.updating = false;
 
     this.sendMessage({
       type: "ReportUpdatedElements",

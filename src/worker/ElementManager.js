@@ -15,7 +15,6 @@ import {
   log,
   partition,
   Resets,
-  setStyles,
   unreachable,
   walkTextNodes,
 } from "../shared/main";
@@ -222,19 +221,6 @@ type MutationType = "added" | "removed" | "changed";
 const NON_WHITESPACE = /\S/;
 const LAST_NON_WHITESPACE = /\S\s*$/;
 
-// If the `<html>` element has for example `transform: translate(-10px, -10px);`
-// it can cause the probe to be off-screen, but both Firefox and Chrome seem to
-// trigger the IntersectionObserver anyway so we can safely position the probe
-// at (0, 0).
-const PROBE_STYLES = {
-  all: "unset",
-  position: "fixed",
-  top: "0",
-  left: "0",
-  width: "1px",
-  height: "1px",
-};
-
 type Deadline = { timeRemaining: () => number, ... };
 
 const infiniteDeadline: Deadline = {
@@ -242,7 +228,6 @@ const infiniteDeadline: Deadline = {
 };
 
 export default class ElementManager {
-  probe: HTMLElement;
   queue: Queue<QueueItem> = makeEmptyQueue();
   injectedHasQueue: boolean = false;
   elements: Map<HTMLElement, ElementType> = new Map();
@@ -251,10 +236,9 @@ export default class ElementManager {
   elementsWithClickListeners: WeakSet<HTMLElement> = new WeakSet();
   elementsWithScrollbars: WeakSet<HTMLElement> = new WeakSet();
   idleCallbackId: ?IdleCallbackID = undefined;
+  intersectionObserverHasRun: boolean = false;
   bailed: boolean = false;
   resets: Resets = new Resets();
-  observerProbeCallback: ?() => void = undefined;
-  flushObserversPromise: ?Promise<void> = undefined;
 
   intersectionObserver: IntersectionObserver = new IntersectionObserver(
     this.onIntersection.bind(this)
@@ -273,10 +257,6 @@ export default class ElementManager {
   );
 
   constructor() {
-    const probe = document.createElement("div");
-    setStyles(probe, PROBE_STYLES);
-    this.probe = probe;
-
     bind(this, [
       this.onClickableElement,
       this.onUnclickableElement,
@@ -394,16 +374,18 @@ export default class ElementManager {
     records: Array<MutationRecord> | Array<Record>,
     { removalsOnly = false }: {| removalsOnly?: boolean |} = {}
   ) {
-    this.queueItem({
-      type: "Records",
-      records,
-      recordIndex: 0,
-      addedNodeIndex: 0,
-      removedNodeIndex: 0,
-      childIndex: 0,
-      children: undefined,
-      removalsOnly,
-    });
+    if (records.length > 0) {
+      this.queueItem({
+        type: "Records",
+        records,
+        recordIndex: 0,
+        addedNodeIndex: 0,
+        removedNodeIndex: 0,
+        childIndex: 0,
+        children: undefined,
+        removalsOnly,
+      });
+    }
   }
 
   requestIdleCallback() {
@@ -416,22 +398,12 @@ export default class ElementManager {
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
-    let probed = false;
-
+    this.intersectionObserverHasRun = true;
     for (const entry of entries) {
-      if (entry.target === this.probe) {
-        probed = true;
-      } else if (entry.isIntersecting) {
+      if (entry.isIntersecting) {
         this.visibleElements.add(entry.target);
       } else {
         this.visibleElements.delete(entry.target);
-      }
-    }
-
-    if (probed) {
-      log("debug", "ElementManager#onIntersection", "observerProbeCallback");
-      if (this.observerProbeCallback != null) {
-        this.observerProbeCallback();
       }
     }
   }
@@ -453,50 +425,8 @@ export default class ElementManager {
   }
 
   onMutation(records: Array<MutationRecord>) {
-    let shouldQueue = true;
-    let probed = false;
-
-    if (this.observerProbeCallback != null) {
-      shouldQueue = false;
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (node === this.probe) {
-            probed = true;
-          } else {
-            shouldQueue = true;
-          }
-          if (probed && shouldQueue) {
-            break;
-          }
-        }
-
-        if (record.removedNodes.length > 0 || record.attributeName != null) {
-          shouldQueue = true;
-        }
-
-        if (probed && shouldQueue) {
-          break;
-        }
-      }
-    }
-
-    if (shouldQueue) {
-      this.queueRecords(records);
-      this.observeRemovals(records);
-    }
-
-    if (probed) {
-      log("debug", "ElementManager#onMutation", "observerProbeCallback", {
-        didQueue: shouldQueue,
-        queue: {
-          length: this.queue.items.length,
-          index: this.queue.index,
-        },
-      });
-      if (this.observerProbeCallback != null) {
-        this.observerProbeCallback();
-      }
-    }
+    this.queueRecords(records);
+    this.observeRemovals(records);
   }
 
   onRemoval(records: Array<MutationRecord>) {
@@ -879,71 +809,16 @@ export default class ElementManager {
     log("debug", "ElementManager#flushQueue", "Empty queue.");
   }
 
-  flushObservers(): Promise<void> {
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return Promise.resolve();
-    }
-
-    // Another `.getVisibleElements` is already pending and waiting for observers.
-    if (this.flushObserversPromise != null) {
-      return this.flushObserversPromise;
-    }
-
-    const flushObserversPromise = new Promise(resolve => {
-      const intersectionCallback = () => {
-        this.observerProbeCallback = undefined;
-        this.intersectionObserver.unobserve(this.probe);
-        // It is up to the caller of `flushObservers` to remove the probe, since
-        // doing so triggers the MutationObserver, queueing a removed element.
-        // this.probe.remove();
-        resolve();
-      };
-
-      const mutationCallback = () => {
-        this.observerProbeCallback = intersectionCallback;
-        this.intersectionObserver.observe(this.probe);
-      };
-
-      // Trigger first the MutationObserver, then the IntersectionObserver.
-      // Setting `this.observerProbeCallback` like this is a bit ugly, but it
-      // works (at least until we need concurrent flushes).
-      this.observerProbeCallback = mutationCallback;
-      documentElement.append(this.probe);
-    });
-
-    this.flushObserversPromise = flushObserversPromise;
-    flushObserversPromise.finally(() => {
-      this.flushObserversPromise = undefined;
-    });
-
-    return flushObserversPromise;
-  }
-
-  async getVisibleElements(
+  getVisibleElements(
     types: ElementTypes,
     viewports: Array<Box>,
     time: TimeTracker,
     passedCandidates?: Array<HTMLElement>
-  ): Promise<Array<?VisibleElement>> {
+  ): Array<?VisibleElement> {
     const isUpdate = passedCandidates != null;
     const prefix = `ElementManager#getVisibleElements${
       isUpdate ? " (update)" : ""
     }`;
-
-    // Make sure that the MutationObserver and the IntersectionObserver have had
-    // a chance to run. This is important if you click a button that adds new
-    // elements and really quickly enter hints mode after that. Only do this in
-    // the top frame, because that cuts the time to first paint in half on
-    // Twitter. Hopefully, while waiting for the observers in the top frame the
-    // child frame observers run too. Also, don’t flush observers when updating
-    // the positions during hints mode. The thinking is that it should be
-    // faster, and observer updates get through during the next update anyway.
-    time.start("flush observers");
-    if (window.top === window && !isUpdate) {
-      log("log", prefix, "flush observers (top frame only)");
-      await this.flushObservers();
-    }
 
     time.start("flush queues");
 
@@ -954,6 +829,8 @@ export default class ElementManager {
       sendInjectedMessage(MESSAGE_FLUSH);
     }
 
+    this.onMutation(this.mutationObserver.takeRecords());
+
     // If `injectedNeedsFlush` then `this.queue` will be modified, so check the
     // length _after_ flusing injected.js.
     const needsFlush = this.queue.items.length > 0;
@@ -963,19 +840,16 @@ export default class ElementManager {
       this.flushQueue(infiniteDeadline);
     }
 
-    if (injectedNeedsFlush || needsFlush) {
-      log("log", prefix, "flush observers", { injectedNeedsFlush, needsFlush });
-      await this.flushObservers();
+    if (this.intersectionObserverHasRun) {
+      this.onIntersection(this.intersectionObserver.takeRecords());
     }
-
-    this.probe.remove();
 
     const candidates =
       passedCandidates != null
         ? passedCandidates
         : types === "selectable"
         ? document.getElementsByTagName("*")
-        : this.bailed
+        : !this.intersectionObserverHasRun || this.bailed
         ? this.elements.keys()
         : this.visibleElements;
     const range = document.createRange();
