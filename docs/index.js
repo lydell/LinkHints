@@ -70,10 +70,9 @@ const SECTIONS = [
         <p>
           On Windows and Linux, the context menu is usually opened by pressing
           the <KeyboardShortcut press="Menu" /> key or{" "}
-          <KeyboardShortcut shift press="F10" />. On Mac, press{" "}
-          <KeyboardShortcut ctrl press="F2" changeCtrlToCmdOnMac={false} /> to
-          focus the menu bar, which gives access to all of the commands in the
-          context menu.
+          <KeyboardShortcut shift press="F10" />. On Mac, it does unfortunately
+          not seem to be possible to open the context menu via the keyboard.
+          Please let me know if you have any ideas!
         </p>
 
         <p>
