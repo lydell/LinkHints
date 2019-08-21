@@ -258,7 +258,7 @@ function makeGlobals() {
         : JSON.stringify(config.browser),
     // Note: BUILD_ID might vary between different files.
     BUILD_ID: JSON.stringify(
-      PROD ? config.meta.version.replace(/\W/g, "_") : String(Date.now())
+      PROD ? config.meta.version.replace(/\W/g, "_") : Date.now().toString()
     ),
     COLOR_BADGE: JSON.stringify(config.colors.badge),
     COLOR_GREEN: JSON.stringify(config.colors.green),

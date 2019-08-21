@@ -120,7 +120,7 @@ function getGitCommit(): string {
     throw new Error(result.stderr);
   }
 
-  return String(result.stdout).trim();
+  return result.stdout.toString().trim();
 }
 
 async function getAllFilesInDir(dir: string): Promise<Array<string>> {

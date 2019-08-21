@@ -325,7 +325,7 @@ export default class BackgroundProgram {
     const tabState = tabStateRaw == null ? makeEmptyTabState() : tabStateRaw;
 
     if (info != null && tabStateRaw == null) {
-      const { [String(info.tabId)]: perf = [] } = this.restoredTabsPerf;
+      const { [info.tabId.toString()]: perf = [] } = this.restoredTabsPerf;
       tabState.perf = perf;
       this.tabState.set(info.tabId, tabState);
     }
@@ -2168,15 +2168,15 @@ function getBadgeText(hintsState: HintsState): string {
     case "Hinting": {
       const { enteredChars, enteredText } = hintsState;
       const words = splitEnteredText(enteredText);
-      return String(
-        hintsState.elementsWithHints.filter(
+      return hintsState.elementsWithHints
+        .filter(
           element =>
             // "Hidden" elements have been removed from the DOM or moved off-screen.
             !element.hidden &&
             matchesText(element.text, words) &&
             element.hint.startsWith(enteredChars)
-        ).length
-      );
+        )
+        .length.toString();
     }
     default:
       return unreachable(hintsState.type);

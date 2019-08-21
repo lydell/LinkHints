@@ -1216,8 +1216,8 @@ class Deduper {
 
 function hintPositionKey(measurements: HintMeasurements): string {
   return [
-    String(Math.round(measurements.x)),
-    String(Math.round(measurements.y)),
+    Math.round(measurements.x).toString(),
+    Math.round(measurements.y).toString(),
     measurements.align,
   ].join(",");
 }

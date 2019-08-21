@@ -171,10 +171,10 @@ function render(
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox={`0 0 ${size} ${size}`}
-      width={String(size)}
-      height={String(size)}
+      width={size.toString()}
+      height={size.toString()}
     >
-      <g opacity={String(opacity)}>
+      <g opacity={opacity.toString()}>
         <rect
           x="0"
           y="0"
@@ -212,7 +212,7 @@ function float(number: number): string {
 }
 
 function integer(number: number): string {
-  return String(Math.round(number));
+  return Math.round(number).toString();
 }
 
 const testStyles = `

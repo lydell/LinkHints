@@ -205,7 +205,7 @@ function getMedian(numbers: Array<number>): number {
 }
 
 function formatDuration(duration: number): string {
-  return String(Math.round(duration));
+  return Math.round(duration).toString();
 }
 
 function sumStats(
@@ -270,10 +270,10 @@ function statsToRows(
       const match = stats.find(({ url: url2 }) => url2 === url);
       return match != null
         ? {
-            numElements: String(match.numElements),
-            numVisibleElements: String(match.numVisibleElements),
-            numVisibleFrames: String(match.numVisibleFrames),
-            bailed: String(match.bailed),
+            numElements: match.numElements.toString(),
+            numVisibleElements: match.numVisibleElements.toString(),
+            numVisibleFrames: match.numVisibleFrames.toString(),
+            bailed: match.bailed.toString(),
             durations: match.durations,
           }
         : {

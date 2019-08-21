@@ -94,7 +94,7 @@ export default class RendererProgram {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      "z-index": String(MAX_Z_INDEX),
+      "z-index": MAX_Z_INDEX.toString(),
     });
 
     this.statusElement = document.createElement("div");
@@ -103,7 +103,7 @@ export default class RendererProgram {
     this.statusElement.append(this.statusText);
     setStyles(this.statusElement, {
       position: "absolute",
-      "z-index": String(MAX_Z_INDEX),
+      "z-index": MAX_Z_INDEX.toString(),
     });
 
     this.hintSize = {
@@ -416,7 +416,7 @@ export default class RendererProgram {
       setStyles(element, {
         ...styles,
         // Remove 1 so that all hints stay below the status.
-        "z-index": String(MAX_Z_INDEX - index - 1),
+        "z-index": (MAX_Z_INDEX - index - 1).toString(),
       });
 
       root.append(element);
@@ -512,7 +512,7 @@ export default class RendererProgram {
               // Only update `z-index` when the entered text chars have changed
               // (that's the only time `z-index` _needs_ updating), to avoid
               // hints rotating back when entering hint chars.
-              "z-index": String(MAX_Z_INDEX - update.order),
+              "z-index": (MAX_Z_INDEX - update.order).toString(),
               // Reset margins for `this.moveInsideViewport`.
               "margin-right": "",
             });
@@ -591,14 +591,14 @@ export default class RendererProgram {
     for (const rect of rects) {
       const element = document.createElement("div");
       element.className = TEXT_RECT_CLASS;
-      element.setAttribute("data-frame-id", String(frameId));
+      element.setAttribute("data-frame-id", frameId.toString());
       setStyles(element, {
         position: "absolute",
         left: `${rect.x}px`,
         top: `${rect.y}px`,
         width: `${rect.width}px`,
         height: `${rect.height}px`,
-        "z-index": String(MIN_Z_INDEX),
+        "z-index": MIN_Z_INDEX.toString(),
       });
       root.append(element);
     }

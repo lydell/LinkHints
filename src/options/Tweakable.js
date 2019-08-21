@@ -152,7 +152,7 @@ function TweakableField<T: TweakableValue>({
               <TextInput
                 id={id}
                 style={{ width: "50%" }}
-                savedValue={String(value.value)}
+                savedValue={value.value.toString()}
                 normalize={newValue =>
                   normalizeUnsignedInt(newValue, defaultValue.value)
                 }
@@ -175,7 +175,7 @@ function TweakableField<T: TweakableValue>({
               <TextInput
                 id={id}
                 style={{ width: "50%" }}
-                savedValue={String(value.value)}
+                savedValue={value.value.toString()}
                 normalize={newValue =>
                   normalizeUnsignedFloat(newValue, defaultValue.value)
                 }

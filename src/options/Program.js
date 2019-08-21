@@ -562,7 +562,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     <TextInput
                       style={{ flex: "1 1 50%" }}
                       disabled={!options.autoActivate}
-                      savedValue={String(options.overTypingDuration)}
+                      savedValue={options.overTypingDuration.toString()}
                       normalize={value =>
                         normalizeUnsignedInt(value, defaults.overTypingDuration)
                       }
@@ -1540,10 +1540,12 @@ function readAsJson(file: File): Promise<mixed> {
 }
 
 function toISODateString(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.getFullYear()}-${(date.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}-${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 function viewKey(key: string): string {

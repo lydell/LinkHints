@@ -176,7 +176,7 @@ export default class CSSPreview extends React.Component<Props, State> {
                 className={STATUS_CLASS}
                 style={{
                   position: "absolute",
-                  zIndex: String(MAX_Z_INDEX),
+                  zIndex: MAX_Z_INDEX.toString(),
                 }}
               >
                 {ENTERED_TEXT}
@@ -219,7 +219,7 @@ export default class CSSPreview extends React.Component<Props, State> {
                     top: box.y,
                     width: box.width,
                     height: box.height,
-                    zIndex: String(MIN_Z_INDEX),
+                    zIndex: MIN_Z_INDEX.toString(),
                   }}
                 />
               ))}

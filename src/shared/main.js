@@ -481,11 +481,11 @@ export function normalizeUnsignedInt(
   defaultValue: number
 ): string {
   const parsed = parseFloat(value);
-  return String(
+  const defaulted =
     Number.isFinite(parsed) && parsed >= 0 && Number.isInteger(parsed)
       ? parsed
-      : defaultValue
-  );
+      : defaultValue;
+  return defaulted.toString();
 }
 
 export const decodeUnsignedFloat: Decoder<number> = map(number, value => {
@@ -502,5 +502,7 @@ export function normalizeUnsignedFloat(
   defaultValue: number
 ): string {
   const parsed = parseFloat(value);
-  return String(Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue);
+  const defaulted =
+    Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
+  return defaulted.toString();
 }

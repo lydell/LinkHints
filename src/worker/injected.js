@@ -535,7 +535,7 @@ export default () => {
         ? { capture: Boolean(options) }
         : options;
     const optionsString = optionNames
-      .map(name => String(Boolean(normalized[name])))
+      .map(name => Boolean(normalized[name]).toString())
       .join(",");
     return `${eventName}:${optionsString}`;
   }

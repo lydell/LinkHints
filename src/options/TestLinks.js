@@ -63,7 +63,7 @@ export default class TestLinks extends React.Component<Props, State> {
         <p className="TestLinks-pagination Spaced">
           <TestLink text="Previous" />
           {Array.from({ length: 12 }, (_, index) => (
-            <TestLink text={String(index + 1)} />
+            <TestLink text={(index + 1).toString()} />
           ))}
           <TestLink text="Next" />
         </p>

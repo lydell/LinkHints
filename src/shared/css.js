@@ -20,7 +20,7 @@ export const SHRUGGIE = "¯\\_(ツ)_/¯";
 export const CONTAINER_STYLES = {
   all: "unset",
   position: "fixed",
-  "z-index": String(MAX_Z_INDEX),
+  "z-index": MAX_Z_INDEX.toString(),
   "pointer-events": "none",
   overflow: "hidden",
 };
