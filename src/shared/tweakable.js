@@ -188,13 +188,11 @@ export function tweakable(
   const loaded = browser.storage.sync
     .get(Object.keys(defaults).map(key => `${keyPrefix}${key}`))
     .then(rawData => {
-      const data = Object.entries(rawData).reduce(
-        (result, [fullKey, value]) => {
-          const key = fullKey.slice(keyPrefix.length);
-          result[key] = value;
-          return result;
-        },
-        {}
+      const data = Object.fromEntries(
+        Object.entries(rawData).map(([fullKey, value]) => [
+          fullKey.slice(keyPrefix.length),
+          value,
+        ])
       );
       update(data);
     })
@@ -210,15 +208,19 @@ export function tweakable(
     browser.storage.onChanged,
     (changes, areaName) => {
       if (areaName === "sync") {
-        const data = Object.keys(changes).reduce((result, fullKey) => {
-          if (fullKey.startsWith(keyPrefix)) {
-            const key = fullKey.slice(keyPrefix.length);
-            if ({}.hasOwnProperty.call(defaults, key)) {
-              result[key] = changes[fullKey].newValue;
-            }
-          }
-          return result;
-        }, {});
+        const data = Object.fromEntries(
+          Object.keys(changes)
+            .map(fullKey => {
+              if (fullKey.startsWith(keyPrefix)) {
+                const key = fullKey.slice(keyPrefix.length);
+                if ({}.hasOwnProperty.call(defaults, key)) {
+                  return [key, changes[fullKey].newValue];
+                }
+              }
+              return undefined;
+            })
+            .filter(Boolean)
+        );
         update(data);
       }
     }

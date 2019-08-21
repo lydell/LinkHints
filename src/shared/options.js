@@ -348,20 +348,24 @@ function flattenKeyTranslations(
   keyTranslations: KeyTranslations,
   prefix: string
 ): FlatOptions {
-  return Object.keys(keyTranslations).reduce((result, code) => {
-    result[`${prefix}.${code}`] = keyTranslations[code];
-    return result;
-  }, {});
+  return Object.fromEntries(
+    Object.keys(keyTranslations).map(code => [
+      `${prefix}.${code}`,
+      keyTranslations[code],
+    ])
+  );
 }
 
 function flattenKeyboardMappings(
   mappings: Array<KeyboardMapping>,
   prefix: string
 ): FlatOptions {
-  return mappings.reduce((result, mapping) => {
-    result[`${prefix}.${serializeShortcut(mapping.shortcut)}`] = mapping.action;
-    return result;
-  }, {});
+  return Object.fromEntries(
+    mappings.map(mapping => [
+      `${prefix}.${serializeShortcut(mapping.shortcut)}`,
+      mapping.action,
+    ])
+  );
 }
 
 const PREFIX_REGEX = /([^.]+)\.([^]*)/;

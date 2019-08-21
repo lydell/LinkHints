@@ -171,13 +171,7 @@ async function getDebugInfo(): Promise<string> {
     navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
   ]);
 
-  const layout =
-    layoutMap != null
-      ? Array.from(layoutMap).reduce((result, [code, key]) => {
-          result[code] = key;
-          return result;
-        }, {})
-      : null;
+  const layout = layoutMap != null ? Object.fromEntries(layoutMap) : null;
 
   const info = JSON.stringify(
     {

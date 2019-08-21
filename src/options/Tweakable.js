@@ -287,23 +287,22 @@ export function hasChangedTweakable(): boolean {
 }
 
 export function getTweakableExport(): { [string]: mixed, ... } {
-  return ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
-    Object.keys(tMeta.defaults)
-      .map(key => {
-        const { value } = t[key];
-        const { [key]: changed = false } = tMeta.changed;
-        return changed
-          ? [
-              `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
-              value instanceof Set ? Array.from(value) : value,
-            ]
-          : undefined;
-      })
-      .filter(Boolean)
-  ).reduce((result, [key, value]) => {
-    result[key] = value;
-    return result;
-  }, {});
+  return Object.fromEntries(
+    ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
+      Object.keys(tMeta.defaults)
+        .map(key => {
+          const { value } = t[key];
+          const { [key]: changed = false } = tMeta.changed;
+          return changed
+            ? [
+                `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
+                value instanceof Set ? Array.from(value) : value,
+              ]
+            : undefined;
+        })
+        .filter(Boolean)
+    )
+  );
 }
 
 export function partitionTweakable(data: {

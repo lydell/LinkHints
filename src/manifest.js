@@ -77,12 +77,8 @@ function getBrowserSpecificSettings(browser: ?Browser): mixed {
 }
 
 function makeSizes(icons: Array<[number, string]>): IconSizes {
-  return icons.reduce(
-    (result, [size, path]) => ({
-      ...result,
-      [size]: path,
-    }),
-    {}
+  return Object.fromEntries(
+    icons.map(([size, path]) => [size.toString(), path])
   );
 }
 

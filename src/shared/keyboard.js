@@ -135,18 +135,15 @@ export function deserializeShortcut(
   const parts = shortcutString.split(SHORTCUT_SEPARATOR);
   const lastIndex = parts.length - 1;
   return parts.reduce(
-    (result, part, index) => {
-      if (index === lastIndex) {
-        // If the last part is empty, we’re deserializing a shortcut like `alt--`.
-        result.key = part === "" ? SHORTCUT_SEPARATOR : part;
-      }
-      // Ignore empty parts, such as in `alt--x`.
-      else if (part !== "") {
-        // Modifiers.
-        result[part] = true;
-      }
-      return result;
-    },
+    (shortcut, part, index) =>
+      index === lastIndex
+        ? // If the last part is empty, we’re deserializing a shortcut like `alt--`.
+          { ...shortcut, key: part === "" ? SHORTCUT_SEPARATOR : part }
+        : // Ignore empty parts, such as in `alt--x`.
+        part !== ""
+        ? // Modifiers.
+          { ...shortcut, [part]: true }
+        : shortcut,
     { ...EMPTY_SHORTCUT }
   );
 }

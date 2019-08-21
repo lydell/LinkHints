@@ -1341,12 +1341,11 @@ export default class BackgroundProgram {
           logLevel: log.level,
           options: this.options,
         });
-        const perf = Array.from(this.tabState).reduce(
-          (result, [tabId, tabState2]) => {
-            result[tabId] = tabState2.perf;
-            return result;
-          },
-          {}
+        const perf = Object.fromEntries(
+          Array.from(this.tabState, ([tabId, tabState2]) => [
+            tabId.toString(),
+            tabState2.perf,
+          ])
         );
         this.sendOptionsMessage({ type: "PerfUpdate", perf });
         break;
@@ -2134,23 +2133,24 @@ type IconType = "normal" | "disabled";
 
 function getIcons(type: IconType): { [string]: string, ... } {
   const manifest = browser.runtime.getManifest();
-  return Object.entries(manifest.browser_action.default_icon).reduce(
-    (result, [key, value]) => {
-      if (typeof value === "string") {
-        const newValue = value.replace(/(\$)\w+/, `$1${type}`);
-        // Default icons are always PNG in development to support Chrome. Switch
-        // to SVG in Firefox during development to make it easier to work on the
-        // SVG icon source (automatic reloading). This also requires a
-        // cache-bust.
-        const finalValue =
-          !PROD && BROWSER === "firefox"
-            ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
-            : newValue;
-        result[key] = finalValue;
-      }
-      return result;
-    },
-    {}
+  return Object.fromEntries(
+    Object.entries(manifest.browser_action.default_icon)
+      .map(([key, value]) => {
+        if (typeof value === "string") {
+          const newValue = value.replace(/(\$)\w+/, `$1${type}`);
+          // Default icons are always PNG in development to support Chrome. Switch
+          // to SVG in Firefox during development to make it easier to work on the
+          // SVG icon source (automatic reloading). This also requires a
+          // cache-bust.
+          const finalValue =
+            !PROD && BROWSER === "firefox"
+              ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
+              : newValue;
+          return [key, finalValue];
+        }
+        return undefined;
+      })
+      .filter(Boolean)
   );
 }
 
