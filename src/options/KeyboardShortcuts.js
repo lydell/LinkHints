@@ -224,6 +224,16 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                     chars
                   );
 
+                  const shortcutsWithWarnings = mac
+                    ? shortcuts.filter(
+                        ({ shortcut }) =>
+                          shortcut.alt &&
+                          !shortcut.ctrl &&
+                          !shortcut.cmd &&
+                          shortcut.key.length === 1
+                      )
+                    : [];
+
                   return (
                     <tr
                       key={index}
@@ -237,6 +247,24 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                           <p className="TextSmall Error">
                             Overridden hint characters:{" "}
                             {conflictingChars.join(", ")}
+                          </p>
+                        )}
+                        {shortcutsWithWarnings.length > 0 && (
+                          <p className="TextSmall">
+                            Warning:{" "}
+                            {shortcutsWithWarnings.map(
+                              ({ key, shortcut }, index2) => (
+                                <span key={key}>
+                                  {index2 > 0 && ", "}
+                                  <KeyboardShortcut
+                                    mac={mac}
+                                    shortcut={shortcut}
+                                  />
+                                </span>
+                              )
+                            )}{" "}
+                            might prevent you from typing certain special
+                            characters into text fields.
                           </p>
                         )}
                       </th>

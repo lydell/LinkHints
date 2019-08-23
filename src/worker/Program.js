@@ -50,6 +50,7 @@ export default class WorkerProgram {
   keyTranslations: KeyTranslations = {};
   current: ?CurrentElements = undefined;
   oneTimeWindowMessageToken: ?string = undefined;
+  mac: boolean = false;
   suppressNextKeyup: ?{| key: string, code: string |} = undefined;
   resets: Resets = new Resets();
   elementManager: ElementManager = new ElementManager();
@@ -133,6 +134,7 @@ export default class WorkerProgram {
         this.keyboardMode = message.keyboardMode;
         this.keyTranslations = message.keyTranslations;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
+        this.mac = message.mac;
 
         if (message.clearElements) {
           this.current = undefined;
@@ -446,19 +448,36 @@ export default class WorkerProgram {
     });
 
     const suppress =
+      // If we matched one of our keyboard shortcuts, always suppress.
       match != null ||
+      // Just after activating a hint, suppress everything for a short while.
       this.keyboardMode === "PreventOverTyping" ||
+      // When capturing keypresses in the Options UI, always suppress.
       this.keyboardMode === "Capture" ||
-      // Allow ctrl and cmd _shortcuts_ in hints mode (but always suppress
+      // Allow ctrl and cmd system shortcuts in hints mode (but always suppress
       // pressing modifier keys _themselves_ in case the page does unwanted
       // things when holding down alt for example). ctrl and cmd can't safely be
       // combined with hint chars anyway, due to some keyboard shortcuts not
       // being suppressable (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
       // ctrl+alt+t opens a terminal by default in Ubuntu).
       // This always uses `event.key` since we are looking for _actual_ modifier
-      // key presses (keys may be rebound).
+      // keypresses (keys may be rebound).
+      // Note: On mac, alt/option is used to type special characters, while most
+      // (if not all) ctrl shortcuts are up for grabs by extensions, so on mac
+      // ctrl is used to activate hints in a new tab instead of alt.
+      // In Hints mode…
       (this.keyboardMode === "Hints" &&
-        (isModifierKey(event.key) || (!event.ctrlKey && !event.metaKey)));
+        // …suppress lone modifier keypresses (as mentioned above)…
+        (isModifierKey(event.key) ||
+          // …or any other keypress really, with a few exceptions:
+          (this.mac
+            ? // On mac, allow cmd shortcuts (option is not used for shortcuts
+              // but for typing special characters, and ctrl is used to
+              // activate hints in new tabs):
+              !event.metaKey
+            : // On Windows and Linux, allow ctrl and win/super system shortcuts
+              // (alt is used to activate hints in new tabs):
+              !event.ctrlKey && !event.metaKey)));
 
     if (suppress) {
       suppressEvent(event);

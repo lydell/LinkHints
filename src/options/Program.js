@@ -59,7 +59,7 @@ import CSSPreview from "./CSSPreview";
 import Details from "./Details";
 import Field from "./Field";
 import ImportSummary from "./ImportSummary";
-import KeyboardShortcut from "./KeyboardShortcut";
+import KeyboardShortcut, { viewKey } from "./KeyboardShortcut";
 import KeyboardShortcuts, {
   describeKeyboardAction,
   getConflictingKeyboardActions,
@@ -937,9 +937,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
             description={
               <p>
                 <strong>Tip:</strong> Hold{" "}
-                <KeyboardShortcut mac={mac} shortcut={{ alt: true }} /> while
-                activating a hint (typing the last character) to force links to
-                open in a new tab!
+                <KeyboardShortcut
+                  mac={mac}
+                  shortcut={{ alt: !mac, ctrl: mac }}
+                />{" "}
+                while activating a hint (typing the last character) to force
+                links to open in a new tab!
               </p>
             }
             requireModifiers
@@ -1546,20 +1549,4 @@ function toISODateString(date: Date): string {
     .getDate()
     .toString()
     .padStart(2, "0")}`;
-}
-
-function viewKey(key: string): string {
-  if (key === " ") {
-    return "Space";
-  }
-
-  if (/^\s$/.test(key)) {
-    return `U+${key
-      .charCodeAt(0)
-      .toString(16)
-      .padStart(4, "0")
-      .toUpperCase()}`;
-  }
-
-  return key;
 }

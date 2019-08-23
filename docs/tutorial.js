@@ -246,8 +246,8 @@ const STEPS = [
           has focus.
         </p>
         <p>
-          Hold <KeyboardShortcut alt /> while activating a hint (typing the last
-          character) to force links to open in a new tab.
+          Hold {shortcuts.ForceOpenInNewTab} while activating a hint (typing the
+          last character) to force links to open in a new tab.
         </p>
         <p>
           Too many hints near each other? Press {shortcuts.RotateHintsForward}{" "}

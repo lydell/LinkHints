@@ -14,6 +14,7 @@ import {
 import {
   type KeyboardMapping,
   type KeyTranslations,
+  type Shortcut,
   decodeKeyboardMapping,
   decodeKeyboardMappingWithModifiers,
   decodeKeyPair,
@@ -132,6 +133,26 @@ function pruneChars(chars: string): string {
 }
 
 export function getDefaults({ mac }: {| mac: boolean |}): Options {
+  function shortcut({
+    key,
+    alt = false,
+    cmd = false,
+    ctrl = false,
+    shift = false,
+  }: $Shape<Shortcut>): Shortcut {
+    return { key, alt, cmd, ctrl, shift };
+  }
+
+  function mainShortcut(key: string): Shortcut {
+    return {
+      key,
+      alt: !mac,
+      cmd: false,
+      ctrl: mac,
+      shift: false,
+    };
+  }
+
   return {
     chars: "fjdkslaurieowhgmvcn",
     autoActivate: true,
@@ -143,185 +164,116 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
     keyTranslations: EN_US_QWERTY_TRANSLATIONS,
     normalKeyboardShortcuts: [
       {
-        shortcut: {
-          key: "j",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("j"),
         action: "EnterHintsMode_Click",
       },
       {
-        shortcut: {
-          key: "k",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("k"),
         action: "EnterHintsMode_BackgroundTab",
       },
       {
-        shortcut: {
-          key: "l",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("l"),
         action: "EnterHintsMode_ForegroundTab",
       },
       {
-        shortcut: {
-          key: "J",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("J"),
         action: "EnterHintsMode_ManyClick",
       },
       {
-        shortcut: {
-          key: "K",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("K"),
         action: "EnterHintsMode_ManyTab",
       },
       {
-        shortcut: {
-          key: "L",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        shortcut: mainShortcut("L"),
         action: "EnterHintsMode_Select",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "ArrowUp",
           alt: !mac,
-          cmd: false,
           ctrl: mac,
           shift: true,
-        },
+        }),
         action: "ReverseSelection",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Space",
-          alt: true,
-          cmd: false,
+          alt: !mac,
           ctrl: true,
-          shift: false,
-        },
+          shift: mac,
+        }),
         action: "ClickFocusedElement",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Escape",
-          alt: false,
-          cmd: false,
-          ctrl: false,
           shift: true,
-        },
+        }),
         action: "Escape",
       },
     ],
     hintsKeyboardShortcuts: [
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Enter",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        }),
         action: "ActivateHint",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Enter",
-          alt: true,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+          alt: !mac,
+          ctrl: mac,
+        }),
         action: "ActivateHintAlt",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Backspace",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        }),
         action: "Backspace",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Tab",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        }),
         action: "RotateHintsForward",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Tab",
-          alt: false,
-          cmd: false,
-          ctrl: false,
           shift: true,
-        },
+        }),
         action: "RotateHintsBackward",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "r",
-          alt: false,
           cmd: mac,
           ctrl: !mac,
-          shift: false,
-        },
+        }),
         action: "RefreshHints",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "p",
-          alt: false,
           cmd: mac,
           ctrl: !mac,
-          shift: false,
-        },
+        }),
         action: "TogglePeek",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Escape",
-          alt: false,
-          cmd: false,
-          ctrl: false,
-          shift: false,
-        },
+        }),
         action: "ExitHintsMode",
       },
       {
-        shortcut: {
+        shortcut: shortcut({
           key: "Escape",
-          alt: false,
-          cmd: false,
-          ctrl: false,
           shift: true,
-        },
+        }),
         action: "Escape",
       },
     ],

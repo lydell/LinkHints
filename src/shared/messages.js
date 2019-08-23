@@ -111,6 +111,7 @@ export type ToWorker =
       keyboardMode: KeyboardMode,
       keyTranslations: KeyTranslations,
       oneTimeWindowMessageToken: string,
+      mac: boolean,
     |}
   | {|
       type: "StartFindElements",

@@ -756,7 +756,15 @@ export default class BackgroundProgram {
             updates,
             preventOverTyping,
             forceForegroundTab:
-              (input.type === "Input" && input.keypress.alt) ||
+              // By holding a modifier while typing the last character to
+              // activate a hint forces opening links in new tabs. On Windows
+              // and Linux, alt is used (since it is the only safe modifier). On
+              // mac, ctrl is used since alt/option types special characters and
+              // cmd is not safe.
+              (input.type === "Input" &&
+                (this.options.mac
+                  ? input.keypress.ctrl
+                  : input.keypress.alt)) ||
               (input.type === "ActivateHint" && input.alt),
             timestamp,
           });
@@ -1510,7 +1518,7 @@ export default class BackgroundProgram {
       case "ActivateHintAlt":
         this.handleHintInput(info.tabId, timestamp, {
           type: "ActivateHint",
-          alt: false,
+          alt: true,
         });
         break;
 
@@ -1837,6 +1845,7 @@ export default class BackgroundProgram {
         ? this.options.values.keyTranslations
         : {},
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
+      mac: this.options.mac,
     };
 
     return hintsState.type === "Hinting"

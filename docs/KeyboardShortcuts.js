@@ -2,12 +2,20 @@
 
 import * as React from "preact";
 
+type Modifier = boolean | {| mac: "alt" | "cmd" | "ctrl" | "shift" |};
+
+const MODIFIER_NAMES = {
+  alt: "Alt",
+  cmd: "Cmd",
+  ctrl: "Ctrl",
+  shift: "Shift",
+};
+
 type Props = {|
-  alt?: boolean,
-  ctrl?: boolean,
-  shift?: boolean,
+  alt?: Modifier,
+  ctrl?: Modifier,
+  shift?: Modifier,
   press?: string,
-  changeCtrlToCmdOnMac?: boolean,
 |};
 
 export default function KeyboardShortcut({
@@ -15,47 +23,71 @@ export default function KeyboardShortcut({
   ctrl = false,
   shift = false,
   press = "",
-  changeCtrlToCmdOnMac = true,
 }: Props) {
+  const modifiers = [
+    [MODIFIER_NAMES.ctrl, ctrl],
+    [MODIFIER_NAMES.alt, alt],
+    [MODIFIER_NAMES.shift, shift],
+  ];
   return (
     <span className="KeyboardShortcut">
-      {ctrl && (
-        <kbd data-mac={changeCtrlToCmdOnMac ? "Cmd" : undefined}>Ctrl</kbd>
+      {modifiers.map(([name, modifier]) =>
+        modifier ? (
+          <kbd
+            key={name}
+            data-mac={
+              typeof modifier === "boolean"
+                ? undefined
+                : MODIFIER_NAMES[modifier.mac]
+            }
+          >
+            {name}
+          </kbd>
+        ) : (
+          undefined
+        )
       )}
-      {alt && <kbd>Alt</kbd>}
-      {shift && <kbd>Shift</kbd>}
       {press !== "" && <kbd>{press}</kbd>}
     </span>
   );
 }
 
+function MainShortcut({
+  shift = false,
+  press,
+}: {|
+  shift?: boolean,
+  press: string,
+|}) {
+  return <KeyboardShortcut alt={{ mac: "ctrl" }} shift={shift} press={press} />;
+}
+
 export const shortcuts = {
   // Normal.
-  EnterHintsMode_Click: <KeyboardShortcut alt press="J" />,
-  EnterHintsMode_BackgroundTab: <KeyboardShortcut alt press="K" />,
-  EnterHintsMode_ForegroundTab: <KeyboardShortcut alt press="L" />,
-  EnterHintsMode_ManyClick: <KeyboardShortcut alt shift press="J" />,
-  EnterHintsMode_ManyTab: <KeyboardShortcut alt shift press="K" />,
-  EnterHintsMode_Select: <KeyboardShortcut alt shift press="L" />,
+  EnterHintsMode_Click: <MainShortcut press="J" />,
+  EnterHintsMode_BackgroundTab: <MainShortcut press="K" />,
+  EnterHintsMode_ForegroundTab: <MainShortcut press="L" />,
+  EnterHintsMode_ManyClick: <MainShortcut shift press="J" />,
+  EnterHintsMode_ManyTab: <MainShortcut shift press="K" />,
+  EnterHintsMode_Select: <MainShortcut shift press="L" />,
   ReverseSelection: (
-    <span className="KeyboardShortcut">
-      <kbd data-mac="Ctrl">Alt</kbd>
-      <kbd>Shift</kbd>
-      <kbd>ArrowUp</kbd>
-    </span>
+    <KeyboardShortcut alt={{ mac: "ctrl" }} shift press="ArrowUp" />
   ),
   ClickFocusedElement: (
-    <KeyboardShortcut alt ctrl press="Space" changeCtrlToCmdOnMac={false} />
+    <KeyboardShortcut ctrl alt={{ mac: "shift" }} press="Enter" />
   ),
   Escape: <KeyboardShortcut shift press="Escape" />,
 
   // Hints.
   ActivateHint: <KeyboardShortcut press="Enter" />,
-  ActivateHintAlt: <KeyboardShortcut alt press="Enter" />,
+  ActivateHintAlt: <KeyboardShortcut alt={{ mac: "ctrl" }} press="Enter" />,
   Backspace: <KeyboardShortcut press="Backspace" />,
   RotateHintsForward: <KeyboardShortcut press="Tab" />,
   RotateHintsBackward: <KeyboardShortcut shift press="Tab" />,
-  RefreshHints: <KeyboardShortcut ctrl press="R" />,
-  TogglePeek: <KeyboardShortcut ctrl press="P" />,
+  RefreshHints: <KeyboardShortcut ctrl={{ mac: "cmd" }} press="R" />,
+  TogglePeek: <KeyboardShortcut ctrl={{ mac: "cmd" }} press="P" />,
   ExitHintsMode: <KeyboardShortcut press="Escape" />,
+
+  // Extra.
+  ForceOpenInNewTab: <KeyboardShortcut alt={{ mac: "ctrl" }} />,
 };
