@@ -20,8 +20,8 @@ const STEPS = [
           to click things.
         </p>
         <p className="large">
-          Try it! Press the shortcut, and then type the letter
-          <dfn>(hint)</dfn> that appears on the “Next step” button.
+          Try it! Press the shortcut, and then type the letter <dfn>(hint)</dfn>{" "}
+          that appears on the “Next step” button.
         </p>
         <p>Press {shortcuts.ExitHintsMode} to cancel.</p>
         <Info title="Having trouble?">
