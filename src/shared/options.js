@@ -331,21 +331,21 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
     if (!(typeof options[parent] === "object" && options[parent] != null)) {
       options[parent] = {};
     }
-    options[parent][key] = value;
+    if (value !== null) {
+      options[parent][key] = value;
+    }
   }
 
   function pushShortcut(parent: string, key: string, value: mixed) {
     if (!Array.isArray(options[parent])) {
       options[parent] = [];
     }
-    options[parent].push(
-      value === null
-        ? null
-        : {
-            shortcut: deserializeShortcut(key),
-            action: value,
-          }
-    );
+    if (value !== null) {
+      options[parent].push({
+        shortcut: deserializeShortcut(key),
+        action: value,
+      });
+    }
   }
 
   for (const key of Object.keys(object)) {
