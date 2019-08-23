@@ -295,7 +295,14 @@ export default class BackgroundProgram {
   }
 
   async sendOptionsMessage(message: ToOptions) {
-    await this.sendBackgroundMessage({ type: "ToOptions", message });
+    const optionsTabOpen = Array.from(this.tabState).some(
+      ([, tabState]) => tabState.isOptionsPage
+    );
+    // Trying to send a message to Options when no Options tab is open results
+    // in "errors" being logged to the console.
+    if (optionsTabOpen) {
+      await this.sendBackgroundMessage({ type: "ToOptions", message });
+    }
   }
 
   // This might seem like sending a message to oneself, but
