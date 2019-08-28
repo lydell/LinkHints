@@ -635,6 +635,7 @@ pre {
   border: var(--button_border-width) solid blue;
   background-color: white;
   padding: 24px;
+  font-size: 1rem;
 }
 
 .ErrorsSpacing {

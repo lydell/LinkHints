@@ -76,11 +76,24 @@ import Tweakable, {
   saveTweakable,
 } from "./Tweakable";
 
+type UpdateStatus =
+  | "NotUpdated"
+  | "AlreadyUpdated"
+  | "FullyUpdated"
+  | "PartiallyUpdated";
+
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
   { name: "Font size", value: SUGGESTION_FONT_SIZE },
   { name: "Vimium", value: SUGGESTION_VIMIUM },
 ];
+
+const getLayoutMap: ?() => Promise<Map<string, string>> =
+  // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
+  navigator.keyboard != null &&
+  typeof navigator.keyboard.getLayoutMap === "function"
+    ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
+    : undefined;
 
 type Props = {||};
 
@@ -93,6 +106,16 @@ type State = {|
     testOnly: boolean,
     lastKeypress: ?Keypress,
   |},
+  keyboardDetect: ?(
+    | Error
+    | {|
+        numReceived: number,
+        numFullyUpdated: number,
+        numPartiallyUpdated: number,
+        numAlreadyUpdated: number,
+        numNotUpdated: number,
+      |}
+  ),
   capturedKeypressWithTimestamp: ?{|
     timestamp: number,
     keypress: NormalizedKeypress,
@@ -126,6 +149,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       testOnly: false,
       lastKeypress: undefined,
     },
+    keyboardDetect: undefined,
     capturedKeypressWithTimestamp: undefined,
     peek: false,
     cssSuggestion: CSS_SUGGESTIONS[0].value,
@@ -359,6 +383,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       hasSaved,
       customChars,
       keyTranslationsInput,
+      keyboardDetect,
       capturedKeypressWithTimestamp,
       peek,
       cssSuggestion,
@@ -592,7 +617,13 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   you pressed and always stays the same regardless of which
                   layout you have enabled. Switch to your main layout and type
                   in the textarea to translate such <em>codes</em> to actual
-                  keys.
+                  keys.{" "}
+                  {getLayoutMap != null && (
+                    <span>
+                      The “Detect” button below can do some of the translation
+                      for you.
+                    </span>
+                  )}
                 </p>
               ) : null
             }
@@ -824,27 +855,85 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   <Attachment
                     content={
                       <div className="Spaced Spaced--end TinyLabel">
-                        <span>Key translations</span>
-
-                        <span style={{ marginLeft: "auto" }}>
-                          {keyTranslationsChanged ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                this.saveOptions({
-                                  keyTranslations: defaults.keyTranslations,
-                                });
-                                if (this.keysTableRef.current != null) {
-                                  this.keysTableRef.current.scrollTop = 0;
-                                }
-                              }}
-                            >
-                              Reset to defaults (en-US QWERTY)
-                            </button>
-                          ) : (
-                            <em>Using defaults (en-US QWERTY)</em>
-                          )}
+                        <span style={{ marginRight: "auto" }}>
+                          Key translations
                         </span>
+
+                        {getLayoutMap != null && (
+                          <ButtonWithPopup
+                            buttonContent="Detect"
+                            popupContent={() => (
+                              <div style={{ width: 300 }}>
+                                {keyboardDetect == null ? (
+                                  <div className="SpacedVertical">
+                                    <p>
+                                      Your browser allows detecting{" "}
+                                      <em>parts</em> of your <em>current</em>{" "}
+                                      keyboard layout.
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        this.detectKeyboard();
+                                      }}
+                                    >
+                                      Detect keyboard layout
+                                    </button>
+                                  </div>
+                                ) : keyboardDetect instanceof Error ? (
+                                  <div className="SpacedVertical Error">
+                                    <p>Failed to detect keyboard layout:</p>
+                                    <p>{keyboardDetect.message}</p>
+                                  </div>
+                                ) : (
+                                  <div className="SpacedVertical">
+                                    <p>
+                                      Received keys from the browser:{" "}
+                                      {keyboardDetect.numReceived}
+                                    </p>
+                                    <p>
+                                      Fully updated keys:{" "}
+                                      {keyboardDetect.numFullyUpdated}
+                                    </p>
+                                    <p>
+                                      Partially updated keys (shift unknown):{" "}
+                                      {keyboardDetect.numPartiallyUpdated}
+                                    </p>
+                                    <p>
+                                      Already up-to-date keys:{" "}
+                                      {keyboardDetect.numAlreadyUpdated}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            onChange={open => {
+                              if (!open) {
+                                this.setState({
+                                  keyboardDetect: undefined,
+                                });
+                              }
+                            }}
+                          />
+                        )}
+
+                        {keyTranslationsChanged ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              this.saveOptions({
+                                keyTranslations: defaults.keyTranslations,
+                              });
+                              if (this.keysTableRef.current != null) {
+                                this.keysTableRef.current.scrollTop = 0;
+                              }
+                            }}
+                          >
+                            Reset to defaults (en-US QWERTY)
+                          </button>
+                        ) : (
+                          <em>Using defaults (en-US QWERTY)</em>
+                        )}
                       </div>
                     }
                     style={{ flex: "1 1 50%" }}
@@ -1444,6 +1533,78 @@ export default class OptionsProgram extends React.Component<Props, State> {
       });
     }
   }
+
+  async detectKeyboard() {
+    try {
+      if (getLayoutMap == null) {
+        throw new Error(
+          "Your browser does not support detecting your keyboard layout after all."
+        );
+      }
+
+      const layoutMap = await getLayoutMap();
+
+      const { options: optionsData } = this.state;
+      if (optionsData == null) {
+        throw new Error("Failed to save key translations.");
+      }
+
+      const { keyTranslations } = optionsData.values;
+
+      const codes = Object.keys(keyTranslations);
+      const newCodes = Array.from(layoutMap.keys()).filter(
+        code => !codes.includes(code)
+      );
+
+      const results: Array<[UpdateStatus, string, KeyPair]> = codes
+        .map(code => {
+          const pair = keyTranslations[code];
+          const key = layoutMap.get(code);
+          return key == null
+            ? ["NotUpdated", code, pair]
+            : key === pair[0]
+            ? ["AlreadyUpdated", code, pair]
+            : isShiftable(key)
+            ? ["FullyUpdated", code, [key, key.toUpperCase()]]
+            : ["PartiallyUpdated", code, [key, "?"]];
+        })
+        .concat(
+          newCodes
+            .map(code => {
+              const key = layoutMap.get(code);
+              return key == null
+                ? undefined
+                : isShiftable(key)
+                ? ["FullyUpdated", code, [key, key.toUpperCase()]]
+                : ["PartiallyUpdated", code, [key, "?"]];
+            })
+            .filter(Boolean)
+        );
+
+      function count(updateStatus: UpdateStatus): number {
+        return results.filter(
+          ([updateStatus2]) => updateStatus2 === updateStatus
+        ).length;
+      }
+
+      const newKeyTranslations = Object.fromEntries(
+        results.map(([, code, pair]) => [code, pair])
+      );
+
+      this.saveOptions({ keyTranslations: newKeyTranslations });
+      this.setState({
+        keyboardDetect: {
+          numReceived: layoutMap.size,
+          numFullyUpdated: count("FullyUpdated"),
+          numPartiallyUpdated: count("PartiallyUpdated"),
+          numAlreadyUpdated: count("AlreadyUpdated"),
+          numNotUpdated: count("NotUpdated"),
+        },
+      });
+    } catch (error) {
+      this.setState({ keyboardDetect: error });
+    }
+  }
 }
 
 function wrapMessage(message: FromOptions): ToBackground {
@@ -1478,6 +1639,10 @@ function updatePair(
     return shift ? [unshifted, key] : [key, shifted];
   }
   return [key, key];
+}
+
+function isShiftable(key: string): boolean {
+  return key.length === 1 && key !== key.toUpperCase();
 }
 
 function makeKeysRowId(code: string): string {
