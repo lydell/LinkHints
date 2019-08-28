@@ -716,10 +716,12 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             });
                             return;
                           }
-                          const keyTranslations = updateKeyTranslations(
-                            { code, key, shift },
-                            options.keyTranslations
-                          );
+                          const keyTranslations = keyTranslationsInput.testOnly
+                            ? undefined
+                            : updateKeyTranslations(
+                                { code, key, shift },
+                                options.keyTranslations
+                              );
                           const normalizedKeypress = normalizeKeypress({
                             keypress,
                             keyTranslations:
@@ -731,10 +733,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             normalizedKeypress.printableKey != null
                               ? normalizedKeypress.printableKey
                               : normalizedKeypress.key;
-                          if (
-                            keyTranslations != null &&
-                            !keyTranslationsInput.testOnly
-                          ) {
+                          if (keyTranslations != null) {
                             this.saveOptions({ keyTranslations });
                           }
                           this.setState(
