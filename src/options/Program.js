@@ -92,7 +92,8 @@ const getLayoutMap: ?() => Promise<Map<string, string>> =
   // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
   navigator.keyboard != null &&
   typeof navigator.keyboard.getLayoutMap === "function"
-    ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
+    ? // $FlowIgnore: Flow doesn’t allow `.bind`:ing this "unknown" function.
+      navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
     : undefined;
 
 type Props = {||};
