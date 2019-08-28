@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>replaced elements</title>
+    <style>
+      #container {
+        display: flex;
+      }
+
+      #hover {
+        width: 200px;
+        height: 200px;
+        border: 2px solid;
+        padding: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="innerHTML"></div>
+      <div id="random"></div>
+      <div id="flip">
+        <ul>
+          <li><a></a></li>
+        </ul>
+      </div>
+      <div id="moved">
+        <ul>
+          <li><a href="moved">moved</a></li>
+          <li></li>
+        </ul>
+      </div>
+      <div id="notEqual">
+        <ul>
+          <li><a></a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="hover">
+      Enter this area with the mouse in hints mode to replace all links. New
+      elements should get hints if they are equal to a previous element.
+    </div>
+
+    <script>
+      const html = `
+        <ul>
+          <li><a href="#innerHTML1">innerHTML1</a></li>
+          <li><a href="#innerHTML2">innerHTML2</a></li>
+          <li><a href="#innerHTML3">innerHTML3</a></li>
+          <li><a href="#innerHTML4">innerHTML4</a></li>
+          <li><a href="#innerHTML5">innerHTML5</a></li>
+        </ul>
+      `;
+
+      function randomLinks() {
+        const old = document.getElementById("random");
+        const div = document.createElement("div");
+        div.id = "random";
+        const ul = document.createElement("ul");
+        div.append(ul);
+        const numbers = shuffle([1, 2, 3, 4, 5]);
+        for (const number of numbers) {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          const id = `random${number}`;
+          a.href = `#${id}`;
+          a.textContent = id;
+          li.append(a);
+          ul.append(li);
+        }
+        old.replaceWith(div);
+      }
+
+      // https://stackoverflow.com/a/6274381
+      function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      let flipCount = 0;
+      const flipLinks = Array.from({ length: 2 }, (_, i) => {
+        const a = document.createElement("a");
+        a.href = "#flip";
+        a.textContent = "flip";
+        return a;
+      });
+      function flip() {
+        document.querySelector("#flip a").replaceWith(flipLinks[flipCount % 2]);
+        flipCount++;
+      }
+
+      function move() {
+        const a = document.querySelector("#moved a");
+        (
+          a.parentElement.nextElementSibling ||
+          a.parentElement.previousElementSibling
+        ).append(a);
+      }
+
+      let notEqualCount = 0;
+      function notEqualLinks() {
+        const old = document.querySelector("#notEqual a");
+        const a = old.cloneNode(true);
+        old.replaceWith(a);
+
+        switch (notEqualCount % 5) {
+          // Base state.
+          case 0:
+            a.textContent = "some text";
+            a.href = "#notEqual";
+            break;
+
+          // Text mismatch.
+          case 1:
+            a.textContent = "other text";
+            a.href = "#notEqual";
+            break;
+
+          // Attribute mismatch.
+          case 2:
+            a.textContent = "some text";
+            a.href = "#notEqual-other";
+            break;
+
+          // Child mismatch.
+          case 3: {
+            a.textContent = "";
+            const em = document.createElement("em");
+            em.textContent = "some text";
+            a.append(em);
+            a.href = "#notEqual";
+            break;
+          }
+
+          // Not unique.
+          case 4:
+            a.textContent = "innerHTML1";
+            a.href = "#innerHTML1";
+
+          default:
+            break;
+        }
+        notEqualCount++;
+      }
+
+      function advanceLinks() {
+        document.getElementById("innerHTML").innerHTML = html;
+        randomLinks();
+        flip();
+        move();
+        notEqualLinks();
+      }
+
+      advanceLinks();
+
+      hover.addEventListener("mouseover", () => {
+        advanceLinks();
+      });
+    </script>
+  </body>
+</html>

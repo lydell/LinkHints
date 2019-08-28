@@ -564,11 +564,14 @@ export default class WorkerProgram {
     }
   }
 
-  onMutation() {
+  onMutation(records: Array<MutationRecord>) {
     const { current } = this;
     if (current == null) {
       return;
     }
+
+    const newElements = getAllNewElements(records);
+    updateElementsWithEqualOnes(current, newElements);
 
     // In addition to the "UpdateElements" polling, update as soon as possible
     // when elements are removed/added/changed for better UX. For example, if a
@@ -1017,4 +1020,50 @@ function clickElement(element: HTMLElement): boolean {
   }
 
   return defaultNotPrevented;
+}
+
+function getAllNewElements(records: Array<MutationRecord>): Array<HTMLElement> {
+  const elements: Set<HTMLElement> = new Set();
+
+  for (const record of records) {
+    for (const node of record.addedNodes) {
+      if (node instanceof HTMLElement && !elements.has(node)) {
+        elements.add(node);
+        const children = node.getElementsByTagName("*");
+        for (const child of children) {
+          elements.add(child);
+        }
+      }
+    }
+  }
+
+  return Array.from(elements);
+}
+
+function updateElementsWithEqualOnes(
+  current: CurrentElements,
+  newElements: Array<HTMLElement>
+) {
+  const { documentElement } = document;
+  if (documentElement == null || newElements.length === 0) {
+    return;
+  }
+
+  for (const item of current.elements) {
+    // If an element with a hint has been removed, try to find a new element
+    // that seems to be equal. If only one is found – go for it and use the new
+    // one. Some sites, like Gmail and GitHub, replace elements with new,
+    // identical ones shortly after things load. That caused hints to disappear
+    // for seemingly no reason (one cannot tell with one’s eyes that the hint’s
+    // element had _technically_ been removed). This is an attempt to give such
+    // hints new elements.
+    if (!documentElement.contains(item.element)) {
+      const equalElements = newElements.filter(element =>
+        item.element.isEqualNode(element)
+      );
+      if (equalElements.length === 1) {
+        item.element = equalElements[0];
+      }
+    }
+  }
 }

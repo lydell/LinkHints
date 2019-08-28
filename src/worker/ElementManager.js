@@ -663,7 +663,7 @@ export default class ElementManager {
 
                   // In my testing on the single-page HTML specification (which
                   // is huge!), `.getElementsByTagName("*")` is faster, but it’s
-                  // not like `.querySelectorAll("*")` is super slow. We can use
+                  // not like `.querySelectorAll("*")` is super slow. We can’t use
                   // the former because it returns a live `HTMLCollection` which
                   // mutates as the DOM mutates. If for example a bunch of nodes
                   // are removed, `item.addedNodeIndex` could now be too far
