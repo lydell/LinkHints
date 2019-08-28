@@ -394,6 +394,12 @@ pre {
   margin-top: var(--Field_padding);
 }
 
+.ShrinkwrapChildren {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 /* .TestLinks {} */
 
 .TestLinks-grid {

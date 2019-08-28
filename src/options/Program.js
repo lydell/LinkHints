@@ -555,22 +555,24 @@ export default class OptionsProgram extends React.Component<Props, State> {
             }
             render={({ id }) => (
               <div className="Spaced">
-                <label
-                  className="Spaced Spaced--center"
+                <span
+                  className="ShrinkwrapChildren"
                   style={{ flex: "1 1 50%" }}
                 >
-                  <input
-                    type="checkbox"
-                    id={id}
-                    checked={options.autoActivate}
-                    onChange={(event: SyntheticEvent<HTMLInputElement>) => {
-                      this.saveOptions({
-                        autoActivate: event.currentTarget.checked,
-                      });
-                    }}
-                  />
-                  <span>Enabled</span>
-                </label>
+                  <label className="Spaced Spaced--center">
+                    <input
+                      type="checkbox"
+                      id={id}
+                      checked={options.autoActivate}
+                      onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                        this.saveOptions({
+                          autoActivate: event.currentTarget.checked,
+                        });
+                      }}
+                    />
+                    <span>Enabled</span>
+                  </label>
+                </span>
 
                 <Attachment
                   label={`Over-typing duration${
@@ -629,7 +631,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             }
             changed={options.useKeyTranslations !== defaults.useKeyTranslations}
             render={({ id }) => (
-              <div>
+              <div className="ShrinkwrapChildren">
                 <label className="Spaced Spaced--center">
                   <input
                     type="radio"
