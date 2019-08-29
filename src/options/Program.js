@@ -78,9 +78,10 @@ import Tweakable, {
 
 type UpdateStatus =
   | "NotUpdated"
-  | "AlreadyUpdated"
   | "FullyUpdated"
-  | "PartiallyUpdated";
+  | "AlreadyFullyUpdated"
+  | "PartiallyUpdated"
+  | "AlreadyPartiallyUpdated";
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -112,8 +113,9 @@ type State = {|
     | {|
         numReceived: number,
         numFullyUpdated: number,
+        numAlreadyFullyUpdated: number,
         numPartiallyUpdated: number,
-        numAlreadyUpdated: number,
+        numAlreadyPartiallyUpdated: number,
         numNotUpdated: number,
       |}
   ),
@@ -866,7 +868,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                           <ButtonWithPopup
                             buttonContent="Detect"
                             popupContent={() => (
-                              <div style={{ width: 300 }}>
+                              <div style={{ width: 320 }}>
                                 {keyboardDetect == null ? (
                                   <div className="SpacedVertical">
                                     <p>
@@ -895,16 +897,22 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                       {keyboardDetect.numReceived}
                                     </p>
                                     <p>
-                                      Fully updated keys:{" "}
+                                      – Fully updated keys:{" "}
                                       {keyboardDetect.numFullyUpdated}
                                     </p>
-                                    <p>
-                                      Partially updated keys (shift unknown):{" "}
-                                      {keyboardDetect.numPartiallyUpdated}
+                                    <p style={{ marginLeft: "1em" }}>
+                                      – Already up-to-date:{" "}
+                                      {keyboardDetect.numAlreadyFullyUpdated}
                                     </p>
                                     <p>
-                                      Already up-to-date keys:{" "}
-                                      {keyboardDetect.numAlreadyUpdated}
+                                      – Partially updated keys (shift unknown):{" "}
+                                      {keyboardDetect.numPartiallyUpdated}
+                                    </p>
+                                    <p style={{ marginLeft: "1em" }}>
+                                      – Possibly already up-to-date:{" "}
+                                      {
+                                        keyboardDetect.numAlreadyPartiallyUpdated
+                                      }
                                     </p>
                                   </div>
                                 )}
@@ -1563,12 +1571,17 @@ export default class OptionsProgram extends React.Component<Props, State> {
         .map(code => {
           const pair = keyTranslations[code];
           const key = layoutMap.get(code);
-          return key == null
-            ? ["NotUpdated", code, pair]
-            : key === pair[0]
-            ? ["AlreadyUpdated", code, pair]
-            : isShiftable(key)
-            ? ["FullyUpdated", code, [key, key.toUpperCase()]]
+          if (key == null) {
+            return ["NotUpdated", code, pair];
+          }
+          if (isShiftable(key)) {
+            const newPair = [key, key.toUpperCase()];
+            return deepEqual(pair, newPair)
+              ? ["AlreadyFullyUpdated", code, pair]
+              : ["FullyUpdated", code, newPair];
+          }
+          return key === pair[0]
+            ? ["AlreadyPartiallyUpdated", code, pair]
             : ["PartiallyUpdated", code, [key, "?"]];
         })
         .concat(
@@ -1599,8 +1612,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
         keyboardDetect: {
           numReceived: layoutMap.size,
           numFullyUpdated: count("FullyUpdated"),
+          numAlreadyFullyUpdated: count("AlreadyFullyUpdated"),
           numPartiallyUpdated: count("PartiallyUpdated"),
-          numAlreadyUpdated: count("AlreadyUpdated"),
+          numAlreadyPartiallyUpdated: count("AlreadyPartiallyUpdated"),
           numNotUpdated: count("NotUpdated"),
         },
       });
