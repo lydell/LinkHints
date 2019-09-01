@@ -176,6 +176,15 @@ kbd {
   font-weight: normal;
 }
 
+code {
+  display: inline-block;
+  padding: 0 4px;
+  border: 1px solid grey;
+  border-radius: 3px;
+  background-color: lightgrey;
+  font-size: 0.8em;
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;

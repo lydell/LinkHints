@@ -1031,7 +1031,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
           <KeyboardShortcuts
             key="normal"
             id="normal"
+            mode="Normal"
             mac={mac}
+            useKeyTranslations={options.useKeyTranslations}
             name="Main keyboard shortcuts"
             description={
               <p>
@@ -1044,7 +1046,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
                 links to open in a new tab!
               </p>
             }
-            requireModifiers
             chars=""
             mappings={options.normalKeyboardShortcuts}
             defaultMappings={defaults.normalKeyboardShortcuts}
@@ -1060,7 +1061,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
           <KeyboardShortcuts
             key="hints"
             id="hints"
+            mode="Hints"
             mac={mac}
+            useKeyTranslations={options.useKeyTranslations}
             name="Hints mode keyboard shortcuts"
             chars={options.chars}
             mappings={options.hintsKeyboardShortcuts}

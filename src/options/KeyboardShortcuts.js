@@ -12,19 +12,24 @@ import {
 import { classlist, deepEqual, unreachable } from "../shared/main";
 import ButtonWithPopup from "./ButtonWithPopup";
 import Field from "./Field";
-import KeyboardShortcut, { hasShift } from "./KeyboardShortcut";
+import KeyboardShortcut, { hasShift, viewKey } from "./KeyboardShortcut";
 
 type ShortcutError =
   | {| type: "UnrecognizedKey" |}
   | {| type: "MissingModifier", shift: boolean |}
-  | {| type: "OtherShortcutConflict", otherMapping: KeyboardMapping |};
+  | {| type: "OtherShortcutConflict", otherMapping: KeyboardMapping |}
+  | {| type: "CommonTextEditingShortcutConflict" |}
+  | {| type: "MacOptionKey", printableKey: string, hasOtherModifier: boolean |};
+
+type Mode = "Normal" | "Hints";
 
 type Props = {|
   id: string,
   name: string,
-  description?: React.Node,
+  mode: Mode,
   mac: boolean,
-  requireModifiers: boolean,
+  useKeyTranslations: boolean,
+  description?: React.Node,
   chars: string,
   mappings: Array<KeyboardMapping>,
   defaultMappings: Array<KeyboardMapping>,
@@ -45,10 +50,6 @@ type State = {|
 |};
 
 export default class KeyboardShortcuts extends React.Component<Props, State> {
-  static defaultProps = {
-    requireModifiers: false,
-  };
-
   state = {
     addingAction: undefined,
     shortcutError: undefined,
@@ -57,7 +58,9 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
   componentDidUpdate(prevProps: Props) {
     const {
       capturedKeypressWithTimestamp,
-      requireModifiers,
+      mode,
+      mac,
+      useKeyTranslations,
       mappings,
       onAddChange,
     } = this.props;
@@ -85,6 +88,19 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
         shift: capturedKeypress.shift == null ? false : capturedKeypress.shift,
       };
 
+      const confirm = newShortcutError => {
+        if (deepEqual(shortcutError, newShortcutError)) {
+          this.saveMapping({
+            shortcut,
+            action: addingAction,
+          });
+        } else {
+          this.setState({
+            shortcutError: newShortcutError,
+          });
+        }
+      };
+
       // The Space key is a good choice for cancelling since it cannot be used
       // in Hints mode (it breaks filter by text). (In Normal mode, shortcuts
       // without modifiers cannot be used anyway.)
@@ -108,7 +124,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       }
 
       if (
-        requireModifiers &&
+        mode === "Normal" &&
         !(hasModifier(shortcut) || isAllowedWithShiftOnly(shortcut))
       ) {
         this.setState({
@@ -131,25 +147,47 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
           });
           onAddChange(false);
         } else {
-          const newShortcutError = {
+          confirm({
             shortcut,
             error: {
               type: "OtherShortcutConflict",
               otherMapping: conflictingMapping,
             },
-          };
-          if (deepEqual(shortcutError, newShortcutError)) {
-            this.saveMapping({
-              shortcut,
-              action: addingAction,
-            });
-          } else {
-            this.setState({
-              shortcutError: newShortcutError,
-            });
-          }
+          });
         }
 
+        return;
+      }
+
+      if (
+        mode === "Normal" &&
+        getTextEditingShortcuts(mac).some(shortcut2 =>
+          deepEqual(shortcut, shortcut2)
+        )
+      ) {
+        confirm({
+          shortcut,
+          error: { type: "CommonTextEditingShortcutConflict" },
+        });
+        return;
+      }
+
+      const hasOtherModifier = shortcut.ctrl || shortcut.cmd;
+      if (
+        mac &&
+        shortcut.alt &&
+        capturedKeypress.printableKey != null &&
+        !(mode === "Normal" && useKeyTranslations && hasOtherModifier) &&
+        !(mode === "Hints" && useKeyTranslations)
+      ) {
+        confirm({
+          shortcut,
+          error: {
+            type: "MacOptionKey",
+            printableKey: capturedKeypress.printableKey,
+            hasOtherModifier,
+          },
+        });
         return;
       }
 
@@ -180,7 +218,9 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       id,
       name,
       description,
+      mode,
       mac,
+      useKeyTranslations,
       mappings,
       defaultMappings,
       chars,
@@ -224,16 +264,6 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                     chars
                   );
 
-                  const shortcutsWithWarnings = mac
-                    ? shortcuts.filter(
-                        ({ shortcut }) =>
-                          shortcut.alt &&
-                          !shortcut.ctrl &&
-                          !shortcut.cmd &&
-                          shortcut.key.length === 1
-                      )
-                    : [];
-
                   return (
                     <tr
                       key={index}
@@ -247,24 +277,6 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                           <p className="TextSmall Error">
                             Overridden hint characters:{" "}
                             {conflictingChars.join(", ")}
-                          </p>
-                        )}
-                        {shortcutsWithWarnings.length > 0 && (
-                          <p className="TextSmall">
-                            Warning:{" "}
-                            {shortcutsWithWarnings.map(
-                              ({ key, shortcut }, index2) => (
-                                <span key={key}>
-                                  {index2 > 0 && ", "}
-                                  <KeyboardShortcut
-                                    mac={mac}
-                                    shortcut={shortcut}
-                                  />
-                                </span>
-                              )
-                            )}{" "}
-                            might prevent you from typing certain special
-                            characters into text fields.
                           </p>
                         )}
                       </th>
@@ -327,7 +339,9 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                         shortcut={shortcutError.shortcut}
                                       />
                                       <ShortcutErrorDisplay
+                                        mode={mode}
                                         mac={mac}
+                                        useKeyTranslations={useKeyTranslations}
                                         error={shortcutError.error}
                                       />
                                     </div>
@@ -396,11 +410,15 @@ function ShortcutAddDisplay({
 }
 
 function ShortcutErrorDisplay({
-  error,
   mac,
+  mode,
+  useKeyTranslations,
+  error,
 }: {|
-  error: ShortcutError,
   mac: boolean,
+  mode: Mode,
+  useKeyTranslations: boolean,
+  error: ShortcutError,
 |}) {
   switch (error.type) {
     case "UnrecognizedKey":
@@ -450,9 +468,86 @@ function ShortcutErrorDisplay({
         </div>
       );
 
+    case "CommonTextEditingShortcutConflict":
+      return (
+        <div>
+          <p>
+            <strong>This is a common text editing shortcut.</strong>
+          </p>
+          <p>Press the shortcut again to override, or choose another one!</p>
+        </div>
+      );
+
+    case "MacOptionKey": {
+      const Highlight = error.hasOtherModifier ? "strong" : "span";
+      const disclaimer = (
+        <p>
+          <Highlight>This shortcut should work,</Highlight> but it might be
+          difficult to remember which key to press by seeing{" "}
+          <KeyboardShortcut shortcut={{ key: error.printableKey }} mac={mac} />{" "}
+          on this page. Unfortunately, that information isn’t provided by the
+          browser.
+        </p>
+      );
+      return (
+        <div className="SpacedVertical">
+          {mode === "Normal" ? (
+            useKeyTranslations ? (
+              <p>
+                {/* `error.hasOtherModifier` is always `false` here. */}
+                <strong>
+                  If{" "}
+                  <KeyboardShortcut
+                    shortcut={{ key: error.printableKey, alt: true }}
+                    mac={mac}
+                  />{" "}
+                  produces a special character, you won’t be able to type that
+                  character in text inputs if using this shortcut.
+                </strong>
+              </p>
+            ) : (
+              <div>
+                {!error.hasOtherModifier && (
+                  <p>
+                    <strong>
+                      You might not be able to type{" "}
+                      <code>{printKey(error.printableKey)}</code> in text inputs
+                      if using this shortcut.
+                    </strong>
+                  </p>
+                )}
+                {disclaimer}
+              </div>
+            )
+          ) : (
+            <div>
+              {/* `useKeyTranslations` is always `false` here. */}
+              {!error.hasOtherModifier && (
+                <p>
+                  <strong>
+                    You might not be able to <em>filter by text</em> using{" "}
+                    <code>{printKey(error.printableKey)}</code> if using this
+                    shortcut.
+                  </strong>
+                </p>
+              )}
+              {disclaimer}
+            </div>
+          )}
+          <p>Press the shortcut again to confirm, or choose another one!</p>
+        </div>
+      );
+    }
+
     default:
       return unreachable(error.type, error);
   }
+}
+
+function printKey(printableKey: string): string {
+  return printableKey === "\u00a0"
+    ? "non-breaking space"
+    : viewKey(printableKey);
 }
 
 type KeyboardActionDescription = {|
@@ -614,4 +709,62 @@ export function getConflictingKeyboardActions(
       return [defaultMapping.action, conflicts];
     })
     .filter(([, conflicts]) => conflicts.length > 0);
+}
+
+function getTextEditingShortcuts(mac: boolean): Array<Shortcut> {
+  function shortcut({
+    key,
+    alt = false,
+    cmd = false,
+    ctrl = false,
+    shift = false,
+  }: $Shape<Shortcut>): Shortcut {
+    return { key, alt, cmd, ctrl, shift };
+  }
+
+  return mac
+    ? [
+        shortcut({ key: "ArrowLeft", cmd: true }),
+        shortcut({ key: "ArrowLeft", cmd: true, shift: true }),
+        shortcut({ key: "ArrowLeft", alt: true }),
+        shortcut({ key: "ArrowLeft", alt: true, shift: true }),
+        shortcut({ key: "ArrowRight", cmd: true }),
+        shortcut({ key: "ArrowRight", cmd: true, shift: true }),
+        shortcut({ key: "ArrowRight", alt: true }),
+        shortcut({ key: "ArrowRight", alt: true, shift: true }),
+        shortcut({ key: "ArrowUp", cmd: true }),
+        shortcut({ key: "ArrowUp", cmd: true, shift: true }),
+        shortcut({ key: "ArrowUp", alt: true }),
+        shortcut({ key: "ArrowUp", alt: true, shift: true }),
+        shortcut({ key: "ArrowDown", cmd: true }),
+        shortcut({ key: "ArrowDown", cmd: true, shift: true }),
+        shortcut({ key: "ArrowDown", alt: true }),
+        shortcut({ key: "ArrowDown", alt: true, shift: true }),
+        shortcut({ key: "Backspace", cmd: true }),
+        shortcut({ key: "Backspace", alt: true }),
+        shortcut({ key: "a", cmd: true }),
+        shortcut({ key: "c", cmd: true }),
+        shortcut({ key: "v", cmd: true }),
+        shortcut({ key: "x", cmd: true }),
+        shortcut({ key: "z", cmd: true }),
+      ]
+    : [
+        shortcut({ key: "ArrowLeft", ctrl: true }),
+        shortcut({ key: "ArrowLeft", ctrl: true, shift: true }),
+        shortcut({ key: "ArrowRight", ctrl: true }),
+        shortcut({ key: "ArrowRight", ctrl: true, shift: true }),
+        shortcut({ key: "ArrowUp", ctrl: true }),
+        shortcut({ key: "ArrowUp", ctrl: true, shift: true }),
+        shortcut({ key: "ArrowDown", ctrl: true }),
+        shortcut({ key: "ArrowDown", ctrl: true, shift: true }),
+        shortcut({ key: "Backspace", ctrl: true }),
+        shortcut({ key: "Delete", ctrl: true }),
+        shortcut({ key: "Home", ctrl: true }),
+        shortcut({ key: "End", ctrl: true }),
+        shortcut({ key: "a", ctrl: true }),
+        shortcut({ key: "c", ctrl: true }),
+        shortcut({ key: "v", ctrl: true }),
+        shortcut({ key: "x", ctrl: true }),
+        shortcut({ key: "z", ctrl: true }),
+      ];
 }
