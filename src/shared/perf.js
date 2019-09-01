@@ -18,7 +18,8 @@ export const decodeDurations: Decoder<Durations> = array(pair(string, number));
 
 export type Stats = {|
   url: string,
-  numElements: number,
+  numTotalElements: number,
+  numTrackedElements: number,
   numVisibleElements: number,
   numVisibleFrames: number,
   bailed: number,
@@ -27,7 +28,8 @@ export type Stats = {|
 
 export const decodeStats: Decoder<Stats> = autoRecord({
   url: string,
-  numElements: number,
+  numTotalElements: number,
+  numTrackedElements: number,
   numVisibleElements: number,
   numVisibleFrames: number,
   bailed: number,

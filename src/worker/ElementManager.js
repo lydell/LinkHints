@@ -236,7 +236,6 @@ export default class ElementManager {
   elementsWithClickListeners: WeakSet<HTMLElement> = new WeakSet();
   elementsWithScrollbars: WeakSet<HTMLElement> = new WeakSet();
   idleCallbackId: ?IdleCallbackID = undefined;
-  intersectionObserverHasRun: boolean = false;
   bailed: boolean = false;
   resets: Resets = new Resets();
 
@@ -357,7 +356,10 @@ export default class ElementManager {
   makeStats(durations: Durations): Stats {
     return {
       url: window.location.href,
-      numElements: this.elements.size,
+      // This call only takes 0–1 ms even on the single-page HTML specification
+      // (which is huge!).
+      numTotalElements: document.getElementsByTagName("*").length,
+      numTrackedElements: this.elements.size,
       numVisibleElements: this.visibleElements.size,
       numVisibleFrames: this.visibleFrames.size,
       bailed: this.bailed ? 1 : 0,
@@ -398,7 +400,6 @@ export default class ElementManager {
   }
 
   onIntersection(entries: Array<IntersectionObserverEntry>) {
-    this.intersectionObserverHasRun = true;
     for (const entry of entries) {
       if (entry.isIntersecting) {
         this.visibleElements.add(entry.target);
@@ -556,8 +557,19 @@ export default class ElementManager {
         // this.elementsWithScrollbars.delete(element);
       }
     } else {
+      const alreadyIntersectionObserved = this.elements.has(element);
       this.elements.set(element, type);
-      if (!this.bailed) {
+      if (!alreadyIntersectionObserved && !this.bailed) {
+        // We won’t know if this element is visible or not until the next time
+        // intersection observers are run. If we enter Hints mode before that,
+        // we would miss this element. This happens a lot on Gmail. First, the
+        // intersection observer fires on the splash screen. Then _a lot_ of DOM
+        // nodes appear at once when the inbox renders. The mutation observer
+        // fires kind of straight away, but the intersection observer is slow.
+        // If Hints mode was entered before that, no elements would be found.
+        // But the elements are clearly visible on screen! For this reason we
+        // consider _all_ new elements as visible until proved otherwise.
+        this.visibleElements.add(element);
         this.intersectionObserver.observe(element);
         if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS.value) {
           this.bail();
@@ -840,16 +852,14 @@ export default class ElementManager {
       this.flushQueue(infiniteDeadline);
     }
 
-    if (this.intersectionObserverHasRun) {
-      this.onIntersection(this.intersectionObserver.takeRecords());
-    }
+    this.onIntersection(this.intersectionObserver.takeRecords());
 
     const candidates =
       passedCandidates != null
         ? passedCandidates
         : types === "selectable"
         ? document.getElementsByTagName("*")
-        : !this.intersectionObserverHasRun || this.bailed
+        : this.bailed
         ? this.elements.keys()
         : this.visibleElements;
     const range = document.createRange();

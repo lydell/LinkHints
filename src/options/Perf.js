@@ -218,7 +218,8 @@ function sumStats(
     return [
       {
         url: title,
-        numElements: sum(({ numElements }) => numElements),
+        numTotalElements: sum(({ numTotalElements }) => numTotalElements),
+        numTrackedElements: sum(({ numTrackedElements }) => numTrackedElements),
         numVisibleElements: sum(({ numVisibleElements }) => numVisibleElements),
         numVisibleFrames: sum(({ numVisibleFrames }) => numVisibleFrames),
         bailed: sum(({ bailed }) => bailed),
@@ -270,14 +271,16 @@ function statsToRows(
       const match = stats.find(({ url: url2 }) => url2 === url);
       return match != null
         ? {
-            numElements: match.numElements.toString(),
+            numTotalElements: match.numTotalElements.toString(),
+            numTrackedElements: match.numTrackedElements.toString(),
             numVisibleElements: match.numVisibleElements.toString(),
             numVisibleFrames: match.numVisibleFrames.toString(),
             bailed: match.bailed.toString(),
             durations: match.durations,
           }
         : {
-            numElements: "-",
+            numTotalElements: "-",
+            numTrackedElements: "-",
             numVisibleElements: "-",
             numVisibleFrames: "-",
             bailed: "-",
@@ -290,8 +293,12 @@ function statsToRows(
       data: [
         ...durationsToRows(allData.map(({ durations }) => durations)),
         {
-          heading: "# elements",
-          values: allData.map(({ numElements }) => numElements),
+          heading: "# total elements",
+          values: allData.map(({ numTotalElements }) => numTotalElements),
+        },
+        {
+          heading: "# tracked elements",
+          values: allData.map(({ numTrackedElements }) => numTrackedElements),
         },
         {
           heading: "# visible elements",

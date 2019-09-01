@@ -24,7 +24,6 @@ import {
   log,
   Resets,
   unreachable,
-  waitForPaint,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -600,14 +599,12 @@ export default class WorkerProgram {
     return this.current == null ? undefined : this.current.elements[index];
   }
 
-  async reportVisibleElements(
+  reportVisibleElements(
     types: ElementTypes,
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
   ) {
     const time = new TimeTracker();
-
-    await waitForPaint();
 
     const elementsWithNulls: Array<?VisibleElement> = this.elementManager.getVisibleElements(
       types,
