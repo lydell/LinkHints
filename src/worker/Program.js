@@ -8,7 +8,7 @@ import {
 } from "../shared/hints";
 import {
   type KeyboardMapping,
-  type KeyboardMode,
+  type KeyboardModeWorker,
   type KeyTranslations,
   isModifierKey,
   keyboardEventToKeypress,
@@ -45,7 +45,7 @@ type CurrentElements = {|
 
 export default class WorkerProgram {
   keyboardShortcuts: Array<KeyboardMapping> = [];
-  keyboardMode: KeyboardMode = "Normal";
+  keyboardMode: KeyboardModeWorker = "Normal";
   keyTranslations: KeyTranslations = {};
   current: ?CurrentElements = undefined;
   oneTimeWindowMessageToken: ?string = undefined;
@@ -519,13 +519,13 @@ export default class WorkerProgram {
       this.sendMessage({
         type: "KeyboardShortcutMatched",
         action: match.action,
-        timestamp: performance.now(),
+        timestamp: Date.now(),
       });
     } else if (this.keyboardMode === "Hints" && suppress) {
       this.sendMessage({
         type: "NonKeyboardShortcutKeypress",
         keypress,
-        timestamp: performance.now(),
+        timestamp: Date.now(),
       });
     }
   }

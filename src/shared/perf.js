@@ -67,7 +67,7 @@ export class TimeTracker {
 
     this._current = {
       label,
-      timestamp: performance.now(),
+      timestamp: Date.now(),
     };
   }
 
@@ -77,7 +77,7 @@ export class TimeTracker {
       return;
     }
 
-    const duration = performance.now() - current.timestamp;
+    const duration = Date.now() - current.timestamp;
     this._durations.push([current.label, duration]);
     this._current = undefined;
   }

@@ -447,7 +447,7 @@ export default class RendererProgram {
     time.start("paint 1");
     await waitForPaint();
 
-    const firstPaintTimestamp = performance.now();
+    const firstPaintTimestamp = Date.now();
 
     time.start("move inside 2");
     const moved = this.moveInsideViewport(restElements, viewport);
@@ -460,7 +460,7 @@ export default class RendererProgram {
       await waitForPaint();
     }
 
-    const lastPaintTimestamp = performance.now();
+    const lastPaintTimestamp = Date.now();
 
     this.sendMessage({
       type: "Rendered",

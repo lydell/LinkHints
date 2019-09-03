@@ -15,7 +15,7 @@ import type {
 import {
   type HintsMode,
   type KeyboardAction,
-  type KeyboardMode,
+  type KeyboardModeBackground,
   type NormalizedKeypress,
 } from "../shared/keyboard";
 import {
@@ -69,7 +69,7 @@ type MessageInfo = {|
 
 type TabState = {|
   hintsState: HintsState,
-  preventOverTypingTimeoutId: ?TimeoutID,
+  keyboardMode: KeyboardModeBackground,
   perf: Perf,
   isOptionsPage: boolean,
 |};
@@ -77,7 +77,7 @@ type TabState = {|
 type HintsState =
   | {|
       type: "Idle",
-      timeoutId: ?TimeoutID,
+      highlightedSinceTimestamp: ?number,
     |}
   | {|
       type: "Collecting",
@@ -86,7 +86,7 @@ type HintsState =
       startTime: number,
       time: TimeTracker,
       stats: Array<Stats>,
-      timeoutId: ?TimeoutID,
+      refreshing: boolean,
     |}
   | {|
       type: "Hinting",
@@ -97,7 +97,10 @@ type HintsState =
       enteredChars: string,
       enteredText: string,
       elementsWithHints: Array<ElementWithHint>,
-      highlightedIndexes: Set<number>,
+      highlighted: ?{|
+        indexes: Set<number>,
+        sinceTimestamp: number,
+      |},
       updateState: UpdateState,
       peeking: boolean,
     |};
@@ -106,18 +109,19 @@ type PendingElements = {|
   pendingFrames: {|
     answering: number,
     collecting: number,
+    lastStartWaitTimestamp: number,
   |},
   elements: Array<ExtendedElementReport>,
 |};
 
 type UpdateState =
   | {|
-      type: "Waiting",
-      startTime: number,
+      type: "WaitingForTimeout",
+      lastUpdateStartTimestamp: number,
     |}
   | {|
-      type: "Timeout",
-      timeoutId: TimeoutID,
+      type: "WaitingForResponse",
+      lastUpdateStartTimestamp: number,
     |};
 
 type HintInput =
@@ -186,6 +190,7 @@ export default class BackgroundProgram {
       [this.onOptionsMessage, { log: true, catch: true }],
       [this.onPopupMessage, { log: true, catch: true }],
       [this.onRendererMessage, { log: true, catch: true }],
+      [this.onTimeout, { catch: true }],
       [this.onWorkerMessage, { log: true, catch: true }],
       [this.openNewTab, { catch: true }],
       [this.sendBackgroundMessage, { log: true, catch: true }],
@@ -263,17 +268,6 @@ export default class BackgroundProgram {
     message: ToWorker,
     { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
   ) {
-    const tabState = this.tabState.get(tabId);
-
-    if (
-      tabState != null &&
-      tabState.preventOverTypingTimeoutId != null &&
-      message.type === "StateSync"
-    ) {
-      clearTimeout(tabState.preventOverTypingTimeoutId);
-      tabState.preventOverTypingTimeoutId = undefined;
-    }
-
     await this.sendContentMessage(
       { type: "ToWorker", message },
       { tabId, frameId }
@@ -392,7 +386,7 @@ export default class BackgroundProgram {
           // Make sure that the added worker script gets the same token as all
           // other frames in the page. Otherwise the first hints mode won't
           // reach into any frames.
-          this.makeWorkerState(tabState.hintsState, { refreshToken: false }),
+          this.makeWorkerState(tabState, { refreshToken: false }),
           {
             tabId: info.tabId,
             frameId: info.frameId,
@@ -424,20 +418,9 @@ export default class BackgroundProgram {
           return;
         }
 
-        hintsState.pendingElements.pendingFrames.answering = Math.max(
-          0,
-          hintsState.pendingElements.pendingFrames.answering - 1
-        );
-
-        if (
-          hintsState.pendingElements.pendingFrames.answering === 0 &&
-          hintsState.timeoutId != null
-        ) {
-          clearTimeout(hintsState.timeoutId);
-          hintsState.timeoutId = undefined;
-        }
-
-        hintsState.pendingElements.pendingFrames.collecting += 1;
+        const { pendingFrames } = hintsState.pendingElements;
+        pendingFrames.answering = Math.max(0, pendingFrames.answering - 1);
+        pendingFrames.collecting += 1;
         break;
       }
 
@@ -461,34 +444,17 @@ export default class BackgroundProgram {
 
         hintsState.pendingElements.elements.push(...elements);
 
-        hintsState.pendingElements.pendingFrames.answering += message.numFrames;
-
-        hintsState.pendingElements.pendingFrames.collecting = Math.max(
-          0,
-          hintsState.pendingElements.pendingFrames.collecting - 1
-        );
+        const { pendingFrames } = hintsState.pendingElements;
+        pendingFrames.answering += message.numFrames;
+        pendingFrames.collecting = Math.max(0, pendingFrames.collecting - 1);
 
         hintsState.stats.push(message.stats);
 
         if (message.numFrames === 0) {
-          // If there are no frames, start hinting immediately, unless we're
-          // waiting for frames in another frame.
-          if (hintsState.timeoutId == null) {
-            this.maybeStartHinting(info.tabId);
-          }
+          this.maybeStartHinting(info.tabId);
         } else {
-          // If there are frames, wait for them.
-          if (hintsState.timeoutId != null) {
-            clearTimeout(hintsState.timeoutId);
-          }
-          hintsState.timeoutId = setTimeout(() => {
-            hintsState.timeoutId = undefined;
-            this.maybeStartHinting(info.tabId);
-            log("log", "frame report timeout", {
-              numFramesCollecting:
-                hintsState.pendingElements.pendingFrames.collecting,
-            });
-          }, t.FRAME_REPORT_TIMEOUT.value);
+          pendingFrames.lastStartWaitTimestamp = Date.now();
+          this.setTimeout(info.tabId, t.FRAME_REPORT_TIMEOUT.value);
         }
         break;
       }
@@ -512,7 +478,10 @@ export default class BackgroundProgram {
           enteredChars,
           enteredText,
           elementsWithHints: updatedElementsWithHints,
-          highlightedIndexes: hintsState.highlightedIndexes,
+          highlightedIndexes:
+            hintsState.highlighted != null
+              ? hintsState.highlighted.indexes
+              : new Set(),
           chars: this.options.values.chars,
           autoActivate: this.options.values.autoActivate,
           matchHighlighted: false,
@@ -544,31 +513,26 @@ export default class BackgroundProgram {
         if (info.frameId === TOP_FRAME_ID) {
           const { updateState } = hintsState;
 
-          const elapsedTime =
-            updateState.type === "Waiting"
-              ? Date.now() - updateState.startTime
-              : undefined;
-
-          const timeout =
-            elapsedTime == null
-              ? t.UPDATE_INTERVAL.value
-              : Math.max(0, t.UPDATE_INTERVAL.value - elapsedTime);
-
-          clearUpdateTimeout(updateState);
+          const now = Date.now();
+          const elapsedTime = now - updateState.lastUpdateStartTimestamp;
+          const timeout = Math.max(
+            t.UPDATE_MIN_TIMEOUT.value,
+            t.UPDATE_INTERVAL.value - elapsedTime
+          );
 
           log("log", "Scheduling next elements update", {
-            UPDATE_INTERVAL: t.UPDATE_INTERVAL,
             elapsedTime,
             timeout,
-            UPDATE_MIN_TIMEOUT: t.UPDATE_MIN_TIMEOUT,
+            UPDATE_INTERVAL: t.UPDATE_INTERVAL.value,
+            UPDATE_MIN_TIMEOUT: t.UPDATE_MIN_TIMEOUT.value,
           });
 
           hintsState.updateState = {
-            type: "Timeout",
-            timeoutId: setTimeout(() => {
-              this.updateElements(info.tabId);
-            }, Math.max(t.UPDATE_MIN_TIMEOUT.value, timeout)),
+            type: "WaitingForTimeout",
+            lastUpdateStartTimestamp: updateState.lastUpdateStartTimestamp,
           };
+
+          this.setTimeout(info.tabId, timeout);
         }
         break;
       }
@@ -631,6 +595,28 @@ export default class BackgroundProgram {
       default:
         unreachable(message.type, message);
     }
+  }
+
+  // Instead of doing `setTimeout(doSomething, duration)`, call
+  // `this.setTimeout(tabId, duration)` instead and add
+  // `this.doSomething(tabId)` to `onTimeout` below. Every method called from
+  // `onTimeout` is responsible for checking that everything is in the correct
+  // state and that the correct amount of time has passed. No matter when or
+  // from where or in which state `onTimeout` is called, it should always do the
+  // correct thing. This means that we never have to clear any timeouts, which
+  // is very tricky to keep track of.
+  setTimeout(tabId: number, duration: number) {
+    setTimeout(() => {
+      return this.onTimeout(tabId);
+    }, duration);
+  }
+
+  onTimeout(tabId: number) {
+    this.updateBadge(tabId);
+    this.maybeStartHinting(tabId);
+    this.updateElements(tabId);
+    this.unhighlightHints(tabId);
+    this.stopPreventOvertyping(tabId);
   }
 
   getTextRects({
@@ -745,7 +731,10 @@ export default class BackgroundProgram {
     hintsState.enteredChars = enteredChars;
     hintsState.enteredText = enteredText;
     hintsState.elementsWithHints = allElementsWithHints;
-    hintsState.highlightedIndexes = highlightedIndexes;
+    hintsState.highlighted = {
+      indexes: highlightedIndexes,
+      sinceTimestamp: Date.now(),
+    };
 
     this.getTextRects({
       enteredChars,
@@ -792,16 +781,11 @@ export default class BackgroundProgram {
     );
 
     if (match != null) {
-      const timeoutId = setTimeout(() => {
-        unsetUnrenderTimeoutId(tabState);
-        this.sendRendererMessage({ type: "Unrender" }, { tabId });
-      }, t.MATCH_HIGHLIGHT_DURATION.value);
-
-      clearUpdateTimeout(hintsState.updateState);
       tabState.hintsState = {
         type: "Idle",
-        timeoutId,
+        highlightedSinceTimestamp: Date.now(),
       };
+      this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
       this.updateWorkerStateAfterHintActivation({
         tabId,
         preventOverTyping,
@@ -923,7 +907,10 @@ export default class BackgroundProgram {
             .map(element => element.index)
         );
 
-        hintsState.highlightedIndexes = matchedIndexes;
+        hintsState.highlighted = {
+          indexes: matchedIndexes,
+          sinceTimestamp: Date.now(),
+        };
         hintsState.enteredChars = "";
         hintsState.enteredText = "";
 
@@ -962,16 +949,7 @@ export default class BackgroundProgram {
         });
 
         this.updateBadge(tabId);
-
-        // There’s no need to clear this timeout somewhere, since it should be
-        // idempotent.
-        setTimeout(() => {
-          // Ugly hack to clear the highlighted hints only if they haven’t changed.
-          if (hintsState.highlightedIndexes === matchedIndexes) {
-            hintsState.highlightedIndexes = new Set();
-          }
-          this.refreshHintsRendering(tabId);
-        }, t.MATCH_HIGHLIGHT_DURATION.value);
+        this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
 
         return false;
       }
@@ -1041,7 +1019,10 @@ export default class BackgroundProgram {
       enteredChars,
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
-      highlightedIndexes: hintsState.highlightedIndexes,
+      highlightedIndexes:
+        hintsState.highlighted != null
+          ? hintsState.highlighted.indexes
+          : new Set(),
       chars: this.options.values.chars,
       autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
@@ -1117,10 +1098,16 @@ export default class BackgroundProgram {
     }
 
     const { hintsState } = tabState;
+    if (hintsState.type !== "Collecting") {
+      return;
+    }
 
+    const { pendingFrames } = hintsState.pendingElements;
+    const frameWaitDuration = Date.now() - pendingFrames.lastStartWaitTimestamp;
     if (
-      hintsState.type !== "Collecting" ||
-      hintsState.pendingElements.pendingFrames.collecting > 0
+      pendingFrames.collecting > 0 ||
+      (pendingFrames.answering > 0 &&
+        frameWaitDuration < t.FRAME_REPORT_TIMEOUT.value)
     ) {
       return;
     }
@@ -1158,19 +1145,18 @@ export default class BackgroundProgram {
       enteredChars: "",
       enteredText: "",
       elementsWithHints,
-      highlightedIndexes: new Set(),
+      highlighted: undefined,
       updateState: {
-        type: "Timeout",
-        timeoutId: setTimeout(() => {
-          this.updateElements(tabId);
-        }, t.UPDATE_INTERVAL.value),
+        type: "WaitingForTimeout",
+        lastUpdateStartTimestamp: hintsState.startTime,
       },
       peeking: false,
     };
-    this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+    this.sendWorkerMessage(this.makeWorkerState(tabState), {
       tabId,
       frameId: "all_frames",
     });
+    this.setTimeout(tabId, t.UPDATE_INTERVAL.value);
 
     time.start("render");
     this.sendRendererMessage(
@@ -1191,33 +1177,38 @@ export default class BackgroundProgram {
     }
 
     const { hintsState } = tabState;
-
     if (hintsState.type !== "Hinting") {
       return;
     }
 
     const { updateState } = hintsState;
+    if (updateState.type !== "WaitingForTimeout") {
+      return;
+    }
 
-    clearUpdateTimeout(updateState);
+    if (
+      Date.now() - updateState.lastUpdateStartTimestamp >=
+      t.UPDATE_INTERVAL.value
+    ) {
+      hintsState.updateState = {
+        type: "WaitingForResponse",
+        lastUpdateStartTimestamp: Date.now(),
+      };
 
-    hintsState.updateState = {
-      type: "Waiting",
-      startTime: Date.now(),
-    };
-
-    // Refresh `oneTimeWindowMessageToken`.
-    this.sendWorkerMessage(this.makeWorkerState(hintsState), {
-      tabId,
-      frameId: "all_frames",
-    });
-
-    this.sendWorkerMessage(
-      { type: "UpdateElements" },
-      {
+      // Refresh `oneTimeWindowMessageToken`.
+      this.sendWorkerMessage(this.makeWorkerState(tabState), {
         tabId,
-        frameId: TOP_FRAME_ID,
-      }
-    );
+        frameId: "all_frames",
+      });
+
+      this.sendWorkerMessage(
+        { type: "UpdateElements" },
+        {
+          tabId,
+          frameId: TOP_FRAME_ID,
+        }
+      );
+    }
   }
 
   hideElements(info: MessageInfo) {
@@ -1245,7 +1236,10 @@ export default class BackgroundProgram {
       enteredChars,
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
-      highlightedIndexes: hintsState.highlightedIndexes,
+      highlightedIndexes:
+        hintsState.highlighted != null
+          ? hintsState.highlighted.indexes
+          : new Set(),
       chars: this.options.values.chars,
       autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
@@ -1386,16 +1380,13 @@ export default class BackgroundProgram {
         break;
 
       case "ToggleKeyboardCapture": {
-        const { hintsState } = tabState;
-        this.sendWorkerMessage(
-          this.makeWorkerState(hintsState, {
-            keyboardMode: message.capture ? "Capture" : undefined,
-          }),
-          {
-            tabId: info.tabId,
-            frameId: "all_frames",
-          }
-        );
+        tabState.keyboardMode = message.capture
+          ? { type: "Capture" }
+          : { type: "FromHintsState" };
+        this.sendWorkerMessage(this.makeWorkerState(tabState), {
+          tabId: info.tabId,
+          frameId: "all_frames",
+        });
         break;
       }
 
@@ -1478,12 +1469,6 @@ export default class BackgroundProgram {
         }
 
         enterHintsMode(hintsState.mode);
-
-        // `this.enterHintsMode` also updates the badge, but after a timeout.
-        // Update it immediately so that one can see it flash in case you get
-        // exactly the same hints after refreshing, so that you understand that
-        // something happened.
-        this.updateBadge(info.tabId);
         break;
       }
 
@@ -1566,8 +1551,6 @@ export default class BackgroundProgram {
       return;
     }
 
-    const { hintsState } = tabState;
-
     const time = new TimeTracker();
     time.start("collect");
 
@@ -1582,30 +1565,27 @@ export default class BackgroundProgram {
       }
     );
 
-    clearUnrenderTimeout(hintsState);
-    if (hintsState.type === "Hinting") {
-      clearUpdateTimeout(hintsState.updateState);
-    }
+    const refreshing = tabState.hintsState.type !== "Idle";
 
     tabState.hintsState = {
       type: "Collecting",
       mode,
-      pendingElements: {
+      pendingElements: ({
         pendingFrames: {
           answering: 0,
-          collecting: 0,
+          collecting: 1, // The top frame is collecting.
+          lastStartWaitTimestamp: Date.now(),
         },
         elements: [],
-      },
+      }: PendingElements),
       startTime: timestamp,
       time,
       stats: [],
-      timeoutId: undefined,
+      refreshing,
     };
 
-    setTimeout(() => {
-      this.updateBadge(tabId);
-    }, t.BADGE_COLLECTING_DELAY.value);
+    this.updateBadge(tabId);
+    this.setTimeout(tabId, t.BADGE_COLLECTING_DELAY.value);
   }
 
   exitHintsMode({
@@ -1622,31 +1602,87 @@ export default class BackgroundProgram {
       return;
     }
 
-    const { hintsState } = tabState;
-
-    clearUnrenderTimeout(hintsState);
-    if (hintsState.type === "Hinting") {
-      clearUpdateTimeout(hintsState.updateState);
+    if (unrender) {
+      if (delayed) {
+        this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
+      } else {
+        this.sendRendererMessage({ type: "Unrender" }, { tabId });
+      }
     }
 
-    const unrenderCallback = () => {
-      unsetUnrenderTimeoutId(tabState);
-      this.sendRendererMessage({ type: "Unrender" }, { tabId });
+    tabState.hintsState = {
+      type: "Idle",
+      highlightedSinceTimestamp: delayed ? Date.now() : undefined,
     };
 
-    const timeoutId = !unrender
-      ? undefined
-      : delayed
-      ? setTimeout(unrenderCallback, t.MATCH_HIGHLIGHT_DURATION.value)
-      : unrenderCallback();
-
-    tabState.hintsState = { type: "Idle", timeoutId };
-    this.sendWorkerMessage(this.makeWorkerState(tabState.hintsState), {
+    this.sendWorkerMessage(this.makeWorkerState(tabState), {
       tabId,
       frameId: "all_frames",
     });
 
     this.updateBadge(tabId);
+  }
+
+  unhighlightHints(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+    switch (hintsState.type) {
+      case "Idle": {
+        const { highlightedSinceTimestamp } = hintsState;
+        if (
+          highlightedSinceTimestamp != null &&
+          Date.now() - highlightedSinceTimestamp >=
+            t.MATCH_HIGHLIGHT_DURATION.value
+        ) {
+          this.sendRendererMessage({ type: "Unrender" }, { tabId });
+        }
+        break;
+      }
+
+      case "Collecting":
+        break;
+
+      case "Hinting":
+        {
+          const { highlighted } = hintsState;
+          if (
+            highlighted != null &&
+            Date.now() - highlighted.sinceTimestamp >=
+              t.MATCH_HIGHLIGHT_DURATION.value
+          ) {
+            hintsState.highlighted = undefined;
+            this.refreshHintsRendering(tabId);
+          }
+        }
+        break;
+
+      default:
+        unreachable(hintsState.type, hintsState);
+    }
+  }
+
+  stopPreventOvertyping(tabId: number) {
+    const tabState = this.tabState.get(tabId);
+    if (tabState == null) {
+      return;
+    }
+
+    const { keyboardMode } = tabState;
+    if (
+      keyboardMode.type === "PreventOverTyping" &&
+      Date.now() - keyboardMode.sinceTimestamp >=
+        this.options.values.overTypingDuration
+    ) {
+      tabState.keyboardMode = { type: "FromHintsState" };
+      this.sendWorkerMessage(this.makeWorkerState(tabState), {
+        tabId,
+        frameId: "all_frames",
+      });
+    }
   }
 
   onTabCreated(tab: Tab) {
@@ -1677,13 +1713,6 @@ export default class BackgroundProgram {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
-    }
-
-    const { hintsState } = tabState;
-
-    clearUnrenderTimeout(hintsState);
-    if (hintsState.type === "Hinting") {
-      clearUpdateTimeout(hintsState.updateState);
     }
 
     this.tabState.delete(tabId);
@@ -1836,12 +1865,11 @@ export default class BackgroundProgram {
   }
 
   makeWorkerState(
-    hintsState: HintsState,
-    {
-      refreshToken = true,
-      keyboardMode,
-    }: {| refreshToken?: boolean, keyboardMode?: KeyboardMode |} = {}
+    tabState: TabState,
+    { refreshToken = true }: {| refreshToken?: boolean |} = {}
   ): ToWorker {
+    const { hintsState } = tabState;
+
     if (refreshToken) {
       this.oneTimeWindowMessageToken = makeRandomToken();
     }
@@ -1860,20 +1888,26 @@ export default class BackgroundProgram {
           type: "StateSync",
           clearElements: false,
           keyboardShortcuts:
-            keyboardMode === "PreventOverTyping"
+            tabState.keyboardMode.type === "PreventOverTyping"
               ? []
               : this.options.values.hintsKeyboardShortcuts,
-          keyboardMode: keyboardMode != null ? keyboardMode : "Hints",
+          keyboardMode:
+            tabState.keyboardMode.type === "FromHintsState"
+              ? "Hints"
+              : tabState.keyboardMode.type,
           ...common,
         }
       : {
           type: "StateSync",
           clearElements: true,
           keyboardShortcuts:
-            keyboardMode === "PreventOverTyping"
+            tabState.keyboardMode.type === "PreventOverTyping"
               ? []
               : this.options.values.normalKeyboardShortcuts,
-          keyboardMode: keyboardMode != null ? keyboardMode : "Normal",
+          keyboardMode:
+            tabState.keyboardMode.type === "FromHintsState"
+              ? "Normal"
+              : tabState.keyboardMode.type,
           ...common,
         };
   }
@@ -1894,37 +1928,18 @@ export default class BackgroundProgram {
       return;
     }
 
-    this.sendWorkerMessage(
-      this.makeWorkerState(tabState.hintsState, {
-        keyboardMode: preventOverTyping ? "PreventOverTyping" : undefined,
-      }),
-      {
-        tabId,
-        frameId: "all_frames",
-      }
-    );
-
     if (preventOverTyping) {
-      if (tabState.preventOverTypingTimeoutId != null) {
-        clearTimeout(tabState.preventOverTypingTimeoutId);
-      }
-
-      tabState.preventOverTypingTimeoutId = setTimeout(() => {
-        tabState.preventOverTypingTimeoutId = undefined;
-
-        // The tab might have been closed during the timeout.
-        const newTabState = this.tabState.get(tabId);
-
-        if (newTabState == null) {
-          return;
-        }
-
-        this.sendWorkerMessage(this.makeWorkerState(newTabState.hintsState), {
-          tabId,
-          frameId: "all_frames",
-        });
-      }, this.options.values.overTypingDuration);
+      tabState.keyboardMode = {
+        type: "PreventOverTyping",
+        sinceTimestamp: Date.now(),
+      };
+      this.setTimeout(tabId, this.options.values.overTypingDuration);
     }
+
+    this.sendWorkerMessage(this.makeWorkerState(tabState), {
+      tabId,
+      frameId: "all_frames",
+    });
   }
 
   async updateOptionsPageData() {
@@ -2006,9 +2021,9 @@ function makeEmptyTabState(): TabState {
   return {
     hintsState: {
       type: "Idle",
-      timeoutId: undefined,
+      highlightedSinceTimestamp: undefined,
     },
-    preventOverTypingTimeoutId: undefined,
+    keyboardMode: { type: "FromHintsState" },
     perf: [],
     isOptionsPage: false,
   };
@@ -2180,7 +2195,14 @@ function getBadgeText(hintsState: HintsState): string {
     case "Idle":
       return "";
     case "Collecting":
-      return "…";
+      // Only show the bagde “spinner” if the hints are slow. But show it
+      // immediately when refreshing so that one can see it flash in case you
+      // get exactly the same hints after refreshing, so that you understand
+      // that something happened. It’s also nice to show in "ManyClick" mode.
+      return Date.now() - hintsState.startTime >
+        t.BADGE_COLLECTING_DELAY.value || hintsState.refreshing
+        ? "…"
+        : "";
     case "Hinting": {
       const { enteredChars, enteredText } = hintsState;
       const words = splitEnteredText(enteredText);
@@ -2195,7 +2217,7 @@ function getBadgeText(hintsState: HintsState): string {
         .length.toString();
     }
     default:
-      return unreachable(hintsState.type);
+      return unreachable(hintsState.type, hintsState);
   }
 }
 
@@ -2502,24 +2524,4 @@ function mergeElements(
 function matchesText(passedText: string, words: Array<string>): boolean {
   const text = passedText.toLowerCase();
   return words.every(word => text.includes(word));
-}
-
-function unsetUnrenderTimeoutId(tabState: TabState) {
-  const { hintsState } = tabState;
-  if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
-    hintsState.timeoutId = undefined;
-  }
-}
-
-function clearUnrenderTimeout(hintsState: HintsState) {
-  if (hintsState.type === "Idle" && hintsState.timeoutId != null) {
-    clearTimeout(hintsState.timeoutId);
-    hintsState.timeoutId = undefined;
-  }
-}
-
-function clearUpdateTimeout(updateState: UpdateState) {
-  if (updateState.type === "Timeout") {
-    clearTimeout(updateState.timeoutId);
-  }
 }

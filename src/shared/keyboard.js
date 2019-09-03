@@ -165,7 +165,16 @@ export const decodeKeyboardMappingWithModifiers: Decoder<KeyboardMapping> = auto
   }
 );
 
-export type KeyboardMode = "Normal" | "Hints" | "PreventOverTyping" | "Capture";
+export type KeyboardModeBackground =
+  | {| type: "FromHintsState" |}
+  | {| type: "PreventOverTyping", sinceTimestamp: number |}
+  | {| type: "Capture" |};
+
+export type KeyboardModeWorker =
+  | "Normal"
+  | "Hints"
+  | "PreventOverTyping"
+  | "Capture";
 
 export type HintsMode =
   | "Click"

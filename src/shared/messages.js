@@ -9,7 +9,7 @@ import type {
 import type {
   KeyboardAction,
   KeyboardMapping,
-  KeyboardMode,
+  KeyboardModeWorker,
   KeyTranslations,
   NormalizedKeypress,
 } from "./keyboard";
@@ -108,7 +108,7 @@ export type ToWorker =
       logLevel: LogLevel,
       clearElements: boolean,
       keyboardShortcuts: Array<KeyboardMapping>,
-      keyboardMode: KeyboardMode,
+      keyboardMode: KeyboardModeWorker,
       keyTranslations: KeyTranslations,
       oneTimeWindowMessageToken: string,
       mac: boolean,
