@@ -11,6 +11,7 @@ import {
   type Box,
   addEventListener,
   bind,
+  getLabels,
   getVisibleBox,
   log,
   partition,
@@ -1057,9 +1058,9 @@ class Deduper {
     const { element } = visibleElement;
 
     // Exclude `<label>` elements whose associated control has a hint.
-    // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
-    if (element.labels instanceof NodeList) {
-      for (const label of element.labels) {
+    const labels = getLabels(element);
+    if (labels != null) {
+      for (const label of labels) {
         this.rejected.add(label);
       }
     }

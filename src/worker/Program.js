@@ -20,6 +20,8 @@ import {
   addListener,
   bind,
   CONTAINER_ID,
+  extractText,
+  getLabels,
   getTextRects,
   getViewport,
   log,
@@ -187,8 +189,9 @@ export default class WorkerProgram {
         );
         const wordsSet = new Set(words);
         const rects = elements.flatMap(elementData =>
-          getTextRects({
+          getTextRectsHelper({
             element: elementData.element,
+            type: elementData.type,
             viewports: current.viewports,
             words: wordsSet,
           })
@@ -696,9 +699,10 @@ export default class WorkerProgram {
         : elements
             .filter((_elementData, index) => current.indexes.includes(index))
             .filter(Boolean)
-            .flatMap(({ element }) =>
-              getTextRects({
+            .flatMap(({ element, type }) =>
+              getTextRectsHelper({
                 element,
+                type,
                 viewports: current.viewports,
                 words: wordsSet,
               })
@@ -931,7 +935,7 @@ function visibleElementToElementReport(
   { element, type, measurements, hasClickListener }: VisibleElement,
   index: number
 ): ElementReport {
-  const text = extractText(element, type);
+  const text = extractTextHelper(element, type);
   return {
     type,
     index,
@@ -945,23 +949,6 @@ function visibleElementToElementReport(
     hasClickListener,
     hintMeasurements: measurements,
   };
-}
-
-function extractText(element: HTMLElement, type: ElementType): string {
-  // Scrollable elements do have `.textContent`, but it’s not intuitive to
-  // filter them by text (especially since the matching text might be scrolled
-  // away). Treat them more like frames (where you can’t look inside).
-  // `<textarea>` elements have `.textContent` they have default text in the
-  // HTML, but that is not updated as the user types. `<select>` also has
-  // `.textContent`, but most `<option>`s are not visible. To be consistent with
-  // `<input>`, ignore the text of `<textarea>` and `<select>` as well. Finally,
-  // also ignore fallback content inside `<canvas>`.
-  return type === "scrollable" ||
-    element instanceof HTMLTextAreaElement ||
-    element instanceof HTMLSelectElement ||
-    element instanceof HTMLCanvasElement
-    ? ""
-    : element.textContent;
 }
 
 function clickElement(element: HTMLElement): boolean {
@@ -1068,4 +1055,59 @@ function updateElementsWithEqualOnes(
       }
     }
   }
+}
+
+function extractTextHelper(element: HTMLElement, type: ElementType): string {
+  // Scrollable elements do have `.textContent`, but it’s not intuitive to
+  // filter them by text (especially since the matching text might be scrolled
+  // away). Treat them more like frames (where you can’t look inside).
+  if (type === "scrollable") {
+    return "";
+  }
+
+  // For text inputs, textareas, checkboxes, selects, etc, use their label text
+  // for filtering. For buttons with a label, use both the button text and the
+  // label text.
+  const labels = getLabels(element);
+  if (labels != null) {
+    return [extractText(element)]
+      .concat(Array.from(labels, label => extractText(label)))
+      .join(" ");
+  }
+
+  return extractText(element);
+}
+
+export function getTextRectsHelper({
+  element,
+  type,
+  viewports,
+  words,
+  checkElementAtPoint,
+}: {|
+  element: HTMLElement,
+  type: ElementType,
+  viewports: Array<Box>,
+  words: Set<string>,
+  checkElementAtPoint?: boolean,
+|}): Array<Box> {
+  // See `extractTextHelper`.
+  if (type === "scrollable") {
+    return [];
+  }
+
+  // See `extractTextHelper`.
+  const labels = getLabels(element);
+  if (labels != null) {
+    return [element].concat(Array.from(labels)).flatMap(element2 =>
+      getTextRects({
+        element: element2,
+        viewports,
+        words,
+        checkElementAtPoint,
+      })
+    );
+  }
+
+  return getTextRects({ element, viewports, words, checkElementAtPoint });
 }

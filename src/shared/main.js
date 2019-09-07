@@ -310,13 +310,32 @@ export function setStyles(
 export function* walkTextNodes(
   element: HTMLElement
 ): Generator<Text, void, void> {
-  for (const node of element.childNodes) {
-    if (node instanceof Text) {
-      yield node;
-    } else if (node instanceof HTMLElement) {
-      yield* walkTextNodes(node);
+  // `<textarea>` elements have `.textContent` if they have default text in the
+  // HTML, but that is not updated as the user types. `<select>` also has
+  // `.textContent`, but most `<option>`s are not visible. To be consistent with
+  // `<input>`, ignore the text of `<textarea>` and `<select>` as well. Finally,
+  // also ignore fallback content inside `<canvas>`.
+  const skip =
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element instanceof HTMLCanvasElement;
+
+  if (!skip) {
+    for (const node of element.childNodes) {
+      if (node instanceof Text) {
+        yield node;
+      } else if (node instanceof HTMLElement) {
+        yield* walkTextNodes(node);
+      }
     }
   }
+}
+
+// This is like `element.textContent`, except it skips the content of some
+// elements (see `walkTextNodes`). This does not seem to be slower than
+// `.textContent`.
+export function extractText(element: HTMLElement): string {
+  return Array.from(walkTextNodes(element), node => node.data).join("");
 }
 
 export function getTextRects({
@@ -330,13 +349,7 @@ export function getTextRects({
   words: Set<string>,
   checkElementAtPoint?: boolean,
 |}): Array<Box> {
-  const text =
-    // Ignore text inside `<textarea>`, `<select>` and `<canvas>`, as explained
-    // in `extractText` in `worker/Program.js`.
-    element instanceof HTMLTextAreaElement ||
-    element instanceof HTMLSelectElement
-      ? ""
-      : element.textContent.toLowerCase();
+  const text = extractText(element).toLowerCase();
 
   const ranges = [];
 
@@ -396,6 +409,11 @@ export function getTextRects({
         : undefined;
     }).filter(Boolean);
   });
+}
+
+export function getLabels(element: HTMLElement): ?NodeList<HTMLLabelElement> {
+  // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
+  return element.labels instanceof NodeList ? element.labels : undefined;
 }
 
 export function classlist(
