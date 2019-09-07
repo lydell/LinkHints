@@ -513,8 +513,6 @@ export default class RendererProgram {
               // (that's the only time `z-index` _needs_ updating), to avoid
               // hints rotating back when entering hint chars.
               "z-index": (MAX_Z_INDEX - update.order).toString(),
-              // Reset margins for `this.moveInsideViewport`.
-              "margin-right": "",
             });
             // If the entered text chars have changed, the hints might have
             // changed as well and might not fit inside the viewport.
@@ -667,20 +665,29 @@ export default class RendererProgram {
     let moved = false;
 
     for (const element of elements) {
+      // Reset `margin-right` before measuring. That’s the easiest way, and does
+      // not seem to be expensive performance wise.
+      setStyles(element, { "margin-right": "" });
+
       const rect = element.getBoundingClientRect();
 
       // Save the rect for `rotateHints`.
       this.rects.set(element, rect);
 
       // The hints are always inside the viewport vertically, so only check
-      // horizontally.
-      if (rect.left < 0) {
-        setStyles(element, { "margin-right": `${Math.round(rect.left)}px` });
+      // horizontally. Note that the width of the hints will be a fractional
+      // number in Chrome.
+
+      const left = Math.round(rect.left);
+      if (left < 0) {
+        setStyles(element, { "margin-right": `${left}px` });
         moved = true;
       }
-      if (rect.right > viewport.width) {
+
+      const right = Math.round(rect.right - viewport.width);
+      if (right > 0) {
         setStyles(element, {
-          "margin-right": `${Math.round(rect.right - viewport.width)}px`,
+          "margin-right": `${right}px`,
         });
         moved = true;
       }
