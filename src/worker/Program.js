@@ -19,6 +19,7 @@ import {
   addEventListener,
   addListener,
   bind,
+  CONTAINER_ID,
   getTextRects,
   getViewport,
   log,
@@ -576,12 +577,16 @@ export default class WorkerProgram {
     // when elements are removed/added/changed for better UX. For example, if a
     // modal closes it looks nicer if the hints for elements in the modal
     // disappear immediately rather than after a small delay.
-    this.updateVisibleElements({
-      current,
-      // Skip updating child frames since we only know that things changed in
-      // _this_ frame. Child frames will be updated during the next poll.
-      oneTimeWindowMessageToken: undefined,
-    });
+    // Just after entering Hints mode a mutation _always_ happens – inserting
+    // the div with the hints. Don’t let that trigger an update.
+    if (!(newElements.length === 1 && newElements[0].id === CONTAINER_ID)) {
+      this.updateVisibleElements({
+        current,
+        // Skip updating child frames since we only know that things changed in
+        // _this_ frame. Child frames will be updated during the next poll.
+        oneTimeWindowMessageToken: undefined,
+      });
+    }
   }
 
   onPagehide(event: Event) {
