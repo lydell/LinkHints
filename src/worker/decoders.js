@@ -4,6 +4,7 @@ import {
   type Decoder,
   array,
   autoRecord,
+  number,
   record,
   repr,
   string,
@@ -53,8 +54,9 @@ export const decodeFrameMessage: Decoder<FrameMessage> = record(
 
 const decodeViewports: Decoder<Array<Box>> = array(
   autoRecord({
-    x: decodeUnsignedFloat,
-    y: decodeUnsignedFloat,
+    // A viewport of a frame can be partially off-screen.
+    x: number,
+    y: number,
     width: decodeUnsignedFloat,
     height: decodeUnsignedFloat,
   })
