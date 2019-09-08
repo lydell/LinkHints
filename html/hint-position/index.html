@@ -450,10 +450,14 @@
     <h2>Line-wrapped link</h2>
     <p>
       The hint should be at the "w". If "w" is scrolled outside the viewport,
-      center the hint vertically.
+      the hint should be at the beginning of the first visible line. This
+      doesn’t work in Firefox due to its IntersectionObserver implementation.
     </p>
     <p style="width: 200px;">
-      some text <a href="#">wrapped link text text text text text text text</a>
+      some text
+      <a href="#"
+        >wrapped link text text text text text text text text text text</a
+      >
     </p>
 
     <h2>First non-blank character</h2>
