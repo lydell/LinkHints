@@ -84,8 +84,12 @@ export const t = {
   ELEMENT_TYPES_LOW_QUALITY: elementTypeSet(new Set(["clickable-event"])),
 
   // Give worse hints to scrollable elements and (selectable) frames. They are
-  // usually very large by nature, but not that commonly used.
-  ELEMENT_TYPES_WORSE: elementTypeSet(new Set(["scrollable", "selectable"])),
+  // usually very large by nature, but not that commonly used. Also give worse
+  // hints to elements with click listeners only. They often wrap text inputs,
+  // covering the hint for the input.
+  ELEMENT_TYPES_WORSE: elementTypeSet(
+    new Set(["clickable-event", "scrollable", "selectable"])
+  ),
 
   // Elements this many pixels high or taller always get their hint placed at the
   // very left edge.
@@ -1087,9 +1091,26 @@ class Deduper {
     // `<summary>` elements that open them are covered by the hint for a
     // `<details>` element with a click listener that doesn't do anything when
     // clicked.
-    if (bad.length > 0 && good.length > 0) {
-      for (const { element: badElement } of bad) {
-        this.rejected.add(badElement);
+    if (bad.length > 0) {
+      if (good.length > 0) {
+        // If there are high quality elements, reject all low quality ones.
+        for (const { element: badElement } of bad) {
+          this.rejected.add(badElement);
+        }
+      } else {
+        // Otherwise keep the best of the worst.
+        const sorted = bad.slice().sort((a, b) =>
+          // Prefer elements with click listeners.
+          a.hasClickListener && !b.hasClickListener
+            ? -1
+            : !a.hasClickListener && b.hasClickListener
+            ? 1
+            : // Then, prefer elements with higher weight.
+              b.measurements.weight - a.measurements.weight
+        );
+        for (const { element: badElement } of sorted.slice(1)) {
+          this.rejected.add(badElement);
+        }
       }
     }
   }
