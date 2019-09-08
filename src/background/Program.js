@@ -17,6 +17,7 @@ import {
   type KeyboardAction,
   type KeyboardModeBackground,
   type NormalizedKeypress,
+  PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS,
 } from "../shared/keyboard";
 import {
   addListener,
@@ -1883,31 +1884,35 @@ export default class BackgroundProgram {
       mac: this.options.mac,
     };
 
+    const getKeyboardShortcuts = shortcuts =>
+      tabState.keyboardMode.type === "PreventOverTyping"
+        ? shortcuts.filter(shortcut =>
+            PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS.has(shortcut.action)
+          )
+        : shortcuts;
+
+    const getKeyboardMode = mode =>
+      tabState.keyboardMode.type === "FromHintsState"
+        ? mode
+        : tabState.keyboardMode.type;
+
     return hintsState.type === "Hinting"
       ? {
           type: "StateSync",
           clearElements: false,
-          keyboardShortcuts:
-            tabState.keyboardMode.type === "PreventOverTyping"
-              ? []
-              : this.options.values.hintsKeyboardShortcuts,
-          keyboardMode:
-            tabState.keyboardMode.type === "FromHintsState"
-              ? "Hints"
-              : tabState.keyboardMode.type,
+          keyboardShortcuts: getKeyboardShortcuts(
+            this.options.values.hintsKeyboardShortcuts
+          ),
+          keyboardMode: getKeyboardMode("Hints"),
           ...common,
         }
       : {
           type: "StateSync",
           clearElements: true,
-          keyboardShortcuts:
-            tabState.keyboardMode.type === "PreventOverTyping"
-              ? []
-              : this.options.values.normalKeyboardShortcuts,
-          keyboardMode:
-            tabState.keyboardMode.type === "FromHintsState"
-              ? "Normal"
-              : tabState.keyboardMode.type,
+          keyboardShortcuts: getKeyboardShortcuts(
+            this.options.values.normalKeyboardShortcuts
+          ),
+          keyboardMode: getKeyboardMode("Normal"),
           ...common,
         };
   }

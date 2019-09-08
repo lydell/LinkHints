@@ -54,6 +54,11 @@ export function decodeKeyboardAction(type: string): KeyboardAction {
   }
 }
 
+// Allow exiting Hints mode if we ever get stuck in Prevent overtyping mode.
+export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = new Set(
+  ["Escape", "ExitHintsMode"]
+);
+
 // Raw values from a `KeyboardEvent` that we care about.
 export type Keypress = {|
   key: string,
