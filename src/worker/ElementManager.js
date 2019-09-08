@@ -57,7 +57,7 @@ const constants = {
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
-const ATTRIBUTES_CLICKABLE = new Set<string>([
+const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
   // These are supposed to be used with a `role` attribute. In some GitHub
   // dropdowns some items only have this attribute hinting that they are
   // clickable, though.
