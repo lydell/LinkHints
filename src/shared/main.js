@@ -319,15 +319,21 @@ export function setStyles(
 export function* walkTextNodes(
   element: HTMLElement
 ): Generator<Text, void, void> {
-  // `<textarea>` elements have `.textContent` if they have default text in the
-  // HTML, but that is not updated as the user types. `<select>` also has
-  // `.textContent`, but most `<option>`s are not visible. To be consistent with
-  // `<input>`, ignore the text of `<textarea>` and `<select>` as well. Finally,
-  // also ignore fallback content inside `<canvas>`.
   const skip =
+    // Ignore the default text in the HTML of `<textarea>` (if any), which is not
+    // updated as the user types.
     element instanceof HTMLTextAreaElement ||
+    // Ignore the text of `<option>`s inside `<select>` and `<datalist>`, most
+    // of which are not visible.
     element instanceof HTMLSelectElement ||
-    element instanceof HTMLCanvasElement;
+    element instanceof HTMLDataListElement ||
+    // Ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
+    element instanceof HTMLCanvasElement ||
+    element instanceof HTMLMediaElement ||
+    // Google has `<style>` elements inside some `<div>`s with click listeners.
+    element instanceof HTMLStyleElement ||
+    // If we ignore `<style>` we could just as well ignore `<script>` too.
+    element instanceof HTMLScriptElement;
 
   if (!skip) {
     for (const node of element.childNodes) {
