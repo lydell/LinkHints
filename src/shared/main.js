@@ -42,7 +42,7 @@ export function log(level: LogLevel, ...args: Array<any>) {
   method.call(
     console,
     `[${META_SLUG}]`,
-    new Date().toISOString(),
+    formatDate(new Date()),
     window.location.protocol.endsWith("-extension:")
       ? ""
       : window.location.href,
@@ -54,6 +54,15 @@ export function log(level: LogLevel, ...args: Array<any>) {
 // The main `Program` for each entrypoint modifies this property. A little ugly,
 // but very convenient.
 log.level = DEFAULT_LOG_LEVEL;
+
+function formatDate(date: Date): string {
+  const pad = (num: number, length = 2) => num.toString().padStart(length, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}.${pad(date.getMilliseconds(), 3)}`;
+}
 
 /* eslint-disable no-console */
 function getLogMethod(level: LogLevel): Function {
