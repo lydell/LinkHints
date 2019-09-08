@@ -316,6 +316,8 @@ export default class RendererProgram {
     // cheap to calculate.
     const probe1 = createHintElement("W");
     const probe2 = createHintElement("WW");
+    setStyles(probe1, { position: "absolute" });
+    setStyles(probe2, { position: "absolute" });
     root.append(probe1);
     root.append(probe2);
     this.maybeApplyStyles(probe1);
