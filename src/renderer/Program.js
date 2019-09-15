@@ -30,6 +30,7 @@ import {
   CONTAINER_ID,
   getViewport,
   log,
+  partition,
   Resets,
   setStyles,
   unreachable,
@@ -552,6 +553,16 @@ export default class RendererProgram {
           unreachable(update.type, update);
       }
 
+      // Hidden hints get negative z-index so that visible hints are always
+      // shown on top.
+      const zIndex = Number(child.style.zIndex);
+      const zIndexNeedsUpdate = child.classList.contains(HIDDEN_CLASS)
+        ? zIndex > 0
+        : zIndex < 0;
+      if (zIndexNeedsUpdate) {
+        setStyles(child, { "z-index": (-zIndex).toString() });
+      }
+
       this.maybeApplyStyles(child);
     }
 
@@ -573,14 +584,20 @@ export default class RendererProgram {
     const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
       if (stack.length >= 2) {
-        // All `z-index`:es are unique, so there’s no need for a stable sort.
-        stack.sort(
-          (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
+        // Hidden hints are rotated separately.
+        const groups = partition(stack, element =>
+          element.classList.contains(HIDDEN_CLASS)
         );
-        const [first, ...rest] = stack.map(element => element.style.zIndex);
-        const zIndexes = [...rest, first];
-        for (const [index, element] of stack.entries()) {
-          setStyles(element, { "z-index": zIndexes[index] });
+        for (const group of groups) {
+          // All `z-index`:es are unique, so there’s no need for a stable sort.
+          group.sort(
+            (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
+          );
+          const [first, ...rest] = group.map(element => element.style.zIndex);
+          const zIndexes = [...rest, first];
+          for (const [index, element] of group.entries()) {
+            setStyles(element, { "z-index": zIndexes[index] });
+          }
         }
       }
     }
