@@ -74,11 +74,20 @@ Also, it should not be possible to match this textarea by this default text.</te
       </label>
     </p>
 
+    <p style="margin-bottom: 0;">
+      Filtering by “text” should give highlights before and after this textarea,
+      but not inside.
+    </p>
+    <div onclick="console.log('Click on div with textarea')">
+      Text before textarea
+      <textarea rows="1" cols="22">Text inside textarea</textarea>
+      Text after textarea
+    </div>
+
     <p>
       Just like with all other form controls, it should not be possible to match
       the select by the text of one of the options.
-    </p>
-    <p>
+      <br />
       Also try to select the label text. When doing so, it should not be
       possible to match things inside the textarea or select.
     </p>
