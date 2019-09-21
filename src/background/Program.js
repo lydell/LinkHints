@@ -599,26 +599,7 @@ export default class BackgroundProgram {
 
       case "OpenNewTabs":
         if (BROWSER === "firefox") {
-          if (message.urls.length === 1) {
-            browser.tabs
-              .create({
-                active: true,
-                url: message.urls[0],
-                openerTabId: info.tabId,
-              })
-              .catch(error => {
-                log(
-                  "error",
-                  "BackgroundProgram#onWorkerMessage",
-                  "OpenNewTabs",
-                  "Failed to open new tab:",
-                  error,
-                  message.urls
-                );
-              });
-          } else {
-            openNewTabs(info.tabId, message.urls);
-          }
+          openNewTabs(info.tabId, message.urls);
         }
 
         break;
@@ -2213,15 +2194,14 @@ async function openNewTabs(tabId: number, urls: Array<string>) {
     const newTabs = await Promise.all(
       urls.map(url =>
         browser.tabs.create({
-          active: false,
+          active: urls.length === 1,
           url,
           openerTabId: tabId,
         })
       )
     );
-    const firstNewTab = newTabs[0];
-    if (firstNewTab != null) {
-      await browser.tabs.update(firstNewTab.id, { active: true });
+    if (newTabs.length >= 2) {
+      await browser.tabs.update(newTabs[0].id, { active: true });
     }
   } catch (error) {
     log("error", "openNewTabs", "Failed to open new tabs:", error, urls);
