@@ -24,4 +24,8 @@ declare var META_VERSION: string;
 
 declare var PROD: boolean;
 
-declare var exportFunction: any;
+declare function exportFunction(
+  (...args: Array<any>) => any,
+  any,
+  {| defineAs: string |}
+): void;
