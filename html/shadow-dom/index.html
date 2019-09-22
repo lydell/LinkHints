@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>shadow dom</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      let addCounter = 0;
+      function add(parent, mode = "open") {
+        const div = document.createElement("div");
+        div.className = "shadow";
+        div.style.border = "1px solid";
+        div.style.padding = "20px";
+        div.style.margin = "20px";
+        parent.append(div);
+
+        const root = div.attachShadow({ mode });
+
+        const a = document.createElement("a");
+        a.href = `#link${addCounter}`;
+        a.textContent = "link";
+        root.append(a);
+
+        const p = document.createElement("p");
+        p.textContent = "Some text to select";
+        root.append(p);
+
+        const addShadowButton = document.createElement("button");
+        addShadowButton.textContent = "Add shadowRoot child";
+        addShadowButton.onclick = () => {
+          add(root, mode === "open" ? "closed" : "open");
+        };
+        root.append(addShadowButton);
+
+        let counter = 0;
+        const addLinkButton = document.createElement("button");
+        addLinkButton.textContent = "Add link";
+        addLinkButton.style.marginLeft = "10px";
+        addLinkButton.onclick = () => {
+          const p2 = document.createElement("p");
+          const a2 = document.createElement("a");
+          a2.textContent = `Example link ${counter}`;
+          a2.href = `https://example.com/${counter}`;
+          const removeButton = document.createElement("button");
+          removeButton.textContent = "Remove";
+          removeButton.style.marginLeft = "10px";
+          removeButton.onclick = () => {
+            p2.remove();
+          };
+          p2.append(a2);
+          p2.append(removeButton);
+          root.append(p2);
+          counter++;
+        };
+        root.append(addLinkButton);
+
+        const toggleClickButton = document.createElement("button");
+        toggleClickButton.textContent = "Toggle click listener on text";
+        toggleClickButton.style.marginLeft = "10px";
+        toggleClickButton.onclick = () => {
+          if (p.onclick == null) {
+            p.onclick = () => {
+              console.log("Click on text!");
+            };
+          } else {
+            p.onclick = null;
+          }
+        };
+        root.append(toggleClickButton);
+
+        const removeShadowButton = document.createElement("button");
+        removeShadowButton.textContent = "Remove this shadowRoot";
+        removeShadowButton.style.marginLeft = "10px";
+        removeShadowButton.onclick = () => {
+          div.remove();
+        };
+        root.append(removeShadowButton);
+
+        addCounter++;
+      }
+
+      add(container);
+    </script>
+  </body>
+</html>

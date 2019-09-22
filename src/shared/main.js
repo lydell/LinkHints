@@ -340,7 +340,11 @@ export function* walkTextNodes(
     // Google has `<style>` elements inside some `<div>`s with click listeners.
     element instanceof HTMLStyleElement ||
     // If we ignore `<style>` we could just as well ignore `<script>` too.
-    element instanceof HTMLScriptElement;
+    element instanceof HTMLScriptElement ||
+    // Shadow hosts _can_ have text that is never displayed. Ideally we should
+    // catch closed shadow roots as well, but it’s unclear if it’s worth the
+    // trouble.
+    element.shadowRoot != null;
 
   if (!skip) {
     for (const node of element.childNodes) {
@@ -422,7 +426,8 @@ export function getTextRects({
       if (!checkElementAtPoint) {
         return box;
       }
-      const elementAtPoint = document.elementFromPoint(
+      const elementAtPoint = getElementFromPoint(
+        element,
         Math.round(box.x + box.width / 2 - offsetX),
         Math.round(box.y + box.height / 2 - offsetY)
       );
@@ -431,6 +436,18 @@ export function getTextRects({
         : undefined;
     }).filter(Boolean);
   });
+}
+
+export function getElementFromPoint(
+  element: HTMLElement,
+  x: number,
+  y: number
+): ?HTMLElement {
+  const root = element.getRootNode();
+  const doc =
+    root instanceof Document || root instanceof ShadowRoot ? root : document;
+  // $FlowIgnore: Flow doesn’t know that `ShadowRoot` has `.elementFromPoint` yet.
+  return doc.elementFromPoint(x, y);
 }
 
 export function getLabels(element: HTMLElement): ?NodeList<HTMLLabelElement> {

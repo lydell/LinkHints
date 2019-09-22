@@ -238,5 +238,18 @@
 
     <h2>contenteditable</h2>
     <p contenteditable="true">contenteditable</p>
+
+    <h2>Text inputs in Shadow DOM</h2>
+    <div id="textInputsInShadowDOM"></div>
+
+    <script>
+      const root = textInputsInShadowDOM.attachShadow({ mode: "closed" });
+      root.innerHTML = `
+        <input />
+        <br />
+        <textarea></textarea>
+        <p contenteditable="true">contenteditable</p>
+      `;
+    </script>
   </body>
 </html>

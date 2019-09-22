@@ -36,6 +36,7 @@
           <li><a></a></li>
         </ul>
       </div>
+      <div id="shadowLinks"></div>
     </div>
 
     <div id="hover">
@@ -108,7 +109,7 @@
         const a = old.cloneNode(true);
         old.replaceWith(a);
 
-        switch (notEqualCount % 5) {
+        switch (notEqualCount % 6) {
           // Base state.
           case 0:
             a.textContent = "some text";
@@ -141,11 +142,40 @@
           case 4:
             a.textContent = "innerHTML1";
             a.href = "#innerHTML1";
+            break;
+
+          // Not unique – shadow.
+          case 5:
+            a.textContent = "shadow1";
+            a.href = "#shadow1";
+            break;
 
           default:
             break;
         }
         notEqualCount++;
+      }
+
+      function shadowLinks() {
+        const old = document.getElementById("shadowLinks");
+        const div = document.createElement("div");
+        div.id = "shadowLinks";
+        const root = div.attachShadow({ mode: "closed" });
+        const numbers = shuffle([1, 2, 3]);
+        root.innerHTML = `
+          <ul>
+            ${numbers
+              .map(
+                number => `
+                  <li>
+                    <a href="#shadow${number}">shadow${number}</a>
+                  </li>
+                `
+              )
+              .join("")}
+          </ul>
+        `;
+        old.replaceWith(div);
       }
 
       function advanceLinks() {
@@ -154,6 +184,7 @@
         flip();
         move();
         notEqualLinks();
+        shadowLinks();
       }
 
       advanceLinks();

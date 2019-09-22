@@ -41,13 +41,15 @@ const prefix = `\uffff__${META_SLUG}WebExt_${BUILD_ID}_`;
 export const CLICKABLE_EVENT = `${prefix}Clickable`;
 export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
 export const QUEUE_EVENT = `${prefix}Queue`;
+export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;
+export const CLOSED_SHADOW_ROOT_CREATED_1_EVENT = `${prefix}ClosedShadowRootCreated1`;
+export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCreated2`;
 
-// If an element is not inserted into the DOM, events can’t be fired on it.
-// Instead, this attribute is added with the event name as value. If/when the
-// element _is_ inserted into the DOM, the MutationObserver can find the
-// attribute (and remove it) and as such receive the event. Remove the `\uffff`
-// since it is not valid in attribute names.
-export const EVENT_ATTRIBUTE = `data-${prefix.replace(/\W/g, "")}Event`;
+// If an element is not inserted into the page, events fired on it won’t reach
+// ElementManager’s window event listeners. Instead, such elements are
+// temporarily inserted into a secret element. This event is used to register
+// the secret element in ElementManager.
+export const REGISTER_SECRET_ELEMENT_EVENT = `${prefix}RegisterSecretElement`;
 
 // Name of the global variable created by the injected script. The `\0` prevents
 // it from turning up in autocomplete when typing `window.` in the Chrome
@@ -81,9 +83,12 @@ export default () => {
   // Remember that this runs _before_ any page scripts.
   const CustomEvent2 = CustomEvent;
   const HTMLElement2 = HTMLElement;
+  const ShadowRoot2 = ShadowRoot;
   // Don't use the usual `log` function here, too keep this file small.
   const { error: consoleLogError } = console;
-  const { setAttribute } = Element.prototype;
+  const createElement = document.createElement.bind(document);
+  const { appendChild, removeChild, getRootNode } = Node.prototype;
+  const { replaceWith } = Element.prototype;
   const { dispatchEvent } = EventTarget.prototype;
   const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
   const { get: mapGet } = Map.prototype;
@@ -127,7 +132,8 @@ export default () => {
     hookInto(
       obj: { [string]: mixed, ... },
       name: string,
-      hook: ?AnyFunction = undefined
+      hook: AnyFunction | void = undefined,
+      { withReturnValue = false }: {| withReturnValue: boolean |} = {}
     ) {
       const desc = getOwnPropertyDescriptor(obj, name);
 
@@ -160,12 +166,17 @@ export default () => {
             }[orig.name]
           : {
               [orig.name](...args: Array<any>): any {
+                const maybeReturnValue = withReturnValue
+                  ? apply(orig, this, args)
+                  : undefined;
                 // In case there's a mistake in `hook` it shouldn't cause the entire
                 // overridden method to fail and potentially break the whole page.
                 try {
                   // Remember that `hook` can be called with _anything,_ because the
                   // user can pass invalid arguments and use `.call`.
-                  const result = hook(orig, this, ...args);
+                  const result = withReturnValue
+                    ? hook(maybeReturnValue, orig, this, ...args)
+                    : hook(orig, this, ...args);
                   if (result != null && typeof result.then === "function") {
                     result.then(undefined, error => {
                       logHookError(error, obj, name);
@@ -174,7 +185,9 @@ export default () => {
                 } catch (error) {
                   logHookError(error, obj, name);
                 }
-                return apply(orig, this, args);
+                return withReturnValue
+                  ? maybeReturnValue
+                  : apply(orig, this, args);
               },
             }[orig.name];
 
@@ -552,28 +565,107 @@ export default () => {
     apply(dispatchEvent, window, [new CustomEvent2(eventName, { detail })]);
   }
 
+  function makeSecretElement(): HTMLElement {
+    // Content scripts running at `document_start` actually execute _before_
+    // `document.head` exists! `document.documentElement` seems to be completely
+    // empty when this runs (in new tabs). Just to be extra safe, use a `<head>`
+    // element as the secret element. `<head>` is invisible (`display: none;`)
+    // and a valid child of `<html>`. I’m worried injecting some other element
+    // could cause the browser to paint that, resulting in a flash of unstyled
+    // content.
+    const secretElement = createElement("head");
+    const { documentElement } = document;
+    if (documentElement != null) {
+      apply(appendChild, documentElement, [secretElement]);
+      apply(dispatchEvent, secretElement, [
+        new CustomEvent2(REGISTER_SECRET_ELEMENT_EVENT),
+      ]);
+      apply(removeChild, documentElement, [secretElement]);
+    }
+    return secretElement;
+  }
+
   // In Firefox, it is also possible to use `sendWindowEvent` passing `element`
   // as `detail`, but that does not work properly in all cases when an element
   // is inserted into another frame. Chrome does not allow passing DOM elements
   // as `detail` from a page to an extension at all.
-  function sendElementEvent(eventName: string, element: HTMLElement) {
-    // The element might have been inserted into another frame.
-    // `element.ownerDocument` refers to the document the element exists in.
-    const { documentElement } = element.ownerDocument;
-    if (documentElement == null) {
-      return;
-    }
+  const secretElement = makeSecretElement();
+  function sendElementEvent(
+    eventName: string,
+    element: Element,
+    root: OpenComposedRootNode = getOpenComposedRootNode(element)
+  ) {
+    const send = () => {
+      apply(dispatchEvent, element, [
+        // `composed: true` is used to allow the event to be observed outside
+        // the current ShadowRoot (if any).
+        new CustomEvent2(eventName, { composed: true }),
+      ]);
+    };
 
-    if (documentElement.contains(element)) {
-      apply(dispatchEvent, element, [new CustomEvent2(eventName)]);
-    } else {
-      // The element is not be inserted into the DOM (yet/anymore), which causes
-      // the event not to fire. If so, add a temporary attribute to it so it can
-      // be recognized when added to the DOM (if at all). We used to temporarily
-      // insert the element into the DOM and send the event here, but that
-      // causes video titles to sometimes go missing on YouTube.
-      apply(setAttribute, element, [EVENT_ATTRIBUTE, eventName]);
+    switch (root.type) {
+      // The element has 0 or more _open_ shadow roots above it and is connected
+      // to the page. Nothing more to do – just fire the event.
+      case "Document":
+        send();
+        break;
+
+      // For the rest of the cases, the element is not inserted into the page
+      // (yet/anymore), which means that ElementManager’s window event listeners
+      // won’t fire. Instead, temporarily insert the element into a disconnected
+      // element that ElementManager knows about and listens to, but nobody else
+      // knows about. This avoids triggering MutationObservers on the page.
+      // Note that the element might still have parent elements (which aren’t
+      // inserted into the page either), so one cannot just insert `element`
+      // into `secretElement` and then remove `element` again – then `element`
+      // would also be removed from its original parent, and be missing when the
+      // parent is inserted into the page.
+
+      // We end up here if:
+      // - `element` has no parents at all (if so, `element === root.element`).
+      // - `element` has a (grand-)parent element that has no parents.
+      // - `element` has one or more _open_ shadow roots above it, and the host
+      //   element of the topmost shadow root has no parents.
+      // In these cases, it’s the easiest and less invasive to move the entire
+      // tree temporarily to the secret element.
+      case "Element":
+        apply(appendChild, secretElement, [root.element]);
+        send();
+        apply(removeChild, secretElement, [root.element]);
+        break;
+
+      // If there’s a _closed_ shadow root somewhere up the chain, we must
+      // temporarily move `element` out of the top-most closed shadow root
+      // before we can dispatch events. Replace `element` with a dummy element,
+      // move it into the secret element, and then replace the dummy back with
+      // `element` again.
+      case "Closed": {
+        const tempElement = createElement("div");
+        apply(replaceWith, element, [tempElement]);
+        apply(appendChild, secretElement, [element]);
+        send();
+        apply(replaceWith, tempElement, [element]);
+        break;
+      }
+      default:
+        logError("Unknown getOpenComposedRootNode type:", root);
     }
+  }
+
+  type OpenComposedRootNode =
+    | {| type: "Document" |}
+    | {| type: "Element", element: Element |}
+    | {| type: "Closed" |};
+
+  function getOpenComposedRootNode(element: Element): OpenComposedRootNode {
+    const root = apply(getRootNode, element, []);
+    return root === element
+      ? { type: "Element", element }
+      : root instanceof ShadowRoot2
+      ? root.mode === "open"
+        ? getOpenComposedRootNode(root.host)
+        : { type: "Closed" }
+      : { type: "Document" };
   }
 
   const clickListenerTracker = new ClickListenerTracker();
@@ -687,6 +779,44 @@ export default () => {
     hookManager.hookInto(HTMLElement.prototype, prop, onPropChange);
   }
 
+  hookManager.hookInto(
+    Element.prototype,
+    "attachShadow",
+    (shadowRoot: ShadowRoot) => {
+      // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
+      if (shadowRoot.mode === "open") {
+        // In “open” mode, ElementManager can access shadow roots via the
+        // `.shadowRoot` property on elements. All we need to do here is tell
+        // the ElementManager that a shadow root has been created.
+        sendElementEvent(OPEN_SHADOW_ROOT_CREATED_EVENT, shadowRoot.host);
+      } else {
+        // In “closed” mode, ElementManager cannot easily access shadow roots.
+        // By creating a temporary element inside the shadow root and emitting
+        // events on that element, ElementManager can obtain the shadow root
+        // via the `.getRootNode()` method and store it in a WeakMap. This is
+        // done in two steps – see the listeners in ElementManager to learn why.
+        const tempElement = createElement("div");
+        // Expose `tempElement`:
+        sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_1_EVENT, tempElement);
+        apply(appendChild, shadowRoot, [tempElement]);
+        // Expose `shadowRoot`:
+        sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_2_EVENT, tempElement, {
+          // Force the event to fire the event while `tempElement` is still
+          // inside the closed shadow root. Normally we don’t do that, since
+          // events from within closed shadow roots appear to come from its host
+          // element, and the whole point of `sendElementEvent` is to set
+          // `event.target` to `element`, not to some shadow root. But in this
+          // special case `event.target` doesn’t matter and we _need_
+          // `tempElement` to be inside `shadowRoot` so that `.getRootNode()`
+          // returns it.
+          type: "Document",
+        });
+        apply(removeChild, shadowRoot, [tempElement]);
+      }
+    },
+    { withReturnValue: true }
+  );
+
   hookManager.conceal();
 
   defineProperty(window, INJECTED_VAR, {
@@ -704,7 +834,7 @@ export default () => {
       // is disabled in Firefox (like it is in Chrome – see renderer/Program.js
       // for more information) so injected.js from the old version will hang
       // around. That can be very annoying when developing, but doesn’t matter
-      // match in production.
+      // much in production.
       !(!PROD && BROWSER === "firefox" && message === MESSAGE_RESET)
     ) {
       // Silently ignore wrong secrets in production.

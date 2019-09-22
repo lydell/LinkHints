@@ -11,6 +11,7 @@ import {
   type Box,
   addEventListener,
   bind,
+  getElementFromPoint,
   getLabels,
   getVisibleBox,
   log,
@@ -32,12 +33,15 @@ import injected, {
   CLICKABLE_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
-  EVENT_ATTRIBUTE,
+  CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
+  CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
   INJECTED_VAR,
   INJECTED_VAR_PATTERN,
   MESSAGE_FLUSH,
   MESSAGE_RESET,
+  OPEN_SHADOW_ROOT_CREATED_EVENT,
   QUEUE_EVENT,
+  REGISTER_SECRET_ELEMENT_EVENT,
   SECRET,
   UNCLICKABLE_EVENT,
 } from "./injected";
@@ -47,12 +51,21 @@ const constants = {
   CLICKABLE_EVENT: JSON.stringify(CLICKABLE_EVENT),
   CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
   CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
-  EVENT_ATTRIBUTE: JSON.stringify(EVENT_ATTRIBUTE),
+  CLOSED_SHADOW_ROOT_CREATED_1_EVENT: JSON.stringify(
+    CLOSED_SHADOW_ROOT_CREATED_1_EVENT
+  ),
+  CLOSED_SHADOW_ROOT_CREATED_2_EVENT: JSON.stringify(
+    CLOSED_SHADOW_ROOT_CREATED_2_EVENT
+  ),
   INJECTED_VAR: JSON.stringify(INJECTED_VAR),
   INJECTED_VAR_PATTERN: INJECTED_VAR_PATTERN.toString(),
   MESSAGE_FLUSH: JSON.stringify(MESSAGE_FLUSH),
   MESSAGE_RESET: JSON.stringify(MESSAGE_RESET),
+  OPEN_SHADOW_ROOT_CREATED_EVENT: JSON.stringify(
+    OPEN_SHADOW_ROOT_CREATED_EVENT
+  ),
   QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
+  REGISTER_SECRET_ELEMENT_EVENT: JSON.stringify(REGISTER_SECRET_ELEMENT_EVENT),
   SECRET: JSON.stringify(SECRET),
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
@@ -194,8 +207,8 @@ export const t = {
 export const tMeta = tweakable("ElementManager", t);
 
 type Record = {|
-  addedNodes: Array<Node>,
-  removedNodes: Array<Node>,
+  addedNodes: Array<Node> | NodeList<Node>,
+  removedNodes: Array<Node> | NodeList<Node>,
   attributeName: ?string,
   target: Node,
 |};
@@ -223,6 +236,13 @@ type QueueItem =
 
 type MutationType = "added" | "removed" | "changed";
 
+type ShadowRootData = {|
+  shadowRoot: ShadowRoot,
+  mutationObserver: MutationObserver,
+  resets: Resets,
+  active: boolean,
+|};
+
 const NON_WHITESPACE = /\S/;
 const LAST_NON_WHITESPACE = /\S\s*$/;
 
@@ -233,6 +253,7 @@ const infiniteDeadline: Deadline = {
 };
 
 export default class ElementManager {
+  onMutationExternal: (Array<MutationRecord>) => mixed;
   queue: Queue<QueueItem> = makeEmptyQueue();
   injectedHasQueue: boolean = false;
   elements: Map<HTMLElement, ElementType> = new Map();
@@ -240,8 +261,10 @@ export default class ElementManager {
   visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement> = new Set();
   elementsWithClickListeners: WeakSet<HTMLElement> = new WeakSet();
   elementsWithScrollbars: WeakSet<HTMLElement> = new WeakSet();
+  shadowRoots: WeakMap<Element, ShadowRootData> = new WeakMap();
   idleCallbackId: ?IdleCallbackID = undefined;
   bailed: boolean = false;
+  secretElementResets: Resets = new Resets();
   resets: Resets = new Resets();
 
   intersectionObserver: IntersectionObserver = new IntersectionObserver(
@@ -260,12 +283,21 @@ export default class ElementManager {
     this.onRemoval.bind(this)
   );
 
-  constructor() {
+  constructor({
+    onMutation,
+  }: {|
+    onMutation: (Array<MutationRecord>) => mixed,
+  |}) {
+    this.onMutationExternal = onMutation;
+
     bind(this, [
       this.onClickableElement,
       this.onUnclickableElement,
       this.onInjectedQueue,
       this.onOverflowChange,
+      this.onOpenShadowRootCreated,
+      this.onClosedShadowRootCreated,
+      this.onRegisterSecretElement,
     ]);
   }
 
@@ -275,10 +307,27 @@ export default class ElementManager {
       return;
     }
 
+    // When adding new event listeners, consider also subscribing in
+    // `onRegisterSecretElement` and `setShadowRoot`.
     this.resets.add(
       addEventListener(window, CLICKABLE_EVENT, this.onClickableElement),
       addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElement),
       addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
+      addEventListener(
+        window,
+        OPEN_SHADOW_ROOT_CREATED_EVENT,
+        this.onOpenShadowRootCreated
+      ),
+      addEventListener(
+        window,
+        CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
+        this.onClosedShadowRootCreated
+      ),
+      addEventListener(
+        window,
+        REGISTER_SECRET_ELEMENT_EVENT,
+        this.onRegisterSecretElement
+      ),
       addEventListener(window, "overflow", this.onOverflowChange),
       addEventListener(window, "underflow", this.onOverflowChange)
     );
@@ -291,11 +340,7 @@ export default class ElementManager {
     // before the observer was running.
     await tMeta.loaded;
 
-    this.mutationObserver.observe(documentElement, {
-      childList: true,
-      subtree: true,
-      attributeFilter: Array.from(t.ATTRIBUTES_MUTATION.value),
-    });
+    mutationObserve(this.mutationObserver, documentElement);
 
     // Pick up all elements present in the initial HTML payload. Large HTML
     // pages are usually streamed in chunks. As later chunks arrive and are
@@ -331,8 +376,10 @@ export default class ElementManager {
     // `WeakSet`s don’t have a `.clear()` method.
     this.elementsWithClickListeners = new WeakSet();
     this.elementsWithScrollbars = new WeakSet();
+    this.shadowRoots = new WeakMap();
     this.idleCallbackId = undefined;
     this.resets.reset();
+    this.secretElementResets.reset();
     sendInjectedMessage(MESSAGE_RESET);
   }
 
@@ -361,15 +408,46 @@ export default class ElementManager {
   makeStats(durations: Durations): Stats {
     return {
       url: window.location.href,
-      // This call only takes 0–1 ms even on the single-page HTML specification
-      // (which is huge!).
-      numTotalElements: document.getElementsByTagName("*").length,
+      numTotalElements: Array.from(this.getAllElements(document)).length,
       numTrackedElements: this.elements.size,
       numVisibleElements: this.visibleElements.size,
       numVisibleFrames: this.visibleFrames.size,
       bailed: this.bailed ? 1 : 0,
       durations,
     };
+  }
+
+  *getAllElements(
+    node: HTMLElement | Document | ShadowRoot
+  ): Generator<HTMLElement, void, void> {
+    const children =
+      node instanceof ShadowRoot
+        ? node.querySelectorAll("*")
+        : // This call only takes 0–1 ms even on the single-page HTML
+          // specification (which is huge!).
+          node.getElementsByTagName("*");
+
+    for (const child of children) {
+      yield child;
+
+      const root = this.shadowRoots.get(child);
+      if (root != null) {
+        yield* this.getAllElements(root.shadowRoot);
+      }
+    }
+  }
+
+  getActiveElement(node: Document | ShadowRoot): ?HTMLElement {
+    // $FlowIgnore: Flow doesn’t know about `.activeElement` on `ShadowRoot` yet.
+    const { activeElement } = node;
+    if (activeElement == null) {
+      return undefined;
+    }
+    const root = this.shadowRoots.get(activeElement);
+    if (root != null) {
+      return this.getActiveElement(root.shadowRoot);
+    }
+    return activeElement;
   }
 
   queueItem(item: QueueItem) {
@@ -431,8 +509,11 @@ export default class ElementManager {
   }
 
   onMutation(records: Array<MutationRecord>) {
-    this.queueRecords(records);
-    this.observeRemovals(records);
+    if (records.length > 0) {
+      this.queueRecords(records);
+      this.observeRemovals(records);
+      this.onMutationExternal(records);
+    }
   }
 
   onRemoval(records: Array<MutationRecord>) {
@@ -473,7 +554,7 @@ export default class ElementManager {
   }
 
   onClickableElement(event: CustomEvent) {
-    const { target } = event;
+    const target = getTarget(event);
     this.queueItem({
       type: "ClickableChanged",
       target,
@@ -482,7 +563,7 @@ export default class ElementManager {
   }
 
   onUnclickableElement(event: CustomEvent) {
-    const { target } = event;
+    const target = getTarget(event);
     this.queueItem({
       type: "ClickableChanged",
       target,
@@ -504,14 +585,139 @@ export default class ElementManager {
     this.injectedHasQueue = hasQueue;
   }
 
+  onOpenShadowRootCreated(event: CustomEvent) {
+    const target = getTarget(event);
+    if (target instanceof HTMLElement) {
+      const { shadowRoot } = target;
+      if (shadowRoot != null) {
+        log("log", "ElementManager#onOpenShadowRootCreated", shadowRoot);
+        this.setShadowRoot(shadowRoot);
+      }
+    }
+  }
+
+  onClosedShadowRootCreated(event: CustomEvent) {
+    const target = getTarget(event);
+    if (target instanceof HTMLElement) {
+      // Closed shadow roots are reported in two phases. First, a temporary
+      // element is created and `CLOSED_SHADOW_ROOT_CREATED_1_EVENT` is
+      // dispatched on it. That’s `target` here.
+      // Then, the temporary element is moved into the closed shadow root and
+      // `CLOSED_SHADOW_ROOT_CREATED_2_EVENT` is dispatched on it. Now we can
+      // call `target.getRootNode()` to obtain the closed shadow root.
+      // So why are two phases needed? In `CLOSED_SHADOW_ROOT_CREATED_2_EVENT`,
+      // we can never get a reference to the temporary element, because that’s
+      // how closed shadow roots work. Events from within closed shadow roots
+      // appear to come from its host element.
+      target.addEventListener(
+        CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
+        () => {
+          // This has to be done immediately (cannot be done when flushing the
+          // queue), since `target` is a temporary element that is removed just
+          // after this event listener is finished.
+          const root = target.getRootNode();
+          if (root instanceof ShadowRoot) {
+            log("log", "ElementManager#onClosedShadowRootCreated", root);
+            this.setShadowRoot(root);
+          }
+        },
+        { capture: true, passive: true, once: true }
+      );
+    }
+  }
+
+  onRegisterSecretElement(event: CustomEvent) {
+    const target = getTarget(event);
+    if (target instanceof HTMLElement) {
+      log("log", "ElementManager#onRegisterSecretElement", target);
+      this.secretElementResets.reset();
+      this.secretElementResets.add(
+        addEventListener(target, CLICKABLE_EVENT, this.onClickableElement),
+        addEventListener(target, UNCLICKABLE_EVENT, this.onUnclickableElement),
+        addEventListener(
+          target,
+          OPEN_SHADOW_ROOT_CREATED_EVENT,
+          this.onOpenShadowRootCreated
+        ),
+        addEventListener(
+          target,
+          CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
+          this.onClosedShadowRootCreated
+        )
+      );
+    }
+  }
+
   onOverflowChange(event: UIEvent) {
-    const { target } = event;
+    const target = getTarget(event);
     this.queueItem({ type: "OverflowChanged", target });
   }
 
-  addOrRemoveElement(mutationType: MutationType, element: HTMLElement) {
-    this.consumeEventAttribute(element);
+  setShadowRoot(shadowRoot: ShadowRoot) {
+    // MutationObservers don’t have an `.unobserve` method, so each shadow root
+    // has its own MutationObserver, which can be `.disconnect()`:ed when hosts
+    // are removed.
+    const mutationObserver = new MutationObserver(this.onMutation.bind(this));
+    const resets = new Resets();
 
+    mutationObserve(mutationObserver, shadowRoot);
+
+    resets.add(
+      addEventListener(shadowRoot, "overflow", this.onOverflowChange),
+      addEventListener(shadowRoot, "underflow", this.onOverflowChange)
+    );
+
+    this.shadowRoots.set(shadowRoot.host, {
+      shadowRoot,
+      mutationObserver,
+      resets,
+      active: true,
+    });
+
+    // Note that when shadow roots are brand new (just created by
+    // `.attachShadow`), `childNodes` is always empty since the page hasn’t had
+    // time to add any nodes to it yet. But if a shadow dom host element is
+    // removed from the page and then re-inserted again then there _are_
+    // elements in there that need to be queued.
+    const { childNodes } = shadowRoot;
+    if (childNodes.length > 0) {
+      const records: Array<Record> = [
+        {
+          addedNodes: childNodes,
+          removedNodes: [],
+          attributeName: undefined,
+          target: shadowRoot,
+        },
+      ];
+      this.queueRecords(records);
+    }
+  }
+
+  // Note that shadow roots are not removed from `this.shadowRoots` when their
+  // host elements are removed, in case the host elements are inserted back into
+  // the page. If so, we need access to closed shadow roots again. Since
+  // `this.shadowRoots` is a `WeakMap`, items should disappear from it
+  // automatically as the host elements are garbage collected.
+  deactivateShadowRoot(root: ShadowRootData) {
+    root.mutationObserver.disconnect();
+    root.resets.reset();
+    root.active = false;
+
+    const { childNodes } = root.shadowRoot;
+    if (childNodes.length > 0) {
+      const records: Array<Record> = [
+        {
+          addedNodes: [],
+          removedNodes: childNodes,
+          attributeName: undefined,
+          target: root.shadowRoot,
+        },
+      ];
+      this.queueRecords(records);
+    }
+  }
+
+  addOrRemoveElement(mutationType: MutationType, element: HTMLElement) {
     if (
       element instanceof HTMLIFrameElement ||
       element instanceof HTMLFrameElement
@@ -581,21 +787,30 @@ export default class ElementManager {
         }
       }
     }
-  }
 
-  consumeEventAttribute(element: HTMLElement) {
-    const value = element.getAttribute(EVENT_ATTRIBUTE);
-    switch (value) {
-      case CLICKABLE_EVENT:
-        this.elementsWithClickListeners.add(element);
-        break;
-      case UNCLICKABLE_EVENT:
-        this.elementsWithClickListeners.delete(element);
-        break;
-      default:
-        return;
+    if (mutationType === "added") {
+      const root = this.shadowRoots.get(element);
+      if (root != null) {
+        if (!root.active) {
+          // If an element has been removed and then re-inserted again, set up
+          // tracking of its shadow root again (if any). However, when
+          // `someElement.attachShadow()` is called, `someElement` might
+          // already have been in the queue. So if the tracking of the shadow
+          // root is already active, there’s no need to do it again.
+          this.setShadowRoot(root.shadowRoot);
+        }
+      } else if (element.shadowRoot != null) {
+        // Just after the extension is installed or updated, we might have
+        // missed a bunch of `.attachShadow` calls. Luckily, we can still get
+        // _open_ shadow roots through the `.shadowRoot` property.
+        this.setShadowRoot(element.shadowRoot);
+      }
+    } else if (mutationType === "removed") {
+      const root = this.shadowRoots.get(element);
+      if (root != null) {
+        this.deactivateShadowRoot(root);
+      }
     }
-    element.removeAttribute(EVENT_ATTRIBUTE);
   }
 
   flushQueue(deadline: Deadline) {
@@ -672,7 +887,7 @@ export default class ElementManager {
                   // `.querySelectorAll("*")` business.
                   // It should be safe to keep the `.addedElements` set even
                   // though the queue lives over time. If an already gone
-                  // through element is changed that will cause removal or
+                  // through element is changed, that will cause removal or
                   // attribute mutations, which will be run eventually.
                   if (this.queue.addedElements.has(element)) {
                     continue;
@@ -863,7 +1078,7 @@ export default class ElementManager {
       passedCandidates != null
         ? passedCandidates
         : types === "selectable"
-        ? document.getElementsByTagName("*")
+        ? this.getAllElements(document)
         : this.bailed
         ? this.elements.keys()
         : this.visibleElements;
@@ -874,7 +1089,7 @@ export default class ElementManager {
     const maybeResults = Array.from(candidates, element => {
       const type: ?ElementType =
         types === "selectable"
-          ? getElementTypeSelectable(element)
+          ? this.getElementTypeSelectable(element)
           : this.elements.get(element);
 
       if (type == null) {
@@ -1031,6 +1246,71 @@ export default class ElementManager {
           return "label";
         }
 
+        return undefined;
+      }
+    }
+  }
+
+  getElementTypeSelectable(element: HTMLElement): ?ElementType {
+    // A shadow host element usually has 0 children, but it _can_ have children,
+    // although they are never displayed. So it never makes sense to consider
+    // shadow hosts selectable.
+    if (isDisabled(element) || this.shadowRoots.has(element)) {
+      return undefined;
+    }
+
+    switch (element.nodeName) {
+      // Links _could_ be marked as "clickable" as well for simplicity, but
+      // marking them as "link" allows opening them in a new tab by holding alt
+      // for consistency with all other hints modes.
+      case "A":
+        return element instanceof HTMLAnchorElement
+          ? getLinkElementType(element)
+          : undefined;
+      // Always consider the following elements as selectable, regardless of their
+      // children, since they have special context menu items. A
+      // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
+      // and be skipped otherwise. Making frames selectable also allows Chrome
+      // users to scroll frames using the arrow keys. It would be convenient to
+      // give frames hints during regular click hints mode for that reason, but
+      // unfortunately for example Twitter uses iframes for many of its little
+      // widgets/embeds which would result in many unnecessary/confusing hints.
+      case "AUDIO":
+      case "BUTTON":
+      case "SELECT":
+      case "TEXTAREA":
+      case "VIDEO":
+        return "clickable";
+      case "INPUT":
+        return element instanceof HTMLInputElement && element.type !== "hidden"
+          ? "clickable"
+          : undefined;
+      case "CANVAS":
+      case "EMBED":
+      case "FRAME":
+      case "IFRAME":
+      case "IMG":
+      case "OBJECT":
+        return "selectable";
+      default: {
+        // If an element has no child _elements_ (but possibly child text nodes),
+        // consider it selectable. This allows focusing `<div>`-based "buttons"
+        // with only a background image as icon inside. It also catches many
+        // elements with text without having to iterate through all child text
+        // nodes.
+        if (element.childElementCount === 0) {
+          return "selectable";
+        }
+
+        // If the element has at least one immediate non-blank text node, consider
+        // it selectable. If an element contains only other elements, whitespace
+        // and comments it is a "wrapper" element that would just cause duplicate
+        // hints.
+        for (const node of element.childNodes) {
+          if (node instanceof Text && NON_WHITESPACE.test(node.data)) {
+            return "selectable";
+          }
+        }
         return undefined;
       }
     }
@@ -1496,7 +1776,7 @@ function getNonCoveredPoint(
   element: HTMLElement,
   { x, y, maxX }: {| x: number, y: number, maxX: number |}
 ): ?{| x: number, y: number |} {
-  const elementAtPoint = document.elementFromPoint(x, y);
+  const elementAtPoint = getElementFromPoint(element, x, y);
 
   // (x, y) is off-screen.
   if (elementAtPoint == null) {
@@ -1530,7 +1810,7 @@ function getNonCoveredPoint(
   // right seemed to be a good tradeoff between correctness and performance in
   // the VimFx add-on.
   if (newX > x && newX <= maxX) {
-    const elementAtPoint2 = document.elementFromPoint(newX, y);
+    const elementAtPoint2 = getElementFromPoint(element, newX, y);
 
     if (elementAtPoint2 != null && element.contains(elementAtPoint2)) {
       return { x: newX, y };
@@ -1835,68 +2115,6 @@ function hintWeight(
   return Math.max(1, lg(weight));
 }
 
-function getElementTypeSelectable(element: HTMLElement): ?ElementType {
-  if (isDisabled(element)) {
-    return undefined;
-  }
-
-  switch (element.nodeName) {
-    // Links _could_ be marked as "clickable" as well for simplicity, but
-    // marking them as "link" allows opening them in a new tab by holding alt
-    // for consistency with all other hints modes.
-    case "A":
-      return element instanceof HTMLAnchorElement
-        ? getLinkElementType(element)
-        : undefined;
-    // Always consider the following elements as selectable, regardless of their
-    // children, since they have special context menu items. A
-    // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
-    // and be skipped otherwise. Making frames selectable also allows Chrome
-    // users to scroll frames using the arrow keys. It would be convenient to
-    // give frames hints during regular click hints mode for that reason, but
-    // unfortunately for example Twitter uses iframes for many of its little
-    // widgets/embeds which would result in many unnecessary/confusing hints.
-    case "AUDIO":
-    case "BUTTON":
-    case "SELECT":
-    case "TEXTAREA":
-    case "VIDEO":
-      return "clickable";
-    case "INPUT":
-      return element instanceof HTMLInputElement && element.type !== "hidden"
-        ? "clickable"
-        : undefined;
-    case "CANVAS":
-    case "EMBED":
-    case "FRAME":
-    case "IFRAME":
-    case "IMG":
-    case "OBJECT":
-      return "selectable";
-    default: {
-      // If an element has no child _elements_ (but possibly child text nodes),
-      // consider it selectable. This allows focusing `<div>`-based "buttons"
-      // with only a background image as icon inside. It also catches many
-      // elements with text without having to iterate through all child text
-      // nodes.
-      if (element.childElementCount === 0) {
-        return "selectable";
-      }
-
-      // If the element has at least one immediate non-blank text node, consider
-      // it selectable. If an element contains only other elements, whitespace
-      // and comments it is a "wrapper" element that would just cause duplicate
-      // hints.
-      for (const node of element.childNodes) {
-        if (node instanceof Text && NON_WHITESPACE.test(node.data)) {
-          return "selectable";
-        }
-      }
-      return undefined;
-    }
-  }
-}
-
 function getLinkElementType(element: HTMLAnchorElement): ElementType {
   const hrefAttr = element.getAttribute("href");
   return (
@@ -1920,4 +2138,21 @@ function isDisabled(element: HTMLElement): boolean {
       element instanceof HTMLTextAreaElement) &&
     element.disabled
   );
+}
+
+// If `event` originates from an open shadow root, `event.target` is the same as
+// `shadowRoot.host`, while `event.composedPath()[0]` is the actual element that
+// the event came from.
+function getTarget(event: Event): EventTarget {
+  // $FlowIgnore: Flow doesn’t know about `.composedPath()` yet.
+  const path = event.composedPath();
+  return path.length > 0 ? path[0] : event.target;
+}
+
+function mutationObserve(mutationObserver: MutationObserver, node: Node) {
+  mutationObserver.observe(node, {
+    childList: true,
+    subtree: true,
+    attributeFilter: Array.from(t.ATTRIBUTES_MUTATION.value),
+  });
 }

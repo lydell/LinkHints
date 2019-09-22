@@ -124,6 +124,10 @@ export default class RendererProgram {
     container.id = CONTAINER_ID;
     setStyles(container, CONTAINER_STYLES);
 
+    // Using `mode: "closed"` means that ElementManager won’t be able to get
+    // into this shadow root, which is a small optimization. (The override of
+    // `.attachShadow` in injected.js does not apply to code running in the
+    // extension context, only in the page context).
     const shadowRoot = container.attachShadow({ mode: "closed" });
 
     const root = document.createElement("div");

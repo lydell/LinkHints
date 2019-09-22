@@ -108,11 +108,61 @@
 
     <iframe src="iframe1.html" name="iframe1" width="500" height="500"></iframe>
 
+    <p>Shadow DOM:</p>
+    <div id="shadow"></div>
+
     <script>
       stopImmediate.addEventListener("click", event => {
         event.stopImmediatePropagation();
         event.preventDefault();
       });
+
+      const root = shadow.attachShadow({ mode: "open" });
+      root.append(shadowLink1());
+      root.append(document.createElement("br"));
+      root.append(shadowLink2());
+      root.append(document.createElement("br"));
+      root.append(shadowLink3());
+
+      function shadowLink1() {
+        const a = document.createElement("a");
+        a.href = "https://example.com/shadow1";
+        a.target = "_blank";
+        a.onclick = () => false;
+        a.textContent = "Own prevent default";
+        return a;
+      }
+
+      function shadowLink2() {
+        const a = document.createElement("a");
+        a.href = "https://example.com/shadow2";
+        a.target = "_blank";
+        a.textContent = "Document prevent default";
+        document.addEventListener("click", event => {
+          if (getTarget(event) === a) {
+            event.preventDefault();
+          }
+        });
+        return a;
+      }
+
+      function shadowLink3() {
+        const a = document.createElement("a");
+        a.href = "https://example.com/shadow3";
+        a.target = "_blank";
+        a.textContent = "Host stopPropagation and prevent default";
+        root.host.addEventListener("click", event => {
+          if (getTarget(event) === a) {
+            event.stopPropagation();
+            event.preventDefault();
+          }
+        });
+        return a;
+      }
+
+      function getTarget(event) {
+        return event.composedPath()[0];
+      }
     </script>
   </body>
 </html>

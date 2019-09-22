@@ -109,5 +109,20 @@
         hidden overflow-y
       </div>
     </div>
+
+    <script>
+      {
+        const div = document.createElement("div");
+        const root = div.attachShadow({ mode: "closed" });
+        root.innerHTML = `
+          <div style="width: 300px; height: 300px; overflow: auto;">
+            <div style="height: 500px;">
+              simple scroll in shadow DOM
+            </div>
+          </div>
+        `;
+        document.body.append(div);
+      }
+    </script>
   </body>
 </html>

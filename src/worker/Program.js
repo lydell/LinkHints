@@ -56,10 +56,9 @@ export default class WorkerProgram {
   mac: boolean = false;
   suppressNextKeyup: ?{| key: string, code: string |} = undefined;
   resets: Resets = new Resets();
-  elementManager: ElementManager = new ElementManager();
-  mutationObserver: MutationObserver = new MutationObserver(
-    this.onMutation.bind(this)
-  );
+  elementManager: ElementManager = new ElementManager({
+    onMutation: this.onMutation.bind(this),
+  });
 
   constructor() {
     bind(this, [
@@ -105,7 +104,6 @@ export default class WorkerProgram {
   stop() {
     this.resets.reset();
     this.elementManager.stop();
-    this.mutationObserver.disconnect();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
   }
@@ -142,7 +140,6 @@ export default class WorkerProgram {
 
         if (message.clearElements) {
           this.current = undefined;
-          this.mutationObserver.disconnect();
         }
         break;
 
@@ -215,7 +212,7 @@ export default class WorkerProgram {
         }
 
         const { element } = elementData;
-        const { activeElement } = document;
+        const activeElement = this.elementManager.getActiveElement(document);
         const textInputIsFocused =
           activeElement != null && isTextInput(activeElement);
 
@@ -298,19 +295,24 @@ export default class WorkerProgram {
           element.focus();
         } else {
           // Focus the element, even if it isn't usually focusable.
-          focusElement(element);
+          if (element !== this.elementManager.getActiveElement(document)) {
+            focusElement(element);
+          }
 
           // Try to select the text of the element, or the element itself.
           const selection: Selection | null = window.getSelection();
           if (selection != null) {
-            const range = document.createRange();
-            if (element.childNodes.length === 0) {
-              range.selectNode(element);
-            } else {
-              range.selectNodeContents(element);
-            }
-            selection.removeAllRanges();
-            selection.addRange(range);
+            // Firefox won’t select text inside a ShadowRoot without this timeout.
+            setTimeout(() => {
+              const range = document.createRange();
+              if (element.childNodes.length === 0) {
+                range.selectNode(element);
+              } else {
+                range.selectNodeContents(element);
+              }
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }, 0);
           }
         }
 
@@ -336,8 +338,9 @@ export default class WorkerProgram {
       }
 
       case "Escape": {
-        if (document.activeElement != null) {
-          document.activeElement.blur();
+        const activeElement = this.elementManager.getActiveElement(document);
+        if (activeElement != null) {
+          activeElement.blur();
         }
         const selection: Selection | null = window.getSelection();
         if (selection != null) {
@@ -355,7 +358,7 @@ export default class WorkerProgram {
       }
 
       case "ClickFocusedElement": {
-        const { activeElement } = document;
+        const activeElement = this.elementManager.getActiveElement(document);
         if (activeElement != null) {
           this.clickElement(activeElement);
         }
@@ -570,7 +573,7 @@ export default class WorkerProgram {
       return;
     }
 
-    const newElements = getAllNewElements(records);
+    const newElements = this.getAllNewElements(records);
     updateElementsWithEqualOnes(current, newElements);
 
     // In addition to the "UpdateElements" polling, update as soon as possible
@@ -612,6 +615,24 @@ export default class WorkerProgram {
       // We have returned to the page via the back/forward buttons.
       this.sendMessage({ type: "PersistedPageShow" });
     }
+  }
+
+  getAllNewElements(records: Array<MutationRecord>): Array<HTMLElement> {
+    const elements: Set<HTMLElement> = new Set();
+
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node instanceof HTMLElement && !elements.has(node)) {
+          elements.add(node);
+          const children = this.elementManager.getAllElements(node);
+          for (const child of children) {
+            elements.add(child);
+          }
+        }
+      }
+    }
+
+    return Array.from(elements);
   }
 
   getElement(index: number): ?VisibleElement {
@@ -660,15 +681,6 @@ export default class WorkerProgram {
       indexes: [],
       words: [],
     };
-
-    const { documentElement } = document;
-    if (documentElement != null) {
-      this.mutationObserver.observe(documentElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-      });
-    }
   }
 
   updateVisibleElements({
@@ -849,10 +861,6 @@ function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {
 // Focus any element. Temporarily alter tabindex if needed, and properly
 // restore it again when blurring.
 function focusElement(element: HTMLElement) {
-  if (element === document.activeElement) {
-    return;
-  }
-
   const focusable = isFocusable(element);
   const tabIndexAttr = element.getAttribute("tabindex");
 
@@ -862,45 +870,59 @@ function focusElement(element: HTMLElement) {
 
   element.focus();
 
-  const { documentElement } = document;
+  if (!focusable) {
+    let tabIndexChanged = false;
 
-  if (!focusable && documentElement != null) {
-    const onBlur = () => {
-      if (tabIndexAttr == null) {
-        element.removeAttribute("tabindex");
-      } else {
-        element.setAttribute("tabindex", tabIndexAttr);
+    const stop = () => {
+      element.removeEventListener("blur", stop, options);
+      mutationObserver.disconnect();
+
+      if (!tabIndexChanged) {
+        if (tabIndexAttr == null) {
+          element.removeAttribute("tabindex");
+        } else {
+          element.setAttribute("tabindex", tabIndexAttr);
+        }
       }
-      stop();
     };
 
     const options = { capture: true, passive: true };
-    element.addEventListener("blur", onBlur, options);
+    element.addEventListener("blur", stop, options);
 
     const mutationObserver = new MutationObserver(records => {
-      const removed = !documentElement.contains(element);
-      const tabindexChanged = records.some(
-        record => record.type === "attributes"
-      );
-      if (removed || tabindexChanged) {
+      const removed = !element.isConnected;
+      tabIndexChanged = records.some(record => record.type === "attributes");
+
+      if (removed || tabIndexChanged) {
         stop();
       }
     });
-
-    const stop = () => {
-      element.removeEventListener("blur", onBlur, options);
-      mutationObserver.disconnect();
-    };
 
     mutationObserver.observe(element, {
       attributes: true,
       attributeFilter: ["tabindex"],
     });
-    mutationObserver.observe(documentElement, {
-      childList: true,
-      subtree: true,
-    });
+
+    for (const root of getRootNodes(element)) {
+      mutationObserver.observe(root, {
+        childList: true,
+        subtree: true,
+      });
+    }
   }
+}
+
+function* getRootNodes(fromNode: Node): Generator<Node, void, void> {
+  let node = fromNode;
+  do {
+    const root = node.getRootNode();
+    yield root;
+    if (root instanceof ShadowRoot) {
+      node = root.host;
+    } else {
+      break;
+    }
+  } while (true);
 }
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
@@ -1031,30 +1053,11 @@ function visibleElementToElementReport(
   };
 }
 
-function getAllNewElements(records: Array<MutationRecord>): Array<HTMLElement> {
-  const elements: Set<HTMLElement> = new Set();
-
-  for (const record of records) {
-    for (const node of record.addedNodes) {
-      if (node instanceof HTMLElement && !elements.has(node)) {
-        elements.add(node);
-        const children = node.getElementsByTagName("*");
-        for (const child of children) {
-          elements.add(child);
-        }
-      }
-    }
-  }
-
-  return Array.from(elements);
-}
-
 function updateElementsWithEqualOnes(
   current: CurrentElements,
   newElements: Array<HTMLElement>
 ) {
-  const { documentElement } = document;
-  if (documentElement == null || newElements.length === 0) {
+  if (newElements.length === 0) {
     return;
   }
 
@@ -1066,7 +1069,7 @@ function updateElementsWithEqualOnes(
     // for seemingly no reason (one cannot tell with one’s eyes that the hint’s
     // element had _technically_ been removed). This is an attempt to give such
     // hints new elements.
-    if (!documentElement.contains(item.element)) {
+    if (!item.element.isConnected) {
       const equalElements = newElements.filter(element =>
         item.element.isEqualNode(element)
       );
@@ -1440,13 +1443,19 @@ function firefoxPopupBlockerWorkaround({
 }
 
 function* getAllEventTargetsUpwards(
-  fromElement: HTMLElement
+  fromNode: Node
 ): Generator<EventTarget, void, void> {
-  let element = fromElement;
+  let node = fromNode;
   do {
-    yield element;
-  } while ((element = element.parentElement));
-  yield document;
+    yield node;
+    const parent = node.parentNode;
+    if (parent instanceof ShadowRoot) {
+      yield parent;
+      node = parent.host;
+    } else {
+      node = parent;
+    }
+  } while (node != null);
   yield window;
 }
 
