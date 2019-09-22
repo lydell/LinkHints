@@ -33,7 +33,7 @@ export const DEFAULT_LOG_LEVEL: LogLevel = PROD
   ? "error"
   : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
-export function log(level: LogLevel, ...args: Array<any>) {
+export function log(level: LogLevel, ...args: Array<mixed>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
     return;
   }
@@ -65,7 +65,7 @@ function formatDate(date: Date): string {
 }
 
 /* eslint-disable no-console */
-function getLogMethod(level: LogLevel): Function {
+function getLogMethod(level: LogLevel): AnyFunction {
   switch (level) {
     case "error":
       return console.error;
@@ -146,7 +146,7 @@ export function bind(
   }
 }
 
-export function unreachable(value: empty, ...args: Array<any>) {
+export function unreachable(value: empty, ...args: Array<mixed>) {
   const message = `Unreachable: ${value}\n${JSON.stringify(
     args,
     undefined,
@@ -158,7 +158,7 @@ export function unreachable(value: empty, ...args: Array<any>) {
 export function addEventListener(
   target: EventTarget,
   eventName: string,
-  listener: Function,
+  listener: AnyFunction,
   options: { [string]: mixed, ... } = {}
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
@@ -188,9 +188,9 @@ export function addListener<Listener, Options>(
 }
 
 export class Resets {
-  _callbacks: Array<() => any> = [];
+  _callbacks: Array<() => mixed> = [];
 
-  add(...callbacks: Array<() => any>) {
+  add(...callbacks: Array<() => mixed>) {
     this._callbacks.push(...callbacks);
   }
 

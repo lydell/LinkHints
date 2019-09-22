@@ -99,8 +99,8 @@ export default () => {
   };
 
   class HookManager {
-    fnMap: Map<Function, Function> = new Map();
-    resetFns: Array<Function> = [];
+    fnMap: Map<AnyFunction, AnyFunction> = new Map();
+    resetFns: Array<AnyFunction> = [];
 
     reset() {
       // Reset all overridden methods.
@@ -127,7 +127,7 @@ export default () => {
     hookInto(
       obj: { [string]: mixed, ... },
       name: string,
-      hook: ?Function = undefined
+      hook: ?AnyFunction = undefined
     ) {
       const desc = getOwnPropertyDescriptor(obj, name);
 
@@ -580,7 +580,7 @@ export default () => {
   const hookManager = new HookManager();
 
   function onAddEventListener(
-    orig: Function,
+    orig: AnyFunction,
     element: mixed,
     eventName: mixed,
     listener: mixed,
@@ -656,7 +656,7 @@ export default () => {
     });
   }
 
-  function onPropChange(orig: Function, element: mixed) {
+  function onPropChange(orig: AnyFunction, element: mixed) {
     if (!(element instanceof HTMLElement2)) {
       return;
     }
@@ -677,7 +677,7 @@ export default () => {
   hookManager.hookInto(
     EventTarget.prototype,
     "removeEventListener",
-    (orig: Function, ...args) => {
+    (orig: AnyFunction, ...args) => {
       onRemoveEventListener(...args);
     }
   );

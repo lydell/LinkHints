@@ -1,5 +1,7 @@
 // @flow strict-local
 
+declare type AnyFunction = (...args: Array<any>) => any;
+
 declare type Browser = "chrome" | "firefox";
 
 declare var BROWSER: Browser;
@@ -25,7 +27,7 @@ declare var META_VERSION: string;
 declare var PROD: boolean;
 
 declare function exportFunction(
-  (...args: Array<any>) => any,
-  any,
+  AnyFunction,
+  mixed,
   {| defineAs: string |}
 ): void;
