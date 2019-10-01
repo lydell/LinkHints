@@ -1171,13 +1171,18 @@ function firefoxPopupBlockerWorkaround({
   // listeners.
   let defaultPrevented: "NotPrevented" | "ByPage" | "ByUs" = "NotPrevented";
 
+  // Returns `element` if it is a link, or its first parent that is a link (if
+  // any). Clicking on an element inside a link also activates the link.
+  const link = element.closest("a");
+
   if (
-    element instanceof HTMLAnchorElement &&
-    (element.target.toLowerCase() === "_blank" ||
-      (isPinned && element.hostname !== window.location.hostname))
+    link != null &&
+    link instanceof HTMLAnchorElement &&
+    (link.target.toLowerCase() === "_blank" ||
+      (isPinned && link.hostname !== window.location.hostname))
   ) {
     // Default to opening this link in a new tab.
-    linkUrl = element.href;
+    linkUrl = link.href;
 
     const override = (method, fn) => {
       const { prototype } = window.wrappedJSObject.Event;

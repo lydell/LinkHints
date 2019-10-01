@@ -78,7 +78,38 @@
         returnFalse: { at: "element", how: "inline" },
       });
 
-      function link(options) {
+      br();
+
+      link({ stopPropagation: { at: "window", how: "capture" } }, (a, text) => {
+        const button = document.createElement("button");
+        button.textContent = text;
+        a.append(button);
+      });
+      link(
+        { stopPropagation: { at: "element", how: "capture" } },
+        (a, text) => {
+          const button = document.createElement("button");
+          button.textContent = text;
+          const span = document.createElement("span");
+          span.append(button);
+          a.append(span);
+        }
+      );
+      link(
+        { stopPropagation: { at: "element", how: "capture" } },
+        (a, text) => {
+          const button = document.createElement("button");
+          button.textContent = text + " | with preventDefault on button";
+          button.onclick = event => {
+            event.preventDefault();
+          };
+          const span = document.createElement("span");
+          span.append(button);
+          a.append(span);
+        }
+      );
+
+      function link(options, makeChildren = undefined) {
         const {
           preventDefault,
           returnValue,
@@ -91,8 +122,13 @@
         const a = document.createElement("a");
         a.href = `https://example.com/${counter}`;
         a.target = "_blank";
-        a.textContent = `Link ${counter}: ${getFeaturesString(options) ||
+        const text = `Link ${counter}: ${getFeaturesString(options) ||
           "(regular)"}`;
+        if (makeChildren != null) {
+          makeChildren(a, text);
+        } else {
+          a.textContent = text;
+        }
 
         if (preventDefault) {
           add(preventDefault, a, event => {
