@@ -371,15 +371,6 @@ export default class BackgroundProgram {
         // A frame was removed. If in hints mode, hide all hints for elements in
         // that frame.
         this.hideElements(info);
-
-        // Clear the tab state when navigating to another page. This is
-        // especially useful when changing the URL of a tab to one where
-        // WebExtensions aren't allowed to run. In that case we don't want to
-        // leave behind unnecessary tab state, making it look like the extension
-        // is running in that tab.
-        if (info.frameId === TOP_FRAME_ID) {
-          this.deleteTabState(info.tabId);
-        }
       }
     });
   }
@@ -1754,13 +1745,12 @@ export default class BackgroundProgram {
   }
 
   async updateIcon(tabId: number) {
-    // If there's a `tabState` for this tab, the extension is enabled for sure.
-    let enabled = this.tabState.has(tabId);
+    // In Chrome the below check fails for the extension options page, so check
+    // for the options page explicitly.
+    const tabState = this.tabState.get(tabId);
+    let enabled = tabState != null ? tabState.isOptionsPage : false;
 
-    // If not, check if we’re allowed to execute content scripts on this page.
-    // The `tabState` might not have had a chance to be created yet. In Chrome
-    // this check fails for the extension options page, making the above tab
-    // state check required.
+    // Check if we’re allowed to execute content scripts on this page.
     if (!enabled) {
       try {
         await browser.tabs.executeScript(tabId, {
