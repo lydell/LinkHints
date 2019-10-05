@@ -22,7 +22,7 @@ If you’d like to make a pull request, here’s what you need to know.
 
 ## Technology used
 
-- [web-ext] for building and linting, and for developing in Firefox.
+- [web-ext] for development, building and linting.
 - [Rollup] for `import`/`export` and npm package support.
 - [Flow] for type checking.
 - [ESLint] for linting.
@@ -94,7 +94,23 @@ It is recommended to set up [Flow], [ESLint] and [Prettier] integrations in your
 
 See `package.json` for details and additional scripts.
 
-### Chrome
+### Chrome and Firefox
+
+Open Chrome/Firefox, with a new profile where Link Hints is pre-installed:
+
+```
+npm run chrome
+# or:
+npm run firefox
+```
+
+The extension is automatically reloaded when files inside `compiled/` change.
+
+The above commands are wrappers around `web-ext run`. To customize how Chrome/Firefox is run, copy `custom.config.example.js` to `custom.config.js`. The latter file is gitignored, so you can change it however you wish.
+
+#### Manual workflow in Chrome
+
+It’s also possible to develop in Chrome without using `npm run chrome`.
 
 1. Open `chrome://extensions`.
 2. Enable “Developer mode” there.
@@ -102,20 +118,6 @@ See `package.json` for details and additional scripts.
 4. Choose the `compiled/` directory in this repo.
 
 Link Hints should now be installed. You need to press the refresh button after you make changes to the code.
-
-It is recommended to mainly develop in Firefox since it automatically reloads when code is changed.
-
-### Firefox
-
-Open Firefox, with a new profile where Link Hints is pre-installed:
-
-```
-npm run firefox
-```
-
-The extension is automatically reloaded when files inside `compiled/` change.
-
-The above command is a wrapper around `web-ext run`. To customize how Firefox is run, copy `custom.config.example.js` to `custom.config.js`. The latter file is gitignored, so you can change it however you wish.
 
 ### Website
 
@@ -127,7 +129,7 @@ If you want to install a locally built version of Link Hints, follow these instr
 
 ### Chrome
 
-You can install Link Hints as an “unpacked” extension, as mentioned in the [Development](#development) section.
+You can install Link Hints as an “unpacked” extension, as mentioned in the [Manual workflow in Chrome](#manual-workflow-in-chrome) section.
 
 However, for daily use you might not want to depend on the `compiled/` directory to always exist and contain correct files. For example, if you run `npm run build:firefox`, the `compiled/` directory will contain Firefox-specific code and won’t work in Chrome.
 
