@@ -189,7 +189,7 @@ export default class RendererProgram {
   }
 
   async sendMessage(message: FromRenderer) {
-    log("log", "RendererProgram#sendMessage", message.type, message);
+    log("log", "RendererProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -207,7 +207,7 @@ export default class RendererProgram {
 
     const { message } = wrappedMessage;
 
-    log("log", "RendererProgram#onMessage", message.type, message);
+    log("log", "RendererProgram#onMessage", message.type, message, this);
 
     switch (message.type) {
       case "StateSync": {

@@ -212,7 +212,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   async sendMessage(message: FromOptions) {
-    log("log", "OptionsProgram#sendMessage", message.type, message);
+    log("log", "OptionsProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -223,7 +223,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
     const { message } = wrappedMessage;
 
-    log("log", "OptionsProgram#onMessage", message.type, message);
+    log("log", "OptionsProgram#onMessage", message.type, message, this);
 
     switch (message.type) {
       case "StateSync": {

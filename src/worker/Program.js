@@ -111,7 +111,7 @@ export default class WorkerProgram {
   }
 
   async sendMessage(message: FromWorker) {
-    log("log", "WorkerProgram#sendMessage", message.type, message);
+    log("log", "WorkerProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -128,7 +128,7 @@ export default class WorkerProgram {
 
     const { message } = wrappedMessage;
 
-    log("log", "WorkerProgram#onMessage", message.type, message);
+    log("log", "WorkerProgram#onMessage", message.type, message, this);
 
     switch (message.type) {
       case "StateSync":

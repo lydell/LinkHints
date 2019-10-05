@@ -40,7 +40,7 @@ export default class PopupProgram {
   }
 
   async sendMessage(message: FromPopup) {
-    log("log", "PopupProgram#sendMessage", message.type, message);
+    log("log", "PopupProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
@@ -59,7 +59,7 @@ export default class PopupProgram {
 
     const { message } = wrappedMessage;
 
-    log("log", "PopupProgram#onMessage", message.type, message);
+    log("log", "PopupProgram#onMessage", message.type, message, this);
 
     switch (message.type) {
       case "Init":
