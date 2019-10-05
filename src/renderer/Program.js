@@ -59,8 +59,6 @@ export const t = {
 export const tMeta = tweakable("Renderer", t);
 
 export default class RendererProgram {
-  css: string = CSS;
-  parsedCSS: ?Array<Rule> = undefined;
   hints: Array<HTMLElement> = [];
   rects: Map<HTMLElement, ClientRect> = new Map();
   enteredText: string = "";
@@ -76,6 +74,14 @@ export default class RendererProgram {
     resets: Resets,
     intersectionObserver: IntersectionObserver,
   |};
+
+  css: {|
+    text: string,
+    parsed: ?Array<Rule>,
+  |} = {
+    text: CSS,
+    parsed: undefined,
+  };
 
   constructor() {
     bind(this, [
@@ -212,11 +218,11 @@ export default class RendererProgram {
     switch (message.type) {
       case "StateSync": {
         const newCSS = `${CSS}\n\n${message.css}`;
-        const changedCSS = this.css !== newCSS;
-        this.css = newCSS;
+        const changedCSS = this.css.text !== newCSS;
+        this.css.text = newCSS;
         log.level = message.logLevel;
-        if (BROWSER === "firefox" && this.parsedCSS != null && changedCSS) {
-          this.parsedCSS = parseCSS(this.css);
+        if (BROWSER === "firefox" && this.css.parsed != null && changedCSS) {
+          this.css.parsed = parseCSS(this.css.text);
         }
         break;
       }
@@ -363,11 +369,11 @@ export default class RendererProgram {
     // inserted into the DOM.
     documentElement.append(this.container.element);
 
-    if (this.parsedCSS == null) {
+    if (this.css.parsed == null) {
       // Inserting a `<style>` element is way faster than doing
       // `element.style.setProperty()` on every element.
       const style = document.createElement("style");
-      style.append(document.createTextNode(this.css));
+      style.append(document.createTextNode(this.css.text));
       shadowRoot.append(style);
 
       // Chrome nicely allows inline styles inserted by an extension regardless
@@ -381,7 +387,7 @@ export default class RendererProgram {
       // applying the CSS.
       if (BROWSER === "firefox" && style.sheet == null) {
         log("log", "RendererProgram#render", "parsing CSS due to CSP");
-        this.parsedCSS = parseCSS(this.css);
+        this.css.parsed = parseCSS(this.css.text);
       }
     }
 
@@ -676,8 +682,8 @@ export default class RendererProgram {
   // It’s important to use `setStyles` instead of `.style.foo =` in this file,
   // since `applyStyles` could override inline styles otherwise.
   maybeApplyStyles(element: HTMLElement) {
-    if (BROWSER === "firefox" && this.parsedCSS != null) {
-      applyStyles(element, this.parsedCSS);
+    if (BROWSER === "firefox" && this.css.parsed != null) {
+      applyStyles(element, this.css.parsed);
     }
   }
 
