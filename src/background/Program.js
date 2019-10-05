@@ -572,14 +572,14 @@ export default class BackgroundProgram {
       // If the user clicks a link while hints mode is active, exit it.
       // Otherwise you’ll end up in hints mode on the new page (it is still the
       // same tab, after all) but with no hints. If changing the address bar of
-      // the tab to for example `about:preferences` it is too late to send an
-      // unrender message (“Error: Receiving end does not exist”). So don’t send
-      // an unrender message, and let `RendererProgram` take care of leftover
-      // hints in the pageshow event instead.
+      // the tab to for example `about:preferences` it is too late to send
+      // message to the content scripts (“Error: Receiving end does not exist”).
+      // Instead, syncing `WorkerProgram`s and unrendering is taken care of
+      // if/when returning to the page via the back button. (See below.)
       case "TopPageHide": {
         const { hintsState } = tabState;
         if (hintsState.type !== "Idle") {
-          this.exitHintsMode({ tabId: info.tabId, unrender: false });
+          this.exitHintsMode({ tabId: info.tabId, sendMessages: false });
         }
         break;
       }
@@ -1607,18 +1607,18 @@ export default class BackgroundProgram {
   exitHintsMode({
     tabId,
     delayed = false,
-    unrender = true,
+    sendMessages = true,
   }: {|
     tabId: number,
     delayed?: boolean,
-    unrender?: boolean,
+    sendMessages?: boolean,
   |}) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
     }
 
-    if (unrender) {
+    if (sendMessages) {
       if (delayed) {
         this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
       } else {
@@ -1631,10 +1631,12 @@ export default class BackgroundProgram {
       highlightedSinceTimestamp: delayed ? Date.now() : undefined,
     };
 
-    this.sendWorkerMessage(this.makeWorkerState(tabState), {
-      tabId,
-      frameId: "all_frames",
-    });
+    if (sendMessages) {
+      this.sendWorkerMessage(this.makeWorkerState(tabState), {
+        tabId,
+        frameId: "all_frames",
+      });
+    }
 
     this.updateBadge(tabId);
   }
