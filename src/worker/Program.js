@@ -63,7 +63,6 @@ export default class WorkerProgram {
 
   constructor() {
     bind(this, [
-      [this.onBlur, { catch: true }],
       [this.onKeydown, { catch: true }],
       [this.onKeyup, { catch: true }],
       [this.onMessage, { catch: true }],
@@ -80,7 +79,6 @@ export default class WorkerProgram {
   async start() {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
-      addEventListener(window, "blur", this.onBlur),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "keyup", this.onKeyup, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage),
@@ -558,17 +556,6 @@ export default class WorkerProgram {
         suppressEvent(event);
         this.suppressNextKeyup = undefined;
       }
-    }
-  }
-
-  onBlur(event: FocusEvent) {
-    if (!event.isTrusted) {
-      log("log", "WorkerProgram#onBlur", "ignoring untrusted event", event);
-      return;
-    }
-
-    if (event.target === window) {
-      this.sendMessage({ type: "WindowBlur" });
     }
   }
 

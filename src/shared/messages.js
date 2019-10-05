@@ -102,9 +102,6 @@ export type FromWorker =
       type: "PersistedPageShow",
     |}
   | {|
-      type: "WindowBlur",
-    |}
-  | {|
       type: "OpenNewTabs",
       urls: Array<string>,
     |};
