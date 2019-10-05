@@ -1502,7 +1502,9 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
   async onScroll() {
     if (!PROD) {
-      await browser.storage.local.set({ scrollY: window.scrollY });
+      if (this.hasRestoredPosition) {
+        await browser.storage.local.set({ scrollY: window.scrollY });
+      }
     }
   }
 
