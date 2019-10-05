@@ -160,22 +160,24 @@ export default function Perf({
                   )}
                 </tr>
 
-                {allRows.map(({ title, data }) => [
-                  <tr key={title}>
-                    <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
-                  </tr>,
-                  data.map(({ heading, values }, index) => (
-                    <tr
-                      key={`${title}-${heading}`}
-                      className={classlist({
-                        "PerfTable-alternate": index % 2 === 0,
-                      })}
-                    >
-                      <th>{heading}</th>
-                      {toCells(values)}
+                {allRows.map(({ title, data }) => (
+                  <>
+                    <tr>
+                      <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
                     </tr>
-                  )),
-                ])}
+                    {data.map(({ heading, values }, index) => (
+                      <tr
+                        key={`${title}-${heading}`}
+                        className={classlist({
+                          "PerfTable-alternate": index % 2 === 0,
+                        })}
+                      >
+                        <th>{heading}</th>
+                        {toCells(values)}
+                      </tr>
+                    ))}
+                  </>
+                ))}
               </tbody>
             )}
           </table>

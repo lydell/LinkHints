@@ -445,7 +445,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             id="chars"
             label="Hint characters"
             description={
-              <div>
+              <>
                 {conflictingActions.length > 0 &&
                   conflictingActions.map(([action, chars]) => (
                     <p key={action} className="Error">
@@ -463,14 +463,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   uppercase matters when typing <em>hint characters</em>, but
                   not when <em>filtering by text.</em>
                   {isLowerCase && (
-                    <span>
+                    <>
                       {" "}
-                      <strong>Note:</strong> The hints are <em>displayed</em>{" "}
-                      uppercase because it looks nicer. 😎
-                    </span>
+                      <strong>Note:</strong>&nbsp;The&nbsp;hints are{" "}
+                      <em>displayed</em> uppercase because it looks nicer. 😎
+                    </>
                   )}
                 </p>
-              </div>
+              </>
             }
             changed={options.chars !== defaults.chars}
             render={({ id }) => (
@@ -624,10 +624,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   in the textarea to translate such <em>codes</em> to actual
                   keys.{" "}
                   {getLayoutMap != null && (
-                    <span>
+                    <>
                       The “Detect” button below can do some of the translation
                       for you.
-                    </span>
+                    </>
                   )}
                 </p>
               ) : null
@@ -1227,7 +1227,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   this.forceUpdate();
                 }}
                 before={
-                  <div>
+                  <>
                     <div />
 
                     <Field
@@ -1294,7 +1294,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         this.saveOptions({ logLevel: defaults.logLevel });
                       }}
                     />
-                  </div>
+                  </>
                 }
               />
             </Details>
