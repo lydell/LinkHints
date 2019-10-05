@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import React from "preact";
+import * as React from "preact";
 import Shadow from "preact-shadow-root";
 
 import {
@@ -232,3 +232,18 @@ export default class CSSPreview extends React.Component<Props, State> {
     );
   }
 }
+
+// class Shadow extends React.Component<{ ... }, { ... }> {
+//   componentDidMount() {
+//     console.log("BASE", this);
+//     // let parent = this.base && this.base.parentNode;
+//     // if (parent) {
+//     // 	this.shadow = parent.attachShadow({ mode: 'open' });
+//     // 	this.update(this.props);
+//     // }
+//   }
+
+//   render() {
+//     return null;
+//   }
+// }

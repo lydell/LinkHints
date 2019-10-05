@@ -14,7 +14,7 @@ const SECTIONS = [
     id: "what",
     title: "What is Link Hints?",
     content: (
-      <div>
+      <>
         <p>
           Link Hints is a browser extension that complements the built-in
           keyboard shortcuts with ones for clicking.
@@ -31,14 +31,14 @@ const SECTIONS = [
           new tabs or selecting text.
         </p>
         <p>The keyboard shortcuts and hints are fully customizable.</p>
-      </div>
+      </>
     ),
   },
   {
     id: "differences",
     title: "How is Link Hints different?",
     content: (
-      <div>
+      <>
         <p>
           Using hints to click links is not at all a new idea. What does Link
           Hints bring to the table?
@@ -53,14 +53,14 @@ const SECTIONS = [
           focuses on placing the hints intuitively and being generally easy to
           use and configure.
         </p>
-      </div>
+      </>
     ),
   },
   {
     id: "copy-links",
     title: "How do I copy links?",
     content: (
-      <div>
+      <>
         <p>
           Use {shortcuts.EnterHintsMode_Select} to select the link. Press{" "}
           <KeyboardShortcut ctrl press="C" /> to copy the now selected text.
@@ -84,14 +84,14 @@ const SECTIONS = [
           The idea is to keep the number of keyboard shortcuts in Link Hints
           low, and use the context menu for less common tasks.
         </p>
-      </div>
+      </>
     ),
   },
   {
     id: "issues",
     title: "Why doesn’t Link Hints work on some pages?",
     content: (
-      <div>
+      <>
         <p>
           Browser extensions are not allowed to run on some pages, such as
           Chrome’s and Firefox’s extension stores, the New Tab page and internal
@@ -119,14 +119,14 @@ const SECTIONS = [
             <a href={config.meta.newIssue}>report an issue</a>!
           </li>
         </ul>
-      </div>
+      </>
     ),
   },
   {
     id: "missing-hints",
     title: "Why don’t some elements get hints?",
     content: (
-      <div>
+      <>
         <p>Finding which elements should get hints is tricky business.</p>
         <p>
           First off, Link Hints need a clue from the site that an element is
@@ -159,14 +159,14 @@ const SECTIONS = [
           Feel free to <a href={config.meta.newIssue}>report issues</a> about
           missing hints!
         </p>
-      </div>
+      </>
     ),
   },
   {
     id: "hint-does-nothing",
     title: "Why don’t some hints do anything?",
     content: (
-      <div>
+      <>
         <p>
           Some actions, like entering Fullscreen mode or copying text, are
           restricted so that websites cannot abuse them. These actions can only
@@ -212,14 +212,14 @@ const SECTIONS = [
           If you encounter one of the cases in the above list, please{" "}
           <a href={config.meta.newIssue}>report an issue</a>!
         </p>
-      </div>
+      </>
     ),
   },
   {
     id: "performance",
     title: <span>Why is {shortcuts.EnterHintsMode_Select} slower?</span>,
     content: (
-      <div>
+      <>
         <p>
           Link Hints keeps track of <em>clickable</em> elements in the
           background. So usually Link Hints already knows which elements to
@@ -236,14 +236,14 @@ const SECTIONS = [
           larger, more complicated pages, but on the other hand it isn’t the
           most used shortcut either.
         </p>
-      </div>
+      </>
     ),
   },
   {
     id: "story",
     title: "What is the story behind Link Hints?",
     content: (
-      <div>
+      <>
         <p>
           In 2013 <a href="Link Hints ">Simon Lydell</a> started contributing to
           the <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
@@ -281,7 +281,7 @@ const SECTIONS = [
           real-world usage and experimentation, Link Hints is planned to be
           released during the second half of 2019.
         </p>
-      </div>
+      </>
     ),
   },
 ];
@@ -329,8 +329,7 @@ export default () =>
             <h2>
               <a href={`#${section.id}`}>{section.title}</a>
             </h2>
-            {/* $FlowIgnore: Using `.children` is a hack to work around Preact not having fragments. */}
-            {section.content.children}
+            {section.content}
           </section>
         ))}
 

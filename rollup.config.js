@@ -99,17 +99,17 @@ function setup() {
 
   const { createElement } = React;
 
-  // Workarounds for preact-render-to-string unwanted attributes.
-  React.createElement = (nodeName, attributes, ...children) => {
-    if (attributes) {
-      delete attributes.__source;
-      delete attributes.__self;
-      if (attributes.htmlFor != null) {
-        attributes.for = attributes.htmlFor;
-        delete attributes.htmlFor;
+  // Workarounds for preact-render-to-string unwanted props.
+  React.createElement = (nodeName, props, ...children) => {
+    if (props) {
+      delete props.__source;
+      delete props.__self;
+      if (props.htmlFor != null) {
+        props.for = props.htmlFor;
+        delete props.htmlFor;
       }
     }
-    return createElement(nodeName, attributes, ...children);
+    return createElement(nodeName, props, ...children);
   };
 
   console.timeEnd("setup");
@@ -276,6 +276,10 @@ function makeGlobals() {
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.
-    "node.innerHTML": "node.__disabled__innerHTML",
+    "n.innerHTML": "n.__disabled__innerHTML",
+    // Hacks to make `preact-shadow-root` work with Preact 10.
+    "this.base&&this.base.parentNode": "this.__P",
+    "o.children": "[o.children]",
+    "this.shadow.firstChild": "undefined",
   };
 }

@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import React from "preact";
+import * as React from "preact";
 import renderToString from "preact-render-to-string";
 
 export default ({

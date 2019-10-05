@@ -9,7 +9,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import fsExtra from "fs-extra";
-import React from "preact";
+import * as React from "preact";
 import renderToString from "preact-render-to-string";
 
 import config from "../project.config";

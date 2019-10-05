@@ -3,7 +3,7 @@
 const React = {
   createElement(
     tag: string,
-    attributes: ?{
+    props: ?{
       className?: ?string,
       onClick?: ?(MouseEvent<HTMLElement>) => mixed,
       [string]: ?string,
@@ -13,8 +13,8 @@ const React = {
   ): HTMLElement {
     const element = document.createElement(tag);
 
-    if (attributes != null) {
-      const { className, onClick, ...rest } = attributes;
+    if (props != null) {
+      const { className, onClick, ...rest } = props;
 
       if (className != null) {
         element.className = className;

@@ -14,7 +14,7 @@ const STEPS = [
     title: "The basics",
     next: "Next step",
     content: (
-      <div>
+      <>
         <p>
           {shortcuts.EnterHintsMode_Click} is the main keyboard shortcut. Use it
           to click things.
@@ -40,14 +40,14 @@ const STEPS = [
             fit your keyboard better.
           </p>
         </Info>
-      </div>
+      </>
     ),
   },
   {
     title: "Good to know",
     next: "Got it",
     content: (
-      <div>
+      <>
         <p>
           The Link Hints toolbar button looks like this:{" "}
           <span className="ToolbarButton" />
@@ -67,14 +67,14 @@ const STEPS = [
           Chrome’s and Firefox’s extension stores, the New Tab page and internal
           settings pages.
         </p>
-      </div>
+      </>
     ),
   },
   {
     title: "Opening links in tabs",
     next: "Continue",
     content: (
-      <div>
+      <>
         <p>
           {shortcuts.EnterHintsMode_BackgroundTab} lets you open a link in a new
           tab.
@@ -91,14 +91,14 @@ const STEPS = [
             <a href="https://www.mozilla.org/">mozilla.org</a>
           </li>
         </ul>
-      </div>
+      </>
     ),
   },
   {
     title: "Filter by text",
     next: "Alright",
     content: (
-      <div>
+      <>
         <p>
           The default hint characters are: <code>fjdkslaurieowhgmvcn</code>.
           Type other characters to <dfn>filter by text.</dfn>
@@ -125,14 +125,14 @@ const STEPS = [
           If there’s no unique match, press {shortcuts.ActivateHint} to activate
           the green hint, or type some hint characters at the end.
         </p>
-      </div>
+      </>
     ),
   },
   {
     title: "Filter by text – letters",
     next: "Onwards",
     content: (
-      <div>
+      <>
         <p>
           Hints are <em>displayed</em> uppercase because it looks nicer, but
           they are all lowercase: <code>fjdkslaurieowhgmvcn</code>
@@ -157,14 +157,14 @@ const STEPS = [
             {shortcuts.ActivateHint} to be pressed.
           </p>
         </Info>
-      </div>
+      </>
     ),
   },
   {
     title: "Click many things",
     next: "Keep going",
     content: (
-      <div>
+      <>
         <p>
           {shortcuts.EnterHintsMode_ManyClick} lets you click many things in one
           go.
@@ -194,14 +194,14 @@ const STEPS = [
             <a href="https://www.wikipedia.org/">wikipedia.org</a>
           </li>
         </ul>
-      </div>
+      </>
     ),
   },
   {
     title: "Swiss army knife",
     next: "Almost there",
     content: (
-      <div>
+      <>
         <p>
           {shortcuts.EnterHintsMode_Select} lets you select elements. This is
           useful for copying text and using the{" "}
@@ -231,14 +231,14 @@ const STEPS = [
             selection, unfocus text fields and cancel hinting.
           </li>
         </ul>
-      </div>
+      </>
     ),
   },
   {
     title: "Tips & Tricks",
     next: "Finish",
     content: (
-      <div>
+      <>
         <p>
           <KeyboardShortcut press="F6" /> can be pressed once or twice to bring
           back focus to the web page area of the browser. Due to browser
@@ -266,7 +266,7 @@ const STEPS = [
           peeking:
         </p>
         <Pagination />
-      </div>
+      </>
     ),
   },
   {
@@ -276,7 +276,7 @@ const STEPS = [
       text: "Home",
     },
     content: (
-      <div>
+      <>
         <p>Well done! 🎉</p>
         <p>Recap:</p>
         <ShortcutsSummary />
@@ -284,7 +284,7 @@ const STEPS = [
           Check out the Options page to see <em>all</em> shortcuts, or if you
           feel like tweaking something.
         </p>
-      </div>
+      </>
     ),
   },
 ];
@@ -310,8 +310,7 @@ export default () =>
               <a href={`#step-${num}`} title={`Step ${num}`} />
               <div className="Step-inner">
                 <h2>{step.title}</h2>
-                {/* $FlowIgnore: Using `.children` is a hack to work around Preact not having fragments. */}
-                {step.content.children}
+                {step.content}
                 {typeof step.next === "string" ? (
                   <a href={`#step-${num + 1}`} className="Button">
                     {step.next}

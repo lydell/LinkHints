@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import React from "preact";
+import * as React from "preact";
 
 import TestLink from "./TestLink";
 
