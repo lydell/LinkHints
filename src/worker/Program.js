@@ -1163,8 +1163,17 @@ function firefoxPopupBlockerWorkaround({
   urlsToOpenInNewTabs: Array<string>,
 |} {
   const prefix = "firefoxPopupBlockerWorkaround";
-  const resets = new Resets();
 
+  // In the Options page, `window.wrappedJSObject` does not exist.
+  if (window.wrappedJSObject == null) {
+    log("log", prefix, "No window.wrappedJSObject");
+    return () => ({
+      pagePreventedDefault: undefined,
+      urlsToOpenInNewTabs: [],
+    });
+  }
+
+  const resets = new Resets();
   let linkUrl = undefined;
 
   // If the link has `target="_blank"` (or the pinned tab stuff is true), then
