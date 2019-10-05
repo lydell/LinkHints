@@ -7,6 +7,7 @@ export const MIXED_CASE_CLASS = "mixedCase";
 export const HAS_MATCHED_CHARS_CLASS = "hasMatchedChars";
 export const MATCHED_CHARS_CLASS = "matchedChars";
 export const TEXT_RECT_CLASS = "matchedText";
+export const SHRUGGIE_CLASS = "shruggie";
 export const STATUS_CLASS = "status";
 export const PEEK_CLASS = "peek";
 export const HIDDEN_CLASS = "hidden";
@@ -77,7 +78,9 @@ export const CSS = `
   text-transform: none;
 }
 
-.${HIDDEN_CLASS} {
+.${HIDDEN_CLASS},
+.${HINT_CLASS}:not(.${HIDDEN_CLASS}) ~ .${SHRUGGIE_CLASS},
+.${STATUS_CLASS}:empty {
   opacity: 0 !important;
 }
 `.trim();

@@ -14,6 +14,7 @@ import {
   PEEK_CLASS,
   ROOT_CLASS,
   SHRUGGIE,
+  SHRUGGIE_CLASS,
   STATUS_CLASS,
   TEXT_RECT_CLASS,
 } from "../shared/css";
@@ -89,7 +90,7 @@ export default class RendererProgram {
     ]);
 
     this.shruggieElement = createHintElement(SHRUGGIE);
-    this.shruggieElement.classList.add(HIDDEN_CLASS);
+    this.shruggieElement.classList.add(SHRUGGIE_CLASS);
     setStyles(this.shruggieElement, {
       position: "absolute",
       top: "50%",
@@ -99,7 +100,7 @@ export default class RendererProgram {
     });
 
     this.statusElement = document.createElement("div");
-    this.statusElement.classList.add(STATUS_CLASS, HIDDEN_CLASS);
+    this.statusElement.classList.add(STATUS_CLASS);
     this.statusText = document.createTextNode("");
     this.statusElement.append(this.statusText);
     setStyles(this.statusElement, {
@@ -382,8 +383,6 @@ export default class RendererProgram {
       }
     }
 
-    root.append(this.shruggieElement);
-    root.append(this.statusElement);
     shadowRoot.append(root);
     this.maybeApplyStyles(root);
     this.updateContainer(viewport);
@@ -395,7 +394,8 @@ export default class RendererProgram {
     );
 
     if (elements.length === 0) {
-      this.toggleShruggie({ visible: true });
+      root.append(this.shruggieElement);
+      this.maybeApplyStyles(this.shruggieElement);
       return;
     }
 
@@ -436,6 +436,13 @@ export default class RendererProgram {
         restElements.push(element);
       }
     }
+
+    // This are appended last, so that the shruggie can be shown based on if
+    // there are any non-hidden hints before it using CSS selectors.
+    root.append(this.shruggieElement);
+    root.append(this.statusElement);
+    this.maybeApplyStyles(this.shruggieElement);
+    this.maybeApplyStyles(this.statusElement);
 
     // Most hints are already correctly positioned, but some near the edges
     // might need to be moved a tiny bit to avoid being partially off-screen.
@@ -566,9 +573,7 @@ export default class RendererProgram {
       this.maybeApplyStyles(child);
     }
 
-    const allHidden =
-      updates.filter(update => update.hidden).length === this.hints.length;
-    this.toggleShruggie({ visible: allHidden });
+    this.maybeApplyStyles(this.shruggieElement);
 
     this.setStatus(enteredText.replace(/\s/g, "\u00a0"));
 
@@ -621,17 +626,11 @@ export default class RendererProgram {
     }
   }
 
-  toggleShruggie({ visible }: {| visible: boolean |}) {
-    this.shruggieElement.classList.toggle(HIDDEN_CLASS, !visible);
-    this.maybeApplyStyles(this.shruggieElement);
-  }
-
   setStatus(status: string) {
     // Avoid unnecessary flashing in the devtools when inspecting the hints.
     if (this.statusText.data !== status) {
       this.statusText.data = status;
     }
-    this.statusElement.classList.toggle(HIDDEN_CLASS, status === "");
     this.maybeApplyStyles(this.statusElement);
   }
 
@@ -647,7 +646,7 @@ export default class RendererProgram {
 
     this.container.element.remove();
     this.container.root.classList.remove(PEEK_CLASS);
-    this.toggleShruggie({ visible: false });
+    this.maybeApplyStyles(this.shruggieElement);
     this.setStatus("");
     emptyNode(this.container.root);
     emptyNode(this.container.shadowRoot);
