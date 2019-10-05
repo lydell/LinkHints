@@ -102,8 +102,8 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
       };
 
       // The Space key is a good choice for cancelling since it cannot be used
-      // in Hints mode (it breaks filter by text). (In Normal mode, shortcuts
-      // without modifiers cannot be used anyway.)
+      // in hints mode (it breaks filter by text). (Outside hints mode,
+      // shortcuts without modifiers cannot be used anyway.)
       if (shortcut.key === "Space" && !hasModifier(shortcut)) {
         this.setState({
           addingAction: undefined,

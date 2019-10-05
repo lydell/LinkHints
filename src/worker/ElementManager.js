@@ -566,12 +566,12 @@ export default class ElementManager {
       this.elements.set(element, type);
       if (!alreadyIntersectionObserved && !this.bailed) {
         // We won’t know if this element is visible or not until the next time
-        // intersection observers are run. If we enter Hints mode before that,
+        // intersection observers are run. If we enter hints mode before that,
         // we would miss this element. This happens a lot on Gmail. First, the
         // intersection observer fires on the splash screen. Then _a lot_ of DOM
         // nodes appear at once when the inbox renders. The mutation observer
         // fires kind of straight away, but the intersection observer is slow.
-        // If Hints mode was entered before that, no elements would be found.
+        // If hints mode was entered before that, no elements would be found.
         // But the elements are clearly visible on screen! For this reason we
         // consider _all_ new elements as visible until proved otherwise.
         this.visibleElements.add(element);

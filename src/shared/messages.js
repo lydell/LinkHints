@@ -96,7 +96,10 @@ export type FromWorker =
       type: "ClickedLinkNavigatingToOtherPage",
     |}
   | {|
-      type: "PageLeave",
+      type: "TopPageHide",
+    |}
+  | {|
+      type: "PersistedPageShow",
     |}
   | {|
       type: "WindowBlur",

@@ -68,7 +68,8 @@ export default class WorkerProgram {
       [this.onKeyup, { catch: true }],
       [this.onMessage, { catch: true }],
       [this.onWindowMessage, { catch: true }],
-      [this.onPagehide, { catch: true }],
+      [this.onPageHide, { catch: true }],
+      [this.onPageShow, { catch: true }],
       [this.reportVisibleElements, { catch: true }],
       [this.sendMessage, { catch: true }],
       [this.start, { catch: true }],
@@ -83,7 +84,8 @@ export default class WorkerProgram {
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
       addEventListener(window, "keyup", this.onKeyup, { passive: false }),
       addEventListener(window, "message", this.onWindowMessage),
-      addEventListener(window, "pagehide", this.onPagehide)
+      addEventListener(window, "pagehide", this.onPageHide),
+      addEventListener(window, "pageshow", this.onPageShow)
     );
     await this.elementManager.start();
 
@@ -471,7 +473,7 @@ export default class WorkerProgram {
       // Note: On mac, alt/option is used to type special characters, while most
       // (if not all) ctrl shortcuts are up for grabs by extensions, so on mac
       // ctrl is used to activate hints in a new tab instead of alt.
-      // In Hints mode…
+      // In hints mode…
       (this.keyboardMode === "Hints" &&
         // …suppress lone modifier keypresses (as mentioned above)…
         (isModifierKey(event.key) ||
@@ -583,7 +585,7 @@ export default class WorkerProgram {
     // when elements are removed/added/changed for better UX. For example, if a
     // modal closes it looks nicer if the hints for elements in the modal
     // disappear immediately rather than after a small delay.
-    // Just after entering Hints mode a mutation _always_ happens – inserting
+    // Just after entering hints mode a mutation _always_ happens – inserting
     // the div with the hints. Don’t let that trigger an update.
     if (!(newElements.length === 1 && newElements[0].id === CONTAINER_ID)) {
       this.updateVisibleElements({
@@ -595,14 +597,28 @@ export default class WorkerProgram {
     }
   }
 
-  onPagehide(event: Event) {
+  onPageHide(event: Event) {
     if (!event.isTrusted) {
-      log("log", "WorkerProgram#onPagehide", "ignoring untrusted event", event);
+      log("log", "WorkerProgram#onPageHide", "ignoring untrusted event", event);
       return;
     }
 
     if (window.top === window) {
-      this.sendMessage({ type: "PageLeave" });
+      // The top page is about to be “die.”
+      this.sendMessage({ type: "TopPageHide" });
+    }
+  }
+
+  onPageShow(event: Event) {
+    if (!event.isTrusted) {
+      log("log", "WorkerProgram#onPageShow", "ignoring untrusted event", event);
+      return;
+    }
+
+    // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
+    if (event.persisted) {
+      // We have returned to the page via the back/forward buttons.
+      this.sendMessage({ type: "PersistedPageShow" });
     }
   }
 

@@ -85,7 +85,7 @@ export default class RendererProgram {
       [this.stop, { log: true, catch: true }],
       [this.render, { catch: true }],
       this.onIntersection,
-      this.onPageshow,
+      this.onPageShow,
       this.onResize,
     ]);
 
@@ -143,7 +143,7 @@ export default class RendererProgram {
 
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
-      addEventListener(window, "pageshow", this.onPageshow)
+      addEventListener(window, "pageshow", this.onPageShow)
     );
 
     try {
@@ -274,14 +274,16 @@ export default class RendererProgram {
     this.updateContainer(getViewport());
   }
 
-  // In Firefox, when clicking a link to a JSON file using hints and then
-  // pressing the back button, the matched hint for the JSON link is still on
-  // screen, and never disappears. So unrender when coming to a page via the
-  // back button. Hints can also be left behind on screen if the user clicks a
-  // link while in hints mode. That case _is_ handled in `BackgroundProgram`,
-  // but it can be too late to send an unrender message at that point, so the
-  // unrender is handled here in the pageshow event instead.
-  onPageshow(event: Event) {
+  // When coming back to a page via the back button in Firefox, there might be
+  // left-over hints on screen that never got a chance to be unrendered. This
+  // happens if the user clicks a link while hints mode is active, or if
+  // clicking a link to a JSON file using hints. So always unrender when we
+  // return to the page via the back/forward buttons.
+  // `BackgroundProgram` also gets events when this happens from
+  // `WorkerProgram`, so we _cound_ do this in response to a message from
+  // `BackgroundProgram` instead. However, by having our own listener we can
+  // unrender faster, to avoid old hints flashing by on screen.
+  onPageShow(event: Event) {
     // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
     if (event.persisted) {
       this.unrender();

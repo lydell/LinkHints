@@ -54,7 +54,7 @@ export function decodeKeyboardAction(type: string): KeyboardAction {
   }
 }
 
-// Allow exiting Hints mode if we ever get stuck in Prevent overtyping mode.
+// Allow exiting hints mode if we ever get stuck in Prevent overtyping mode.
 export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = new Set(
   ["Escape", "ExitHintsMode"]
 );

@@ -569,18 +569,35 @@ export default class BackgroundProgram {
         break;
       }
 
-      case "PageLeave":
-        // If the user clicks a link while hints mode is active, exit it.
-        // Otherwise you’ll end up in hints mode on the new page (it is still
-        // the same tab, after all) but with no hints. Also, in Firefox, when
-        // clicking the back button the content scripts aren’t re-run but
-        // instead pick up from where they where when leaving the page. However,
-        // if changing the address bar of the tab to for example
-        // `about:preferences` it is too late to send an unrender message
-        // (“Error: Receiving end does not exist”). So don’t send an unrender
-        // message, and let `RendererProgram` take care of leftover hints in the
-        // pageshow event instead.
-        this.exitHintsMode({ tabId: info.tabId, unrender: false });
+      // If the user clicks a link while hints mode is active, exit it.
+      // Otherwise you’ll end up in hints mode on the new page (it is still the
+      // same tab, after all) but with no hints. If changing the address bar of
+      // the tab to for example `about:preferences` it is too late to send an
+      // unrender message (“Error: Receiving end does not exist”). So don’t send
+      // an unrender message, and let `RendererProgram` take care of leftover
+      // hints in the pageshow event instead.
+      case "TopPageHide": {
+        const { hintsState } = tabState;
+        if (hintsState.type !== "Idle") {
+          this.exitHintsMode({ tabId: info.tabId, unrender: false });
+        }
+        break;
+      }
+
+      // When clicking the back button In Firefox, the content scripts of the
+      // previous page aren’t re-run but instead pick up from where they were
+      // when leaving the page. If the user clicked a link while in hints mode
+      // and then pressed the back button, the `tabState` for the tab won’t be
+      // in hints mode, but the content scripts of the page might be out of
+      // sync. They never got any messages saying that hints mode was exited,
+      // and now they pick up from where they were. So after returning to a page
+      // via the back/forward buttons, make sure that the content scripts are in
+      // sync.
+      case "PersistedPageShow":
+        this.sendWorkerMessage(this.makeWorkerState(tabState), {
+          tabId: info.tabId,
+          frameId: "all_frames",
+        });
         break;
 
       // If the user used a ctrl or cmd (Windows key) shortcut to switch tabs or
