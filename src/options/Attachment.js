@@ -4,19 +4,17 @@ import * as React from "preact";
 
 import { classlist } from "../shared/main";
 
-type Props = {
-  label?: React.Node,
-  content?: React.Node,
-  children: React.Node,
-  ...
-};
-
 export default function Attachment({
   label,
   content,
   children,
   ...restProps
-}: Props) {
+}: {
+  label?: React.Node,
+  content?: React.Node,
+  children: React.Node,
+  ...
+}) {
   const Tag = label != null ? "label" : "span";
   return (
     <Tag {...restProps} className="Attachment">

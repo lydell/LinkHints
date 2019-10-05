@@ -11,19 +11,17 @@ const MODIFIER_NAMES = {
   shift: "Shift",
 };
 
-type Props = {|
-  alt?: Modifier,
-  ctrl?: Modifier,
-  shift?: Modifier,
-  press?: string,
-|};
-
 export default function KeyboardShortcut({
   alt = false,
   ctrl = false,
   shift = false,
   press = "",
-}: Props) {
+}: {|
+  alt?: Modifier,
+  ctrl?: Modifier,
+  shift?: Modifier,
+  press?: string,
+|}) {
   const modifiers = [
     [MODIFIER_NAMES.ctrl, ctrl],
     [MODIFIER_NAMES.alt, alt],

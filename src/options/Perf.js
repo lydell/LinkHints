@@ -9,19 +9,17 @@ import {
   MAX_PERF_ENTRIES,
 } from "../shared/perf";
 
-type Props = {|
-  perf: TabsPerf,
-  expandedPerfTabIds: Array<string>,
-  onExpandChange: (Array<string>) => void,
-  onReset: () => void,
-|};
-
 export default function Perf({
   perf,
   expandedPerfTabIds,
   onExpandChange,
   onReset,
-}: Props) {
+}: {|
+  perf: TabsPerf,
+  expandedPerfTabIds: Array<string>,
+  onExpandChange: (Array<string>) => void,
+  onReset: () => void,
+|}) {
   const keys = Object.keys(perf);
 
   const isEmpty = keys.every(tabId => perf[tabId].length === 0);

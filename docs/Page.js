@@ -4,14 +4,17 @@ import * as React from "preact";
 
 import config from "../project.config";
 
-type Props = {|
+export default function Page({
+  title,
+  description,
+  css,
+  children,
+}: {|
   title: string,
   description: string,
   css: string,
   children: React.Node,
-|};
-
-export default function Page({ title, description, css, children }: Props) {
+|}) {
   return (
     <html lang="en">
       <head>

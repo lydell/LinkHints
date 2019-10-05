@@ -6,12 +6,13 @@ import { type Shortcut } from "../shared/keyboard";
 
 const WHITESPACE = /^\s$/;
 
-type Props = {|
+export default function KeyboardShortcut({
+  mac,
+  shortcut,
+}: {|
   mac: boolean,
   shortcut: $Shape<Shortcut>,
-|};
-
-export default function KeyboardShortcut({ mac, shortcut }: Props) {
+|}) {
   const { key = "" } = shortcut;
   return (
     <span className="KeyboardShortcut">

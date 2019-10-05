@@ -4,19 +4,6 @@ import * as React from "preact";
 
 import { classlist } from "../shared/main";
 
-type Props = {|
-  id: string,
-  connected?: boolean,
-  fullWidth?: boolean,
-  label: React.Node,
-  span?: boolean,
-  description?: React.Node,
-  changed: boolean,
-  changedRight?: boolean,
-  render: ({| id: string |}) => React.Node,
-  onReset?: () => void,
-|};
-
 export default function Field({
   id,
   connected = false,
@@ -28,7 +15,18 @@ export default function Field({
   changedRight = false,
   render,
   onReset,
-}: Props) {
+}: {|
+  id: string,
+  connected?: boolean,
+  fullWidth?: boolean,
+  label: React.Node,
+  span?: boolean,
+  description?: React.Node,
+  changed: boolean,
+  changedRight?: boolean,
+  render: ({| id: string |}) => React.Node,
+  onReset?: () => void,
+|}) {
   const reset =
     onReset != null && changed ? (
       <button

@@ -6,13 +6,11 @@ import * as React from "preact";
 import config from "../project.config";
 import scripts from "./scripts.es5";
 
-type Props = {|
+export default function Scripts(props: {|
   macifyKbd?: boolean,
   observeQuickLinks?: boolean,
   autoCloseDetails?: boolean,
-|};
-
-export default function Scripts(props: Props) {
+|}) {
   const items = Object.keys(scripts)
     .map(name => {
       const fn = scripts[name];

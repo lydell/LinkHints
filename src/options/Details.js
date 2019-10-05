@@ -4,14 +4,17 @@ import * as React from "preact";
 
 import { classlist } from "../shared/main";
 
-type Props = {|
+export default function Details({
+  summary,
+  open,
+  onChange,
+  children,
+}: {|
   summary: React.Node,
   open: boolean,
   onChange: boolean => void,
   children: React.Node,
-|};
-
-export default function Details({ summary, open, onChange, children }: Props) {
+|}) {
   return (
     <div>
       <button

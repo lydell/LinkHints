@@ -2,13 +2,15 @@
 
 import * as React from "preact";
 
-type Props = {|
+export default function ImportSummary({
+  success,
+  tweakable,
+  errors,
+}: {|
   success: number,
   tweakable: number,
   errors: number,
-|};
-
-export default function ImportSummary({ success, tweakable, errors }: Props) {
+|}) {
   const successString = success === 1 ? `1 value` : `${success} values`;
   const tweakableString =
     tweakable === 1 ? `1 debug value` : `${tweakable} debug values`;

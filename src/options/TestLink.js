@@ -14,7 +14,7 @@ type State = {|
 
 const params = new URLSearchParams(window.location.search);
 
-export default class TestLinks extends React.Component<Props, State> {
+export default class TestLink extends React.Component<Props, State> {
   state = {
     clicked: false,
   };
