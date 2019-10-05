@@ -795,7 +795,9 @@ export default class WorkerProgram {
     if (BROWSER === "firefox") {
       if (cleanup != null) {
         const result = cleanup();
-        defaultPrevented = result.pagePreventedDefault;
+        if (result.pagePreventedDefault != null) {
+          defaultPrevented = result.pagePreventedDefault;
+        }
         this.sendMessage({
           type: "OpenNewTabs",
           urls: result.urlsToOpenInNewTabs,
@@ -1159,7 +1161,7 @@ function firefoxPopupBlockerWorkaround({
   element: HTMLElement,
   isPinned: boolean,
 |}): () => {|
-  pagePreventedDefault: boolean,
+  pagePreventedDefault: ?boolean,
   urlsToOpenInNewTabs: Array<string>,
 |} {
   const prefix = "firefoxPopupBlockerWorkaround";
@@ -1187,12 +1189,13 @@ function firefoxPopupBlockerWorkaround({
   // any). Clicking on an element inside a link also activates the link.
   const link = element.closest("a");
 
-  if (
+  const shouldWorkaroundLinks =
     link != null &&
     link instanceof HTMLAnchorElement &&
     (link.target.toLowerCase() === "_blank" ||
-      (isPinned && link.hostname !== window.location.hostname))
-  ) {
+      (isPinned && link.hostname !== window.location.hostname));
+
+  if (shouldWorkaroundLinks && link instanceof HTMLAnchorElement) {
     // Default to opening this link in a new tab.
     linkUrl = link.href;
 
@@ -1417,7 +1420,9 @@ function firefoxPopupBlockerWorkaround({
     window.wrappedJSObject.open = originalOpen;
 
     const result = {
-      pagePreventedDefault: defaultPrevented === "ByPage",
+      pagePreventedDefault: shouldWorkaroundLinks
+        ? defaultPrevented === "ByPage"
+        : undefined,
       urlsToOpenInNewTabs:
         linkUrl != null
           ? [linkUrl, ...urlsToOpenInNewTabs]
