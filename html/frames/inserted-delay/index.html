@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>inserted iframe after delay</title>
+  </head>
+  <body>
+    <p>
+      The iframe is inserted 2 seconds after page load. Start hints mode before
+      that. When the iframe appears it should not cause any issue. Refreshing
+      the hints should find the link in the iframe.
+    </p>
+    <p>
+      <a href="https://example.com/one">Link outside iframe</a>
+    </p>
+    <script>
+      setTimeout(() => {
+        const div = document.createElement("div");
+        const iframe = document.createElement("iframe");
+        iframe.src = "iframe.html";
+        div.append(iframe);
+        document.body.append(div);
+      }, 2000);
+    </script>
+  </body>
+</html>
