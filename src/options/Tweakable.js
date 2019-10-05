@@ -5,6 +5,7 @@
 // @flow strict-local
 
 import * as React from "preact";
+import { useEffect, useRef } from "preact/hooks";
 
 import {
   t as tBackground,
@@ -16,7 +17,6 @@ import {
   log,
   normalizeUnsignedFloat,
   normalizeUnsignedInt,
-  Resets,
   unreachable,
 } from "../shared/main";
 import { DEBUG_PREFIX } from "../shared/options";
@@ -43,61 +43,53 @@ const ALL_KEYS: Set<string> = new Set(
   )
 );
 
-type Props = {|
+export default function Tweakable({
+  before,
+  onUpdate,
+}: {|
   before?: React.Node,
   onUpdate: () => void,
-|};
+|}) {
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
-type State = {||};
-
-export default class Tweakable extends React.Component<Props, State> {
-  resets: Resets = new Resets();
-
-  componentDidMount() {
-    this.resets.add(
+  useEffect(
+    () =>
       addListener(browser.storage.onChanged, (changes, areaName) => {
         if (areaName === "sync") {
           const didUpdate = Object.keys(changes).some(key => ALL_KEYS.has(key));
           if (didUpdate) {
-            this.props.onUpdate();
+            onUpdateRef.current();
           }
         }
-      })
-    );
-  }
+      }),
+    []
+  );
 
-  componentWillUnmount() {
-    this.resets.reset();
-  }
+  return (
+    <div>
+      {before}
 
-  render() {
-    const { before } = this.props;
-
-    return (
-      <div>
-        {before}
-
-        {ALL_TWEAKABLES.map(([t, tMeta]) =>
-          Object.keys(tMeta.defaults)
-            .sort()
-            .map(key => {
-              const { [key]: changed = false } = tMeta.changed;
-              return (
-                <TweakableField
-                  key={`${tMeta.namespace}.${key}`}
-                  namespace={tMeta.namespace}
-                  name={key}
-                  value={t[key]}
-                  defaultValue={tMeta.defaults[key]}
-                  changed={changed}
-                  error={tMeta.errors[key]}
-                />
-              );
-            })
-        )}
-      </div>
-    );
-  }
+      {ALL_TWEAKABLES.map(([t, tMeta]) =>
+        Object.keys(tMeta.defaults)
+          .sort()
+          .map(key => {
+            const { [key]: changed = false } = tMeta.changed;
+            return (
+              <TweakableField
+                key={`${tMeta.namespace}.${key}`}
+                namespace={tMeta.namespace}
+                name={key}
+                value={t[key]}
+                defaultValue={tMeta.defaults[key]}
+                changed={changed}
+                error={tMeta.errors[key]}
+              />
+            );
+          })
+      )}
+    </div>
+  );
 }
 
 function TweakableField<T: TweakableValue>({

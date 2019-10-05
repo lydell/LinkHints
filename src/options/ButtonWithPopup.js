@@ -1,110 +1,101 @@
 // @flow strict-local
 
 import * as React from "preact";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import { addEventListener, classlist, Resets } from "../shared/main";
 
-type Props = {
+export default function ButtonWithPopup({
+  open: openProp,
+  buttonContent,
+  popupContent,
+  onChange,
+  className = "",
+  ...restProps
+}: {
   buttonContent: React.Node,
   popupContent: ({| close: () => void |}) => React.Node,
   open?: boolean,
   onChange?: boolean => void,
   className?: string,
   ...
-};
+}) {
+  const onChangeRef = useRef();
+  onChangeRef.current = onChange;
 
-type State = {|
-  open: boolean,
-|};
+  const [openState, setOpenState] = useState<boolean>(false);
 
-export default class ButtonsWithPopup extends React.Component<Props, State> {
-  state = {
-    open: false,
-  };
+  const open = openProp != null ? openProp : openState;
 
-  resets: Resets = new Resets();
-  rootRef: {| current: HTMLDivElement | null |} = React.createRef();
+  const rootRef = useRef();
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    const { open = this.state.open } = this.props;
-    const { open: prevOpen = prevState.open } = prevProps;
-
-    if (open !== prevOpen) {
-      if (open) {
-        this.resets.add(
-          addEventListener(window, "focus", this.closeIfOutside),
-          addEventListener(window, "click", this.closeIfOutside)
-        );
-      } else {
-        this.resets.reset();
+  const setOpen = useCallback(
+    newOpen => {
+      if (openProp == null) {
+        setOpenState(newOpen);
       }
+      if (onChangeRef.current != null) {
+        onChangeRef.current(newOpen);
+      }
+    },
+    [openProp]
+  );
+
+  useEffect(() => {
+    if (open) {
+      function closeIfOutside(event: Event) {
+        const root = rootRef.current;
+        const { target } = event;
+
+        if (
+          root != null &&
+          target instanceof Node &&
+          !root.contains(target) &&
+          target !== document
+        ) {
+          setOpen(false);
+        }
+      }
+
+      const resets = new Resets();
+      resets.add(
+        addEventListener(window, "focus", closeIfOutside),
+        addEventListener(window, "click", closeIfOutside)
+      );
+
+      return () => {
+        resets.reset();
+      };
     }
-  }
 
-  componentWillUnmount() {
-    this.resets.reset();
-  }
+    return undefined;
+  }, [open, setOpen]);
 
-  render() {
-    const {
-      open = this.state.open,
-      buttonContent,
-      popupContent,
-      onChange,
-      className = "",
-      ...restProps
-    } = this.props;
-
-    return (
-      <div
-        className={classlist("ButtonWithPopup", { "is-open": open })}
-        ref={this.rootRef}
+  return (
+    <div
+      className={classlist("ButtonWithPopup", { "is-open": open })}
+      ref={rootRef}
+    >
+      <button
+        {...restProps}
+        type="button"
+        className={classlist("ButtonWithPopup-button", className)}
+        onClick={() => {
+          setOpen(!open);
+        }}
       >
-        <button
-          {...restProps}
-          type="button"
-          className={classlist("ButtonWithPopup-button", className)}
-          onClick={() => {
-            this.setOpen(!open);
-          }}
-        >
-          {buttonContent}
-        </button>
+        {buttonContent}
+      </button>
 
-        {open && (
-          <div className="ButtonWithPopup-popup">
-            {popupContent({
-              close: () => {
-                this.setOpen(false);
-              },
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  closeIfOutside = (event: Event) => {
-    const root = this.rootRef.current;
-    const { target } = event;
-
-    if (
-      root != null &&
-      target instanceof Node &&
-      !root.contains(target) &&
-      target !== document
-    ) {
-      this.setOpen(false);
-    }
-  };
-
-  setOpen = (open: boolean) => {
-    const { onChange } = this.props;
-    if (this.props.open == null) {
-      this.setState({ open });
-    }
-    if (onChange != null) {
-      onChange(open);
-    }
-  };
+      {open && (
+        <div className="ButtonWithPopup-popup">
+          {popupContent({
+            close: () => {
+              setOpen(false);
+            },
+          })}
+        </div>
+      )}
+    </div>
+  );
 }

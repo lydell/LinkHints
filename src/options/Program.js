@@ -953,12 +953,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       className={classlist("KeysTable", "TextSmall", {
                         "is-disabled": keyTranslationsInput.testOnly,
                       })}
-                      ref={ref => {
-                        // When removing the "is-animated" class,
-                        // `ref={this.keysTableRef}` stopped working for some
-                        // reason, but a manual callback still works somehow.
-                        this.keysTableRef.current = ref;
-                      }}
+                      ref={this.keysTableRef}
                     >
                       <table>
                         <thead>

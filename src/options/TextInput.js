@@ -1,170 +1,142 @@
 // @flow strict-local
 
 import * as React from "preact";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import { classlist } from "../shared/main";
+import { classlist, timeout } from "../shared/main";
 
 const SAVE_TIMEOUT = 200; // ms
 
 type Reason = "input" | "blur";
 
-type Props = {
+export default function TextInput({
+  savedValue,
+  normalize = (string: string) => string,
+  save: saveProp,
+  textarea = false,
+  className = "",
+  onKeyDown,
+  ...restProps
+}: {
   savedValue: string,
-  normalize: string => string,
-  save: ?(string, Reason) => void,
-  textarea: boolean,
-  className: string,
+  normalize?: string => string,
+  save?: (string, Reason) => void,
+  textarea?: boolean,
+  className?: string,
   onKeyDown?: (SyntheticKeyboardEvent<HTMLInputElement>) => void,
   ...
-};
+}) {
+  const Tag = textarea ? "textarea" : "input";
+  const readonly = saveProp == null;
 
-type State = {|
-  value: string,
-  focused: boolean,
-|};
+  const [focused, setFocused] = useState<boolean>(false);
+  const [stateValue, setStateValue] = useState<string | void>(undefined);
 
-export default class TextInput extends React.Component<Props, State> {
-  static defaultProps = {
-    normalize: (string: string) => string,
-    save: undefined,
-    textarea: false,
-    className: "",
-  };
+  const value = stateValue != null ? stateValue : savedValue;
 
-  timeoutId: ?TimeoutID = undefined;
-  selectionStart: number = 0;
-  selectionEnd: number = 0;
-  ref: ?(HTMLInputElement | HTMLTextAreaElement) = undefined;
+  const saveRef = useRef();
+  saveRef.current = saveProp;
 
-  state = {
-    value: this.props.savedValue,
-    focused: false,
-  };
+  const normalizeRef = useRef(normalize);
+  normalizeRef.current = normalize;
 
-  componentDidMount() {
-    // Move the default cursor position from the end of the textarea to the start.
-    if (this.props.textarea) {
-      this.restoreSelection();
+  const selectionStartRef = useRef<number>(0);
+  const selectionEndRef = useRef<number>(0);
+  const rootRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  function storeSelection() {
+    const element = rootRef.current;
+    if (element != null) {
+      selectionStartRef.current = element.selectionStart;
+      selectionEndRef.current = element.selectionEnd;
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
-    if (
-      !this.state.focused &&
-      this.props.savedValue !== prevProps.savedValue &&
-      this.props.savedValue !== this.state.value
-    ) {
-      this.setState({ value: this.props.savedValue }, () => {
-        // When readonly textareas change, move the cursor back to the start.
-        if (this.props.textarea && this.props.save == null) {
-          this.selectionStart = 0;
-          this.selectionEnd = 0;
-          setTimeout(() => {
-            this.restoreSelection();
-          }, 0);
+  function restoreSelection() {
+    const element = rootRef.current;
+    if (element != null) {
+      element.selectionStart = selectionStartRef.current;
+      element.selectionEnd = selectionEndRef.current;
+    }
+  }
+
+  useLayoutEffect(
+    () =>
+      // Move the default cursor position from the end of the textarea to the start.
+      textarea ? restoreSelection() : undefined,
+    [textarea]
+  );
+
+  useLayoutEffect(() => {
+    // When readonly textareas change, move the cursor back to the start.
+    if (textarea && readonly) {
+      selectionStartRef.current = 0;
+      selectionEndRef.current = 0;
+      return timeout(0, restoreSelection);
+    }
+    return undefined;
+  }, [textarea, readonly, savedValue]);
+
+  useEffect(
+    () =>
+      // Save after `SAVE_TIMEOUT` ms has passed since the last input.
+      focused && !readonly
+        ? timeout(SAVE_TIMEOUT, () => {
+            const save = saveRef.current;
+            if (save != null) {
+              const normalizedValue = normalizeRef.current(value);
+              if (normalizedValue !== savedValue) {
+                save(normalizedValue, "input");
+              }
+            }
+          })
+        : undefined,
+    [focused, readonly, savedValue, value]
+  );
+
+  return (
+    <Tag
+      {...restProps}
+      ref={rootRef}
+      className={classlist(className, { "is-readonly": readonly })}
+      value={value}
+      spellCheck="false"
+      onInput={(
+        event: SyntheticInputEvent<HTMLInputElement | HTMLTextAreaElement>
+      ) => {
+        if (readonly) {
+          // This is like the `readonly` attribute, but with a visible cursor,
+          // which is nice when selecting parts of the text for copying.
+          event.currentTarget.value = value;
+          restoreSelection();
+        } else {
+          setStateValue(event.target.value);
         }
-      });
-    }
-  }
+      }}
+      onKeyDown={event => {
+        storeSelection();
+        if (onKeyDown != null) {
+          onKeyDown(event);
+        }
+      }}
+      onMouseDown={() => {
+        storeSelection();
+      }}
+      onFocus={() => {
+        setFocused(true);
+      }}
+      onBlur={() => {
+        setFocused(false);
 
-  storeSelection() {
-    const element = this.ref;
-    if (element != null) {
-      this.selectionStart = element.selectionStart;
-      this.selectionEnd = element.selectionEnd;
-    }
-  }
+        // Normalize on blur.
+        setStateValue(undefined);
 
-  restoreSelection() {
-    const element = this.ref;
-    if (element != null) {
-      element.selectionStart = this.selectionStart;
-      element.selectionEnd = this.selectionEnd;
-    }
-  }
-
-  save(value: string, reason: Reason) {
-    const { save } = this.props;
-    if (save != null) {
-      save(value, reason);
-    }
-  }
-
-  saveThrottled(value: string) {
-    if (this.timeoutId != null) {
-      clearTimeout(this.timeoutId);
-    }
-
-    this.timeoutId = setTimeout(() => {
-      this.timeoutId = undefined;
-      this.save(value, "input");
-    }, SAVE_TIMEOUT);
-  }
-
-  render() {
-    const {
-      savedValue,
-      normalize,
-      save,
-      textarea,
-      className,
-      onKeyDown,
-      ...restProps
-    } = this.props;
-    const { value } = this.state;
-    const Tag = textarea ? "textarea" : "input";
-    const readonly = save == null;
-
-    return (
-      <Tag
-        {...restProps}
-        ref={ref => {
-          this.ref = ref;
-        }}
-        className={classlist(className, { "is-readonly": readonly })}
-        value={value}
-        spellCheck="false"
-        onInput={(
-          event: SyntheticInputEvent<HTMLInputElement | HTMLTextAreaElement>
-        ) => {
-          if (readonly) {
-            // This is like the `readonly` attribute, but with a visible cursor,
-            // which is nice when selecting parts of the text for copying.
-            event.currentTarget.value = value;
-            this.restoreSelection();
-          } else {
-            const newValue = event.target.value;
-            const normalizedValue = normalize(newValue);
-            this.setState({ value: newValue });
-            if (normalizedValue !== savedValue) {
-              this.saveThrottled(normalizedValue);
-            }
-          }
-        }}
-        onKeyDown={event => {
-          this.storeSelection();
-          if (onKeyDown != null) {
-            onKeyDown(event);
-          }
-        }}
-        onMouseDown={() => {
-          this.storeSelection();
-        }}
-        onFocus={() => {
-          this.setState({ focused: true });
-        }}
-        onBlur={() => {
-          const normalizedValue = normalize(value);
-          this.setState({ focused: false, value: normalizedValue });
-          if (normalizedValue !== savedValue) {
-            if (this.timeoutId != null) {
-              clearTimeout(this.timeoutId);
-              this.timeoutId = undefined;
-            }
-            this.save(normalizedValue, "blur");
-          }
-        }}
-      />
-    );
-  }
+        // Save on blur.
+        const normalizedValue = normalize(value);
+        if (normalizedValue !== savedValue && saveProp != null) {
+          saveProp(normalizedValue, "blur");
+        }
+      }}
+    />
+  );
 }

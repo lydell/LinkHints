@@ -187,6 +187,13 @@ export function addListener<Listener, Options>(
   };
 }
 
+export function timeout(duration: number, callback: () => mixed): () => void {
+  const timeoutId = setTimeout(callback, duration);
+  return () => {
+    clearTimeout(timeoutId);
+  };
+}
+
 export class Resets {
   _callbacks: Array<() => mixed> = [];
 
