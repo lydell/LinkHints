@@ -242,7 +242,12 @@ export default class WorkerProgram {
 
         const defaultPrevented = this.clickElement(element);
 
-        if (!defaultPrevented && elementData.type === "link") {
+        if (
+          !defaultPrevented &&
+          elementData.type === "link" &&
+          element instanceof HTMLAnchorElement &&
+          !isInternalHashLink(element)
+        ) {
           // I think it’s fine to send this even if the link opened in a new tab.
           this.sendMessage({ type: "ClickedLinkNavigatingToOtherPage" });
         }
@@ -1443,4 +1448,16 @@ function* getAllEventTargetsUpwards(
   } while ((element = element.parentElement));
   yield document;
   yield window;
+}
+
+function isInternalHashLink(element: HTMLAnchorElement): boolean {
+  return (
+    element.href.includes("#") &&
+    stripHash(element.href) === stripHash(window.location.href)
+  );
+}
+
+function stripHash(url: string): string {
+  const index = url.indexOf("#");
+  return index === -1 ? url : url.slice(0, index);
 }
