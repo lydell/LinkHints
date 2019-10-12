@@ -279,7 +279,7 @@ export function getVisibleBox(
   const width = visibleRect.right - visibleRect.left;
   const height = visibleRect.bottom - visibleRect.top;
 
-  // If `visibleRect` has a non-sensical width or height it means it is not
+  // If `visibleRect` has a nonsensical width or height it means it is not
   // visible within `viewports`.
   return width <= 0 || height <= 0
     ? undefined

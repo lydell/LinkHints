@@ -849,7 +849,7 @@ export default class ElementManager {
     this.onMutation(this.mutationObserver.takeRecords());
 
     // If `injectedNeedsFlush` then `this.queue` will be modified, so check the
-    // length _after_ flusing injected.js.
+    // length _after_ flushing injected.js.
     const needsFlush = this.queue.items.length > 0;
 
     if (needsFlush) {
@@ -1084,7 +1084,7 @@ class Deduper {
     );
 
     // If hints are positioned in the exact same spot, reject those of low
-    // quality (for exmaple those that only have click listeners and nothing
+    // quality (for example those that only have click listeners and nothing
     // else) since they are likely just noise. Many `<button>`s and `<a>`s on
     // Twitter and Gmail are wrapped in `<div>`s with click listeners. And on
     // GitHub there are dropdown menus near the top where the hint for the
@@ -1515,7 +1515,7 @@ function getNonCoveredPoint(
   // `.elementAtPoint()` on the pseudo-element _does_ return the element. For
   // `/###\`-looking tabs, which overlap each other slightly, the slanted parts
   // are often made using pseudo-elements. When trying to position a hint for
-  // tab 2, `.elementAtPoint()` might return tab 1. So if we get a non-sensical
+  // tab 2, `.elementAtPoint()` might return tab 1. So if we get a nonsensical
   // rect (one that does not cover (x, y)) for the "covering" element it's
   // better to treat (x, y) as non-covered.
   if (rect.left > x || rect.right <= x || rect.top > y || rect.bottom <= y) {

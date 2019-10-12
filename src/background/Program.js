@@ -151,7 +151,7 @@ export const t = {
   // alive after this timeout, ignore it.
   FRAME_REPORT_TIMEOUT: unsignedInt(100), // ms
 
-  // Only show the bagde “spinner” if the hints are slow.
+  // Only show the badge “spinner” if the hints are slow.
   BADGE_COLLECTING_DELAY: unsignedInt(300), // ms
 
   // Roughly how often to update the hints in hints mode. While a lower number
@@ -2252,7 +2252,7 @@ function getBadgeText(hintsState: HintsState): string {
     case "Idle":
       return "";
     case "Collecting":
-      // Only show the bagde “spinner” if the hints are slow. But show it
+      // Only show the badge “spinner” if the hints are slow. But show it
       // immediately when refreshing so that one can see it flash in case you
       // get exactly the same hints after refreshing, so that you understand
       // that something happened. It’s also nice to show in "ManyClick" mode.
@@ -2448,7 +2448,7 @@ function updateHints({
   );
 
   // Find which hints to highlight (if any), and which to activate (if
-  // any). This depends on whether only text chars have been enterd, if
+  // any). This depends on whether only text chars have been entered, if
   // auto activation is enabled, if the Enter key is pressed and if hint
   // chars have been entered.
   const allHints = elementsWithHints

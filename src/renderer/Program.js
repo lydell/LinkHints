@@ -286,7 +286,7 @@ export default class RendererProgram {
   // clicking a link to a JSON file using hints. So always unrender when we
   // return to the page via the back/forward buttons.
   // `BackgroundProgram` also gets events when this happens from
-  // `WorkerProgram`, so we _cound_ do this in response to a message from
+  // `WorkerProgram`, so we _could_ do this in response to a message from
   // `BackgroundProgram` instead. However, by having our own listener we can
   // unrender faster, to avoid old hints flashing by on screen.
   onPageShow(event: Event) {

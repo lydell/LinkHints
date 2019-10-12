@@ -660,7 +660,7 @@ function compare(a: string, b: string): number {
 //
 // - Shift doesn't count as a modifier for printable keys. Example: a vs A.
 // - Shift + non-printable keys are generally already taken. Example:
-//   Shitf+ArrowRight selects text. Exception: The keys allowed by
+//   Shift + ArrowRight selects text. Exception: The keys allowed by
 //   `isAllowedWithShiftOnly`.
 function hasModifier(shortcut: Shortcut): boolean {
   return shortcut.alt || shortcut.cmd || shortcut.ctrl;

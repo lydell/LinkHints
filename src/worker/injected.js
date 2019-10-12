@@ -37,7 +37,7 @@ const prefix = `\uffff__${META_SLUG}WebExt_${BUILD_ID}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
-// altogeher.
+// altogether.
 export const CLICKABLE_EVENT = `${prefix}Clickable`;
 export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
 export const QUEUE_EVENT = `${prefix}Queue`;
@@ -693,13 +693,13 @@ export default () => {
     // Immediately call another function so that `.toString()` gives away as
     // little as possible (especially the secret).
     value: (...args) => external(...args),
-    // The rest of the options default to being neither enumerable nor changable.
+    // The rest of the options default to being neither enumerable nor changeable.
   });
 
   function external(message: mixed, secret: mixed) {
     if (
       secret !== SECRET &&
-      // Allow reseting old versions of this script when developing in Firefox.
+      // Allow resetting old versions of this script when developing in Firefox.
       // It is unfortunately not possible to run cleanup logic when an extension
       // is disabled in Firefox (like it is in Chrome – see renderer/Program.js
       // for more information) so injected.js from the old version will hang

@@ -469,7 +469,7 @@ export default class WorkerProgram {
       // pressing modifier keys _themselves_ in case the page does unwanted
       // things when holding down alt for example). ctrl and cmd can't safely be
       // combined with hint chars anyway, due to some keyboard shortcuts not
-      // being suppressable (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
+      // being suppressible (such as ctrl+n, ctrl+q, ctrl+t, ctrl+w) (and
       // ctrl+alt+t opens a terminal by default in Ubuntu).
       // This always uses `event.key` since we are looking for _actual_ modifier
       // keypresses (keys may be rebound).
@@ -514,7 +514,7 @@ export default class WorkerProgram {
     // The "keydown" event fires at an interval while it is pressed. We're only
     // interested in the event where the key was actually pressed down. Ignore
     // the rest. Don't log this since it results in a _lot_ of logs. This is
-    // done _after_ suppression – we still want to consistenly suppress the key,
+    // done _after_ suppression – we still want to consistently suppress the key,
     // but don't want it to trigger more actions.
     if (event.repeat) {
       return;

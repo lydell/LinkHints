@@ -1,6 +1,6 @@
 ---
 name: 7. Something else
-about: Questions, thoughs or anything else.
+about: Questions, thoughts or anything else.
 title: ''
 labels: ''
 assignees: ''
