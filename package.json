@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
-    "preact": "10.0.1",
+    "preact": "10.0.4",
     "preact-shadow-root": "1.0.2",
     "tiny-decoders": "4.0.0",
     "webextension-polyfill": "0.5.0"
@@ -46,16 +46,16 @@
     "minifycss": "1.0.1",
     "npm-run-all": "4.1.5",
     "optional-require": "1.0.0",
-    "preact-render-to-string": "5.1.0",
+    "preact-render-to-string": "5.1.1",
     "prettier": "1.18.2",
     "readdirp": "3.2.0",
-    "rollup": "1.25.2",
+    "rollup": "1.26.3",
     "rollup-plugin-commonjs": "10.1.0",
     "rollup-plugin-node-resolve": "5.2.0",
     "rollup-plugin-prettier": "0.6.0",
     "rollup-plugin-replace": "2.2.0",
     "rollup-plugin-sucrase": "2.1.0",
-    "web-ext": "3.2.0",
+    "web-ext": "3.2.1",
     "yazl": "2.5.1"
   }
 }
