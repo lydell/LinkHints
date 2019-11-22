@@ -2139,7 +2139,7 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   // anyway. Also don’t combine if the elements themselves have click listeners.
   // Some sites use `<a>` as buttons with click listeners but still include an
   // href for some reason.
-  return url != null && (!url.includes("#") && !hasClickListener);
+  return url != null && !url.includes("#") && !hasClickListener;
 }
 
 function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
