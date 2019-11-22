@@ -245,8 +245,9 @@ const SECTIONS = [
     content: (
       <>
         <p>
-          In 2013 <a href="Link Hints ">Simon Lydell</a> started contributing to
-          the <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
+          In 2013 <a href="https://github.com/lydell">Simon Lydell</a> started
+          contributing to the{" "}
+          <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
           extension, making significant work on its link hinting feature. After
           a while, he became the main developer.
         </p>
