@@ -20,6 +20,7 @@
         console.log("click!");
       };
       const element = document.createElement("div");
+      element.id = "probe";
       element.textContent =
         "This is a clickable element created in the iframe, but inserted at the top.";
       element.addEventListener("click", fn);

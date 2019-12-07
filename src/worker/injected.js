@@ -30,10 +30,8 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // uses `BUILD_ID` rather than `makeRandomToken()` so that all frames share
 // the same event name. Clickable elements created in this frame but inserted
 // into another frame need to dispatch an event in their parent window rather
-// than this one. Finally, the `\uffff` is there to make the events sort last in
-// the element inspector in Firefox when clicking the “event” button next to the
-// `<html>` element, making it easier for developers to find their own events.
-const prefix = `\uffff__${META_SLUG}WebExt_${BUILD_ID}_`;
+// than this one.
+const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
 
 // If a malicious site sends these events it doesn't hurt much. All the page
 // could do is cause false positives or disable detection of click events
@@ -51,27 +49,15 @@ export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCrea
 // the secret element in ElementManager.
 export const REGISTER_SECRET_ELEMENT_EVENT = `${prefix}RegisterSecretElement`;
 
-// Name of the global variable created by the injected script. The `\0` prevents
-// it from turning up in autocomplete when typing `window.` in the Chrome
-// console. Firefox still shows it, but accepting the autocomplete causes a
-// syntax error. Since we make the injected variable both non-writable and
-// non-configurable it is impossible to overwrite it so we _have_ to use
-// a new name when installing an update.
-export const INJECTED_VAR = `__${META_SLUG}WebExt_${BUILD_ID}\0`;
-export const INJECTED_VAR_PATTERN = RegExp(
-  `^${INJECTED_VAR.replace(/\d+/, "\\d+").replace(/\0/, "\\0")}$`
-);
-
-export const MESSAGE_FLUSH = "flush";
-export const MESSAGE_RESET = "reset";
-
-export const SECRET = makeRandomToken();
+// Events sent from ElementManager to this file.
+const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
+export const FLUSH_EVENT = `${secretPrefix}Flush`;
+export const RESET_EVENT =
+  // Use a non-prefixed event in Firefox during development so that a just-loaded
+  // update can clean up from the previous version.
+  !PROD && BROWSER === "firefox" ? "Reset" : `${secretPrefix}Reset`;
 
 export default () => {
-  if (!PROD && BROWSER === "firefox") {
-    cleanupOldScripts();
-  }
-
   // These arrays are replaced in by ElementManager; only refer to them once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
   const clickableEventProps = CLICKABLE_EVENT_PROPS;
@@ -85,7 +71,7 @@ export default () => {
   const HTMLElement2 = HTMLElement;
   const ShadowRoot2 = ShadowRoot;
   // Don't use the usual `log` function here, too keep this file small.
-  const { error: consoleLogError } = console;
+  const { error: consoleLogError, log: consoleLog } = console;
   const createElement = document.createElement.bind(document);
   const { appendChild, removeChild, getRootNode } = Node.prototype;
   const { replaceWith } = Element.prototype;
@@ -819,73 +805,28 @@ export default () => {
 
   hookManager.conceal();
 
-  defineProperty(window, INJECTED_VAR, {
-    // Immediately call another function so that `.toString()` gives away as
-    // little as possible (especially the secret).
-    value: (...args) => external(...args),
-    // The rest of the options default to being neither enumerable nor changeable.
-  });
+  // Use `document` rather than `window` in order not to appear in the “Global
+  // event listeners” listing in devtools.
+  document.addEventListener(FLUSH_EVENT, onFlush, true);
+  document.addEventListener(RESET_EVENT, onReset, true);
 
-  function external(message: mixed, secret: mixed) {
-    if (
-      secret !== SECRET &&
-      // Allow resetting old versions of this script when developing in Firefox.
-      // It is unfortunately not possible to run cleanup logic when an extension
-      // is disabled in Firefox (like it is in Chrome – see renderer/Program.js
-      // for more information) so injected.js from the old version will hang
-      // around. That can be very annoying when developing, but doesn’t matter
-      // much in production.
-      !(!PROD && BROWSER === "firefox" && message === MESSAGE_RESET)
-    ) {
-      // Silently ignore wrong secrets in production.
-      if (!PROD) {
-        logError("Secret mismatch", {
-          actual: secret,
-          expected: SECRET,
-          message,
-        });
-      }
-
-      return;
-    }
-
-    switch (message) {
-      case MESSAGE_FLUSH:
-        clickListenerTracker.flushQueue(infiniteDeadline);
-        break;
-
-      // Reset the overridden methods when the extension is shut down.
-      case MESSAGE_RESET:
-        clickListenerTracker.reset();
-        hookManager.reset();
-        // eslint-disable-next-line no-func-assign
-        external = noop;
-        break;
-
-      default:
-        // Silently ignore unknown messages in production.
-        if (!PROD) {
-          logError("Unknown message", message);
-        }
-    }
+  function onFlush() {
+    clickListenerTracker.flushQueue(infiniteDeadline);
   }
 
-  function noop() {
-    // Do nothing.
-  }
-
-  function cleanupOldScripts() {
-    const candidates = Object.getOwnPropertyNames(window).filter(name =>
-      INJECTED_VAR_PATTERN.test(name)
-    );
-
-    for (const name of candidates) {
-      try {
-        // No need to pass in a secret here (see the `external` function).
-        window[name](MESSAGE_RESET);
-      } catch (error) {
-        logError(`Failed to reset "${name}"`, error);
-      }
+  function onReset() {
+    if (!PROD) {
+      consoleLog(
+        `[${META_SLUG}] Resetting injected.js with secret prefix:`,
+        FLUSH_EVENT.replace(/flush/i, "")
+      );
     }
+
+    document.removeEventListener(FLUSH_EVENT, onFlush, true);
+    document.removeEventListener(RESET_EVENT, onReset, true);
+
+    // Reset the overridden methods when the extension is shut down.
+    clickListenerTracker.reset();
+    hookManager.reset();
   }
 };

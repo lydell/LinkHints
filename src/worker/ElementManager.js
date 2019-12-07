@@ -35,14 +35,11 @@ import injected, {
   CLICKABLE_EVENT_PROPS,
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
   CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
-  INJECTED_VAR,
-  INJECTED_VAR_PATTERN,
-  MESSAGE_FLUSH,
-  MESSAGE_RESET,
+  FLUSH_EVENT,
   OPEN_SHADOW_ROOT_CREATED_EVENT,
   QUEUE_EVENT,
   REGISTER_SECRET_ELEMENT_EVENT,
-  SECRET,
+  RESET_EVENT,
   UNCLICKABLE_EVENT,
 } from "./injected";
 
@@ -57,16 +54,13 @@ const constants = {
   CLOSED_SHADOW_ROOT_CREATED_2_EVENT: JSON.stringify(
     CLOSED_SHADOW_ROOT_CREATED_2_EVENT
   ),
-  INJECTED_VAR: JSON.stringify(INJECTED_VAR),
-  INJECTED_VAR_PATTERN: INJECTED_VAR_PATTERN.toString(),
-  MESSAGE_FLUSH: JSON.stringify(MESSAGE_FLUSH),
-  MESSAGE_RESET: JSON.stringify(MESSAGE_RESET),
+  FLUSH_EVENT: JSON.stringify(FLUSH_EVENT),
   OPEN_SHADOW_ROOT_CREATED_EVENT: JSON.stringify(
     OPEN_SHADOW_ROOT_CREATED_EVENT
   ),
   QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
   REGISTER_SECRET_ELEMENT_EVENT: JSON.stringify(REGISTER_SECRET_ELEMENT_EVENT),
-  SECRET: JSON.stringify(SECRET),
+  RESET_EVENT: JSON.stringify(RESET_EVENT),
   UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
@@ -380,7 +374,7 @@ export default class ElementManager {
     this.idleCallbackId = undefined;
     this.resets.reset();
     this.secretElementResets.reset();
-    sendInjectedMessage(MESSAGE_RESET);
+    sendInjectedEvent(RESET_EVENT);
   }
 
   // Stop using the intersection observer for everything except frames. The
@@ -1058,7 +1052,7 @@ export default class ElementManager {
 
     if (injectedNeedsFlush) {
       log("log", prefix, "flush injected");
-      sendInjectedMessage(MESSAGE_FLUSH);
+      sendInjectedEvent(FLUSH_EVENT);
     }
 
     this.onMutation(this.mutationObserver.takeRecords());
@@ -1955,6 +1949,13 @@ function injectScript() {
     return;
   }
 
+  // Clean up after the previous version in Firefox during development.
+  if (BROWSER === "firefox") {
+    if (!PROD) {
+      sendInjectedEvent(RESET_EVENT);
+    }
+  }
+
   const rawCode = replaceConstants(injected.toString());
   const code = `(${rawCode})()`;
 
@@ -2044,28 +2045,8 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   );
 }
 
-function sendInjectedMessage(message: string) {
-  try {
-    if (window.wrappedJSObject != null) {
-      window.wrappedJSObject[INJECTED_VAR](message, SECRET);
-    } else {
-      const { documentElement } = document;
-      if (documentElement == null) {
-        return;
-      }
-      // I guess the page can read the secret via a MutationObserver, but at
-      // least in the Firefox case the page shouldn't be able to read it. The
-      // page can't do much with the secret anyway.
-      const script = document.createElement("script");
-      script.textContent = `window[${JSON.stringify(
-        INJECTED_VAR
-      )}](${JSON.stringify(message)}, ${JSON.stringify(SECRET)});`;
-      documentElement.append(script);
-      script.remove();
-    }
-  } catch (error) {
-    log("error", "Failed to message injected.js", error);
-  }
+function sendInjectedEvent(eventName: string) {
+  document.dispatchEvent(new CustomEvent(eventName));
 }
 
 function getXY(box: Box | ClientRect): {| x: number, y: number |} {

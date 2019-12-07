@@ -1,6 +1,10 @@
 {
   "language": "en,lorem",
-  "ignorePaths": ["node_modules/**", "package-lock.json"],
+  "ignorePaths": [
+    "node_modules/**",
+    "package-lock.json",
+    ".stuff/**"
+  ],
   "words": [
     "adipiscing",
     "animationend",
@@ -118,6 +122,7 @@
     "unrendering",
     "unscrollable",
     "unshifted",
+    "unstyled",
     "untrusted",
     "urlbar",
     "viewports",
