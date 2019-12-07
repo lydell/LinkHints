@@ -56,12 +56,12 @@ export const REGISTER_SECRET_ELEMENT_EVENT = `${secretPrefix}RegisterSecretEleme
 
 // Events sent from ElementManager to this file.
 export const FLUSH_EVENT = `${secretPrefix}Flush`;
-export const RESET_EVENT =
-  // Use a non-prefixed event in Firefox during development so that a just-loaded
-  // update can clean up from the previous version.
-  !PROD && BROWSER === "firefox" ? "Reset" : `${secretPrefix}Reset`;
+export const RESET_EVENT = `${secretPrefix}Reset`;
 
 export default () => {
+  // Refers to the page `window` both in Firefox and other browsers.
+  const win = BROWSER === "firefox" ? window.wrappedJSObject || window : window;
+
   // These arrays are replaced in by ElementManager; only refer to them once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
   const clickableEventProps = CLICKABLE_EVENT_PROPS;
@@ -80,7 +80,7 @@ export default () => {
   const { appendChild, removeChild, getRootNode } = Node.prototype;
   const { replaceWith } = Element.prototype;
   const { dispatchEvent } = EventTarget.prototype;
-  const { apply, defineProperty, getOwnPropertyDescriptor } = Reflect;
+  const { apply } = Reflect;
   const { get: mapGet } = Map.prototype;
 
   function logError(...args: Array<mixed>) {
@@ -113,32 +113,29 @@ export default () => {
     // really difficult to detect that the method has been overridden. There are
     // two reasons for covering our tracks:
     //
-    // 1. We don't want to break websites. For example, naively overriding
+    // 1. We don’t want to break websites. For example, naively overriding
     //    `addEventListener` breaks CKEditor: <https://jsfiddle.net/tv5x6zuj/>
     //    See also: <https://github.com/philc/vimium/issues/2900> (and its
     //    linked issues and PRs).
-    // 2. We don't want developers to see strange things in the console when
+    // 2. We don’t want developers to see strange things in the console when
     //    they debug stuff.
+    //
+    // Since Firefox does not support running cleanups when an extension is
+    // disabled/updated (<bugzil.la/1223425>), it is important to read the
+    // original function from the extension (non-overridden) context and only
+    // override in the page context. That’s why there’s both `obj` and
+    // `pageObj`. `pageObj` should be the same thing as `obj` but prefixed with
+    // `win.`.
     hookInto(
       obj: { [string]: mixed, ... },
+      pageObj: { [string]: mixed, ... },
       name: string,
       hook: AnyFunction | void = undefined,
       { withReturnValue = false }: {| withReturnValue: boolean |} = {}
     ) {
-      const desc = getOwnPropertyDescriptor(obj, name);
-
-      // Chrome doesn't support `toSource`.
-      if (desc == null) {
-        return;
-      }
-
+      const desc = Reflect.getOwnPropertyDescriptor(obj, name);
       const prop = "value" in desc ? "value" : "set";
       const orig = desc[prop];
-
-      // To please Flow.
-      if (orig == null) {
-        return;
-      }
 
       const { fnMap } = this;
 
@@ -185,33 +182,55 @@ export default () => {
       // original in the case with no `hook` above.
       fnMap.set(fn, orig);
 
-      // Make sure that `.length` is correct.
-      defineProperty(fn, "length", {
-        ...getOwnPropertyDescriptor(Function.prototype, "length"),
+      // In Firefox, we need to make a page context copy of `desc`.
+      let pageDesc = desc;
+      if (BROWSER === "firefox") {
+        pageDesc = Object.entries(desc).reduce(
+          (result, [key, value]: [string, any]) => {
+            if (typeof value === "function") {
+              exportFunction(value, result, { defineAs: key });
+            } else {
+              result[key] = value;
+            }
+            return result;
+          },
+          new win.Object()
+        );
+      }
+
+      // Create a copy of `desc`/`pageDesc` with `fn` in it.
+      const newDesc = win.Object.assign(new win.Object(), pageDesc);
+      if (BROWSER === "firefox") {
+        exportFunction(fn, newDesc, { defineAs: prop });
+      } else {
+        newDesc[prop] = fn;
+      }
+
+      // Make sure that `.length` is correct. This has to be done _after_
+      // `exportFunction`.
+      Reflect.defineProperty(newDesc[prop], "length", {
+        ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
         value: orig.length,
       });
 
       // Finally override the method with the created function.
-      defineProperty(obj, name, {
-        ...desc,
-        [prop]: fn,
-      });
+      win.Reflect.defineProperty(pageObj, name, newDesc);
 
       // Save a function that will reset the method back again.
       this.resetFns.push(() => {
-        defineProperty(obj, name, {
-          ...desc,
-          [prop]: orig,
-        });
+        win.Reflect.defineProperty(pageObj, name, pageDesc);
       });
     }
 
     // Make sure that `Function.prototype.toString.call(element.addEventListener)`
     // returns "[native code]". This is used by lodash's `_.isNative`.
     // `.toLocaleString` is automatically taken care of when patching `.toString`.
+    // For the record, Firefox also has `.toSource`.
     conceal() {
-      this.hookInto(Function.prototype, "toString");
-      this.hookInto(Function.prototype, "toSource"); // Firefox specific.
+      // This isn’t needed in Firefox, thanks to `exportFunction`.
+      if (BROWSER !== "firefox") {
+        this.hookInto(Function.prototype, win.Function.prototype, "toString");
+      }
     }
   }
 
@@ -637,6 +656,7 @@ export default () => {
         apply(replaceWith, tempElement, [element]);
         break;
       }
+
       default:
         logError("Unknown getOpenComposedRootNode type:", root);
     }
@@ -752,12 +772,14 @@ export default () => {
 
   hookManager.hookInto(
     EventTarget.prototype,
+    win.EventTarget.prototype,
     "addEventListener",
     onAddEventListener
   );
 
   hookManager.hookInto(
     EventTarget.prototype,
+    win.EventTarget.prototype,
     "removeEventListener",
     (orig: AnyFunction, ...args) => {
       onRemoveEventListener(...args);
@@ -766,11 +788,17 @@ export default () => {
 
   // Hook into `.onclick` and similar.
   for (const prop of clickableEventProps) {
-    hookManager.hookInto(HTMLElement.prototype, prop, onPropChange);
+    hookManager.hookInto(
+      HTMLElement.prototype,
+      win.HTMLElement.prototype,
+      prop,
+      onPropChange
+    );
   }
 
   hookManager.hookInto(
     Element.prototype,
+    win.Element.prototype,
     "attachShadow",
     (shadowRoot: ShadowRoot) => {
       // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.

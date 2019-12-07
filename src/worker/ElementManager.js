@@ -1944,59 +1944,24 @@ function injectScript() {
     return;
   }
 
+  if (BROWSER === "firefox") {
+    injected();
+    return;
+  }
+
   const { documentElement } = document;
   if (documentElement == null) {
     return;
   }
 
-  // Clean up after the previous version in Firefox during development.
-  if (BROWSER === "firefox") {
-    if (!PROD) {
-      sendInjectedEvent(RESET_EVENT);
-    }
-  }
-
   const rawCode = replaceConstants(injected.toString());
   const code = `(${rawCode})()`;
-
-  // In Firefox, `eval !== window.eval`. `eval` executes in the content script
-  // context, while `window.eval` executes in the page context. So in Firefox we
-  // can use `window.eval` instead of a script tag.
-  let hasCSP = false;
-  if (BROWSER === "firefox") {
-    try {
-      // Hide the eval call from linters and Rollup since this is a legit and
-      // safe usage of eval: The input is static and known, and this is just a
-      // substitute for running the code as an inline script (see below). Also,
-      // it is run in the _page_ context.
-      window["ev".concat("al")](code);
-      return;
-    } catch {
-      // However, the `window.eval` can fail if the page has a Content Security
-      // Policy. In such a case we have to resort to injecting a `<script
-      // src="...">`. Script tags with URLs injected by a web extension seems to
-      // be allowed regardless of CSP. In theory an inline script _could_ be
-      // allowed by the CSP (which would be a better choice since inline scripts
-      // execute synchronously while scripts with URLs are always async – and we
-      // want to ideally execute as early as possible in case the page adds
-      // click listeners via an inline script), but there's no easy way of
-      // detecting if inline scrips are allowed. As a last note, if the
-      // `window.eval` fails a warning is unfortunately logged to the console. I
-      // wish there was a way to avoid that.
-      hasCSP = true;
-    }
-  }
-
   const script = document.createElement("script");
 
-  if (hasCSP) {
-    script.src = `data:application/javascript;utf8,${encodeURIComponent(code)}`;
-  } else {
-    // Chrome nicely allows inline scripts inserted by an extension regardless
-    // of CSP. I look forward to the day Firefox works this way too. See
-    // <bugzil.la/1446231> and <bugzil.la/1267027>.
-    script.textContent = code;
-  }
+  // Chrome nicely allows inline scripts inserted by an extension regardless
+  // of CSP. I look forward to the day Firefox works this way too. See
+  // <bugzil.la/1446231> and <bugzil.la/1267027>.
+  script.textContent = code;
 
   documentElement.append(script);
   script.remove();
