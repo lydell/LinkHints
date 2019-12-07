@@ -30,27 +30,31 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // uses `BUILD_ID` rather than `makeRandomToken()` so that all frames share
 // the same event name. Clickable elements created in this frame but inserted
 // into another frame need to dispatch an event in their parent window rather
-// than this one.
+// than this one. However, since the prefix is static it will be possible for
+// malicious sites to send these events. Luckily, that doesn’t hurt much. All
+// the page could do is cause false positives or disable detection of click
+// events altogether.
 const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
 
-// If a malicious site sends these events it doesn't hurt much. All the page
-// could do is cause false positives or disable detection of click events
-// altogether.
+// Events that don’t need to think about the iframe edge case described above
+// can use this more secure prefix, with a practically unguessable part in it.
+const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
+
 export const CLICKABLE_EVENT = `${prefix}Clickable`;
 export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
-export const QUEUE_EVENT = `${prefix}Queue`;
 export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;
 export const CLOSED_SHADOW_ROOT_CREATED_1_EVENT = `${prefix}ClosedShadowRootCreated1`;
 export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCreated2`;
+
+export const QUEUE_EVENT = `${secretPrefix}Queue`;
 
 // If an element is not inserted into the page, events fired on it won’t reach
 // ElementManager’s window event listeners. Instead, such elements are
 // temporarily inserted into a secret element. This event is used to register
 // the secret element in ElementManager.
-export const REGISTER_SECRET_ELEMENT_EVENT = `${prefix}RegisterSecretElement`;
+export const REGISTER_SECRET_ELEMENT_EVENT = `${secretPrefix}RegisterSecretElement`;
 
 // Events sent from ElementManager to this file.
-const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
 export const FLUSH_EVENT = `${secretPrefix}Flush`;
 export const RESET_EVENT =
   // Use a non-prefixed event in Firefox during development so that a just-loaded
