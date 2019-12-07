@@ -770,6 +770,31 @@ export default () => {
     });
   }
 
+  function onFlush() {
+    clickListenerTracker.flushQueue(infiniteDeadline);
+  }
+
+  function onReset() {
+    if (!PROD) {
+      consoleLog(
+        `[${META_SLUG}] Resetting injected.js with secret prefix:`,
+        FLUSH_EVENT.replace(/flush/i, "")
+      );
+    }
+
+    document.removeEventListener(FLUSH_EVENT, onFlush, true);
+    document.removeEventListener(RESET_EVENT, onReset, true);
+
+    // Reset the overridden methods when the extension is shut down.
+    clickListenerTracker.reset();
+    hookManager.reset();
+  }
+
+  // Use `document` rather than `window` in order not to appear in the “Global
+  // event listeners” listing in devtools.
+  document.addEventListener(FLUSH_EVENT, onFlush, true);
+  document.addEventListener(RESET_EVENT, onReset, true);
+
   hookManager.hookInto(
     EventTarget.prototype,
     win.EventTarget.prototype,
@@ -836,29 +861,4 @@ export default () => {
   );
 
   hookManager.conceal();
-
-  // Use `document` rather than `window` in order not to appear in the “Global
-  // event listeners” listing in devtools.
-  document.addEventListener(FLUSH_EVENT, onFlush, true);
-  document.addEventListener(RESET_EVENT, onReset, true);
-
-  function onFlush() {
-    clickListenerTracker.flushQueue(infiniteDeadline);
-  }
-
-  function onReset() {
-    if (!PROD) {
-      consoleLog(
-        `[${META_SLUG}] Resetting injected.js with secret prefix:`,
-        FLUSH_EVENT.replace(/flush/i, "")
-      );
-    }
-
-    document.removeEventListener(FLUSH_EVENT, onFlush, true);
-    document.removeEventListener(RESET_EVENT, onReset, true);
-
-    // Reset the overridden methods when the extension is shut down.
-    clickListenerTracker.reset();
-    hookManager.reset();
-  }
 };
