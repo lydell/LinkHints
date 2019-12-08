@@ -21,16 +21,44 @@ const SECTIONS = [
         </p>
         <p>
           Press {shortcuts.EnterHintsMode_Click}. This makes little yellow boxes
-          with letters, called
-          <dfn>hints,</dfn> appear next to links (and other clickable things).
-          Type the letters to click the link. Alternatively, hold{" "}
-          <KeyboardShortcut shift /> and type a bit of the link text.
+          with letters, called <dfn>hints,</dfn> appear next to links (and other
+          clickable things). Type the letters to click the link. Alternatively,
+          hold <KeyboardShortcut shift /> and type a bit of the link text.
         </p>
         <p>
           There are a few variations on the above shortcut for opening links in
           new tabs or selecting text.
         </p>
         <p>The keyboard shortcuts and hints are fully customizable.</p>
+      </>
+    ),
+  },
+  {
+    id: "not",
+    title: (
+      <>
+        What is Link Hints <em>not?</em>
+      </>
+    ),
+    content: (
+      <>
+        <p>Here are some features that Link Hints won’t implement.</p>
+        <ul>
+          <li>Vim-like keyboard shortcuts.</li>
+          <li>Custom actions.</li>
+          <li>Scrolling.</li>
+        </ul>
+        <p>
+          I’d like to focus on link hinting and do it really well. That’s
+          complicated enough.
+        </p>
+        <p>
+          I’m interested in{" "}
+          <a href={`${config.meta.issues}6`}>
+            making Link Hints work together with Vim plugins
+          </a>
+          , though.
+        </p>
       </>
     ),
   },
@@ -53,37 +81,98 @@ const SECTIONS = [
           focuses on placing the hints intuitively and being generally easy to
           use and configure.
         </p>
+        <p>For the technically interested, here’s a list of fancy things:</p>
+        <ul>
+          <li>
+            Full{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM">
+              Shadow DOM
+            </a>{" "}
+            support, including{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/mode">
+              “closed” shadow roots
+            </a>
+            .
+          </li>
+          <li>
+            Seamless{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe">
+              iframe
+            </a>{" "}
+            support.
+          </li>
+          <li>
+            Detection of covered elements using{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/DocumentOrShadowRoot/elementFromPoint">
+              elementFromPoint
+            </a>
+            .
+          </li>
+          <li>
+            Background tracking of visible elements using{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver">
+              MutationObserver
+            </a>
+            ,{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver">
+              IntersectionObserver
+            </a>{" "}
+            and{" "}
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback">
+              requestIdleCallback
+            </a>
+            .
+          </li>
+          <li>Tracking of elements with click listeners.</li>
+          <li>Tracking of scrollable elements in Firefox.</li>
+          <li>Tracking elements and updating hints while showing them.</li>
+          <li>Text based hint positioning.</li>
+          <li>
+            Hint generation using weighted{" "}
+            <a href="https://en.wikipedia.org/wiki/Huffman_coding">
+              Huffman coding
+            </a>
+            .
+          </li>
+          <li>Links with the same URL get the same hint.</li>
+          <li>
+            Elaborate workarounds for Firefox’s overzealous popup blocker and
+            CSP rules.
+          </li>
+          <li>Support for different keyboard layouts.</li>
+        </ul>
       </>
     ),
   },
   {
-    id: "copy-links",
-    title: "How do I copy links?",
+    id: "permissions",
+    title: "What permissions does Link Hints need?",
     content: (
       <>
         <p>
-          Use {shortcuts.EnterHintsMode_Select} to select the link. Press{" "}
-          <KeyboardShortcut ctrl press="C" /> to copy the now selected text.
-          Open the context menu and choose “Copy Link Location” or similar to
-          copy the link URL.
+          Browser extensions ask for{" "}
+          <a href="https://support.mozilla.org/en-US/kb/permission-request-messages-firefox-extensions">
+            permission
+          </a>{" "}
+          to certain features when installed. This is to prevent extensions from
+          silently stealing all your browsing data behind your back.
         </p>
-        <p>
-          On Windows and Linux, the context menu is usually opened by pressing
-          the <KeyboardShortcut press="Menu" /> key or{" "}
-          <KeyboardShortcut shift press="F10" />. On Mac, it does unfortunately
-          not seem to be possible to open the context menu via the keyboard.
-          Please let me know if you have any ideas!
-        </p>
-
-        <p>
-          Tip: Type the underlined character (“access key”) of a menu item to
-          activate it.
-        </p>
-
-        <p>
-          The idea is to keep the number of keyboard shortcuts in Link Hints
-          low, and use the context menu for less common tasks.
-        </p>
+        <p>These are the permissions Link Hints needs:</p>
+        <ul>
+          <li>
+            <a href="https://support.mozilla.org/en-US/kb/permission-request-messages-firefox-extensions#w_access-your-data-for-all-websites">
+              Access your data for all websites
+            </a>
+            : The whole point of Link Hints is to run on all websites, monitor
+            them for links and let you click them. Link Hints never sends any
+            data anywhere.
+          </li>
+          <li>
+            Storage: Link Hints needs to be able to save your options. (This one
+            might not appear in the installation UI, but most extensions use
+            it.)
+          </li>
+        </ul>
       </>
     ),
   },
@@ -163,83 +252,6 @@ const SECTIONS = [
     ),
   },
   {
-    id: "hint-does-nothing",
-    title: "Why don’t some hints do anything?",
-    content: (
-      <>
-        <p>
-          Some actions, like entering Fullscreen mode or copying text, are
-          restricted so that websites cannot abuse them. These actions can only
-          be performed after a <em>real</em> click or a built-in browser
-          keyboard shortcut.
-        </p>
-        <p>
-          Link Hints sends “fake” clicks to elements when you use hints, which
-          means that they can’t trigger Fullscreen or Copy.
-        </p>
-        <p>
-          As of this writing there’s nothing a browser extension can do about
-          this. The workaround is to first try to click a button with hints. If
-          nothing happened, the button should at least have been focused, which
-          means that you can press {shortcuts.ActivateHint} to activate it.
-        </p>
-        <p>
-          As a last resort, you could try focusing a nearby element with{" "}
-          {shortcuts.EnterHintsMode_Select} and then use{" "}
-          {shortcuts.RotateHintsForward} to get to the button. Finally, use
-          {shortcuts.ActivateHint} to activate it.
-        </p>
-        <p>
-          For buttons that do other things than Fullscreen and Copy, there could
-          also be other reasons.
-        </p>
-        <ul>
-          <li>
-            There are two hints on top of each other and you actually need to
-            activate the lower one. Try pressing {shortcuts.RotateHintsForward}{" "}
-            while the hints are shown to toggle which one is on top.
-          </li>
-          <li>
-            The element is a false positive. Link Hints shouldn’t have given it
-            a hint, but unfortunately did anyway.
-          </li>
-          <li>
-            The site is using some fancy technique that Link Hints does not
-            support yet, or there’s a bug in Link Hints.
-          </li>
-        </ul>
-        <p>
-          If you encounter one of the cases in the above list, please{" "}
-          <a href={config.meta.newIssue}>report an issue</a>!
-        </p>
-      </>
-    ),
-  },
-  {
-    id: "performance",
-    title: <span>Why is {shortcuts.EnterHintsMode_Select} slower?</span>,
-    content: (
-      <>
-        <p>
-          Link Hints keeps track of <em>clickable</em> elements in the
-          background. So usually Link Hints already knows which elements to
-          create hints for.
-        </p>
-        <p>
-          {shortcuts.EnterHintsMode_Select} works with a lot more elements than{" "}
-          <em>clickable</em> elements. As of this writing, it goes through{" "}
-          <em>all</em> elements on the page each time. There might be a way to
-          optimize this, but so far it hasn’t been.
-        </p>
-        <p>
-          Luckily, the shortcut is mostly pretty fast. It can slow down on
-          larger, more complicated pages, but on the other hand it isn’t the
-          most used shortcut either.
-        </p>
-      </>
-    ),
-  },
-  {
     id: "story",
     title: "What is the story behind Link Hints?",
     content: (
@@ -278,9 +290,9 @@ const SECTIONS = [
         <p>
           A couple of months later, the first commit of Link Hints was made
           (then called “Synth”). Soon it was stable enough to be used for
-          day-to-day browsing. After more than a year of development and
-          real-world usage and experimentation, Link Hints is planned to be
-          released during the second half of 2019.
+          day-to-day browsing. After almost two years of experimentation,
+          development and real-world usage, Link Hints is planned to be released
+          during the second half of 2019.
         </p>
       </>
     ),

@@ -43,6 +43,7 @@ module.exports = {
     repo: "https://github.com/lydell/LinkHints",
     newIssue: "https://github.com/lydell/LinkHints/issues/new/choose",
     changelog: "https://github.com/lydell/LinkHints/issues/1",
+    issues: "https://github.com/lydell/LinkHints/issues/",
     icon: mainIcon,
     webExtBaseName: `link_hints-${VERSION}`,
     geckoId: "linkhints@lydell.github.io",

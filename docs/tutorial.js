@@ -204,9 +204,7 @@ const STEPS = [
       <>
         <p>
           {shortcuts.EnterHintsMode_Select} lets you select elements. This is
-          useful for copying text and using the{" "}
-          <a href={`${config.docs.root}#copy-links`}>context menu</a> (which
-          lets you do a lot of different things).
+          useful for copying text and using the context menu.
         </p>
         <p>
           When text is selected, you can use the standard keyboard shortcuts for
@@ -219,8 +217,9 @@ const STEPS = [
           <li>
             {shortcuts.ReverseSelection} swaps which end of a text selection to
             work on. This lets you extend the selection not only to the right,
-            but also to the left. Try selecting <KeyboardShortcut shift /> on
-            this line, and then going in both directions!
+            but also to the left. Try selecting{" "}
+            <KeyboardShortcut press="ArrowUp" /> on this line, and then going in
+            both directions!
           </li>
           <li>
             {shortcuts.ClickFocusedElement} fires a click on the focused
