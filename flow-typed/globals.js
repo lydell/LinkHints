@@ -29,5 +29,5 @@ declare var PROD: boolean;
 declare function exportFunction(
   AnyFunction,
   mixed,
-  {| defineAs: string |}
-): void;
+  options?: {| defineAs: string |}
+): AnyFunction;

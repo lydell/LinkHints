@@ -15,6 +15,13 @@ import { makeRandomToken } from "../shared/main";
 // NOTE: If you add a new constant, you have to update the `constants` object in
 // ElementManager.js as well!
 
+// To make things even more complicated, in Firefox the `export default`
+// function is actually executed rather than inserted as an inline script. This
+// is to work around Firefox’s CSP limiations. As a bonus, Firefox can
+// communicate with this file directly (via the `communicator` parameter) rather
+// than via very clever usage of DOM events. This works in Firefox due to
+// `.wrappedJSObject` and `exportFunction`.
+
 // All types of events that likely makes an element clickable. All code and
 // comments that deal with this only refer to "click", though, to keep things
 // simple.
@@ -87,7 +94,7 @@ export default (communicator?: {
   const createElement = document.createElement.bind(document);
   const { appendChild, removeChild, getRootNode } = Node.prototype;
   const { replaceWith } = Element.prototype;
-  const { dispatchEvent } = EventTarget.prototype;
+  const { addEventListener, dispatchEvent } = EventTarget.prototype;
   const { apply } = Reflect;
   const { get: mapGet } = Map.prototype;
 
@@ -128,22 +135,20 @@ export default (communicator?: {
     // 2. We don’t want developers to see strange things in the console when
     //    they debug stuff.
     //
-    // Since Firefox does not support running cleanups when an extension is
-    // disabled/updated (<bugzil.la/1223425>), it is important to read the
-    // original function from the extension (non-overridden) context and only
-    // override in the page context. That’s why there’s both `obj` and
-    // `pageObj`. `pageObj` should be the same thing as `obj` but prefixed with
-    // `win.`.
-    hookInto(
+    // `hook` is run _after_ the original function. If you need to do something
+    // _before_ the original function is called, use a `prehook`.
+    hookInto<T>(
       obj: { [string]: mixed, ... },
-      pageObj: { [string]: mixed, ... },
       name: string,
-      hook: AnyFunction | void = undefined,
-      { withReturnValue = false }: {| withReturnValue: boolean |} = {}
+      hook?: (
+        {| returnValue: any, prehookData: T | void |},
+        ...args: Array<any>
+      ) => any,
+      prehook?: (...args: Array<any>) => T
     ) {
-      const desc = Reflect.getOwnPropertyDescriptor(obj, name);
-      const prop = "value" in desc ? "value" : "set";
-      const orig = desc[prop];
+      const descriptor = Reflect.getOwnPropertyDescriptor(obj, name);
+      const prop = "value" in descriptor ? "value" : "set";
+      const originalFn = descriptor[prop];
 
       const { fnMap } = this;
 
@@ -152,26 +157,62 @@ export default (communicator?: {
       const fn =
         hook == null
           ? {
-              [orig.name](...args: Array<any>): any {
+              [originalFn.name](...args: Array<any>): any {
                 // In the cases where no hook is provided we just want to make sure
                 // that the method (such as `toString`) is called with the
                 // _original_ function, not the overriding function.
-                return apply(orig, apply(mapGet, fnMap, [this]) || this, args);
+                return apply(
+                  originalFn,
+                  apply(mapGet, fnMap, [this]) || this,
+                  args
+                );
               },
-            }[orig.name]
+            }[originalFn.name]
           : {
-              [orig.name](...args: Array<any>): any {
-                const maybeReturnValue = withReturnValue
-                  ? apply(orig, this, args)
-                  : undefined;
+              [originalFn.name](...args: Array<any>): any {
+                let prehookData = undefined;
+                if (prehook != null) {
+                  try {
+                    prehookData = prehook(this, ...args);
+                  } catch (error) {
+                    logHookError(error, obj, name);
+                  }
+                }
+
+                // Since Firefox does not support running cleanups when an
+                // extension is disabled/updated (<bugzil.la/1223425>), hooks
+                // from the previous version will still be around (until the
+                // page is reloaded). `apply(originalFn, this, args)` fails with
+                // "can't access dead object" for the old hooks will fail, so
+                // ignore that error and abort those hooks.
+                let returnValue = undefined;
+                if (BROWSER === "firefox") {
+                  try {
+                    returnValue = apply(originalFn, this, args);
+                  } catch (error) {
+                    if (
+                      error &&
+                      error.name === "TypeError" &&
+                      error.message === "can't access dead object"
+                    ) {
+                      return undefined;
+                    }
+                    throw error;
+                  }
+                } else {
+                  returnValue = apply(originalFn, this, args);
+                }
+
                 // In case there's a mistake in `hook` it shouldn't cause the entire
                 // overridden method to fail and potentially break the whole page.
                 try {
                   // Remember that `hook` can be called with _anything,_ because the
                   // user can pass invalid arguments and use `.call`.
-                  const result = withReturnValue
-                    ? hook(maybeReturnValue, orig, this, ...args)
-                    : hook(orig, this, ...args);
+                  const result = hook(
+                    { returnValue, prehookData },
+                    this,
+                    ...args
+                  );
                   if (result != null && typeof result.then === "function") {
                     result.then(undefined, error => {
                       logHookError(error, obj, name);
@@ -180,53 +221,47 @@ export default (communicator?: {
                 } catch (error) {
                   logHookError(error, obj, name);
                 }
-                return withReturnValue
-                  ? maybeReturnValue
-                  : apply(orig, this, args);
+
+                return returnValue;
               },
-            }[orig.name];
-
-      // Save the overriding and original functions so we can map overriding to
-      // original in the case with no `hook` above.
-      fnMap.set(fn, orig);
-
-      // In Firefox, we need to make a page context copy of `desc`.
-      let pageDesc = desc;
-      if (BROWSER === "firefox") {
-        pageDesc = Object.entries(desc).reduce(
-          (result, [key, value]: [string, any]) => {
-            if (typeof value === "function") {
-              exportFunction(value, result, { defineAs: key });
-            } else {
-              result[key] = value;
-            }
-            return result;
-          },
-          new win.Object()
-        );
-      }
-
-      // Create a copy of `desc`/`pageDesc` with `fn` in it.
-      const newDesc = win.Object.assign(new win.Object(), pageDesc);
-      if (BROWSER === "firefox") {
-        exportFunction(fn, newDesc, { defineAs: prop });
-      } else {
-        newDesc[prop] = fn;
-      }
+            }[originalFn.name];
 
       // Make sure that `.length` is correct. This has to be done _after_
       // `exportFunction`.
-      Reflect.defineProperty(newDesc[prop], "length", {
-        ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
-        value: orig.length,
-      });
+      const setLength = target => {
+        Reflect.defineProperty(target, "length", {
+          ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
+          value: originalFn.length,
+        });
+      };
+
+      // Save the overriding and original functions so we can map overriding to
+      // original in the case with no `hook` above.
+      fnMap.set(fn, originalFn);
+
+      let newDescriptor = { ...descriptor, [prop]: fn };
+
+      if (BROWSER === "firefox") {
+        if (prop === "value") {
+          exportFunction(fn, obj, { defineAs: name });
+          setLength(obj[name]);
+          this.resetFns.push(() => {
+            exportFunction(originalFn, obj, { defineAs: name });
+          });
+          return;
+        }
+
+        newDescriptor = Object.assign(new win.Object(), descriptor, {
+          set: exportFunction(fn, new win.Object(), { defineAs: name }),
+        });
+      }
+
+      setLength(newDescriptor[prop]);
 
       // Finally override the method with the created function.
-      win.Reflect.defineProperty(pageObj, name, newDesc);
-
-      // Save a function that will reset the method back again.
+      Reflect.defineProperty(obj, name, newDescriptor);
       this.resetFns.push(() => {
-        win.Reflect.defineProperty(pageObj, name, pageDesc);
+        Reflect.defineProperty(obj, name, descriptor);
       });
     }
 
@@ -237,7 +272,7 @@ export default (communicator?: {
     conceal() {
       // This isn’t needed in Firefox, thanks to `exportFunction`.
       if (BROWSER !== "firefox") {
-        this.hookInto(Function.prototype, win.Function.prototype, "toString");
+        this.hookInto(win.Function.prototype, "toString");
       }
     }
   }
@@ -703,7 +738,6 @@ export default (communicator?: {
   const hookManager = new HookManager();
 
   function onAddEventListener(
-    orig: AnyFunction,
     element: mixed,
     eventName: mixed,
     listener: mixed,
@@ -730,7 +764,7 @@ export default (communicator?: {
       options != null &&
       Boolean(options.once)
     ) {
-      apply(orig, element, [
+      apply(addEventListener, element, [
         eventName,
         () => {
           onRemoveEventListener(element, eventName, listener, options);
@@ -779,16 +813,75 @@ export default (communicator?: {
     });
   }
 
-  function onPropChange(orig: AnyFunction, element: mixed) {
+  function onPropChangePreHook(element: mixed): QueueItem | void {
     if (!(element instanceof HTMLElement2)) {
-      return;
+      return undefined;
     }
 
-    clickListenerTracker.queueItem({
+    return {
       type: "prop",
       hadListener: hasClickListenerProp(element),
       element,
-    });
+    };
+  }
+
+  function onPropChange({
+    prehookData,
+  }: {
+    prehookData: QueueItem | void,
+    ...
+  }) {
+    if (prehookData != null) {
+      clickListenerTracker.queueItem(prehookData);
+    }
+  }
+
+  function onShadowRootCreated({
+    returnValue: shadowRoot,
+  }: {
+    returnValue: ShadowRoot,
+    ...
+  }) {
+    if (communicator != null) {
+      communicator.onInjectedMessage({
+        type: "ShadowRootCreated",
+        shadowRoot,
+      });
+      // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
+    } else if (shadowRoot.mode === "open") {
+      // In “open” mode, ElementManager can access shadow roots via the
+      // `.shadowRoot` property on elements. All we need to do here is tell
+      // the ElementManager that a shadow root has been created.
+      sendElementEvent(OPEN_SHADOW_ROOT_CREATED_EVENT, shadowRoot.host);
+    } else {
+      // In “closed” mode, ElementManager cannot easily access shadow roots.
+      // By creating a temporary element inside the shadow root and emitting
+      // events on that element, ElementManager can obtain the shadow root
+      // via the `.getRootNode()` method and store it in a WeakMap. This is
+      // done in two steps – see the listeners in ElementManager to learn why.
+      const tempElement = createElement("div");
+      // Expose `tempElement`:
+      sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_1_EVENT, tempElement);
+      apply(appendChild, shadowRoot, [tempElement]);
+      // Expose `shadowRoot`:
+      sendElementEvent(
+        CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
+        tempElement,
+        undefined,
+        {
+          // Force firing the event while `tempElement` is still inside the
+          // closed shadow root. Normally we don’t do that, since events from
+          // within closed shadow roots appear to come from its host element,
+          // and the whole point of `sendElementEvent` is to set
+          // `event.target` to `element`, not to some shadow root. But in this
+          // special case `event.target` doesn’t matter and we _need_
+          // `tempElement` to be inside `shadowRoot` so that `.getRootNode()`
+          // returns it.
+          type: "Document",
+        }
+      );
+      apply(removeChild, shadowRoot, [tempElement]);
+    }
   }
 
   function onFlush() {
@@ -797,14 +890,14 @@ export default (communicator?: {
 
   function onReset() {
     if (!PROD) {
-      consoleLog(
-        `[${META_SLUG}] Resetting injected.js with secret prefix:`,
-        FLUSH_EVENT.replace(/flush/i, "")
-      );
+      consoleLog(`[${META_SLUG}] Resetting injected.js`, RESET_EVENT);
     }
 
-    document.removeEventListener(FLUSH_EVENT, onFlush, true);
-    document.removeEventListener(RESET_EVENT, onReset, true);
+    // ElementManager removes listeners itself on reset.
+    if (communicator == null) {
+      document.removeEventListener(FLUSH_EVENT, onFlush, true);
+      document.removeEventListener(RESET_EVENT, onReset, true);
+    }
 
     // Reset the overridden methods when the extension is shut down.
     clickListenerTracker.reset();
@@ -818,17 +911,17 @@ export default (communicator?: {
   target.addEventListener(RESET_EVENT, onReset, true);
 
   hookManager.hookInto(
-    EventTarget.prototype,
     win.EventTarget.prototype,
     "addEventListener",
-    onAddEventListener
+    (_data, ...args) => {
+      onAddEventListener(...args);
+    }
   );
 
   hookManager.hookInto(
-    EventTarget.prototype,
     win.EventTarget.prototype,
     "removeEventListener",
-    (orig: AnyFunction, ...args) => {
+    (_data, ...args) => {
       onRemoveEventListener(...args);
     }
   );
@@ -836,60 +929,17 @@ export default (communicator?: {
   // Hook into `.onclick` and similar.
   for (const prop of clickableEventProps) {
     hookManager.hookInto(
-      HTMLElement.prototype,
       win.HTMLElement.prototype,
       prop,
-      onPropChange
+      onPropChange,
+      onPropChangePreHook
     );
   }
 
   hookManager.hookInto(
-    Element.prototype,
     win.Element.prototype,
     "attachShadow",
-    (shadowRoot: ShadowRoot) => {
-      if (communicator != null) {
-        communicator.onInjectedMessage({
-          type: "ShadowRootCreated",
-          shadowRoot,
-        });
-        // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
-      } else if (shadowRoot.mode === "open") {
-        // In “open” mode, ElementManager can access shadow roots via the
-        // `.shadowRoot` property on elements. All we need to do here is tell
-        // the ElementManager that a shadow root has been created.
-        sendElementEvent(OPEN_SHADOW_ROOT_CREATED_EVENT, shadowRoot.host);
-      } else {
-        // In “closed” mode, ElementManager cannot easily access shadow roots.
-        // By creating a temporary element inside the shadow root and emitting
-        // events on that element, ElementManager can obtain the shadow root
-        // via the `.getRootNode()` method and store it in a WeakMap. This is
-        // done in two steps – see the listeners in ElementManager to learn why.
-        const tempElement = createElement("div");
-        // Expose `tempElement`:
-        sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_1_EVENT, tempElement);
-        apply(appendChild, shadowRoot, [tempElement]);
-        // Expose `shadowRoot`:
-        sendElementEvent(
-          CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
-          tempElement,
-          undefined,
-          {
-            // Force firing the event while `tempElement` is still inside the
-            // closed shadow root. Normally we don’t do that, since events from
-            // within closed shadow roots appear to come from its host element,
-            // and the whole point of `sendElementEvent` is to set
-            // `event.target` to `element`, not to some shadow root. But in this
-            // special case `event.target` doesn’t matter and we _need_
-            // `tempElement` to be inside `shadowRoot` so that `.getRootNode()`
-            // returns it.
-            type: "Document",
-          }
-        );
-        apply(removeChild, shadowRoot, [tempElement]);
-      }
-    },
-    { withReturnValue: true }
+    onShadowRootCreated
   );
 
   hookManager.conceal();
