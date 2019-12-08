@@ -201,7 +201,6 @@ const SECTIONS = [
             or press <KeyboardShortcut press="F6" /> one or two times. This
             isn’t ideal, but part of the limitations of browser extensions.
           </li>
-          <li>You’re using Responsive Design Mode in Firefox.</li>
           <li>
             The site is using some fancy technique that Link Hints does not
             support yet, or there’s a bug in Link Hints. Please{" "}
