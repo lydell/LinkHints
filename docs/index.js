@@ -216,21 +216,21 @@ const SECTIONS = [
     content: (
       <>
         <p>
-          In 2013 <a href="https://github.com/lydell">Simon Lydell</a> started
-          contributing to the{" "}
+          In 2013 I (<a href="https://github.com/lydell">Simon Lydell</a>)
+          started contributing to the{" "}
           <a href="https://github.com/akhodakivskiy/VimFx">VimFx</a> browser
           extension, making significant work on its link hinting feature. After
-          a while, he became the main developer.
+          a while, I became the main developer.
         </p>
         <p>
           When VimFx was discontinued in 2017 (due to Firefox dropping their old
-          extension system in favor of cross-browser <em>Web Extensions</em>),
-          Simon started thinking about making a new extension, porting his
-          favorite feature of VimFx – link hinting.
+          extension system in favor of cross-browser <em>Web Extensions</em>), I
+          started thinking about making a new extension, porting my favorite
+          feature of VimFx – link hinting.
         </p>
         <p>
-          During experimentation in the early 2018, a way of keeping track of
-          clickable elements in the background was discovered (for the
+          During experimentation in the early 2018, I discovered a way of
+          keeping track of clickable elements in the background (for the
           technically interested, a combination of{" "}
           <a href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver">
             MutationObserver
@@ -251,7 +251,7 @@ const SECTIONS = [
           (then called “Synth”). Soon it was stable enough to be used for
           day-to-day browsing. After almost two years of experimentation,
           development and real-world usage, Link Hints is planned to be released
-          during the second half of 2019.
+          at the end of 2019.
         </p>
       </>
     ),
