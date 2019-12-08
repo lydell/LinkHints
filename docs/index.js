@@ -73,13 +73,13 @@ const SECTIONS = [
         </p>
         <p>
           Link Hints keeps track of all clickable elements in the background
-          when your browser is idle. This makes hints appear quickly regardless
-          of page size.
+          when your browser is idle. This makes{" "}
+          <strong>hints appear quickly regardless of page size.</strong>
         </p>
         <p>
           Other than accurately finding clickable elements, Link Hints also
-          focuses on placing the hints intuitively and being generally easy to
-          use and configure.
+          focuses on <strong>placing the hints intuitively</strong> and being
+          generally <strong>easy to use</strong> and configure.
         </p>
         <p>For the technically interested, here’s a list of fancy things:</p>
         <ul>
@@ -207,46 +207,6 @@ const SECTIONS = [
             <a href={config.meta.newIssue}>report an issue</a>!
           </li>
         </ul>
-      </>
-    ),
-  },
-  {
-    id: "missing-hints",
-    title: "Why don’t some elements get hints?",
-    content: (
-      <>
-        <p>Finding which elements should get hints is tricky business.</p>
-        <p>
-          First off, Link Hints need a clue from the site that an element is
-          clickable. If the site is using <em>semantic markup</em> that’s easy.
-          If it isn’t, Link Hints still tries to detect which elements have
-          click listeners attached to them.
-        </p>
-        <p>
-          Sometimes, though, there’s nothing at all showing that the element is
-          clickable. In such cases, the best thing would be if the site could
-          change their markup to be more accessible. That would be a win not
-          only for Link Hints users, but also for screen reader users and for
-          accessibility in general.
-        </p>
-        <p>
-          Link Hints has special workarounds for some sites such as Twitter and
-          Gmail, but such hacks should be kept to a minimum.
-        </p>
-        <p>
-          It could also be that the element is legit clickable, but an
-          improvement is needed in Link Hints’ detection logic.
-        </p>
-        <p>
-          Finally, it could also be that Link Hints did identify the element as
-          clickable, but thought that it wasn’t visible. For example, Link Hints
-          avoids giving hints to elements behind dropdown menus, but it could of
-          course be confused.
-        </p>
-        <p>
-          Feel free to <a href={config.meta.newIssue}>report issues</a> about
-          missing hints!
-        </p>
       </>
     ),
   },
