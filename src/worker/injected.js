@@ -40,8 +40,7 @@ const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
 // can use this more secure prefix, with a practically unguessable part in it.
 const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
 
-export const CLICKABLE_EVENT = `${prefix}Clickable`;
-export const UNCLICKABLE_EVENT = `${prefix}Unclickable`;
+export const CLICKABLE_CHANGED_EVENT = `${prefix}ClickableChanged`;
 export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;
 export const CLOSED_SHADOW_ROOT_CREATED_1_EVENT = `${prefix}ClosedShadowRootCreated1`;
 export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCreated2`;
@@ -58,7 +57,16 @@ export const REGISTER_SECRET_ELEMENT_EVENT = `${secretPrefix}RegisterSecretEleme
 export const FLUSH_EVENT = `${secretPrefix}Flush`;
 export const RESET_EVENT = `${secretPrefix}Reset`;
 
-export default () => {
+export type FromInjected =
+  | {| type: "ClickableChanged", target: EventTarget, clickable: boolean |}
+  | {| type: "ShadowRootCreated", shadowRoot: ShadowRoot |}
+  | {| type: "Queue", hasQueue: boolean |};
+
+export default (communicator?: {
+  +onInjectedMessage: FromInjected => mixed,
+  +addEventListener: (string, () => mixed, _?: true) => mixed,
+  ...
+}) => {
   // Refers to the page `window` both in Firefox and other browsers.
   const win = BROWSER === "firefox" ? window.wrappedJSObject || window : window;
 
@@ -294,7 +302,11 @@ export default () => {
       this.requestIdleCallback();
 
       if (numItems === 1 && this.sendQueue.items.length === 0) {
-        sendWindowEvent(QUEUE_EVENT, { hasQueue: true });
+        if (communicator != null) {
+          communicator.onInjectedMessage({ type: "Queue", hasQueue: true });
+        } else {
+          sendWindowEvent(QUEUE_EVENT, true);
+        }
       }
     }
 
@@ -314,7 +326,11 @@ export default () => {
       const hasQueue =
         this.queue.items.length > 0 || this.sendQueue.items.length > 0;
       if (hadQueue && !hasQueue) {
-        sendWindowEvent(QUEUE_EVENT, { hasQueue: false });
+        if (communicator != null) {
+          communicator.onInjectedMessage({ type: "Queue", hasQueue: false });
+        } else {
+          sendWindowEvent(QUEUE_EVENT, false);
+        }
       }
     }
 
@@ -414,10 +430,14 @@ export default () => {
 
         const item = this.sendQueue.items[this.sendQueue.index];
 
-        if (item.added) {
-          sendElementEvent(CLICKABLE_EVENT, item.element);
+        if (communicator != null) {
+          communicator.onInjectedMessage({
+            type: "ClickableChanged",
+            target: item.element,
+            clickable: item.added,
+          });
         } else {
-          sendElementEvent(UNCLICKABLE_EVENT, item.element);
+          sendElementEvent(CLICKABLE_CHANGED_EVENT, item.element, item.added);
         }
       }
 
@@ -584,7 +604,7 @@ export default () => {
     // content.
     const secretElement = createElement("head");
     const { documentElement } = document;
-    if (documentElement != null) {
+    if (documentElement != null && communicator == null) {
       apply(appendChild, documentElement, [secretElement]);
       apply(dispatchEvent, secretElement, [
         new CustomEvent2(REGISTER_SECRET_ELEMENT_EVENT),
@@ -602,13 +622,14 @@ export default () => {
   function sendElementEvent(
     eventName: string,
     element: Element,
+    detail: any = undefined,
     root: OpenComposedRootNode = getOpenComposedRootNode(element)
   ) {
     const send = () => {
       apply(dispatchEvent, element, [
         // `composed: true` is used to allow the event to be observed outside
         // the current ShadowRoot (if any).
-        new CustomEvent2(eventName, { composed: true }),
+        new CustomEvent2(eventName, { detail, composed: true }),
       ]);
     };
 
@@ -792,8 +813,9 @@ export default () => {
 
   // Use `document` rather than `window` in order not to appear in the “Global
   // event listeners” listing in devtools.
-  document.addEventListener(FLUSH_EVENT, onFlush, true);
-  document.addEventListener(RESET_EVENT, onReset, true);
+  const target = communicator || document;
+  target.addEventListener(FLUSH_EVENT, onFlush, true);
+  target.addEventListener(RESET_EVENT, onReset, true);
 
   hookManager.hookInto(
     EventTarget.prototype,
@@ -826,8 +848,13 @@ export default () => {
     win.Element.prototype,
     "attachShadow",
     (shadowRoot: ShadowRoot) => {
-      // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
-      if (shadowRoot.mode === "open") {
+      if (communicator != null) {
+        communicator.onInjectedMessage({
+          type: "ShadowRootCreated",
+          shadowRoot,
+        });
+        // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
+      } else if (shadowRoot.mode === "open") {
         // In “open” mode, ElementManager can access shadow roots via the
         // `.shadowRoot` property on elements. All we need to do here is tell
         // the ElementManager that a shadow root has been created.
@@ -843,17 +870,22 @@ export default () => {
         sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_1_EVENT, tempElement);
         apply(appendChild, shadowRoot, [tempElement]);
         // Expose `shadowRoot`:
-        sendElementEvent(CLOSED_SHADOW_ROOT_CREATED_2_EVENT, tempElement, {
-          // Force the event to fire the event while `tempElement` is still
-          // inside the closed shadow root. Normally we don’t do that, since
-          // events from within closed shadow roots appear to come from its host
-          // element, and the whole point of `sendElementEvent` is to set
-          // `event.target` to `element`, not to some shadow root. But in this
-          // special case `event.target` doesn’t matter and we _need_
-          // `tempElement` to be inside `shadowRoot` so that `.getRootNode()`
-          // returns it.
-          type: "Document",
-        });
+        sendElementEvent(
+          CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
+          tempElement,
+          undefined,
+          {
+            // Force firing the event while `tempElement` is still inside the
+            // closed shadow root. Normally we don’t do that, since events from
+            // within closed shadow roots appear to come from its host element,
+            // and the whole point of `sendElementEvent` is to set
+            // `event.target` to `element`, not to some shadow root. But in this
+            // special case `event.target` doesn’t matter and we _need_
+            // `tempElement` to be inside `shadowRoot` so that `.getRootNode()`
+            // returns it.
+            type: "Document",
+          }
+        );
         apply(removeChild, shadowRoot, [tempElement]);
       }
     },

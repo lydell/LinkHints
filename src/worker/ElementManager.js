@@ -30,7 +30,8 @@ import {
   unsignedInt,
 } from "../shared/tweakable";
 import injected, {
-  CLICKABLE_EVENT,
+  type FromInjected,
+  CLICKABLE_CHANGED_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
@@ -40,12 +41,11 @@ import injected, {
   QUEUE_EVENT,
   REGISTER_SECRET_ELEMENT_EVENT,
   RESET_EVENT,
-  UNCLICKABLE_EVENT,
 } from "./injected";
 
 // Keep the above imports and this object in sync. See injected.js.
 const constants = {
-  CLICKABLE_EVENT: JSON.stringify(CLICKABLE_EVENT),
+  CLICKABLE_CHANGED_EVENT: JSON.stringify(CLICKABLE_CHANGED_EVENT),
   CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
   CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT: JSON.stringify(
@@ -61,7 +61,6 @@ const constants = {
   QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
   REGISTER_SECRET_ELEMENT_EVENT: JSON.stringify(REGISTER_SECRET_ELEMENT_EVENT),
   RESET_EVENT: JSON.stringify(RESET_EVENT),
-  UNCLICKABLE_EVENT: JSON.stringify(UNCLICKABLE_EVENT),
 };
 
 const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
@@ -250,6 +249,7 @@ export default class ElementManager {
   onMutationExternal: (Array<MutationRecord>) => mixed;
   queue: Queue<QueueItem> = makeEmptyQueue();
   injectedHasQueue: boolean = false;
+  injectedListeners: Map<string, Array<() => mixed>> = new Map();
   elements: Map<HTMLElement, ElementType> = new Map();
   visibleElements: Set<HTMLElement> = new Set();
   visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement> = new Set();
@@ -285,8 +285,7 @@ export default class ElementManager {
     this.onMutationExternal = onMutation;
 
     bind(this, [
-      this.onClickableElement,
-      this.onUnclickableElement,
+      this.onClickableChanged,
       this.onInjectedQueue,
       this.onOverflowChange,
       this.onOpenShadowRootCreated,
@@ -303,30 +302,37 @@ export default class ElementManager {
 
     // When adding new event listeners, consider also subscribing in
     // `onRegisterSecretElement` and `setShadowRoot`.
+    if (BROWSER !== "firefox") {
+      this.resets.add(
+        addEventListener(
+          window,
+          CLICKABLE_CHANGED_EVENT,
+          this.onClickableChanged
+        ),
+        addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
+        addEventListener(
+          window,
+          OPEN_SHADOW_ROOT_CREATED_EVENT,
+          this.onOpenShadowRootCreated
+        ),
+        addEventListener(
+          window,
+          CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
+          this.onClosedShadowRootCreated
+        ),
+        addEventListener(
+          window,
+          REGISTER_SECRET_ELEMENT_EVENT,
+          this.onRegisterSecretElement
+        )
+      );
+    }
     this.resets.add(
-      addEventListener(window, CLICKABLE_EVENT, this.onClickableElement),
-      addEventListener(window, UNCLICKABLE_EVENT, this.onUnclickableElement),
-      addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
-      addEventListener(
-        window,
-        OPEN_SHADOW_ROOT_CREATED_EVENT,
-        this.onOpenShadowRootCreated
-      ),
-      addEventListener(
-        window,
-        CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
-        this.onClosedShadowRootCreated
-      ),
-      addEventListener(
-        window,
-        REGISTER_SECRET_ELEMENT_EVENT,
-        this.onRegisterSecretElement
-      ),
       addEventListener(window, "overflow", this.onOverflowChange),
       addEventListener(window, "underflow", this.onOverflowChange)
     );
 
-    injectScript();
+    this.injectScript();
 
     // Wait for tweakable values to load before starting the MutationObserver,
     // in case the user has changed `ATTRIBUTES_MUTATION`. After the
@@ -364,6 +370,8 @@ export default class ElementManager {
     this.mutationObserver.disconnect();
     this.removalObserver.disconnect();
     this.queue = makeEmptyQueue();
+    this.injectedHasQueue = false;
+    this.injectedListeners = new Map();
     this.elements.clear();
     this.visibleElements.clear();
     this.visibleFrames.clear();
@@ -374,7 +382,7 @@ export default class ElementManager {
     this.idleCallbackId = undefined;
     this.resets.reset();
     this.secretElementResets.reset();
-    sendInjectedEvent(RESET_EVENT);
+    this.sendInjectedEvent(RESET_EVENT);
   }
 
   // Stop using the intersection observer for everything except frames. The
@@ -397,6 +405,36 @@ export default class ElementManager {
       size,
       t.MAX_INTERSECTION_OBSERVED_ELEMENTS
     );
+  }
+
+  injectScript() {
+    // Neither Chrome nor Firefox allow inline scripts in the options page. It’s
+    // not needed there anyway.
+    if (window.location.protocol.endsWith("-extension:")) {
+      return;
+    }
+
+    if (BROWSER === "firefox") {
+      injected(this);
+      return;
+    }
+
+    const { documentElement } = document;
+    if (documentElement == null) {
+      return;
+    }
+
+    const rawCode = replaceConstants(injected.toString());
+    const code = `(${rawCode})()`;
+    const script = document.createElement("script");
+
+    // Chrome nicely allows inline scripts inserted by an extension regardless
+    // of CSP. I look forward to the day Firefox works this way too. See
+    // <bugzil.la/1446231> and <bugzil.la/1267027>.
+    script.textContent = code;
+
+    documentElement.append(script);
+    script.remove();
   }
 
   makeStats(durations: Durations): Stats {
@@ -547,36 +585,16 @@ export default class ElementManager {
     }
   }
 
-  onClickableElement(event: CustomEvent) {
-    const target = getTarget(event);
-    this.queueItem({
+  onClickableChanged(event: CustomEvent) {
+    this.onInjectedMessage({
       type: "ClickableChanged",
-      target,
-      clickable: true,
-    });
-  }
-
-  onUnclickableElement(event: CustomEvent) {
-    const target = getTarget(event);
-    this.queueItem({
-      type: "ClickableChanged",
-      target,
-      clickable: false,
+      target: getTarget(event),
+      clickable: Boolean(event.detail),
     });
   }
 
   onInjectedQueue(event: CustomEvent) {
-    const { detail } = event;
-    if (detail == null) {
-      return;
-    }
-
-    const { hasQueue } = detail;
-    if (typeof hasQueue !== "boolean") {
-      return;
-    }
-
-    this.injectedHasQueue = hasQueue;
+    this.onInjectedMessage({ type: "Queue", hasQueue: Boolean(event.detail) });
   }
 
   onOpenShadowRootCreated(event: CustomEvent) {
@@ -585,7 +603,7 @@ export default class ElementManager {
       const { shadowRoot } = target;
       if (shadowRoot != null) {
         log("log", "ElementManager#onOpenShadowRootCreated", shadowRoot);
-        this.setShadowRoot(shadowRoot);
+        this.onInjectedMessage({ type: "ShadowRootCreated", shadowRoot });
       }
     }
   }
@@ -612,7 +630,10 @@ export default class ElementManager {
           const root = target.getRootNode();
           if (root instanceof ShadowRoot) {
             log("log", "ElementManager#onClosedShadowRootCreated", root);
-            this.setShadowRoot(root);
+            this.onInjectedMessage({
+              type: "ShadowRootCreated",
+              shadowRoot: root,
+            });
           }
         },
         { capture: true, passive: true, once: true }
@@ -626,8 +647,11 @@ export default class ElementManager {
       log("log", "ElementManager#onRegisterSecretElement", target);
       this.secretElementResets.reset();
       this.secretElementResets.add(
-        addEventListener(target, CLICKABLE_EVENT, this.onClickableElement),
-        addEventListener(target, UNCLICKABLE_EVENT, this.onUnclickableElement),
+        addEventListener(
+          target,
+          CLICKABLE_CHANGED_EVENT,
+          this.onClickableChanged
+        ),
         addEventListener(
           target,
           OPEN_SHADOW_ROOT_CREATED_EVENT,
@@ -645,6 +669,41 @@ export default class ElementManager {
   onOverflowChange(event: UIEvent) {
     const target = getTarget(event);
     this.queueItem({ type: "OverflowChanged", target });
+  }
+
+  onInjectedMessage(message: FromInjected) {
+    switch (message.type) {
+      case "ClickableChanged":
+        this.queueItem(message);
+        break;
+
+      case "ShadowRootCreated":
+        this.setShadowRoot(message.shadowRoot);
+        break;
+
+      case "Queue":
+        this.injectedHasQueue = message.hasQueue;
+        break;
+
+      default:
+        unreachable(message.type, message);
+    }
+  }
+
+  addEventListener(eventName: string, fn: () => mixed) {
+    const previous = this.injectedListeners.get(eventName) || [];
+    this.injectedListeners.set(eventName, previous.concat(fn));
+  }
+
+  sendInjectedEvent(eventName: string) {
+    if (BROWSER === "firefox") {
+      const listeners = this.injectedListeners.get(eventName) || [];
+      for (const listener of listeners) {
+        listener();
+      }
+    } else {
+      document.dispatchEvent(new CustomEvent(eventName));
+    }
   }
 
   setShadowRoot(shadowRoot: ShadowRoot) {
@@ -1052,7 +1111,7 @@ export default class ElementManager {
 
     if (injectedNeedsFlush) {
       log("log", prefix, "flush injected");
-      sendInjectedEvent(FLUSH_EVENT);
+      this.sendInjectedEvent(FLUSH_EVENT);
     }
 
     this.onMutation(this.mutationObserver.takeRecords());
@@ -1937,36 +1996,6 @@ function isWithin(point: Point, box: Box): boolean {
   );
 }
 
-function injectScript() {
-  // Neither Chrome nor Firefox allow inline scripts in the options page. It's
-  // not needed there anyway.
-  if (window.location.protocol.endsWith("-extension:")) {
-    return;
-  }
-
-  if (BROWSER === "firefox") {
-    injected();
-    return;
-  }
-
-  const { documentElement } = document;
-  if (documentElement == null) {
-    return;
-  }
-
-  const rawCode = replaceConstants(injected.toString());
-  const code = `(${rawCode})()`;
-  const script = document.createElement("script");
-
-  // Chrome nicely allows inline scripts inserted by an extension regardless
-  // of CSP. I look forward to the day Firefox works this way too. See
-  // <bugzil.la/1446231> and <bugzil.la/1267027>.
-  script.textContent = code;
-
-  documentElement.append(script);
-  script.remove();
-}
-
 function replaceConstants(code: string): string {
   const regex = RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g");
   return code.replace(regex, name => constants[name]);
@@ -2008,10 +2037,6 @@ function hasClickListenerProp(element: HTMLElement): boolean {
       : // $FlowIgnore: I _do_ want to dynamically read properties here.
         typeof element[prop] === "function"
   );
-}
-
-function sendInjectedEvent(eventName: string) {
-  document.dispatchEvent(new CustomEvent(eventName));
 }
 
 function getXY(box: Box | ClientRect): {| x: number, y: number |} {

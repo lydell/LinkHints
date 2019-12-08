@@ -21,6 +21,9 @@
         );
       };
       p.addEventListener("click", () => console.log("click"));
+      p.getAttribute = function() {
+        throw new Error("buggy getAttribute implementation");
+      };
     </script>
   </body>
 </html>
