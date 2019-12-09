@@ -34,6 +34,19 @@ h2 {
   font-size: 2rem;
 }
 
+@media (min-width: 60em) {
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-image: url(icon);
+    background-size: contain;
+    vertical-align: -0.125em;
+    margin-right: 0.3125em;
+  }
+}
+
 h2 > a {
   position: relative;
 }
