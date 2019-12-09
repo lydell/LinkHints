@@ -7,13 +7,11 @@ nav {
   background-color: blue;
   background-image: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.2),
-    transparent 50%,
-    rgba(0, 0, 0, 0.2) 50%,
-    transparent 100%
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.2)
   );
   color: white;
-  box-shadow: 0 0 0.625rem 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0.625rem 0 rgba(255, 255, 255, 0.3);
 }
 
 nav > ul {
