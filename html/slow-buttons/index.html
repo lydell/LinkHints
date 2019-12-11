@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>slow-buttons</title>
+    <style>
+      body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 30px;
+      }
+
+      #left,
+      #right {
+        border: 1px solid;
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="left"></div>
+    <div id="right"></div>
+    <script>
+      let isLeft = true;
+
+      function swap() {
+        const button = document.createElement("button");
+        button.addEventListener("click", () => {
+          button.textContent = "Loading…";
+          // button.remove();
+          setTimeout(() => button.remove(), 500);
+          setTimeout(swap, 1000);
+        });
+        if (isLeft) {
+          button.textContent = "Swap right";
+          left.append(button);
+          right.textContent = "";
+        } else {
+          button.textContent = "Swap left";
+          right.append(button);
+          left.textContent = "";
+        }
+        isLeft = !isLeft;
+      }
+
+      setTimeout(swap, 1000);
+    </script>
+  </body>
+</html>

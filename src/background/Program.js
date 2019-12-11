@@ -1198,24 +1198,32 @@ export default class BackgroundProgram {
       Date.now() - updateState.lastUpdateStartTimestamp >=
       t.UPDATE_INTERVAL.value
     ) {
-      hintsState.updateState = {
-        type: "WaitingForResponse",
-        lastUpdateStartTimestamp: Date.now(),
-      };
-
-      // Refresh `oneTimeWindowMessageToken`.
-      this.sendWorkerMessage(this.makeWorkerState(tabState), {
-        tabId,
-        frameId: "all_frames",
-      });
-
-      this.sendWorkerMessage(
-        { type: "UpdateElements" },
-        {
+      if (hintsState.elementsWithHints.every(element => element.hidden)) {
+        this.enterHintsMode({
           tabId,
-          frameId: TOP_FRAME_ID,
-        }
-      );
+          timestamp: Date.now(),
+          mode: hintsState.mode,
+        });
+      } else {
+        hintsState.updateState = {
+          type: "WaitingForResponse",
+          lastUpdateStartTimestamp: Date.now(),
+        };
+
+        // Refresh `oneTimeWindowMessageToken`.
+        this.sendWorkerMessage(this.makeWorkerState(tabState), {
+          tabId,
+          frameId: "all_frames",
+        });
+
+        this.sendWorkerMessage(
+          { type: "UpdateElements" },
+          {
+            tabId,
+            frameId: TOP_FRAME_ID,
+          }
+        );
+      }
     }
   }
 
