@@ -229,9 +229,9 @@ const SECTIONS = [
           feature of VimFx – link hinting.
         </p>
         <p>
-          During experimentation in the early 2018, I discovered a way of
-          keeping track of clickable elements in the background (for the
-          technically interested, a combination of{" "}
+          During experimentation in early 2018, I discovered a way of keeping
+          track of clickable elements in the background (for the technically
+          interested, a combination of{" "}
           <a href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver">
             MutationObserver
           </a>
