@@ -19,7 +19,7 @@ import {
   TEXT_RECT_CLASS,
 } from "../shared/css";
 import type {
-  ElementWithHint,
+  ElementRender,
   HintMeasurements,
   HintUpdate,
 } from "../shared/hints";
@@ -354,7 +354,7 @@ export default class RendererProgram {
   }
 
   async render(
-    elements: Array<ElementWithHint>,
+    elements: Array<ElementRender>,
     { mixedCase }: {| mixedCase: boolean |}
   ) {
     const { documentElement } = document;
@@ -416,8 +416,14 @@ export default class RendererProgram {
     let numEdgeElements = 0;
 
     time.start("loop");
-    for (const [index, { hintMeasurements, hint }] of elements.entries()) {
+    for (const {
+      hintMeasurements,
+      hint,
+      highlighted,
+      invertedZIndex,
+    } of elements) {
       const element = createHintElement(hint);
+      element.classList.toggle(HIGHLIGHTED_HINT_CLASS, highlighted);
       if (mixedCase) {
         element.classList.add(MIXED_CASE_CLASS);
       }
@@ -431,7 +437,7 @@ export default class RendererProgram {
       setStyles(element, {
         ...styles,
         // Remove 1 so that all hints stay below the status.
-        "z-index": (MAX_Z_INDEX - index - 1).toString(),
+        "z-index": (MAX_Z_INDEX - invertedZIndex - 1).toString(),
       });
 
       root.append(element);

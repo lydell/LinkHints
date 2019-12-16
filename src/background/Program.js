@@ -4,13 +4,15 @@ import huffman from "n-ary-huffman";
 import { mixedDict } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
-import type {
-  ElementReport,
-  ElementTypes,
-  ElementWithHint,
-  ExtendedElementReport,
-  HintMeasurements,
-  HintUpdate,
+import {
+  type ElementRender,
+  type ElementReport,
+  type ElementTypes,
+  type ElementWithHint,
+  type ExtendedElementReport,
+  type HintMeasurements,
+  type HintUpdate,
+  elementKey,
 } from "../shared/hints";
 import {
   type HintsMode,
@@ -79,7 +81,7 @@ type TabState = {|
 type HintsState =
   | {|
       type: "Idle",
-      highlightedSinceTimestamp: ?number,
+      highlighted: Highlighted,
     |}
   | {|
       type: "Collecting",
@@ -89,6 +91,7 @@ type HintsState =
       time: TimeTracker,
       stats: Array<Stats>,
       refreshing: boolean,
+      highlighted: Highlighted,
     |}
   | {|
       type: "Hinting",
@@ -99,13 +102,18 @@ type HintsState =
       enteredChars: string,
       enteredText: string,
       elementsWithHints: Array<ElementWithHint>,
-      highlighted: ?{|
-        indexes: Set<number>,
-        sinceTimestamp: number,
-      |},
+      highlighted: Highlighted,
       updateState: UpdateState,
       peeking: boolean,
     |};
+
+// All HintsState types store the highlighted hints (highlighted due to being
+// matched, not due to filtering by text), so that they can stay highlighted for
+// `t.MATCH_HIGHLIGHT_DURATION` ms.
+type Highlighted = Array<{|
+  sinceTimestamp: number,
+  element: ElementWithHint,
+|}>;
 
 type PendingElements = {|
   pendingFrames: {|
@@ -474,10 +482,7 @@ export default class BackgroundProgram {
           enteredChars,
           enteredText,
           elementsWithHints: updatedElementsWithHints,
-          highlightedIndexes:
-            hintsState.highlighted != null
-              ? hintsState.highlighted.indexes
-              : new Set(),
+          highlighted: hintsState.highlighted,
           chars: this.options.values.chars,
           autoActivate: this.options.values.autoActivate,
           matchHighlighted: false,
@@ -701,9 +706,6 @@ export default class BackgroundProgram {
           .replace(/^\s+/, "")
           .replace(/\s+$/, " ");
 
-    // Clear last matches from ManyTab mode.
-    const highlightedIndexes = new Set();
-
     const {
       allElementsWithHints,
       match: actualMatch,
@@ -714,7 +716,7 @@ export default class BackgroundProgram {
       enteredChars,
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
-      highlightedIndexes,
+      highlighted: hintsState.highlighted,
       chars: this.options.values.chars,
       autoActivate: this.options.values.autoActivate,
       matchHighlighted: input.type === "ActivateHint",
@@ -734,13 +736,18 @@ export default class BackgroundProgram {
       return;
     }
 
+    const now = Date.now();
+    const highlighted =
+      match != null
+        ? allElementsWithHints
+            .filter(element => element.hint === match.hint)
+            .map(element => ({ sinceTimestamp: now, element }))
+        : [];
+
     hintsState.enteredChars = enteredChars;
     hintsState.enteredText = enteredText;
     hintsState.elementsWithHints = allElementsWithHints;
-    hintsState.highlighted = {
-      indexes: highlightedIndexes,
-      sinceTimestamp: Date.now(),
-    };
+    hintsState.highlighted = hintsState.highlighted.concat(highlighted);
 
     this.getTextRects({
       enteredChars,
@@ -789,7 +796,7 @@ export default class BackgroundProgram {
     if (match != null) {
       tabState.hintsState = {
         type: "Idle",
-        highlightedSinceTimestamp: Date.now(),
+        highlighted: hintsState.highlighted,
       };
       this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
       this.updateWorkerStateAfterHintActivation({
@@ -849,7 +856,7 @@ export default class BackgroundProgram {
         );
         return true;
 
-      case "ManyClick":
+      case "ManyClick": {
         if (match.isTextInput) {
           this.sendWorkerMessage(
             {
@@ -895,7 +902,10 @@ export default class BackgroundProgram {
           mode: hintsState.mode,
         });
 
+        this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
+
         return false;
+      }
 
       case "ManyTab": {
         if (url == null) {
@@ -913,10 +923,10 @@ export default class BackgroundProgram {
             .map(element => element.index)
         );
 
-        hintsState.highlighted = {
-          indexes: matchedIndexes,
-          sinceTimestamp: Date.now(),
-        };
+        const highlightedKeys = new Set(
+          hintsState.highlighted.map(({ element }) => elementKey(element))
+        );
+
         hintsState.enteredChars = "";
         hintsState.enteredText = "";
 
@@ -941,7 +951,9 @@ export default class BackgroundProgram {
               order: index,
               matchedChars: "",
               restChars: element.hint,
-              highlighted: matchedIndexes.has(element.index),
+              highlighted:
+                matchedIndexes.has(element.index) ||
+                highlightedKeys.has(elementKey(element)),
               hidden: element.hidden,
             })),
             enteredText: "",
@@ -1025,10 +1037,7 @@ export default class BackgroundProgram {
       enteredChars,
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
-      highlightedIndexes:
-        hintsState.highlighted != null
-          ? hintsState.highlighted.indexes
-          : new Set(),
+      highlighted: hintsState.highlighted,
       chars: this.options.values.chars,
       autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
@@ -1123,7 +1132,7 @@ export default class BackgroundProgram {
     const { time } = hintsState;
     time.start("assign hints");
 
-    const elementsWithHints = assignHints(
+    const elementsWithHints: Array<ElementWithHint> = assignHints(
       hintsState.pendingElements.elements.map((element, index) => ({
         ...element,
         // These are filled in by `assignHints` but need to be set here for type
@@ -1131,8 +1140,7 @@ export default class BackgroundProgram {
         weight: 0,
         hint: "",
         // This is set for real in the next couple of lines, but set here also
-        // to make sorting in Chrome stable. This can be removed when Chrome 70
-        // is released (which makes `Array.prototype.sort` stable).
+        // to be extra sure that the sorting really is stable.
         index,
       })),
       {
@@ -1140,9 +1148,59 @@ export default class BackgroundProgram {
         chars: this.options.values.chars,
         hasEnteredText: false,
       }
-      // `.index` was set to `-1` in "ReportVisibleElements". Now set it for
-      // real to map these elements to DOM elements in RendererProgram.
+      // `.index` was set to `-1` in "ReportVisibleElements" (and to a temporary
+      // index above). Now set it for real to map these elements to DOM elements
+      // in RendererProgram.
     ).map((element, index) => ({ ...element, index }));
+
+    const elementKeys = new Set(
+      elementsWithHints.map(element => elementKey(element))
+    );
+    const highlightedKeys = new Set(
+      hintsState.highlighted.map(({ element }) => elementKey(element))
+    );
+
+    const [
+      alreadyHighlighted,
+      extraHighlighted,
+    ] = partition(hintsState.highlighted, ({ element }) =>
+      elementKeys.has(elementKey(element))
+    );
+
+    const updateIndex = ({ element, sinceTimestamp }, index) => ({
+      element: { ...element, index },
+      sinceTimestamp,
+    });
+
+    const numElements = elementsWithHints.length;
+    const highlighted = extraHighlighted
+      // Add indexes to the highlighted hints that get extra DOM nodes.
+      .map((item, index) => updateIndex(item, numElements + index))
+      // Other highlighted hints don’t get extra DOM nodes – they instead
+      // highlight new hints with the same characters and position. Mark them
+      // with an index of -1 for `unhighlightHints`’s sakes.
+      .concat(alreadyHighlighted.map(item => updateIndex(item, -1)));
+
+    const elementRenders: Array<ElementRender> = elementsWithHints
+      .map((element, index) => ({
+        hintMeasurements: element.hintMeasurements,
+        hint: element.hint,
+        // Hints at the same position and with the same hint characters as a
+        // previously matched hint are marked as highlighted.
+        highlighted: highlightedKeys.has(elementKey(element)),
+        invertedZIndex: index + 1,
+      }))
+      // Other previously matched hints are rendered (but not stored in
+      // `hintsState.elementsWithHints`).
+      .concat(
+        extraHighlighted.map(({ element }) => ({
+          hintMeasurements: element.hintMeasurements,
+          hint: element.hint,
+          highlighted: true,
+          // Previously matched hints are always shown on top over regular hints.
+          invertedZIndex: 0,
+        }))
+      );
 
     tabState.hintsState = {
       type: "Hinting",
@@ -1153,7 +1211,7 @@ export default class BackgroundProgram {
       enteredChars: "",
       enteredText: "",
       elementsWithHints,
-      highlighted: undefined,
+      highlighted,
       updateState: {
         type: "WaitingForTimeout",
         lastUpdateStartTimestamp: hintsState.startTime,
@@ -1170,7 +1228,7 @@ export default class BackgroundProgram {
     this.sendRendererMessage(
       {
         type: "Render",
-        elements: elementsWithHints,
+        elements: elementRenders,
         mixedCase: isMixedCase(this.options.values.chars),
       },
       { tabId }
@@ -1266,10 +1324,7 @@ export default class BackgroundProgram {
       enteredChars,
       enteredText,
       elementsWithHints: hintsState.elementsWithHints,
-      highlightedIndexes:
-        hintsState.highlighted != null
-          ? hintsState.highlighted.indexes
-          : new Set(),
+      highlighted: hintsState.highlighted,
       chars: this.options.values.chars,
       autoActivate: this.options.values.autoActivate,
       matchHighlighted: false,
@@ -1611,6 +1666,7 @@ export default class BackgroundProgram {
       time,
       stats: [],
       refreshing,
+      highlighted: tabState.hintsState.highlighted,
     };
 
     this.updateBadge(tabId);
@@ -1641,7 +1697,7 @@ export default class BackgroundProgram {
 
     tabState.hintsState = {
       type: "Idle",
-      highlightedSinceTimestamp: delayed ? Date.now() : undefined,
+      highlighted: tabState.hintsState.highlighted,
     };
 
     if (sendMessages) {
@@ -1661,35 +1717,56 @@ export default class BackgroundProgram {
     }
 
     const { hintsState } = tabState;
+
+    const now = Date.now();
+    const [doneWaiting, stillWaiting] = partition(
+      hintsState.highlighted,
+      ({ sinceTimestamp }) =>
+        now - sinceTimestamp >= t.MATCH_HIGHLIGHT_DURATION.value
+    );
+
+    const hideDoneWaiting = () => {
+      if (doneWaiting.length > 0) {
+        this.sendRendererMessage(
+          {
+            type: "UpdateHints",
+            updates: doneWaiting
+              // Highlighted elements with -1 as index don’t have their own DOM
+              // nodes – instead, they have highlighted a new hint with the same
+              // characters and position.
+              .filter(({ element }) => element.index !== -1)
+              .map(({ element }) => ({
+                type: "Hide",
+                index: element.index,
+                hidden: true,
+              })),
+            enteredText: "",
+          },
+          { tabId }
+        );
+      }
+    };
+
+    hintsState.highlighted = stillWaiting;
+
     switch (hintsState.type) {
-      case "Idle": {
-        const { highlightedSinceTimestamp } = hintsState;
-        if (
-          highlightedSinceTimestamp != null &&
-          Date.now() - highlightedSinceTimestamp >=
-            t.MATCH_HIGHLIGHT_DURATION.value
-        ) {
+      case "Idle":
+        if (stillWaiting.length === 0) {
           this.sendRendererMessage({ type: "Unrender" }, { tabId });
+        } else {
+          hideDoneWaiting();
         }
         break;
-      }
 
       case "Collecting":
+        hideDoneWaiting();
         break;
 
-      case "Hinting":
-        {
-          const { highlighted } = hintsState;
-          if (
-            highlighted != null &&
-            Date.now() - highlighted.sinceTimestamp >=
-              t.MATCH_HIGHLIGHT_DURATION.value
-          ) {
-            hintsState.highlighted = undefined;
-            this.refreshHintsRendering(tabId);
-          }
-        }
+      case "Hinting": {
+        hideDoneWaiting();
+        this.refreshHintsRendering(tabId);
         break;
+      }
 
       default:
         unreachable(hintsState.type, hintsState);
@@ -2064,7 +2141,7 @@ async function makeEmptyTabState(tabId: ?number): Promise<TabState> {
   return {
     hintsState: {
       type: "Idle",
-      highlightedSinceTimestamp: undefined,
+      highlighted: [],
     },
     keyboardMode: { type: "FromHintsState" },
     perf: [],
@@ -2411,7 +2488,7 @@ function updateHints({
   enteredChars,
   enteredText,
   elementsWithHints: passedElementsWithHints,
-  highlightedIndexes,
+  highlighted,
   chars,
   autoActivate: autoActivateOption,
   matchHighlighted,
@@ -2421,7 +2498,7 @@ function updateHints({
   enteredChars: string,
   enteredText: string,
   elementsWithHints: Array<ElementWithHint>,
-  highlightedIndexes: Set<number>,
+  highlighted: Highlighted,
   chars: string,
   autoActivate: boolean,
   matchHighlighted: boolean,
@@ -2476,14 +2553,17 @@ function updateHints({
       (matchHighlighted && element.hint === highlightedHint)
   );
 
+  const highlightedKeys = new Set(
+    highlighted.map(({ element }) => elementKey(element))
+  );
+
   const updates: Array<HintUpdate> = elementsWithHintsAndMaybeHidden
     .map((element, index) => {
       const matches = element.hint.startsWith(enteredChars);
-      const highlighted =
+      const isHighlighted =
         (match != null && element.hint === match.hint) ||
         element.hint === highlightedHint ||
-        // The last matches from ManyTab mode.
-        highlightedIndexes.has(element.index);
+        highlightedKeys.has(elementKey(element));
 
       return updateMeasurements
         ? {
@@ -2493,7 +2573,7 @@ function updateHints({
             order: index,
             hint: element.hint,
             hintMeasurements: element.hintMeasurements,
-            highlighted,
+            highlighted: isHighlighted,
             hidden: element.hidden || !matches,
           }
         : matches && (match == null || highlighted)
@@ -2506,7 +2586,7 @@ function updateHints({
             order: index,
             matchedChars: enteredChars,
             restChars: element.hint.slice(enteredChars.length),
-            highlighted,
+            highlighted: isHighlighted,
             hidden: element.hidden || !matches,
           }
         : {

@@ -27,8 +27,11 @@
         const button = document.createElement("button");
         button.addEventListener("click", () => {
           button.textContent = "Loading…";
-          // button.remove();
-          setTimeout(() => button.remove(), 500);
+          if (isLeft) {
+            setTimeout(() => button.remove(), 500);
+          } else {
+            button.remove();
+          }
           setTimeout(swap, 1000);
         });
         if (isLeft) {

@@ -90,6 +90,18 @@ export type ElementWithHint = {|
   hint: string,
 |};
 
+export function elementKey(element: ElementWithHint): string {
+  const { x, y, align } = element.hintMeasurements;
+  return [x, y, align, element.hint].join("\n");
+}
+
+export type ElementRender = {|
+  hintMeasurements: HintMeasurements,
+  hint: string,
+  highlighted: boolean,
+  invertedZIndex: number,
+|};
+
 export type HintUpdate =
   | {|
       type: "Hide",

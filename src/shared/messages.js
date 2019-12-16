@@ -1,9 +1,9 @@
 // @flow strict-local
 
 import type {
+  ElementRender,
   ElementReport,
   ElementTypes,
-  ElementWithHint,
   HintUpdate,
 } from "./hints";
 import type {
@@ -176,7 +176,7 @@ export type ToRenderer =
     |}
   | {|
       type: "Render",
-      elements: Array<ElementWithHint>,
+      elements: Array<ElementRender>,
       mixedCase: boolean,
     |}
   | {|
