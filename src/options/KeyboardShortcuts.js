@@ -642,11 +642,6 @@ export function describeKeyboardAction(
         name: "Swap which end of a text selection to work on",
       };
 
-    case "ClickFocusedElement":
-      return {
-        name: "Fire a click on the focused element",
-      };
-
     default:
       return unreachable(action);
   }

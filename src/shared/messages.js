@@ -152,9 +152,6 @@ export type ToWorker =
     |}
   | {|
       type: "ReverseSelection",
-    |}
-  | {|
-      type: "ClickFocusedElement",
     |};
 
 export type FromRenderer =

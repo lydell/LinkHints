@@ -18,7 +18,6 @@ export type KeyboardAction =
   | "EnterHintsMode_ManyTab"
   | "EnterHintsMode_Select"
   | "ReverseSelection"
-  | "ClickFocusedElement"
   | "Escape"
   | "ActivateHint"
   | "ActivateHintAlt"
@@ -38,7 +37,6 @@ export function decodeKeyboardAction(type: string): KeyboardAction {
     case "EnterHintsMode_ManyTab":
     case "EnterHintsMode_Select":
     case "ReverseSelection":
-    case "ClickFocusedElement":
     case "Escape":
     case "ActivateHint":
     case "ActivateHintAlt":

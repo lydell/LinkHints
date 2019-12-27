@@ -71,9 +71,6 @@ export const shortcuts = {
   ReverseSelection: (
     <KeyboardShortcut alt={{ mac: "ctrl" }} shift press="ArrowUp" />
   ),
-  ClickFocusedElement: (
-    <KeyboardShortcut ctrl alt={{ mac: "shift" }} press="Enter" />
-  ),
   Escape: <KeyboardShortcut shift press="Escape" />,
 
   // Hints.

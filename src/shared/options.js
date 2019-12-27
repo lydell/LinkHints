@@ -198,15 +198,6 @@ export function getDefaults({ mac }: {| mac: boolean |}): Options {
       },
       {
         shortcut: shortcut({
-          key: "Space",
-          alt: !mac,
-          ctrl: true,
-          shift: mac,
-        }),
-        action: "ClickFocusedElement",
-      },
-      {
-        shortcut: shortcut({
           key: "Escape",
           shift: true,
         }),

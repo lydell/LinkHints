@@ -198,7 +198,7 @@ const STEPS = [
     ),
   },
   {
-    title: "Swiss army knife",
+    title: "Selecting text",
     next: "Almost there",
     content: (
       <>
@@ -210,9 +210,9 @@ const STEPS = [
           When text is selected, you can use the standard keyboard shortcuts for
           adjusting the selection, such as{" "}
           <KeyboardShortcut shift press="ArrowRight" />. And of course{" "}
-          <KeyboardShortcut ctrl press="C" /> to copy.
+          <KeyboardShortcut ctrl={{ mac: "cmd" }} press="C" /> to copy.
         </p>
-        <p>Link Hints adds three extra shortcuts:</p>
+        <p>Link Hints adds two extra shortcuts:</p>
         <ul>
           <li>
             {shortcuts.ReverseSelection} swaps which end of a text selection to
@@ -220,10 +220,6 @@ const STEPS = [
             but also to the left. Try selecting{" "}
             <KeyboardShortcut press="ArrowUp" /> on this line, and then going in
             both directions!
-          </li>
-          <li>
-            {shortcuts.ClickFocusedElement} fires a click on the focused
-            element. This lets you click on badly marked up content.
           </li>
           <li>
             {shortcuts.Escape} unselects. This lets you get rid of text

@@ -357,14 +357,6 @@ export default class WorkerProgram {
         break;
       }
 
-      case "ClickFocusedElement": {
-        const activeElement = this.elementManager.getActiveElement(document);
-        if (activeElement != null) {
-          this.clickElement(activeElement);
-        }
-        break;
-      }
-
       default:
         unreachable(message.type, message);
     }
