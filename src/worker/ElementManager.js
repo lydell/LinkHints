@@ -76,8 +76,6 @@ const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
   // Twitter.
   "data-permalink-path",
   "data-image-url",
-  // Gmail.
-  "jsaction",
 ]);
 
 export const t = {
