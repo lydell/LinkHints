@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>maximum number of ids</title>
+    <style>
+      #target {
+        padding: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="target">0</p>
+    <script>
+      const style = document.createElement("style");
+      document.head.append(style);
+
+      let i = 1;
+
+      function step() {
+        requestAnimationFrame(stepHelper);
+      }
+
+      function stepHelper() {
+        const css = `
+          ${repeat(i + 1)} {
+            background-color: rgb(0, 255, 0);
+          }
+          ${repeat(i)} {
+            background-color: red;
+          }
+        `;
+        style.textContent = css;
+        target.textContent = i;
+        i++;
+        const computed = window.getComputedStyle(target);
+        if (
+          computed.getPropertyValue("background-color") === "rgb(0, 255, 0)"
+        ) {
+          step();
+        }
+      }
+
+      function repeat(n) {
+        return "#target".repeat(n);
+      }
+
+      step();
+    </script>
+  </body>
+</html>
