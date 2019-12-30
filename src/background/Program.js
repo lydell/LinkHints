@@ -2351,6 +2351,7 @@ function getBadgeText(hintsState: HintsState): string {
   switch (hintsState.type) {
     case "Idle":
       return "";
+
     case "Collecting":
       // Only show the badge “spinner” if the hints are slow. But show it
       // immediately when refreshing so that one can see it flash in case you
@@ -2360,6 +2361,7 @@ function getBadgeText(hintsState: HintsState): string {
         t.BADGE_COLLECTING_DELAY.value || hintsState.refreshing
         ? "…"
         : "";
+
     case "Hinting": {
       const { enteredChars, enteredText } = hintsState;
       const words = splitEnteredText(enteredText);
@@ -2373,6 +2375,7 @@ function getBadgeText(hintsState: HintsState): string {
         )
         .length.toString();
     }
+
     default:
       return unreachable(hintsState.type, hintsState);
   }
