@@ -6,11 +6,11 @@ const path = require("path");
 const fsExtra = require("fs-extra");
 const optionalRequire = require("optional-require")(require);
 const React = require("preact");
-const commonjs = require("rollup-plugin-commonjs");
+const commonjs = require("@rollup/plugin-commonjs");
 const prettier = require("rollup-plugin-prettier");
-const replace = require("rollup-plugin-replace");
-const resolve = require("rollup-plugin-node-resolve");
-const sucrase = require("rollup-plugin-sucrase");
+const replace = require("@rollup/plugin-replace");
+const resolve = require("@rollup/plugin-node-resolve");
+const sucrase = require("@rollup/plugin-sucrase");
 
 const config = require("./project.config");
 const transformCSS = require("./src/css").default;
