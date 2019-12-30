@@ -279,7 +279,7 @@ function makeGlobals() {
     "n.innerHTML": "n.__disabled__innerHTML",
     // Hacks to make `preact-shadow-root` work with Preact 10.
     "this.base&&this.base.parentNode": "this.__P",
-    "o.children": "[o.children]",
+    "o.children[0],": "o.children,",
     "this.shadow.firstChild": "undefined",
   };
 }

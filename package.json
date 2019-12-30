@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
-    "preact": "10.0.5",
+    "preact": "10.1.1",
     "preact-shadow-root": "1.0.2",
     "tiny-decoders": "4.0.0",
     "webextension-polyfill": "0.6.0"
