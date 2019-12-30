@@ -132,7 +132,6 @@ export const t = {
     new Set([
       "button",
       "checkbox",
-      "gridcell",
       "link",
       "menuitem",
       "menuitemcheckbox",
@@ -146,6 +145,7 @@ export const t = {
       "textbox",
       "treeitem",
       // Omitted since they don’t seem useful to click:
+      // "gridcell",
       // "progressbar",
       // "scrollbar",
       // "separator",
