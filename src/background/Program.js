@@ -24,6 +24,7 @@ import {
 import {
   addListener,
   bind,
+  CONTAINER_ID,
   isMixedCase,
   log,
   makeRandomToken,
@@ -1369,6 +1370,27 @@ export default class BackgroundProgram {
           },
           { tabId: info.tabId }
         );
+        // Both uBlock Origin and Adblock Plus use `browser.tabs.insertCSS` with
+        // `{ display: none !important; }` and `cssOrigin: "user"` to hide
+        // elements. I’ve seen LinkHint’s container to be hidden by a
+        // `[style*="animation:"]` filter. This makes sure that the container
+        // cannot be hidden by adblockers.
+        browser.tabs
+          .insertCSS(info.tabId, {
+            code: `#${CONTAINER_ID} { display: block !important; }`,
+            cssOrigin: "user",
+            runAt: "document_start",
+          })
+          .catch(error => {
+            log(
+              "error",
+              "BackgroundProgram#onRendererMessage",
+              "Failed to insert adblock workaround CSS",
+              error,
+              info,
+              message
+            );
+          });
         break;
 
       case "Rendered": {

@@ -14,6 +14,16 @@ declare type ExecuteScriptDetails = {|
   runAt?: string,
 |};
 
+declare type InsertCSSDetails = {|
+  allFrames?: boolean,
+  code?: string,
+  cssOrigin?: "user" | "author",
+  file?: string,
+  frameId?: number,
+  matchAboutBlank?: boolean,
+  runAt?: string,
+|};
+
 declare type HTMLFrameElement = HTMLIFrameElement;
 
 declare type MessageSender = {|
@@ -224,6 +234,8 @@ declare var browser: {|
         windowId?: number,
       |}
     >,
+    insertCSS: (InsertCSSDetails => Promise<void>) &
+      ((tabId: number, InsertCSSDetails) => Promise<void>),
     query(queryInfo: {|
       active?: boolean,
       audible?: boolean,
