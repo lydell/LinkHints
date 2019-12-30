@@ -31,3 +31,5 @@ declare function exportFunction(
   mixed,
   options?: {| defineAs: string |}
 ): AnyFunction;
+
+declare function XPCNativeWrapper<T>(x: T): T;

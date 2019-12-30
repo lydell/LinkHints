@@ -76,6 +76,7 @@ module.exports = {
         META_VERSION: false,
         navigator: false,
         PROD: false,
+        XPCNativeWrapper: false,
       },
       rules: {
         "no-console": "error",

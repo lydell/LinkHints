@@ -20,7 +20,7 @@ import { makeRandomToken } from "../shared/main";
 // is to work around Firefox’s CSP limiations. As a bonus, Firefox can
 // communicate with this file directly (via the `communicator` parameter) rather
 // than via very clever usage of DOM events. This works in Firefox due to
-// `.wrappedJSObject` and `exportFunction`.
+// `.wrappedJSObject`, `exportFunction` and `XPCNativeWrapper`.
 
 // All types of events that likely makes an element clickable. All code and
 // comments that deal with this only refer to "click", though, to keep things
@@ -170,10 +170,15 @@ export default (communicator?: {
             }[originalFn.name]
           : {
               [originalFn.name](...args: Array<any>): any {
+                let wrappedArgs = args;
+                if (BROWSER === "firefox") {
+                  wrappedArgs = args.map(arg => XPCNativeWrapper(arg));
+                }
+
                 let prehookData = undefined;
                 if (prehook != null) {
                   try {
-                    prehookData = prehook(this, ...args);
+                    prehookData = prehook(this, ...wrappedArgs);
                   } catch (error) {
                     logHookError(error, obj, name);
                   }
@@ -188,7 +193,9 @@ export default (communicator?: {
                 let returnValue = undefined;
                 if (BROWSER === "firefox") {
                   try {
-                    returnValue = apply(originalFn, this, args);
+                    returnValue = XPCNativeWrapper(
+                      apply(originalFn, this, args)
+                    );
                   } catch (error) {
                     if (
                       error &&
@@ -211,7 +218,7 @@ export default (communicator?: {
                   const result = hook(
                     { returnValue, prehookData },
                     this,
-                    ...args
+                    ...wrappedArgs
                   );
                   if (result != null && typeof result.then === "function") {
                     result.then(undefined, error => {
