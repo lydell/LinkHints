@@ -519,7 +519,15 @@ export default class RendererProgram {
           break;
 
         case "UpdateContent": {
-          emptyNode(child);
+          // Avoid unnecessary flashing in the devtools when inspecting the hints.
+          const zeroWidthSpace = "\u200B";
+          const needsTextUpdate =
+            child.textContent !==
+            `${update.matchedChars}${zeroWidthSpace}${update.restChars}`;
+
+          if (needsTextUpdate) {
+            emptyNode(child);
+          }
 
           const hasMatchedChars = update.matchedChars !== "";
 
@@ -527,7 +535,7 @@ export default class RendererProgram {
           child.classList.toggle(HAS_MATCHED_CHARS_CLASS, hasMatchedChars);
           child.classList.toggle(HIGHLIGHTED_HINT_CLASS, update.highlighted);
 
-          if (hasMatchedChars) {
+          if (hasMatchedChars && needsTextUpdate) {
             const matched = document.createElement("span");
             matched.className = MATCHED_CHARS_CLASS;
             matched.append(document.createTextNode(update.matchedChars));
@@ -547,7 +555,11 @@ export default class RendererProgram {
             maybeNeedsMoveInsideViewport.push(child);
           }
 
-          child.append(document.createTextNode(update.restChars));
+          if (needsTextUpdate) {
+            child.append(
+              document.createTextNode(`${zeroWidthSpace}${update.restChars}`)
+            );
+          }
 
           break;
         }
