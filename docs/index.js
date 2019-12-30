@@ -251,7 +251,7 @@ const SECTIONS = [
           (then called “Synth”). Soon it was stable enough to be used for
           day-to-day browsing. After almost two years of experimentation,
           development and real-world usage, Link Hints is planned to be released
-          at the end of 2019.
+          in early 2020.
         </p>
       </>
     ),
