@@ -772,7 +772,9 @@ export default class WorkerProgram {
       });
     }
 
-    const rect = element.getBoundingClientRect();
+    const targetElement = getTargetElement(element);
+
+    const rect = targetElement.getBoundingClientRect();
     const options = {
       // Mimic real events as closely as possible.
       bubbles: true,
@@ -789,15 +791,18 @@ export default class WorkerProgram {
     // When clicking a link for real the focus happens between the mousedown and
     // the mouseup, but moving this line between those two `.dispatchEvent` calls
     // below causes dropdowns in gmail not to be triggered anymore.
+    // Note: The target element is clicked, but the original element is
+    // focused. The idea is that the original element is a link or button, and
+    // the target element might be a span or div.
     element.focus();
 
     // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
     // requires the full mousedown+mouseup+click event sequence.
-    element.dispatchEvent(
+    targetElement.dispatchEvent(
       new MouseEvent("mousedown", { ...options, buttons: 1 })
     );
-    element.dispatchEvent(new MouseEvent("mouseup", options));
-    let defaultPrevented = !element.dispatchEvent(
+    targetElement.dispatchEvent(new MouseEvent("mouseup", options));
+    let defaultPrevented = !targetElement.dispatchEvent(
       new MouseEvent("click", options)
     );
 
@@ -915,6 +920,29 @@ function* getRootNodes(fromNode: Node): Generator<Node, void, void> {
       break;
     }
   } while (true);
+}
+
+// When triggering a click on an element, it might actually make more sense to
+// trigger the click on one of its children. If `element` contains a single
+// child element (and no non-blank text nodes), use that child element instead
+// (recursively). Clicking an element _inside_ a link or button still triggers
+// the link or button.
+// This is because sites with bad markup might have links and buttons with an
+// inner element with where the actual click listener is attached. When clicking
+// the link or button with a real mouse, you actually click the inner element
+// and as such trigger the click listener. The actual link or button has no
+// click listener itself, so triggering a click there doesn’t do anything. Using
+// this function, we can try to simulate a real mouse click. If a link or button
+// has multiple children it is unclear which (if any!) child we should click, so
+// then we use the original element.
+function getTargetElement(element: HTMLElement): HTMLElement {
+  const children = Array.from(element.children).filter(
+    node => !(node instanceof Text && node.data.trim() === "")
+  );
+  const onlyChild = children.length === 1 ? children[0] : undefined;
+  return onlyChild instanceof HTMLElement
+    ? getTargetElement(onlyChild)
+    : element;
 }
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers

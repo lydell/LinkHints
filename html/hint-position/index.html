@@ -562,6 +562,21 @@
       <p>Expanded content.</p>
     </details>
 
+    <h2 id="target-inside">
+      Button-link with inner click listener inside (from Bandcamp)
+    </h2>
+    <a
+      href="#"
+      role="button"
+      aria-label="Play/pause"
+      style="text-decoration: none;"
+    >
+      <span
+        onclick="this.textContent = this.textContent === '▶️' ? '⏸️' : '▶️'; return false"
+        >▶️</span
+      >
+    </a>
+
     <h2>Buttons with only icons as children</h2>
     <p>&lt;img&gt;</p>
     <p>
