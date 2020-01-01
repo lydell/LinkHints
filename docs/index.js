@@ -145,6 +145,31 @@ const SECTIONS = [
     ),
   },
   {
+    id: "shortcuts",
+    title: "Where can I see all keyboard shortcuts?",
+    content: (
+      <>
+        <p>
+          There isn’t that much to know besides the six shortcuts shown near the
+          top of this page, really. Those are the main ones. But there are a few
+          more shortcuts that you can learn as you need them.
+        </p>
+        <p>
+          Click the Link Hints toolbar button <span className="ToolbarButton" />{" "}
+          and then “Options.” There you’ll find an overview of all shortcuts
+          (and you can change them there as well).
+        </p>
+        <p>
+          You’ll find explanations of the shortcuts in the{" "}
+          <a href={`${config.docs.root}/${config.docs.tutorial.output}`}>
+            tutorial
+          </a>
+          .
+        </p>
+      </>
+    ),
+  },
+  {
     id: "permissions",
     title: "What permissions does Link Hints need?",
     content: (
