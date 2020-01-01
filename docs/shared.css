@@ -58,7 +58,11 @@ h2 > a:not(:hover):not(:focus):not(:active) {
 h2 > a:hover::after,
 h2 > a:focus::after,
 h2 > a:active::after {
-  content: " #";
+  content: "#";
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 0.25em;
 }
 
 p {
