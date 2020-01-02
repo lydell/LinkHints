@@ -48,6 +48,7 @@ export type Point = {|
   x: number,
   y: number,
   align: "left" | "right",
+  debug: string,
 |};
 
 export type HintMeasurements = {|

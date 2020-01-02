@@ -197,6 +197,11 @@ export const t = {
 
 export const tMeta = tweakable("ElementManager", t);
 
+type RejectedElement = {|
+  isRejected: true,
+  debug: mixed,
+|};
+
 type Record = {|
   addedNodes: Array<Node> | NodeList<Node>,
   removedNodes: Array<Node> | NodeList<Node>,
@@ -1137,56 +1142,89 @@ export default class ElementManager {
     const deduper = new Deduper();
 
     time.start("loop");
-    const maybeResults = Array.from(candidates, element => {
-      const type: ?ElementType =
-        types === "selectable"
-          ? this.getElementTypeSelectable(element)
-          : this.elements.get(element);
+    const maybeResults: Array<VisibleElement | RejectedElement> = Array.from(
+      candidates,
+      element => {
+        const type: ?ElementType =
+          types === "selectable"
+            ? this.getElementTypeSelectable(element)
+            : this.elements.get(element);
 
-      if (type == null) {
-        return undefined;
+        if (type == null) {
+          return {
+            isRejected: true,
+            debug: {
+              reason: "no ElementType",
+              element,
+            },
+          };
+        }
+
+        if (types !== "selectable" && !types.includes(type)) {
+          return {
+            isRejected: true,
+            debug: {
+              reason: "wrong ElementType",
+              type,
+              types,
+              element,
+            },
+          };
+        }
+
+        // Ignore `<label>` elements with no control and no click listeners.
+        if (
+          type === "label" &&
+          element instanceof HTMLLabelElement &&
+          element.control == null
+        ) {
+          return {
+            isRejected: true,
+            debug: {
+              reason: "<label> with no control and no click listeners",
+              element,
+            },
+          };
+        }
+
+        const measurements = getMeasurements(element, type, viewports, range);
+
+        if (measurements == null) {
+          return {
+            isRejected: true,
+            debug: {
+              reason: "no measurements",
+              type,
+              element,
+              viewports,
+            },
+          };
+        }
+
+        const visibleElement: VisibleElement = {
+          element,
+          type,
+          measurements,
+          hasClickListener: this.elementsWithClickListeners.has(element),
+        };
+
+        // In selectable mode we need to be able to select `<label>` text, and
+        // click listeners aren't taken into account at all, so skip the deduping.
+        // Also, a paragraph starting with an inline element shouldn't be deduped
+        // away – both should be selectable.
+        if (types !== "selectable") {
+          deduper.add(visibleElement);
+        }
+
+        return visibleElement;
       }
+    );
 
-      if (types !== "selectable" && !types.includes(type)) {
-        return undefined;
-      }
-
-      // Ignore `<label>` elements with no control and no click listeners.
-      if (
-        type === "label" &&
-        element instanceof HTMLLabelElement &&
-        element.control == null
-      ) {
-        return undefined;
-      }
-
-      const measurements = getMeasurements(element, type, viewports, range);
-
-      if (measurements == null) {
-        return undefined;
-      }
-
-      const visibleElement: VisibleElement = {
-        element,
-        type,
-        measurements,
-        hasClickListener: this.elementsWithClickListeners.has(element),
-      };
-
-      // In selectable mode we need to be able to select `<label>` text, and
-      // click listeners aren't taken into account at all, so skip the deduping.
-      // Also, a paragraph starting with an inline element shouldn't be deduped
-      // away – both should be selectable.
-      if (types !== "selectable") {
-        deduper.add(visibleElement);
-      }
-
-      return visibleElement;
-    });
+    log("log", prefix, "results (including rejected)", maybeResults);
 
     time.start("filter");
     return maybeResults.map(result =>
-      result == null || deduper.rejects(result) ? undefined : result
+      result.isRejected || deduper.rejects(result) ? undefined : result
     );
   }
 
@@ -1600,6 +1638,7 @@ function getMeasurements(
     align: hintPoint.align,
     maxX: maxX + offsetX,
     weight: hintWeight(elementType, visibleBoxes),
+    debug: hintPoint.debug,
   };
 }
 
@@ -1625,6 +1664,7 @@ function getSingleRectPoint({
       ...getXY(visibleBox),
       x: visibleBox.x + visibleBox.width - 1,
       align: "right",
+      debug: "getSingleRectPoint scrollable",
     };
   }
 
@@ -1643,6 +1683,7 @@ function getSingleRectPoint({
     return {
       ...getXY(visibleBox),
       align: "left",
+      debug: `getSingleRectPoint tall (elementType: ${elementType}, height: ${rect.height})`,
     };
   }
 
@@ -1673,7 +1714,10 @@ function getSingleRectPoint({
     });
 
     if (textPoint != null) {
-      return textPoint;
+      return {
+        ...textPoint,
+        debug: `getSingleRectPoint textPoint: ${textPoint.debug}`,
+      };
     }
   }
 
@@ -1687,7 +1731,10 @@ function getSingleRectPoint({
     // just a regular inline element with the `<img>` sticking out the top.
     (isAcceptable(imagePoint.point) || rect.height < imagePoint.rect.height)
   ) {
-    return imagePoint.point;
+    return {
+      ...imagePoint.point,
+      debug: `getSingleRectPoint imagePoint: ${imagePoint.point.debug}`,
+    };
   }
 
   // Checkboxes and radio buttons are typically small and we don't want to cover
@@ -1699,6 +1746,7 @@ function getSingleRectPoint({
     return {
       ...getXY(visibleBox),
       align: "right",
+      debug: "getSingleRectPoint checkbox/radio",
     };
   }
 
@@ -1715,13 +1763,17 @@ function getSingleRectPoint({
       visibleBox
     );
     if (isAcceptable(borderAndPaddingPoint)) {
-      return borderAndPaddingPoint;
+      return {
+        ...borderAndPaddingPoint,
+        debug: `getSingleRectPoint borderAndPaddingPoint (nodeName: ${element.nodeName}): ${borderAndPaddingPoint.debug}`,
+      };
     }
   }
 
   return {
     ...getXY(visibleBox),
     align: "left",
+    debug: "getSingleRectPoint default",
   };
 }
 
@@ -1749,7 +1801,10 @@ function getMultiRectPoint({
     range,
   });
   if (textPoint != null) {
-    return textPoint;
+    return {
+      ...textPoint,
+      debug: `getMultiRectPoint textPoint: ${textPoint.debug}`,
+    };
   }
 
   const minY = Math.min(...visibleBoxes.map(box => box.y));
@@ -1759,6 +1814,7 @@ function getMultiRectPoint({
     x: Math.min(...visibleBoxes.map(box => box.x)),
     y: (minY + maxY) / 2,
     align: "right",
+    debug: "getMultiRectPoint default",
   };
 }
 
@@ -1786,11 +1842,17 @@ function getFirstImagePoint(
     const visibleBox = getVisibleBox(rect, viewports);
 
     if (visibleBox != null) {
+      const borderAndPaddingPoint = getBorderAndPaddingPoint(
+        image,
+        rect,
+        visibleBox
+      );
       return {
         point: {
           // The image might have padding around it.
-          ...getBorderAndPaddingPoint(image, rect, visibleBox),
+          ...borderAndPaddingPoint,
           align: rect.height >= t.MIN_HEIGHT_BOX.value ? "left" : "right",
+          debug: `getFirstImagePoint borderAndPaddingPoint: ${borderAndPaddingPoint.debug}`,
         },
         rect,
       };
@@ -1820,6 +1882,7 @@ function getBorderAndPaddingPoint(
         (element.type === "image" && element.src !== ""))
         ? "left"
         : "right",
+    debug: `getBorderAndPaddingPoint default/only (left: ${left})`,
   };
 }
 
@@ -1906,7 +1969,11 @@ function getBestNonEmptyTextPoint({
         range.setStart(textNode, start);
         range.setEnd(textNode, end + 1);
         return Array.from(range.getClientRects(), rect => {
-          const point = { ...getXY(rect), align };
+          const point: Point = {
+            ...getXY(rect),
+            align,
+            debug: "getBestNonEmptyTextPoint intermediate",
+          };
           return (
             // Exclude screen reader only text.
             rect.width >= t.MIN_SIZE_TEXT_RECT.value &&
@@ -1940,7 +2007,11 @@ function getBestNonEmptyTextPoint({
     const leftMostRect = rects.reduce((a, b) =>
       b.top < a.top ? b : b.top === a.top && b.left < a.left ? b : a
     );
-    return { ...getXY(leftMostRect), align };
+    return {
+      ...getXY(leftMostRect),
+      align,
+      debug: "getBestNonEmptyTextPoint preferTextStart",
+    };
   }
 
   // Prefer the tallest one. In case of a tie, prefer the widest one.
@@ -1976,11 +2047,18 @@ function getBestNonEmptyTextPoint({
       imagePoint.point.x < leftMostRect.left &&
       isAcceptable(imagePoint.point)
     ) {
-      return imagePoint.point;
+      return {
+        ...imagePoint.point,
+        debug: `getBestNonEmptyTextPoint imagePoint: ${imagePoint.point.debug}`,
+      };
     }
   }
 
-  return { ...getXY(leftMostRect), align };
+  return {
+    ...getXY(leftMostRect),
+    align,
+    debug: "getBestNonEmptyTextPoint default",
+  };
 }
 
 function isWithin(point: Point, box: Box): boolean {
