@@ -936,7 +936,7 @@ function* getRootNodes(fromNode: Node): Generator<Node, void, void> {
 // has multiple children it is unclear which (if any!) child we should click, so
 // then we use the original element.
 function getTargetElement(element: HTMLElement): HTMLElement {
-  const children = Array.from(element.children).filter(
+  const children = Array.from(element.childNodes).filter(
     node => !(node instanceof Text && node.data.trim() === "")
   );
   const onlyChild = children.length === 1 ? children[0] : undefined;
