@@ -1966,24 +1966,30 @@ function getBestNonEmptyTextPoint({
       const start = textNode.data.search(NON_WHITESPACE);
       const end = textNode.data.search(LAST_NON_WHITESPACE);
       if (start >= 0 && end >= 0) {
-        range.setStart(textNode, start);
-        range.setEnd(textNode, end + 1);
-        return Array.from(range.getClientRects(), rect => {
-          const point: Point = {
-            ...getXY(rect),
-            align,
-            debug: "getBestNonEmptyTextPoint intermediate",
-          };
-          return (
-            // Exclude screen reader only text.
-            rect.width >= t.MIN_SIZE_TEXT_RECT.value &&
-              rect.height >= t.MIN_SIZE_TEXT_RECT.value &&
-              // Make sure that the text is inside the element.
-              isAcceptable(point)
-              ? rect
-              : undefined
-          );
-        }).filter(Boolean);
+        // Detect 1px elements with `overflow: hidden;` used to visually hide
+        // screen reader text. One has to measure the _element_ – because the
+        // (clipped) _text_ still has a reasonable size!
+        const parentRect =
+          textNode.parentElement != null
+            ? textNode.parentElement.getBoundingClientRect()
+            : undefined;
+        const isScreenReaderOnly =
+          parentRect != null &&
+          parentRect.width < t.MIN_SIZE_TEXT_RECT.value &&
+          parentRect.height < t.MIN_SIZE_TEXT_RECT.value;
+        if (!isScreenReaderOnly) {
+          range.setStart(textNode, start);
+          range.setEnd(textNode, end + 1);
+          return Array.from(range.getClientRects(), rect => {
+            const point: Point = {
+              ...getXY(rect),
+              align,
+              debug: "getBestNonEmptyTextPoint intermediate",
+            };
+            // Make sure that the text is inside the element.
+            return isAcceptable(point) ? rect : undefined;
+          }).filter(Boolean);
+        }
       }
       return [];
     })
@@ -2014,9 +2020,9 @@ function getBestNonEmptyTextPoint({
     };
   }
 
-  // Prefer the tallest one. In case of a tie, prefer the widest one.
+  // Prefer the tallest one. In case of a tie, prefer the left-most one.
   const largestRect = rects.reduce((a, b) =>
-    b.height > a.height ? b : b.height === a.height && b.width > a.width ? b : a
+    b.height > a.height ? b : b.height === a.height && b.left < a.left ? b : a
   );
 
   // There could be smaller text just to the left of the tallest text. It feels

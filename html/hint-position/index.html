@@ -106,7 +106,6 @@
       .visually-hidden {
         border: 0 !important;
         clip: rect(1px, 1px, 1px, 1px) !important;
-        font-size: 1px !important;
         height: 1px !important;
         overflow: hidden !important;
         padding: 0 !important;
@@ -119,6 +118,12 @@
         width: 1px;
         height: 1px;
         clip: rect(0 0 0 0);
+      }
+
+      .text-with-visually-hidden {
+        padding: 10px;
+        border: 1px solid;
+        width: 300px;
       }
 
       .upload {
@@ -806,7 +811,7 @@
 
     <p>
       A "large" card, where the wrapping link itself is still inline with
-      several rects (some width 0 width).
+      several rects (some with 0 width).
     </p>
     <a href="#" class="card-wrapper">
       <div class="card">
@@ -881,6 +886,12 @@
       <div>17:55</div>
       <div>$29</div>
     </button>
+
+    <p>Visually-hidden text at the start:</p>
+    <a href="#" class="text-with-visually-hidden">
+      <span class="visually-hidden probe">Left</span>
+      <span style="margin-left: 30px;">Right</span>
+    </a>
 
     <h2>Floats</h2>
     <p>Links which have 0 height due to floated children.</p>
