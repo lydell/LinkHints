@@ -246,7 +246,11 @@ export default (communicator?: {
       // original in the case with no `hook` above.
       fnMap.set(fn, originalFn);
 
-      let newDescriptor = { ...descriptor, [prop]: fn };
+      // Cannot use a computed property here due to Flow.
+      let newDescriptor =
+        prop === "value"
+          ? { ...descriptor, value: fn }
+          : { ...descriptor, set: fn };
 
       if (BROWSER === "firefox") {
         if (prop === "value") {

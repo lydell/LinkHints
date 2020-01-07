@@ -5,7 +5,6 @@ include_warnings=true
 [lints]
 all=error
 implicit-inexact-object=error
-non-array-spread=off
 unclear-type=off
 
 [strict]

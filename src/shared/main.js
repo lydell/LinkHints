@@ -159,7 +159,7 @@ export function addEventListener(
   target: EventTarget,
   eventName: string,
   listener: AnyFunction,
-  options: { [string]: mixed, ... } = {}
+  options: {| capture?: boolean, passive?: boolean |} = { ...undefined }
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
   target.addEventListener(eventName, listener, fullOptions);

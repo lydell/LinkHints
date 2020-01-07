@@ -40,7 +40,7 @@
     "eslint-plugin-react": "7.17.0",
     "eslint-plugin-react-hooks": "2.3.0",
     "eslint-plugin-simple-import-sort": "5.0.0",
-    "flow-bin": "0.110.1",
+    "flow-bin": "0.115.0",
     "fs-extra": "8.1.0",
     "js-tokens": "5.0.0",
     "minifycss": "1.0.1",
