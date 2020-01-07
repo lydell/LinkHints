@@ -15,11 +15,11 @@ const ICONS_DISABLED = {
   png: makeIcons("png-$disabled", ".png"),
 };
 
-const FAVICONS: Array<{|
+const FAVICONS: Array<{
   input: string,
   output: string,
   size: number,
-|}> = ICONS.svg
+}> = ICONS.svg
   .filter(([size]) => FAVICON_SIZES.includes(size))
   .map(([size, svg]) => ({
     input: svg,

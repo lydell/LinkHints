@@ -97,50 +97,50 @@ const getLayoutMap: ?() => Promise<Map<string, string>> =
       navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
     : undefined;
 
-type Props = {||};
+type Props = {};
 
-type State = {|
+type State = {
   options: ?OptionsData,
   hasSaved: boolean,
   customChars: string,
-  keyTranslationsInput: {|
+  keyTranslationsInput: {
     text: string,
     testOnly: boolean,
     lastKeypress: ?Keypress,
-  |},
+  },
   keyboardDetect: ?(
     | Error
-    | {|
+    | {
         numReceived: number,
         numFullyUpdated: number,
         numAlreadyFullyUpdated: number,
         numPartiallyUpdated: number,
         numAlreadyPartiallyUpdated: number,
         numNotUpdated: number,
-      |}
+      }
   ),
-  capturedKeypressWithTimestamp: ?{|
+  capturedKeypressWithTimestamp: ?{
     timestamp: number,
     keypress: NormalizedKeypress,
-  |},
+  },
   peek: boolean,
   cssSuggestion: string,
-  importData: {|
+  importData: {
     successCount: ?number,
     tweakableCount: ?number,
     errors: Array<string>,
-  |},
+  },
   perf: TabsPerf,
   expandedPerfTabIds: Array<string>,
   expandedPerf: boolean,
   expandedDebug: boolean,
   localStorageCleared: ?Date,
-|};
+};
 
 export default class OptionsProgram extends React.Component<Props, State> {
   resets: Resets = new Resets();
   hiddenErrors: Array<string> = [];
-  keysTableRef: {| current: HTMLDivElement | null |} = React.createRef();
+  keysTableRef: { current: HTMLDivElement | null } = React.createRef();
   hasRestoredPosition: boolean = false;
 
   state = {
@@ -1632,7 +1632,7 @@ function wrapMessage(message: FromOptions): ToBackground {
 }
 
 function updateKeyTranslations(
-  { code, key, shift }: {| code: string, key: string, shift: boolean |},
+  { code, key, shift }: { code: string, key: string, shift: boolean },
   keyTranslations: KeyTranslations
 ): ?KeyTranslations {
   const previousPair = {}.hasOwnProperty.call(keyTranslations, code)
@@ -1645,7 +1645,7 @@ function updateKeyTranslations(
 }
 
 function updatePair(
-  { key, shift }: {| key: string, shift: boolean |},
+  { key, shift }: { key: string, shift: boolean },
   previousPair: ?KeyPair
 ): KeyPair {
   if (!shift && key.length === 1 && key.toLowerCase() !== key.toUpperCase()) {
@@ -1670,11 +1670,11 @@ function ActivateHighlightedKey({
   mac,
   mappings,
   defaultMappings,
-}: {|
+}: {
   mac: boolean,
   mappings: Array<KeyboardMapping>,
   defaultMappings: Array<KeyboardMapping>,
-|}) {
+}) {
   const first = mappings.find(mapping => mapping.action === "ActivateHint");
 
   if (first != null) {

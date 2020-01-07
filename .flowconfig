@@ -1,14 +1,13 @@
 [options]
 suppress_comment= \\(.\\|\n\\)*\\$FlowIgnore
 include_warnings=true
+exact_by_default=true
 
 [lints]
 all=error
-implicit-inexact-object=error
 unclear-type=off
 
 [strict]
-implicit-inexact-object
 sketchy-null
 sketchy-number
 untyped-type-import

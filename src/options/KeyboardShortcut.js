@@ -9,10 +9,10 @@ const WHITESPACE = /^\s$/;
 export default function KeyboardShortcut({
   mac,
   shortcut,
-}: {|
+}: {
   mac: boolean,
   shortcut: $Shape<Shortcut>,
-|}) {
+}) {
   const { key = "" } = shortcut;
   return (
     <span className="KeyboardShortcut">

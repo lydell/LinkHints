@@ -12,11 +12,11 @@ export default function StringSetEditor({
   save,
   id,
   savedValue,
-}: {|
+}: {
   savedValue: Set<string>,
   save: (Set<string>, Reason) => void,
   id?: string,
-|}) {
+}) {
   const [hasFocus, setHasFocus] = useState<boolean>(false);
   const [stateValue, setStateValue] = useState<Array<string> | void>(undefined);
 

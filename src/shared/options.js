@@ -30,15 +30,15 @@ import {
   DEFAULT_LOG_LEVEL,
 } from "./main";
 
-export type OptionsData = {|
+export type OptionsData = {
   values: Options,
   defaults: Options,
   raw: FlatOptions,
   errors: Array<string>,
   mac: boolean,
-|};
+};
 
-export type Options = {|
+export type Options = {
   chars: string,
   autoActivate: boolean,
   overTypingDuration: number,
@@ -48,7 +48,7 @@ export type Options = {|
   keyTranslations: KeyTranslations,
   normalKeyboardShortcuts: Array<KeyboardMapping>,
   hintsKeyboardShortcuts: Array<KeyboardMapping>,
-|};
+};
 
 export type PartialOptions = $Shape<Options>;
 
@@ -132,7 +132,7 @@ function pruneChars(chars: string): string {
   return Array.from(new Set(Array.from(chars.replace(/\s/g, "")))).join("");
 }
 
-export function getDefaults({ mac }: {| mac: boolean |}): Options {
+export function getDefaults({ mac }: { mac: boolean }): Options {
   function shortcut({
     key,
     alt = false,
@@ -371,7 +371,7 @@ export function diffOptions(
   defaults: FlatOptions,
   fullOptions: FlatOptions,
   saved: FlatOptions
-): {| keysToRemove: Array<string>, optionsToSet: FlatOptions |} {
+): { keysToRemove: Array<string>, optionsToSet: FlatOptions } {
   const keysToRemove = [];
   const optionsToSet = {};
 
@@ -431,11 +431,11 @@ export function importOptions(
   flatOptions: FlatOptions,
   options: Options,
   defaults: Options
-): {|
+): {
   options: ?Options,
   successCount: number,
   errors: Array<string>,
-|} {
+} {
   try {
     const keyErrors = Object.keys(unflattenOptions(flatOptions))
       .map(key =>

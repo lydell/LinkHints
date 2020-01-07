@@ -2,7 +2,7 @@
 
 import * as React from "preact";
 
-type Modifier = boolean | {| mac: "alt" | "cmd" | "ctrl" | "shift" |};
+type Modifier = boolean | { mac: "alt" | "cmd" | "ctrl" | "shift" };
 
 const MODIFIER_NAMES = {
   alt: "Alt",
@@ -16,12 +16,12 @@ export default function KeyboardShortcut({
   ctrl = false,
   shift = false,
   press = "",
-}: {|
+}: {
   alt?: Modifier,
   ctrl?: Modifier,
   shift?: Modifier,
   press?: string,
-|}) {
+}) {
   const modifiers = [
     [MODIFIER_NAMES.ctrl, ctrl],
     [MODIFIER_NAMES.alt, alt],
@@ -53,10 +53,10 @@ export default function KeyboardShortcut({
 function MainShortcut({
   shift = false,
   press,
-}: {|
+}: {
   shift?: boolean,
   press: string,
-|}) {
+}) {
   return <KeyboardShortcut alt={{ mac: "ctrl" }} shift={shift} press={press} />;
 }
 

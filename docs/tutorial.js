@@ -364,7 +364,7 @@ function Intro() {
   );
 }
 
-function Info({ title, children }: {| title: string, children: React.Node |}) {
+function Info({ title, children }: { title: string, children: React.Node }) {
   return (
     <div className="Info">
       <h3>ℹ️ {title}</h3>

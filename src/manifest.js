@@ -3,7 +3,7 @@
 import config from "../project.config";
 
 type IconsList = Array<[number, string]>;
-type Icons = {| svg: IconsList, png: IconsList |};
+type Icons = { svg: IconsList, png: IconsList };
 type IconSizes = { [size: string]: string, ... };
 
 export default () =>

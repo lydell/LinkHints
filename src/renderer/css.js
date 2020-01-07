@@ -6,16 +6,16 @@
 
 import { partition } from "../shared/main";
 
-export type Rule = {|
+export type Rule = {
   selector: string,
   declarations: Array<Declaration>,
-|};
+};
 
-export type Declaration = {|
+export type Declaration = {
   property: string,
   value: string,
   important: boolean,
-|};
+};
 
 // Mostly copied from <https://github.com/lydell/css-tokens>.
 const stringsAndCommentsAndUrlsRegex = /((['"])(?:(?!\2)[^\\]|\\[\s\S])*\2?)|(\/\*(?:[^*]|\*(?!\/))*(?:\*\/)?)|(url\(\s*[^"'()\s]+\s*\))/g;

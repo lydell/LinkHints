@@ -65,9 +65,9 @@ export const FLUSH_EVENT = `${secretPrefix}Flush`;
 export const RESET_EVENT = `${secretPrefix}Reset`;
 
 export type FromInjected =
-  | {| type: "ClickableChanged", target: EventTarget, clickable: boolean |}
-  | {| type: "ShadowRootCreated", shadowRoot: ShadowRoot |}
-  | {| type: "Queue", hasQueue: boolean |};
+  | { type: "ClickableChanged", target: EventTarget, clickable: boolean }
+  | { type: "ShadowRootCreated", shadowRoot: ShadowRoot }
+  | { type: "Queue", hasQueue: boolean };
 
 export default (communicator?: {
   +onInjectedMessage: FromInjected => mixed,
@@ -141,7 +141,7 @@ export default (communicator?: {
       obj: { [string]: mixed, ... },
       name: string,
       hook?: (
-        {| returnValue: any, prehookData: T | void |},
+        { returnValue: any, prehookData: T | void },
         ...args: Array<any>
       ) => any,
       prehook?: (...args: Array<any>) => T
@@ -304,27 +304,27 @@ export default (communicator?: {
   type QueueItem = QueueItemProp | QueueItemMethod;
 
   // `.onclick` and similar.
-  type QueueItemProp = {|
+  type QueueItemProp = {
     type: "prop",
     hadListener: boolean,
     element: HTMLElement,
-  |};
+  };
 
   // `.addEventListener` and `.removeEventListener`.
-  type QueueItemMethod = {|
+  type QueueItemMethod = {
     type: "method",
     added: boolean,
     element: HTMLElement,
     eventName: string,
     listener: mixed,
     options: mixed,
-  |};
+  };
 
   // Elements waiting to be sent to ElementManager.js (in Chrome only).
-  type SendQueueItem = {|
+  type SendQueueItem = {
     added: boolean,
     element: HTMLElement,
-  |};
+  };
 
   class ClickListenerTracker {
     clickListenersByElement: ClickListenersByElement = new Map();
@@ -582,10 +582,10 @@ export default (communicator?: {
     }
   }
 
-  type Queue<T> = {|
+  type Queue<T> = {
     items: Array<T>,
     index: number,
-  |};
+  };
 
   function makeEmptyQueue<T>(): Queue<T> {
     return {
@@ -730,9 +730,9 @@ export default (communicator?: {
   }
 
   type OpenComposedRootNode =
-    | {| type: "Document" |}
-    | {| type: "Element", element: Element |}
-    | {| type: "Closed" |};
+    | { type: "Document" }
+    | { type: "Element", element: Element }
+    | { type: "Closed" };
 
   function getOpenComposedRootNode(element: Element): OpenComposedRootNode {
     const root = apply(getRootNode, element, []);

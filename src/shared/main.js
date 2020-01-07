@@ -106,7 +106,7 @@ Example:
 */
 export function bind(
   object: { [string]: mixed, ... },
-  methods: Array<Method | [Method, {| log?: boolean, catch?: boolean |}]>
+  methods: Array<Method | [Method, { log?: boolean, catch?: boolean }]>
 ) {
   for (const item of methods) {
     const [method, options] = Array.isArray(item) ? item : [item, {}];
@@ -159,7 +159,7 @@ export function addEventListener(
   target: EventTarget,
   eventName: string,
   listener: AnyFunction,
-  options: {| capture?: boolean, passive?: boolean |} = { ...undefined }
+  options: { capture?: boolean, passive?: boolean } = { ...undefined }
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
   target.addEventListener(eventName, listener, fullOptions);
@@ -249,12 +249,12 @@ export function makeRandomToken(): string {
   return array.join("");
 }
 
-export type Box = {|
+export type Box = {
   +x: number,
   +y: number,
   +width: number,
   +height: number,
-|};
+};
 
 // Turn a `ClientRect` into a `Box` using the coordinates of the topmost
 // viewport. Only the part of the `ClientRect` visible through all viewports end
@@ -369,12 +369,12 @@ export function getTextRects({
   viewports,
   words,
   checkElementAtPoint = true,
-}: {|
+}: {
   element: HTMLElement,
   viewports: Array<Box>,
   words: Set<string>,
   checkElementAtPoint?: boolean,
-|}): Array<Box> {
+}): Array<Box> {
   const text = extractText(element).toLowerCase();
 
   const ranges = [];

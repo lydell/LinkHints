@@ -16,11 +16,11 @@ import config from "../project.config";
 
 type Point = [number, number];
 
-type Colors = {|
+type Colors = {
   edges: string,
   surface: string,
   pointer: string,
-|};
+};
 
 const COLORS = {
   pointer: config.colors.badge,
@@ -49,11 +49,11 @@ function pointer({
   height,
   inset,
   tailLength,
-}: {|
+}: {
   height: number, // start–l1, start–r1
   inset: number, // l1–l2, r1–r2
   tailLength: number, // l2–l3, r2–r3
-|}): Array<Point> {
+}): Array<Point> {
   const start = [0, 0];
 
   const l1 = go({ fromPoint: start, angle: -90, length: height });
@@ -73,11 +73,11 @@ function go({
   fromPoint: [x, y],
   angle,
   length,
-}: {|
+}: {
   fromPoint: Point,
   angle: number,
   length: number,
-|}): Point {
+}): Point {
   // First make a vector with the requested length.
   const point = [length, 0];
   // Then rotate it by the requested angle.
@@ -101,7 +101,7 @@ function render(
   {
     opacity = 1,
     pointer: shouldDrawPointer = true,
-  }: {| opacity?: number, pointer?: boolean |} = {}
+  }: { opacity?: number, pointer?: boolean } = {}
 ): string {
   const surfaceRect = {
     left: size * (1 / 8),

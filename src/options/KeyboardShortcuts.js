@@ -15,15 +15,15 @@ import Field from "./Field";
 import KeyboardShortcut, { hasShift, viewKey } from "./KeyboardShortcut";
 
 type ShortcutError =
-  | {| type: "UnrecognizedKey" |}
-  | {| type: "MissingModifier", shift: boolean |}
-  | {| type: "OtherShortcutConflict", otherMapping: KeyboardMapping |}
-  | {| type: "CommonTextEditingShortcutConflict" |}
-  | {| type: "MacOptionKey", printableKey: string, hasOtherModifier: boolean |};
+  | { type: "UnrecognizedKey" }
+  | { type: "MissingModifier", shift: boolean }
+  | { type: "OtherShortcutConflict", otherMapping: KeyboardMapping }
+  | { type: "CommonTextEditingShortcutConflict" }
+  | { type: "MacOptionKey", printableKey: string, hasOtherModifier: boolean };
 
 type Mode = "Normal" | "Hints";
 
-type Props = {|
+type Props = {
   id: string,
   name: string,
   mode: Mode,
@@ -33,21 +33,21 @@ type Props = {|
   chars: string,
   mappings: Array<KeyboardMapping>,
   defaultMappings: Array<KeyboardMapping>,
-  capturedKeypressWithTimestamp: ?{|
+  capturedKeypressWithTimestamp: ?{
     timestamp: number,
     keypress: NormalizedKeypress,
-  |},
+  },
   onChange: (Array<KeyboardMapping>) => void,
   onAddChange: boolean => void,
-|};
+};
 
-type State = {|
+type State = {
   addingAction: ?KeyboardAction,
-  shortcutError: ?{|
+  shortcutError: ?{
     shortcut: Shortcut,
     error: ShortcutError,
-  |},
-|};
+  },
+};
 
 export default class KeyboardShortcuts extends React.Component<Props, State> {
   state = {
@@ -377,10 +377,10 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
 function ShortcutAddDisplay({
   mac,
   defaultMapping,
-}: {|
+}: {
   mac: boolean,
   defaultMapping: KeyboardMapping,
-|}) {
+}) {
   return (
     <div>
       <p>
@@ -414,12 +414,12 @@ function ShortcutErrorDisplay({
   mode,
   useKeyTranslations,
   error,
-}: {|
+}: {
   mac: boolean,
   mode: Mode,
   useKeyTranslations: boolean,
   error: ShortcutError,
-|}) {
+}) {
   switch (error.type) {
     case "UnrecognizedKey":
       return (
@@ -550,9 +550,9 @@ function printKey(printableKey: string): string {
     : viewKey(printableKey);
 }
 
-type KeyboardActionDescription = {|
+type KeyboardActionDescription = {
   name: string,
-|};
+};
 
 export function getKeyboardActionId(action: KeyboardAction): string {
   return `action-${action}`;

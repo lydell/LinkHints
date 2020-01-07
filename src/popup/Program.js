@@ -72,7 +72,7 @@ export default class PopupProgram {
     }
   }
 
-  render({ isEnabled }: {| isEnabled: boolean |}) {
+  render({ isEnabled }: { isEnabled: boolean }) {
     const previous = document.getElementById(CONTAINER_ID);
 
     if (previous != null) {

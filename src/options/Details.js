@@ -9,12 +9,12 @@ export default function Details({
   open,
   onChange,
   children,
-}: {|
+}: {
   summary: React.Node,
   open: boolean,
   onChange: boolean => void,
   children: React.Node,
-|}) {
+}) {
   return (
     <div>
       <button

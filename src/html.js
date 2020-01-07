@@ -8,12 +8,12 @@ export default ({
   polyfill,
   js,
   css,
-}: {|
+}: {
   title: string,
   polyfill: ?string,
   js: Array<string>,
   css: Array<string>,
-|}) => {
+}) => {
   const doc = (
     <html lang="en">
       <head>

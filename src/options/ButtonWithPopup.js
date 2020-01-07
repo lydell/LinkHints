@@ -14,7 +14,7 @@ export default function ButtonWithPopup({
   ...restProps
 }: {
   buttonContent: React.Node,
-  popupContent: ({| close: () => void |}) => React.Node,
+  popupContent: ({ close: () => void }) => React.Node,
   open?: boolean,
   onChange?: boolean => void,
   className?: string,

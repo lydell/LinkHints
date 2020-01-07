@@ -13,30 +13,30 @@ import {
 } from "./main";
 import { DEBUG_PREFIX } from "./options";
 
-type UnsignedInt = {|
+type UnsignedInt = {
   type: "UnsignedInt",
   value: number,
-|};
+};
 
-type UnsignedFloat = {|
+type UnsignedFloat = {
   type: "UnsignedFloat",
   value: number,
-|};
+};
 
-type StringSet = {|
+type StringSet = {
   type: "StringSet",
   value: Set<string>,
-|};
+};
 
-type ElementTypeSet = {|
+type ElementTypeSet = {
   type: "ElementTypeSet",
   value: Set<ElementType>,
-|};
+};
 
-type SelectorString = {|
+type SelectorString = {
   type: "SelectorString",
   value: string,
-|};
+};
 
 export type TweakableValue =
   | UnsignedInt
@@ -47,14 +47,14 @@ export type TweakableValue =
 
 export type TweakableMapping = { [string]: TweakableValue, ... };
 
-export type TweakableMeta = {|
+export type TweakableMeta = {
   namespace: string,
   defaults: TweakableMapping,
   changed: { [string]: boolean, ... },
   errors: { [string]: ?string, ... },
   loaded: Promise<void>,
   unlisten: () => void,
-|};
+};
 
 export function unsignedInt(value: number): UnsignedInt {
   return {

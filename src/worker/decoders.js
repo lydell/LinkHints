@@ -14,17 +14,17 @@ import { type ElementTypes, decodeElementTypes } from "../shared/hints";
 import { type Box, decodeUnsignedFloat } from "../shared/main";
 
 export type FrameMessage =
-  | {|
+  | {
       type: "FindElements",
       token: string,
       types: ElementTypes,
       viewports: Array<Box>,
-    |}
-  | {|
+    }
+  | {
       type: "UpdateElements",
       token: string,
       viewports: Array<Box>,
-    |};
+    };
 
 export const decodeFrameMessage: Decoder<FrameMessage> = record(
   (field, fieldError) => {

@@ -58,7 +58,7 @@ export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = 
 );
 
 // Raw values from a `KeyboardEvent` that we care about.
-export type Keypress = {|
+export type Keypress = {
   key: string,
   code: string,
   alt: boolean,
@@ -66,10 +66,10 @@ export type Keypress = {|
   ctrl: boolean,
   shift: boolean,
   capslock: boolean,
-|};
+};
 
 // A `Keypress` after taking `KeyTranslations` into account.
-export type NormalizedKeypress = {|
+export type NormalizedKeypress = {
   key: string,
   printableKey: ?string,
   alt: boolean,
@@ -79,15 +79,15 @@ export type NormalizedKeypress = {|
   // doesn’t matter if you need to press shift to type a `/` or not (which
   // differs between keyboard layouts).
   shift: ?boolean,
-|};
+};
 
-export type Shortcut = {|
+export type Shortcut = {
   key: string,
   alt: boolean,
   cmd: boolean,
   ctrl: boolean,
   shift: boolean,
-|};
+};
 
 const decodeShortcut: Decoder<Shortcut> = autoRecord({
   key: string,
@@ -151,10 +151,10 @@ export function deserializeShortcut(
   );
 }
 
-export type KeyboardMapping = {|
+export type KeyboardMapping = {
   shortcut: Shortcut,
   action: KeyboardAction,
-|};
+};
 
 export const decodeKeyboardMapping: Decoder<KeyboardMapping> = autoRecord({
   shortcut: decodeShortcut,
@@ -169,9 +169,9 @@ export const decodeKeyboardMappingWithModifiers: Decoder<KeyboardMapping> = auto
 );
 
 export type KeyboardModeBackground =
-  | {| type: "FromHintsState" |}
-  | {| type: "PreventOverTyping", sinceTimestamp: number |}
-  | {| type: "Capture" |};
+  | { type: "FromHintsState" }
+  | { type: "PreventOverTyping", sinceTimestamp: number }
+  | { type: "Capture" };
 
 export type KeyboardModeWorker =
   | "Normal"
@@ -272,10 +272,10 @@ export function keyboardEventToKeypress(event: KeyboardEvent): Keypress {
 export function normalizeKeypress({
   keypress,
   keyTranslations,
-}: {|
+}: {
   keypress: Keypress,
   keyTranslations: KeyTranslations,
-|}): NormalizedKeypress {
+}): NormalizedKeypress {
   // If ignoring the keyboard layout, try to translate `.code` to a `.key`
   // value. Use `.key` otherwise.
   const translated = translateCode({
@@ -340,11 +340,11 @@ function translateCode({
   code,
   shift,
   keyTranslations,
-}: {|
+}: {
   code: string,
   shift: boolean,
   keyTranslations: KeyTranslations,
-|}): ?string {
+}): ?string {
   if ({}.hasOwnProperty.call(keyTranslations, code)) {
     const [unshifted, shifted] = keyTranslations[code];
     return shift ? shifted : unshifted;

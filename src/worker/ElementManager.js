@@ -197,20 +197,20 @@ export const t = {
 
 export const tMeta = tweakable("ElementManager", t);
 
-type RejectedElement = {|
+type RejectedElement = {
   isRejected: true,
   debug: mixed,
-|};
+};
 
-type Record = {|
+type Record = {
   addedNodes: Array<Node> | NodeList<Node>,
   removedNodes: Array<Node> | NodeList<Node>,
   attributeName: ?string,
   target: Node,
-|};
+};
 
 type QueueItem =
-  | {|
+  | {
       type: "Records",
       records: Array<MutationRecord> | Array<Record>,
       recordIndex: number,
@@ -219,25 +219,25 @@ type QueueItem =
       childIndex: number,
       children: ?NodeList<HTMLElement>,
       removalsOnly: boolean,
-    |}
-  | {|
+    }
+  | {
       type: "ClickableChanged",
       target: EventTarget,
       clickable: boolean,
-    |}
-  | {|
+    }
+  | {
       type: "OverflowChanged",
       target: EventTarget,
-    |};
+    };
 
 type MutationType = "added" | "removed" | "changed";
 
-type ShadowRootData = {|
+type ShadowRootData = {
   shadowRoot: ShadowRoot,
   mutationObserver: MutationObserver,
   resets: Resets,
   active: boolean,
-|};
+};
 
 const NON_WHITESPACE = /\S/;
 const LAST_NON_WHITESPACE = /\S\s*$/;
@@ -282,9 +282,9 @@ export default class ElementManager {
 
   constructor({
     onMutation,
-  }: {|
+  }: {
     onMutation: (Array<MutationRecord>) => mixed,
-  |}) {
+  }) {
     this.onMutationExternal = onMutation;
 
     bind(this, [
@@ -492,7 +492,7 @@ export default class ElementManager {
 
   queueRecords(
     records: Array<MutationRecord> | Array<Record>,
-    { removalsOnly = false }: {| removalsOnly?: boolean |} = {}
+    { removalsOnly = false }: { removalsOnly?: boolean } = {}
   ) {
     if (records.length > 0) {
       this.queueItem({
@@ -1406,11 +1406,11 @@ export default class ElementManager {
   }
 }
 
-type Queue<T> = {|
+type Queue<T> = {
   items: Array<T>,
   index: number,
   addedElements: Set<HTMLElement>,
-|};
+};
 
 function makeEmptyQueue<T>(): Queue<T> {
   return {
@@ -1649,14 +1649,14 @@ function getSingleRectPoint({
   visibleBox,
   viewports,
   range,
-}: {|
+}: {
   element: HTMLElement,
   elementType: ElementType,
   rect: ClientRect,
   visibleBox: Box,
   viewports: Array<Box>,
   range: Range,
-|}): Point {
+}): Point {
   // Scrollbars are usually on the right side, so put the hint there, making it
   // easier to see that the hint is for scrolling and reducing overlap.
   if (elementType === "scrollable") {
@@ -1782,12 +1782,12 @@ function getMultiRectPoint({
   visibleBoxes,
   viewports,
   range,
-}: {|
+}: {
   element: HTMLElement,
   visibleBoxes: Array<Box>,
   viewports: Array<Box>,
   range: Range,
-|}): Point {
+}): Point {
   function isAcceptable(point: Point): boolean {
     return visibleBoxes.some(box => isWithin(point, box));
   }
@@ -1821,7 +1821,7 @@ function getMultiRectPoint({
 function getFirstImagePoint(
   element: HTMLElement,
   viewports: Array<Box>
-): ?{| point: Point, rect: ClientRect |} {
+): ?{ point: Point, rect: ClientRect } {
   const images = [
     // First try to find an image _child._ For example, <button
     // class="icon-button"><img></button>`. (This button should get the hint at
@@ -1888,8 +1888,8 @@ function getBorderAndPaddingPoint(
 
 function getNonCoveredPoint(
   element: HTMLElement,
-  { x, y, maxX }: {| x: number, y: number, maxX: number |}
-): ?{| x: number, y: number |} {
+  { x, y, maxX }: { x: number, y: number, maxX: number }
+): ?{ x: number, y: number } {
   const elementAtPoint = getElementFromPoint(element, x, y);
 
   // (x, y) is off-screen.
@@ -1945,14 +1945,14 @@ function getBestNonEmptyTextPoint({
   isAcceptable,
   preferTextStart = false,
   range,
-}: {|
+}: {
   element: HTMLElement,
   elementRect: ClientRect,
   viewports: Array<Box>,
   isAcceptable: Point => boolean,
   preferTextStart: boolean,
   range: Range,
-|}): ?Point {
+}): ?Point {
   const align = "right";
 
   // This goes through _all_ text nodes inside the element. That sounds
@@ -2121,7 +2121,7 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   );
 }
 
-function getXY(box: Box | ClientRect): {| x: number, y: number |} {
+function getXY(box: Box | ClientRect): { x: number, y: number } {
   return {
     // $FlowIgnore: Chrome and Firefox _do_ support `.x` and `.y` on ClientRects (aka DOMRects).
     x: box.x,

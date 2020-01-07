@@ -46,10 +46,10 @@ const ALL_KEYS: Set<string> = new Set(
 export default function Tweakable({
   before,
   onUpdate,
-}: {|
+}: {
   before?: React.Node,
   onUpdate: () => void,
-|}) {
+}) {
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
@@ -99,14 +99,14 @@ function TweakableField<T: TweakableValue>({
   defaultValue,
   changed,
   error,
-}: {|
+}: {
   namespace: string,
   name: string,
   value: T,
   defaultValue: T,
   changed: boolean,
   error: ?string,
-|}) {
+}) {
   const fullKey = `${DEBUG_PREFIX}${namespace}.${name}`;
 
   const reset = () => {

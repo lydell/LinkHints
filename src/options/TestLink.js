@@ -7,7 +7,7 @@ import { classlist } from "../shared/main";
 
 const params = new URLSearchParams(window.location.search);
 
-export default function TestLink({ text }: {| text: string |}) {
+export default function TestLink({ text }: { text: string }) {
   const [clicked, setClicked] = useState<boolean>(false);
 
   const id = text.toLowerCase().replace(/\W+/g, "-");

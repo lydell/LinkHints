@@ -115,7 +115,7 @@ function setup() {
   console.timeEnd("setup");
 }
 
-function js({ input, output } /*: {| input: string, output: string |} */) {
+function js({ input, output } /*: { input: string, output: string } */) {
   return {
     input,
     output: {
@@ -153,11 +153,11 @@ function template(
     input,
     output,
     data,
-  } /*: {|
+  } /*: {
     input: string,
     output: string,
     data?: mixed,
-  |} */
+  } */
 ) {
   let content = undefined;
   return {
@@ -200,12 +200,12 @@ function template(
 }
 
 function html(
-  files /*: {|
+  files /*: {
     title: string,
     html: string,
     js: Array<string>,
     css: Array<string>,
-  |} */
+  } */
 ) {
   return template({
     input: "html.js",
@@ -222,7 +222,7 @@ function html(
 }
 
 function copy(
-  { input, output } /*: {| input: string, output: string, |} */,
+  { input, output } /*: { input: string, output: string, } */,
   transform /*: string => string */ = string => string
 ) {
   let content = "";
@@ -246,7 +246,7 @@ function copy(
   };
 }
 
-function css({ input, output } /*: {| input: string, output: string, |} */) {
+function css({ input, output } /*: { input: string, output: string, } */) {
   return copy({ input, output }, transformCSS);
 }
 

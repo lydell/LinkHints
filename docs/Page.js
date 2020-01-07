@@ -9,12 +9,12 @@ export default function Page({
   description,
   css,
   children,
-}: {|
+}: {
   title: string,
   description: string,
   css: string,
   children: React.Node,
-|}) {
+}) {
   return (
     <html lang="en">
       <head>

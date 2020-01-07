@@ -14,12 +14,12 @@ export default function Perf({
   expandedPerfTabIds,
   onExpandChange,
   onReset,
-}: {|
+}: {
   perf: TabsPerf,
   expandedPerfTabIds: Array<string>,
   onExpandChange: (Array<string>) => void,
   onReset: () => void,
-|}) {
+}) {
   const keys = Object.keys(perf);
 
   const isEmpty = keys.every(tabId => perf[tabId].length === 0);
@@ -244,7 +244,7 @@ function sumDurations(allDurations: Array<Durations>): Durations {
 
 function durationsToRows(
   allDurations: Array<Durations>
-): Array<{| heading: string, values: Array<string> |}> {
+): Array<{ heading: string, values: Array<string> }> {
   const labels = new Set(
     allDurations.flatMap(durations => durations.map(([label]) => label))
   );
@@ -260,10 +260,10 @@ function durationsToRows(
 
 function statsToRows(
   allStats: Array<Array<Stats>>
-): Array<{|
+): Array<{
   title: string,
-  data: Array<{| heading: string, values: Array<string> |}>,
-|}> {
+  data: Array<{ heading: string, values: Array<string> }>,
+}> {
   const urls = new Set(allStats.flatMap(stats => stats.map(({ url }) => url)));
 
   return Array.from(urls, url => {

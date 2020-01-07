@@ -16,7 +16,7 @@ export type Durations = Array<[string, number]>;
 
 export const decodeDurations: Decoder<Durations> = array(pair(string, number));
 
-export type Stats = {|
+export type Stats = {
   url: string,
   numTotalElements: number,
   numTrackedElements: number,
@@ -24,7 +24,7 @@ export type Stats = {|
   numVisibleFrames: number,
   bailed: number,
   durations: Durations,
-|};
+};
 
 export const decodeStats: Decoder<Stats> = autoRecord({
   url: string,
@@ -36,13 +36,13 @@ export const decodeStats: Decoder<Stats> = autoRecord({
   durations: decodeDurations,
 });
 
-export type Perf = Array<{|
+export type Perf = Array<{
   timeToFirstPaint: number,
   timeToLastPaint: number,
   topDurations: Durations,
   collectStats: Array<Stats>,
   renderDurations: Durations,
-|}>;
+}>;
 
 export const decodePerf: Decoder<Perf> = array(
   autoRecord({
@@ -60,7 +60,7 @@ export const decodeTabsPerf: Decoder<TabsPerf> = dict(decodePerf);
 
 export class TimeTracker {
   _durations: Durations = [];
-  _current: ?{| label: string, timestamp: number |} = undefined;
+  _current: ?{ label: string, timestamp: number } = undefined;
 
   start(label: string) {
     this.stop();

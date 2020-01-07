@@ -62,11 +62,11 @@ export default function CSSPreview({
   chars,
   css,
   peek,
-}: {|
+}: {
   chars: string,
   css: string,
   peek: boolean,
-|}) {
+}) {
   const containerRef = useRef();
   const filterByTextRef = useRef();
 
@@ -105,14 +105,14 @@ export default function CSSPreview({
     chars: unmatchedChars,
     highlighted = false,
     hidden = false,
-  }: {|
+  }: {
     left: number,
     top: number,
     matchedChars?: string,
     chars: string,
     highlighted?: boolean,
     hidden?: boolean,
-  |}) => {
+  }) => {
     hintZIndex--;
     const hasMatchedChars = matchedChars !== "";
     return (

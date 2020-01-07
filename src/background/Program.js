@@ -65,26 +65,26 @@ import {
 } from "../shared/perf";
 import { tweakable, unsignedInt } from "../shared/tweakable";
 
-type MessageInfo = {|
+type MessageInfo = {
   tabId: number,
   frameId: number,
   url: ?string,
-|};
+};
 
-type TabState = {|
+type TabState = {
   hintsState: HintsState,
   keyboardMode: KeyboardModeBackground,
   perf: Perf,
   isOptionsPage: boolean,
   isPinned: boolean,
-|};
+};
 
 type HintsState =
-  | {|
+  | {
       type: "Idle",
       highlighted: Highlighted,
-    |}
-  | {|
+    }
+  | {
       type: "Collecting",
       mode: HintsMode,
       pendingElements: PendingElements,
@@ -93,8 +93,8 @@ type HintsState =
       stats: Array<Stats>,
       refreshing: boolean,
       highlighted: Highlighted,
-    |}
-  | {|
+    }
+  | {
       type: "Hinting",
       mode: HintsMode,
       startTime: number,
@@ -106,47 +106,47 @@ type HintsState =
       highlighted: Highlighted,
       updateState: UpdateState,
       peeking: boolean,
-    |};
+    };
 
 // All HintsState types store the highlighted hints (highlighted due to being
 // matched, not due to filtering by text), so that they can stay highlighted for
 // `t.MATCH_HIGHLIGHT_DURATION` ms.
-type Highlighted = Array<{|
+type Highlighted = Array<{
   sinceTimestamp: number,
   element: ElementWithHint,
-|}>;
+}>;
 
-type PendingElements = {|
-  pendingFrames: {|
+type PendingElements = {
+  pendingFrames: {
     answering: number,
     collecting: number,
     lastStartWaitTimestamp: number,
-  |},
+  },
   elements: Array<ExtendedElementReport>,
-|};
+};
 
 type UpdateState =
-  | {|
+  | {
       type: "WaitingForTimeout",
       lastUpdateStartTimestamp: number,
-    |}
-  | {|
+    }
+  | {
       type: "WaitingForResponse",
       lastUpdateStartTimestamp: number,
-    |};
+    };
 
 type HintInput =
-  | {|
+  | {
       type: "Input",
       keypress: NormalizedKeypress,
-    |}
-  | {|
+    }
+  | {
       type: "ActivateHint",
       alt: boolean,
-    |}
-  | {|
+    }
+  | {
       type: "Backspace",
-    |};
+    };
 
 // As far as I can tell, the top frameId is always 0. This is also mentioned here:
 // https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/Tabs/executeScript
@@ -277,7 +277,7 @@ export default class BackgroundProgram {
 
   async sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
+    { tabId, frameId }: { tabId: number, frameId: number | "all_frames" }
   ) {
     await this.sendContentMessage(
       { type: "ToWorker", message },
@@ -287,7 +287,7 @@ export default class BackgroundProgram {
 
   async sendRendererMessage(
     message: ToRenderer,
-    { tabId }: {| tabId: number |}
+    { tabId }: { tabId: number }
   ) {
     await this.sendContentMessage(
       { type: "ToRenderer", message },
@@ -319,7 +319,7 @@ export default class BackgroundProgram {
 
   async sendContentMessage(
     message: FromBackground,
-    { tabId, frameId }: {| tabId: number, frameId: number | "all_frames" |}
+    { tabId, frameId }: { tabId: number, frameId: number | "all_frames" }
   ) {
     await (frameId === "all_frames"
       ? browser.tabs.sendMessage(tabId, message)
@@ -636,12 +636,12 @@ export default class BackgroundProgram {
     allElementsWithHints,
     words,
     tabId,
-  }: {|
+  }: {
     enteredChars: string,
     allElementsWithHints: Array<ElementWithHint>,
     words: Array<string>,
     tabId: number,
-  |}) {
+  }) {
     const indexesByFrame: Map<number, Array<number>> = new Map();
     for (const { text, hint, frame } of allElementsWithHints) {
       const previous = indexesByFrame.get(frame.id) || [];
@@ -820,14 +820,14 @@ export default class BackgroundProgram {
     preventOverTyping,
     forceForegroundTab,
     timestamp,
-  }: {|
+  }: {
     tabId: number,
     match: ElementWithHint,
     updates: Array<HintUpdate>,
     preventOverTyping: boolean,
     forceForegroundTab: boolean,
     timestamp: number,
-  |}): boolean {
+  }): boolean {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return true;
@@ -1065,13 +1065,13 @@ export default class BackgroundProgram {
     tabId,
     frameId,
     foreground,
-  }: {|
+  }: {
     url: string,
     elementIndex: number,
     tabId: number,
     frameId: number,
     foreground: boolean,
-  |}) {
+  }) {
     this.sendWorkerMessage(
       {
         type: "FocusElement",
@@ -1645,11 +1645,11 @@ export default class BackgroundProgram {
     tabId,
     timestamp,
     mode,
-  }: {|
+  }: {
     tabId: number,
     timestamp: number,
     mode: HintsMode,
-  |}) {
+  }) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1697,11 +1697,11 @@ export default class BackgroundProgram {
     tabId,
     delayed = false,
     sendMessages = true,
-  }: {|
+  }: {
     tabId: number,
     delayed?: boolean,
     sendMessages?: boolean,
-  |}) {
+  }) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1902,7 +1902,7 @@ export default class BackgroundProgram {
     });
   }
 
-  async updateOptions({ isInitial = false }: {| isInitial?: boolean |} = {}) {
+  async updateOptions({ isInitial = false }: { isInitial?: boolean } = {}) {
     if (!PROD) {
       if (isInitial) {
         const defaultStorageSync = DEFAULT_STORAGE_SYNC;
@@ -2001,7 +2001,7 @@ export default class BackgroundProgram {
 
   makeWorkerState(
     tabState: TabState,
-    { refreshToken = true }: {| refreshToken?: boolean |} = {}
+    { refreshToken = true }: { refreshToken?: boolean } = {}
   ): ToWorker {
     const { hintsState } = tabState;
 
@@ -2059,10 +2059,10 @@ export default class BackgroundProgram {
   updateWorkerStateAfterHintActivation({
     tabId,
     preventOverTyping,
-  }: {|
+  }: {
     tabId: number,
     preventOverTyping: boolean,
-  |}) {
+  }) {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -2428,7 +2428,7 @@ function assignHints(
     mode,
     chars,
     hasEnteredText,
-  }: {| mode: HintsMode, chars: string, hasEnteredText: boolean |}
+  }: { mode: HintsMode, chars: string, hasEnteredText: boolean }
 ): Array<ElementWithHint> {
   const largestTextWeight = hasEnteredText
     ? Math.max(1, ...passedElements.map(element => element.textWeight))
@@ -2516,7 +2516,7 @@ function updateHints({
   autoActivate: autoActivateOption,
   matchHighlighted,
   updateMeasurements,
-}: {|
+}: {
   mode: HintsMode,
   enteredChars: string,
   enteredText: string,
@@ -2526,13 +2526,13 @@ function updateHints({
   autoActivate: boolean,
   matchHighlighted: boolean,
   updateMeasurements: boolean,
-|}): {|
+}): {
   elementsWithHints: Array<ElementWithHint>,
   allElementsWithHints: Array<ElementWithHint>,
-  match: ?{| elementWithHint: ElementWithHint, autoActivated: boolean |},
+  match: ?{ elementWithHint: ElementWithHint, autoActivated: boolean },
   updates: Array<HintUpdate>,
   words: Array<string>,
-|} {
+} {
   const hasEnteredText = enteredText !== "";
   const hasEnteredTextOnly = hasEnteredText && enteredChars === "";
   const words = splitEnteredText(enteredText);

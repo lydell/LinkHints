@@ -15,7 +15,7 @@ export default function Field({
   changedRight = false,
   render,
   onReset,
-}: {|
+}: {
   id: string,
   connected?: boolean,
   fullWidth?: boolean,
@@ -24,9 +24,9 @@ export default function Field({
   description?: React.Node,
   changed: boolean,
   changedRight?: boolean,
-  render: ({| id: string |}) => React.Node,
+  render: ({ id: string }) => React.Node,
   onReset?: () => void,
-|}) {
+}) {
   const reset =
     onReset != null && changed ? (
       <button

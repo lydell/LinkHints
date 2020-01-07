@@ -37,14 +37,14 @@ import { TimeTracker } from "../shared/perf";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
-type CurrentElements = {|
+type CurrentElements = {
   elements: Array<VisibleElement>,
   frames: Array<HTMLIFrameElement | HTMLFrameElement>,
   viewports: Array<Box>,
   types: ElementTypes,
   indexes: Array<number>,
   words: Array<string>,
-|};
+};
 
 export default class WorkerProgram {
   isPinned: boolean = true;
@@ -54,7 +54,7 @@ export default class WorkerProgram {
   current: ?CurrentElements = undefined;
   oneTimeWindowMessageToken: ?string = undefined;
   mac: boolean = false;
-  suppressNextKeyup: ?{| key: string, code: string |} = undefined;
+  suppressNextKeyup: ?{ key: string, code: string } = undefined;
   resets: Resets = new Resets();
   elementManager: ElementManager = new ElementManager({
     onMutation: this.onMutation.bind(this),
@@ -678,10 +678,10 @@ export default class WorkerProgram {
   updateVisibleElements({
     current,
     oneTimeWindowMessageToken,
-  }: {|
+  }: {
     current: CurrentElements,
     oneTimeWindowMessageToken: ?string,
-  |}) {
+  }) {
     const elements: Array<?VisibleElement> = this.elementManager.getVisibleElements(
       current.types,
       current.viewports,
@@ -1127,13 +1127,13 @@ export function getTextRectsHelper({
   viewports,
   words,
   checkElementAtPoint,
-}: {|
+}: {
   element: HTMLElement,
   type: ElementType,
   viewports: Array<Box>,
   words: Set<string>,
   checkElementAtPoint?: boolean,
-|}): Array<Box> {
+}): Array<Box> {
   // See `extractTextHelper`.
   if (type === "scrollable") {
     return [];
@@ -1185,13 +1185,13 @@ function getUrlWithTarget(link: HTMLAnchorElement): string {
 function firefoxPopupBlockerWorkaround({
   element,
   isPinned,
-}: {|
+}: {
   element: HTMLElement,
   isPinned: boolean,
-|}): () => {|
+}): () => {
   pagePreventedDefault: ?boolean,
   urlsToOpenInNewTabs: Array<string>,
-|} {
+} {
   const prefix = "firefoxPopupBlockerWorkaround";
 
   // In the Options page, `window.wrappedJSObject` does not exist.

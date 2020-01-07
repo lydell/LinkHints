@@ -44,27 +44,27 @@ export const decodeElementTypes: Decoder<ElementTypes> = either(
   array(map(string, decodeElementType))
 );
 
-export type Point = {|
+export type Point = {
   x: number,
   y: number,
   align: "left" | "right",
   debug: string,
-|};
+};
 
-export type HintMeasurements = {|
+export type HintMeasurements = {
   ...Point,
   maxX: number,
   weight: number,
-|};
+};
 
-export type VisibleElement = {|
+export type VisibleElement = {
   element: HTMLElement,
   type: ElementType,
   measurements: HintMeasurements,
   hasClickListener: boolean,
-|};
+};
 
-export type ElementReport = {|
+export type ElementReport = {
   type: ElementType,
   index: number,
   hintMeasurements: HintMeasurements,
@@ -74,42 +74,42 @@ export type ElementReport = {|
   textWeight: number,
   isTextInput: boolean,
   hasClickListener: boolean,
-|};
+};
 
-export type ExtendedElementReport = {|
+export type ExtendedElementReport = {
   ...ElementReport,
-  frame: {|
+  frame: {
     id: number,
     index: number,
-  |},
+  },
   hidden: boolean,
-|};
+};
 
-export type ElementWithHint = {|
+export type ElementWithHint = {
   ...ExtendedElementReport,
   weight: number,
   hint: string,
-|};
+};
 
 export function elementKey(element: ElementWithHint): string {
   const { x, y, align } = element.hintMeasurements;
   return [x, y, align, element.hint].join("\n");
 }
 
-export type ElementRender = {|
+export type ElementRender = {
   hintMeasurements: HintMeasurements,
   hint: string,
   highlighted: boolean,
   invertedZIndex: number,
-|};
+};
 
 export type HintUpdate =
-  | {|
+  | {
       type: "Hide",
       index: number,
       hidden: true,
-    |}
-  | {|
+    }
+  | {
       type: "UpdateContent",
       index: number,
       order: number,
@@ -117,8 +117,8 @@ export type HintUpdate =
       restChars: string,
       highlighted: boolean,
       hidden: boolean,
-    |}
-  | {|
+    }
+  | {
       type: "UpdatePosition",
       index: number,
       order: number,
@@ -126,4 +126,4 @@ export type HintUpdate =
       hintMeasurements: HintMeasurements,
       highlighted: boolean,
       hidden: boolean,
-    |};
+    };

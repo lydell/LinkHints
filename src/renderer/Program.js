@@ -46,11 +46,11 @@ import { TimeTracker } from "../shared/perf";
 import { tweakable, unsignedInt } from "../shared/tweakable";
 import { type Rule, applyStyles, parseCSS } from "./css";
 
-type HintSize = {|
+type HintSize = {
   widthBase: number,
   widthPerLetter: number,
   height: number,
-|};
+};
 
 export const t = {
   MAX_IMMEDIATE_HINT_MOVEMENTS: unsignedInt(50),
@@ -67,18 +67,18 @@ export default class RendererProgram {
   statusElement: HTMLElement;
   statusText: Text;
   hintSize: HintSize;
-  container: {|
+  container: {
     element: HTMLElement,
     root: HTMLElement,
     shadowRoot: ShadowRoot,
     resets: Resets,
     intersectionObserver: IntersectionObserver,
-  |};
+  };
 
-  css: {|
+  css: {
     text: string,
     parsed: ?Array<Rule>,
-  |} = {
+  } = {
     text: CSS,
     parsed: undefined,
   };
@@ -355,7 +355,7 @@ export default class RendererProgram {
 
   async render(
     elements: Array<ElementRender>,
-    { mixedCase }: {| mixedCase: boolean |}
+    { mixedCase }: { mixedCase: boolean }
   ) {
     const { documentElement } = document;
     if (documentElement == null) {
@@ -614,7 +614,7 @@ export default class RendererProgram {
     this.enteredText = enteredText;
   }
 
-  rotateHints({ forward }: {| forward: boolean |}) {
+  rotateHints({ forward }: { forward: boolean }) {
     const sign = forward ? 1 : -1;
     const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
@@ -664,7 +664,7 @@ export default class RendererProgram {
     this.maybeApplyStyles(this.statusElement);
   }
 
-  togglePeek({ peek }: {| peek: boolean |}) {
+  togglePeek({ peek }: { peek: boolean }) {
     const { root } = this.container;
     root.classList.toggle(PEEK_CLASS, peek);
     this.maybeApplyStyles(root);
@@ -829,15 +829,15 @@ function getHintPosition({
   hint,
   hintMeasurements,
   viewport,
-}: {|
+}: {
   hintSize: HintSize,
   hint: string,
   hintMeasurements: HintMeasurements,
   viewport: Box,
-|}): {|
+}): {
   styles: { [string]: string, ... },
   maybeOutsideHorizontally: boolean,
-|} {
+} {
   const width = Math.ceil(
     hintSize.widthBase + hintSize.widthPerLetter * hint.length
   );
