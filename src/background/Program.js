@@ -285,10 +285,7 @@ export default class BackgroundProgram {
     );
   }
 
-  async sendRendererMessage(
-    message: ToRenderer,
-    { tabId }: { tabId: number }
-  ) {
+  async sendRendererMessage(message: ToRenderer, { tabId }: { tabId: number }) {
     await this.sendContentMessage(
       { type: "ToRenderer", message },
       { tabId, frameId: TOP_FRAME_ID }
