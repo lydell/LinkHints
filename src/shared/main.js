@@ -326,32 +326,42 @@ export function setStyles(
 export const NON_WHITESPACE = /\S/;
 export const LAST_NON_WHITESPACE = /\S\s*$/;
 
-export function* walkTextNodes(
-  element: HTMLElement
-): Generator<Text, void, void> {
-  const skip =
-    // Ignore the default text in the HTML of `<textarea>` (if any), which is not
-    // updated as the user types.
-    element instanceof HTMLTextAreaElement ||
-    // Ignore the text of `<option>`s inside `<select>` and `<datalist>`, most
-    // of which are not visible.
-    element instanceof HTMLSelectElement ||
-    element instanceof HTMLDataListElement ||
-    // Ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
-    element instanceof HTMLCanvasElement ||
-    element instanceof HTMLMediaElement ||
-    // Google has `<style>` elements inside some `<div>`s with click listeners.
-    element instanceof HTMLStyleElement ||
-    // If we ignore `<style>` we could just as well ignore `<script>` too.
-    element instanceof HTMLScriptElement ||
+const SKIP_TEXT_ELEMENTS = new Set([
+  // Ignore the default text in the HTML of `<textarea>` (if any), which is not
+  // updated as the user types.
+  "TEXTAREA",
+  // Ignore the text of `<option>`s inside `<select>` and `<datalist>`, most
+  // of which are not visible.
+  "SELECT",
+  "DATALIST",
+  // Ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
+  "CANVAS",
+  "AUDIO",
+  "VIDEO",
+  // Google has `<style>` elements inside some `<div>`s with click listeners.
+  "STYLE",
+  // If we ignore `<style>` we could just as well ignore `<script>` too.
+  "SCRIPT",
+]);
+
+function shouldSkipElementText(element: HTMLElement): boolean {
+  return (
+    // Checking `.nodeName` is ~3x faster than `instanceof` in the link monster
+    // demo.
+    SKIP_TEXT_ELEMENTS.has(element.nodeName) ||
     // Shadow hosts _can_ have text that is never displayed. Ideally we should
     // catch closed shadow roots as well, but it’s unclear if it’s worth the
     // trouble.
-    element.shadowRoot != null;
+    element.shadowRoot != null
+  );
+}
 
+export function* walkTextNodes(
+  element: HTMLElement
+): Generator<Text, void, void> {
   let ignoreText = false;
 
-  if (!skip) {
+  if (!shouldSkipElementText(element)) {
     for (const node of element.childNodes) {
       if (node instanceof Text) {
         if (!ignoreText) {
@@ -378,7 +388,16 @@ export function* walkTextNodes(
 // elements (see `walkTextNodes`). This does not seem to be slower than
 // `.textContent`.
 export function extractText(element: HTMLElement): string {
-  return Array.from(walkTextNodes(element), node => node.data).join("");
+  if (shouldSkipElementText(element)) {
+    return "";
+  }
+  const onlyChild =
+    element.childNodes.length === 1 ? element.childNodes[0] : undefined;
+  return onlyChild instanceof Text
+    ? onlyChild.data
+    : // This line is sufficient by itself. The above is just a performance
+      // optimization for a common case (a single text node child).
+      Array.from(walkTextNodes(element), node => node.data).join("");
 }
 
 export function getTextRects({
