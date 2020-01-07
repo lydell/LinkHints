@@ -19,6 +19,7 @@ import {
   NON_WHITESPACE,
   partition,
   Resets,
+  SKIP_TEXT_ELEMENTS,
   unreachable,
   walkTextNodes,
 } from "../shared/main";
@@ -1611,6 +1612,7 @@ function getMeasurements(
     // with `overflow: hidden;` seems to be a common pattern, used both on
     // addons.mozilla.org and <https://blueimp.github.io/jQuery-File-Upload/>.
     if (
+      element.nodeName === "INPUT" &&
       element instanceof HTMLInputElement &&
       element.type === "file" &&
       element.parentNode instanceof HTMLElement &&
@@ -1639,7 +1641,7 @@ function getMeasurements(
     // <https://codemirror.net/demo/complete.html>
     if (
       !(
-        element instanceof HTMLTextAreaElement &&
+        element.nodeName === "TEXTAREA" &&
         // Use `element.clientWidth` instead of `pointBox.width` because the
         // latter includes the width of the borders of the textarea, which are
         // unreliable.
@@ -1726,13 +1728,7 @@ function getSingleRectPoint({
   // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
   // will fail. An example is the signup form at <https://www.facebook.com/>.
   // Also, ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
-  if (
-    !(
-      element instanceof HTMLSelectElement ||
-      element instanceof HTMLCanvasElement ||
-      element instanceof HTMLMediaElement
-    )
-  ) {
+  if (!SKIP_TEXT_ELEMENTS.has(element.nodeName)) {
     const textPoint = getBestNonEmptyTextPoint({
       element,
       elementRect: rect,
@@ -1769,6 +1765,7 @@ function getSingleRectPoint({
   // Checkboxes and radio buttons are typically small and we don't want to cover
   // them with the hint.
   if (
+    element.nodeName === "INPUT" &&
     element instanceof HTMLInputElement &&
     (element.type === "checkbox" || element.type === "radio")
   ) {
@@ -1782,10 +1779,7 @@ function getSingleRectPoint({
   // Take border and padding into account. This is nice since it places the hint
   // nearer the placeholder in `<input>` elements and nearer the text in `<input
   // type="button">` and `<select>`.
-  if (
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLSelectElement
-  ) {
+  if (element.nodeName === "INPUT" || element.nodeName === "SELECT") {
     const borderAndPaddingPoint = getBorderAndPaddingPoint(
       element,
       rect,
@@ -1906,6 +1900,7 @@ function getBorderAndPaddingPoint(
     ...getXY(visibleBox),
     x: rect.left + left,
     align:
+      element.nodeName === "INPUT" &&
       element instanceof HTMLInputElement &&
       (element.type === "file" ||
         (element.type === "image" && element.src !== ""))
@@ -2200,13 +2195,8 @@ function getLinkElementType(element: HTMLAnchorElement): ElementType {
 }
 
 function isDisabled(element: HTMLElement): boolean {
-  return (
-    (element instanceof HTMLButtonElement ||
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLSelectElement ||
-      element instanceof HTMLTextAreaElement) &&
-    element.disabled
-  );
+  // $FlowIgnore: Not all HTMLElements have the `disabled` property, but for performance we don’t check.
+  return element.disabled === true;
 }
 
 // If `event` originates from an open shadow root, `event.target` is the same as
