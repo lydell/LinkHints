@@ -323,6 +323,9 @@ export function setStyles(
   }
 }
 
+export const NON_WHITESPACE = /\S/;
+export const LAST_NON_WHITESPACE = /\S\s*$/;
+
 export function* walkTextNodes(
   element: HTMLElement
 ): Generator<Text, void, void> {
@@ -346,10 +349,24 @@ export function* walkTextNodes(
     // trouble.
     element.shadowRoot != null;
 
+  let ignoreText = false;
+
   if (!skip) {
     for (const node of element.childNodes) {
       if (node instanceof Text) {
-        yield node;
+        if (!ignoreText) {
+          // Detect 1px elements with `overflow: hidden;` used to visually hide
+          // screen reader text. One has to measure the _element_ – because the
+          // (clipped) _text_ still has a reasonable size!
+          const parentRect = element.getBoundingClientRect();
+          const isScreenReaderOnly =
+            parentRect.width <= 1 && parentRect.height <= 1;
+          if (isScreenReaderOnly) {
+            ignoreText = true;
+          } else {
+            yield node;
+          }
+        }
       } else if (node instanceof HTMLElement) {
         yield* walkTextNodes(node);
       }

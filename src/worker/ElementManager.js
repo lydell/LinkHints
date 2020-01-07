@@ -14,7 +14,9 @@ import {
   getElementFromPoint,
   getLabels,
   getVisibleBox,
+  LAST_NON_WHITESPACE,
   log,
+  NON_WHITESPACE,
   partition,
   Resets,
   unreachable,
@@ -238,9 +240,6 @@ type ShadowRootData = {
   resets: Resets,
   active: boolean,
 };
-
-const NON_WHITESPACE = /\S/;
-const LAST_NON_WHITESPACE = /\S\s*$/;
 
 type Deadline = { timeRemaining: () => number, ... };
 
@@ -1996,30 +1995,17 @@ function getBestNonEmptyTextPoint({
       const start = textNode.data.search(NON_WHITESPACE);
       const end = textNode.data.search(LAST_NON_WHITESPACE);
       if (start >= 0 && end >= 0) {
-        // Detect 1px elements with `overflow: hidden;` used to visually hide
-        // screen reader text. One has to measure the _element_ – because the
-        // (clipped) _text_ still has a reasonable size!
-        const parentRect =
-          textNode.parentElement != null
-            ? textNode.parentElement.getBoundingClientRect()
-            : undefined;
-        const isScreenReaderOnly =
-          parentRect != null &&
-          parentRect.width < t.MIN_SIZE_TEXT_RECT.value &&
-          parentRect.height < t.MIN_SIZE_TEXT_RECT.value;
-        if (!isScreenReaderOnly) {
-          range.setStart(textNode, start);
-          range.setEnd(textNode, end + 1);
-          return Array.from(range.getClientRects(), rect => {
-            const point: Point = {
-              ...getXY(rect),
-              align,
-              debug: "getBestNonEmptyTextPoint intermediate",
-            };
-            // Make sure that the text is inside the element.
-            return isAcceptable(point) ? rect : undefined;
-          }).filter(Boolean);
-        }
+        range.setStart(textNode, start);
+        range.setEnd(textNode, end + 1);
+        return Array.from(range.getClientRects(), rect => {
+          const point: Point = {
+            ...getXY(rect),
+            align,
+            debug: "getBestNonEmptyTextPoint intermediate",
+          };
+          // Make sure that the text is inside the element.
+          return isAcceptable(point) ? rect : undefined;
+        }).filter(Boolean);
       }
       return [];
     })

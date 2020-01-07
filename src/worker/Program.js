@@ -24,9 +24,12 @@ import {
   getLabels,
   getTextRects,
   getViewport,
+  LAST_NON_WHITESPACE,
   log,
+  NON_WHITESPACE,
   Resets,
   unreachable,
+  walkTextNodes,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -304,12 +307,7 @@ export default class WorkerProgram {
           if (selection != null) {
             // Firefox won’t select text inside a ShadowRoot without this timeout.
             setTimeout(() => {
-              const range = document.createRange();
-              if (element.childNodes.length === 0) {
-                range.selectNode(element);
-              } else {
-                range.selectNodeContents(element);
-              }
+              const range = selectNodeContents(element);
               selection.removeAllRanges();
               selection.addRange(range);
             }, 0);
@@ -1031,6 +1029,45 @@ function getSelectionDirection(selection: Selection): ?boolean {
   range.setStart(anchorNode, selection.anchorOffset);
   range.setEnd(focusNode, selection.focusOffset);
   return !range.collapsed;
+}
+
+// Select the text of an element (if any – otherwise select the whole element
+// (such as an image)), ignoring leading and trailing whitespace.
+function selectNodeContents(element: HTMLElement): Range {
+  const range = document.createRange();
+  let start = undefined;
+  let end = undefined;
+
+  for (const textNode of walkTextNodes(element)) {
+    if (start == null) {
+      const index = textNode.data.search(NON_WHITESPACE);
+      if (index >= 0) {
+        start = { textNode, index };
+      }
+    }
+    if (start != null) {
+      const index = textNode.data.search(LAST_NON_WHITESPACE);
+      if (index >= 0) {
+        end = { textNode, index: index + 1 };
+      }
+    }
+  }
+
+  let method = undefined;
+  if (start != null && end != null) {
+    method = "text nodes";
+    range.setStart(start.textNode, start.index);
+    range.setEnd(end.textNode, end.index);
+  } else if (element.childNodes.length === 0) {
+    method = "selectNode";
+    range.selectNode(element);
+  } else {
+    method = "selectNodeContents";
+    range.selectNodeContents(element);
+  }
+  log("log", "selectNodeContents", { method, start, end, element });
+
+  return range;
 }
 
 function getTextWeight(text: string, weight: number): number {
