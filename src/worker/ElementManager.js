@@ -197,7 +197,7 @@ export const t = {
 
 export const tMeta = tweakable("ElementManager", t);
 
-type RejectedElement = {
+type Rejected = {
   isRejected: true,
   debug: mixed,
 };
@@ -1142,7 +1142,7 @@ export default class ElementManager {
     const deduper = new Deduper();
 
     time.start("loop");
-    const maybeResults: Array<VisibleElement | RejectedElement> = Array.from(
+    const maybeResults: Array<VisibleElement | Rejected> = Array.from(
       candidates,
       element => {
         const type: ?ElementType =
@@ -1189,7 +1189,7 @@ export default class ElementManager {
 
         const measurements = getMeasurements(element, type, viewports, range);
 
-        if (measurements == null) {
+        if (measurements.isRejected) {
           return {
             isRejected: true,
             debug: {
@@ -1197,6 +1197,7 @@ export default class ElementManager {
               type,
               element,
               viewports,
+              inner: measurements.debug,
             },
           };
         }
@@ -1504,7 +1505,7 @@ function getMeasurements(
   // The `range` is passed in since it is faster to re-use the same one than
   // creating a new one for every element candidate.
   range: Range
-): ?HintMeasurements {
+): HintMeasurements | Rejected {
   // If an inline `<a>` wraps a block `<div>`, the link gets three rects. The
   // first and last have 0 width. The middle is the "real" one. Remove the
   // "empty" ones, so that the link is considered a "card" and not a
@@ -1524,7 +1525,14 @@ function getMeasurements(
   // most likely not clickable, and only used for event delegation.
   if (elementType === "clickable-event" && rects.length === 1) {
     if (area(rects[0]) > t.MAX_CLICKABLE_EVENT_AREA.value) {
-      return undefined;
+      return {
+        isRejected: true,
+        debug: {
+          reason: "element with only click listeners that is really large",
+          rect: rects[0],
+          max: t.MAX_CLICKABLE_EVENT_AREA.value,
+        },
+      };
     }
   }
 
@@ -1558,14 +1566,20 @@ function getMeasurements(
             viewports,
             range
           );
-          if (measurements != null) {
+          if (!measurements.isRejected) {
             return measurements;
           }
         }
       }
     }
 
-    return undefined;
+    return {
+      isRejected: true,
+      debug: {
+        reason: "no visibleBoxes",
+        rects,
+      },
+    };
   }
 
   const hintPoint =
@@ -1609,7 +1623,15 @@ function getMeasurements(
         viewports,
         range
       );
-      return measurements == null ? undefined : measurements;
+      return measurements.isRejected
+        ? {
+            ...measurements,
+            debug: {
+              reason: "wrapped file input without nonCoveredPoint",
+              inner: measurements.debug,
+            },
+          }
+        : measurements;
     }
 
     // CodeMirror editor uses a tiny hidden textarea positioned at the caret.
@@ -1625,7 +1647,15 @@ function getMeasurements(
         element.clientWidth <= 1
       )
     ) {
-      return undefined;
+      return {
+        isRejected: true,
+        debug: {
+          reason: "no nonCoveredPoint",
+          visibleBoxes,
+          hintPoint,
+          maxX,
+        },
+      };
     }
   }
 
