@@ -1141,10 +1141,10 @@ export default class ElementManager {
     const range = document.createRange();
     const deduper = new Deduper();
 
-    time.start("loop");
     const maybeResults: Array<VisibleElement | Rejected> = Array.from(
       candidates,
       element => {
+        time.start("loop:start");
         const type: ?ElementType =
           types === "selectable"
             ? this.getElementTypeSelectable(element)
@@ -1187,6 +1187,7 @@ export default class ElementManager {
           };
         }
 
+        time.start("loop:measurements");
         const measurements = getMeasurements(element, type, viewports, range);
 
         if (measurements.isRejected) {
@@ -1202,6 +1203,7 @@ export default class ElementManager {
           };
         }
 
+        time.start("loop:visibleElement");
         const visibleElement: VisibleElement = {
           element,
           type,
@@ -1209,6 +1211,7 @@ export default class ElementManager {
           hasClickListener: this.elementsWithClickListeners.has(element),
         };
 
+        time.start("loop:dedupe");
         // In selectable mode we need to be able to select `<label>` text, and
         // click listeners aren't taken into account at all, so skip the deduping.
         // Also, a paragraph starting with an inline element shouldn't be deduped

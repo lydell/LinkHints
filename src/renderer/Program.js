@@ -415,19 +415,20 @@ export default class RendererProgram {
     const restElements = [];
     let numEdgeElements = 0;
 
-    time.start("loop");
     for (const {
       hintMeasurements,
       hint,
       highlighted,
       invertedZIndex,
     } of elements) {
+      time.start("loop:create");
       const element = createHintElement(hint);
       element.classList.toggle(HIGHLIGHTED_HINT_CLASS, highlighted);
       if (mixedCase) {
         element.classList.add(MIXED_CASE_CLASS);
       }
 
+      time.start("loop:position");
       const { styles, maybeOutsideHorizontally } = getHintPosition({
         hintSize: this.hintSize,
         hint,
@@ -440,6 +441,7 @@ export default class RendererProgram {
         "z-index": (MAX_Z_INDEX - invertedZIndex - 1).toString(),
       });
 
+      time.start("loop:append");
       root.append(element);
       this.hints.push(element);
 

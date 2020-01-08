@@ -78,7 +78,14 @@ export class TimeTracker {
     }
 
     const duration = Date.now() - current.timestamp;
-    this._durations.push([current.label, duration]);
+
+    const previous = this._durations.find(([label]) => label === current.label);
+    if (previous) {
+      previous[1] += duration;
+    } else {
+      this._durations.push([current.label, duration]);
+    }
+
     this._current = undefined;
   }
 
