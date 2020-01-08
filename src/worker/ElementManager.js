@@ -1598,7 +1598,6 @@ function getMeasurements(
     };
   }
 
-  time.start("measurements:hintPoint");
   const hintPoint =
     rects.length === 1
       ? getSingleRectPoint({
@@ -1608,8 +1607,9 @@ function getMeasurements(
           visibleBox: visibleBoxes[0],
           viewports,
           range,
+          time,
         })
-      : getMultiRectPoint({ element, visibleBoxes, viewports, range });
+      : getMultiRectPoint({ element, visibleBoxes, viewports, range, time });
 
   const maxX = Math.max(...visibleBoxes.map(box => box.x + box.width));
 
@@ -1617,12 +1617,12 @@ function getMeasurements(
   // worth it since it makes hints in fixed menus so much easier find.
   // If this runs in a frame, the element can still be covered by something in a
   // parent frame, but it's not worth the trouble to try and check that.
-  time.start("measurements:nonCoveredPoint");
   const nonCoveredPoint = getNonCoveredPoint(element, {
     // Rounding upwards is required in html/tridactyl/index.html.
     x: Math.ceil(hintPoint.x),
     y: Math.round(hintPoint.y),
     maxX,
+    time,
   });
 
   time.start("measurements:noNonCoveredPoint");
@@ -1658,7 +1658,6 @@ function getMeasurements(
     // Targeting those are the only reliable way of focusing CodeMirror
     // editors, and doing so without moving the caret.
     // <https://codemirror.net/demo/complete.html>
-    time.start("measurements:codemirror");
     if (
       !(
         element.nodeName === "TEXTAREA" &&
@@ -1701,6 +1700,7 @@ function getSingleRectPoint({
   visibleBox,
   viewports,
   range,
+  time,
 }: {
   element: HTMLElement,
   elementType: ElementType,
@@ -1708,9 +1708,11 @@ function getSingleRectPoint({
   visibleBox: Box,
   viewports: Array<Box>,
   range: Range,
+  time: TimeTracker,
 }): Point {
   // Scrollbars are usually on the right side, so put the hint there, making it
   // easier to see that the hint is for scrolling and reducing overlap.
+  time.start("getSingleRectPoint:scrollable");
   if (elementType === "scrollable") {
     return {
       ...getXY(visibleBox),
@@ -1728,6 +1730,7 @@ function getSingleRectPoint({
   // always placing the hint at the edge for such elements. Usually they are
   // tall enough to have their hint end up there. This ensures the hint is
   // _always_ placed there for consistency.
+  time.start("getSingleRectPoint:tall");
   if (
     elementType === "textarea" ||
     (elementType !== "selectable" && rect.height >= t.MIN_HEIGHT_BOX.value)
@@ -1749,6 +1752,7 @@ function getSingleRectPoint({
   // measured, but if the dropdown opens _upwards_ the `elementAtPoint` check
   // will fail. An example is the signup form at <https://www.facebook.com/>.
   // Also, ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
+  time.start("getSingleRectPoint:textPoint");
   if (!SKIP_TEXT_ELEMENTS.has(element.nodeName)) {
     const textPoint = getBestNonEmptyTextPoint({
       element,
@@ -1769,6 +1773,7 @@ function getSingleRectPoint({
 
   // Try to place the hint near an image. Many buttons have just an icon and no
   // (visible) text.
+  time.start("getSingleRectPoint:imagePoint");
   const imagePoint = getFirstImagePoint(element, viewports);
   if (
     imagePoint != null &&
@@ -1785,6 +1790,7 @@ function getSingleRectPoint({
 
   // Checkboxes and radio buttons are typically small and we don't want to cover
   // them with the hint.
+  time.start("getSingleRectPoint:checkbox/radio");
   if (
     element instanceof HTMLInputElement &&
     (element.type === "checkbox" || element.type === "radio")
@@ -1799,6 +1805,7 @@ function getSingleRectPoint({
   // Take border and padding into account. This is nice since it places the hint
   // nearer the placeholder in `<input>` elements and nearer the text in `<input
   // type="button">` and `<select>`.
+  time.start("getSingleRectPoint:borderAndPaddingPoint");
   if (element.nodeName === "INPUT" || element.nodeName === "SELECT") {
     const borderAndPaddingPoint = getBorderAndPaddingPoint(
       element,
@@ -1813,6 +1820,7 @@ function getSingleRectPoint({
     }
   }
 
+  time.start("getSingleRectPoint:default");
   return {
     ...getXY(visibleBox),
     align: "left",
@@ -1825,16 +1833,19 @@ function getMultiRectPoint({
   visibleBoxes,
   viewports,
   range,
+  time,
 }: {
   element: HTMLElement,
   visibleBoxes: Array<Box>,
   viewports: Array<Box>,
   range: Range,
+  time: TimeTracker,
 }): Point {
   function isAcceptable(point: Point): boolean {
     return visibleBoxes.some(box => isWithin(point, box));
   }
 
+  time.start("getMultiRectPoint:textPoint");
   const textPoint = getBestNonEmptyTextPoint({
     element,
     elementRect: element.getBoundingClientRect(),
@@ -1850,6 +1861,7 @@ function getMultiRectPoint({
     };
   }
 
+  time.start("getMultiRectPoint:default");
   const minY = Math.min(...visibleBoxes.map(box => box.y));
   const maxY = Math.max(...visibleBoxes.map(box => box.y + box.height));
 
@@ -1931,8 +1943,14 @@ function getBorderAndPaddingPoint(
 
 function getNonCoveredPoint(
   element: HTMLElement,
-  { x, y, maxX }: { x: number, y: number, maxX: number }
+  {
+    x,
+    y,
+    maxX,
+    time,
+  }: { x: number, y: number, maxX: number, time: TimeTracker }
 ): ?{ x: number, y: number } {
+  time.start("getNonCoveredPoint:getElementFromPoint");
   const elementAtPoint = getElementFromPoint(element, x, y);
 
   // (x, y) is off-screen.
@@ -1941,10 +1959,12 @@ function getNonCoveredPoint(
   }
 
   // `.contains` also checks `element === elementAtPoint`.
+  time.start("getNonCoveredPoint:contains");
   if (element.contains(elementAtPoint)) {
     return { x, y };
   }
 
+  time.start("getNonCoveredPoint:getBoundingClientRect");
   const rect = elementAtPoint.getBoundingClientRect();
 
   // `.getBoundingClientRect()` does not include pseudo-elements that are
@@ -1959,6 +1979,7 @@ function getNonCoveredPoint(
     return { x, y };
   }
 
+  time.start("getNonCoveredPoint:attempt2");
   const newX = Math.round(rect.right + 1);
 
   // Try once to the right of the covering element (if it doesn't cover all the
