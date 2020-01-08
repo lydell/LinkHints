@@ -1252,15 +1252,18 @@ function firefoxPopupBlockerWorkaround({
 
   // Returns `element` if it is a link, or its first parent that is a link (if
   // any). Clicking on an element inside a link also activates the link.
-  const link = element.closest("a");
+  const linkElement = element.closest("a");
+  const link =
+    linkElement != null && linkElement instanceof HTMLAnchorElement
+      ? linkElement
+      : undefined;
 
   const shouldWorkaroundLinks =
     link != null &&
-    link instanceof HTMLAnchorElement &&
     (link.target.toLowerCase() === "_blank" ||
       (isPinned && link.hostname !== window.location.hostname));
 
-  if (shouldWorkaroundLinks && link instanceof HTMLAnchorElement) {
+  if (shouldWorkaroundLinks && link != null) {
     // Default to opening this link in a new tab.
     linkUrl = link.href;
 

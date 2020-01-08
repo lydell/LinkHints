@@ -1612,7 +1612,6 @@ function getMeasurements(
     // with `overflow: hidden;` seems to be a common pattern, used both on
     // addons.mozilla.org and <https://blueimp.github.io/jQuery-File-Upload/>.
     if (
-      element.nodeName === "INPUT" &&
       element instanceof HTMLInputElement &&
       element.type === "file" &&
       element.parentNode instanceof HTMLElement &&
@@ -1765,7 +1764,6 @@ function getSingleRectPoint({
   // Checkboxes and radio buttons are typically small and we don't want to cover
   // them with the hint.
   if (
-    element.nodeName === "INPUT" &&
     element instanceof HTMLInputElement &&
     (element.type === "checkbox" || element.type === "radio")
   ) {
@@ -1900,7 +1898,6 @@ function getBorderAndPaddingPoint(
     ...getXY(visibleBox),
     x: rect.left + left,
     align:
-      element.nodeName === "INPUT" &&
       element instanceof HTMLInputElement &&
       (element.type === "file" ||
         (element.type === "image" && element.src !== ""))

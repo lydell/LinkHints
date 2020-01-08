@@ -125,13 +125,13 @@ function js({ input, output } /*: { input: string, output: string } */) {
       externalLiveBindings: false,
     },
     plugins: [
+      replace(makeGlobals()),
       sucrase({
         exclude: ["node_modules/**"],
         transforms: ["flow", "jsx"],
         // Don't add `__self` and `__source` to JSX, which Preact does not support.
         production: true,
       }),
-      replace(makeGlobals()),
       resolve(),
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
@@ -273,6 +273,10 @@ function makeGlobals() {
     META_TUTORIAL: JSON.stringify(config.meta.tutorial),
     META_VERSION: JSON.stringify(config.meta.version),
     PROD: JSON.stringify(PROD),
+    // Performance. Note: These require `x != null` in `x instanceof A`.
+    "instanceof Text": ".nodeType === 3",
+    "instanceof HTMLAnchorElement": '.nodeName === "A"',
+    "instanceof HTMLInputElement": '.nodeName === "INPUT"',
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.

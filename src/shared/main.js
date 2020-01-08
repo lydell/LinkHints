@@ -393,7 +393,7 @@ export function extractText(element: HTMLElement): string {
   }
   const onlyChild =
     element.childNodes.length === 1 ? element.childNodes[0] : undefined;
-  return onlyChild instanceof Text
+  return onlyChild != null && onlyChild instanceof Text
     ? onlyChild.data
     : // This line is sufficient by itself. The above is just a performance
       // optimization for a common case (a single text node child).
