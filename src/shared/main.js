@@ -231,18 +231,6 @@ export function partition<T>(
   return [left, right];
 }
 
-// Using double `requestAnimationFrame` since they run before paint.
-// See: https://youtu.be/cCOL7MC4Pl0?t=20m29s
-export function waitForPaint(): Promise<void> {
-  return new Promise(resolve => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        resolve();
-      });
-    });
-  });
-}
-
 export function makeRandomToken(): string {
   const array = new Uint32Array(3);
   window.crypto.getRandomValues(array);

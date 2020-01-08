@@ -35,7 +35,6 @@ import {
   Resets,
   setStyles,
   unreachable,
-  waitForPaint,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -474,20 +473,23 @@ export default class RendererProgram {
       this.moveInsideViewport(edgeElements, viewport);
     }
 
-    time.start("paint 1");
-    await waitForPaint();
-
+    time.start("waitUntilBeforeNextRepaint 1");
+    await waitUntilBeforeNextRepaint();
     const firstPaintTimestamp = Date.now();
 
     time.start("move inside 2");
+    // We just waited until just before the next repaint. Wait just a little bit
+    // more (but not a full ~16ms frame) to let the hints appear on screen
+    // before moving the remaining hints.
+    await wait0();
     const moved = this.moveInsideViewport(restElements, viewport);
 
     // Only measure the next paint if we actually moved any hints inside the
     // viewport during the second round. This makes the performance report more
     // relevant.
-    time.start("paint 2");
+    time.start("waitUntilBeforeNextRepaint 2");
     if (moved) {
-      await waitForPaint();
+      await waitUntilBeforeNextRepaint();
     }
 
     const lastPaintTimestamp = Date.now();
@@ -877,4 +879,18 @@ function getHintPosition({
     },
     maybeOutsideHorizontally,
   };
+}
+
+function waitUntilBeforeNextRepaint(): Promise<void> {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
+
+function wait0(): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, 0);
+  });
 }
