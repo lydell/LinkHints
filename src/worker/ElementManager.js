@@ -1188,7 +1188,13 @@ export default class ElementManager {
         }
 
         time.start("loop:measurements");
-        const measurements = getMeasurements(element, type, viewports, range);
+        const measurements = getMeasurements(
+          element,
+          type,
+          viewports,
+          range,
+          time
+        );
 
         if (measurements.isRejected) {
           return {
@@ -1507,12 +1513,14 @@ function getMeasurements(
   viewports: Array<Box>,
   // The `range` is passed in since it is faster to re-use the same one than
   // creating a new one for every element candidate.
-  range: Range
+  range: Range,
+  time: TimeTracker
 ): HintMeasurements | Rejected {
   // If an inline `<a>` wraps a block `<div>`, the link gets three rects. The
   // first and last have 0 width. The middle is the "real" one. Remove the
   // "empty" ones, so that the link is considered a "card" and not a
   // line-wrapped text link.
+  time.start("measurements:rects");
   const allRects = Array.from(element.getClientRects());
   const filteredRects = allRects.filter(
     rect =>
@@ -1526,6 +1534,7 @@ function getMeasurements(
 
   // Ignore elements with only click listeners that are really large. These are
   // most likely not clickable, and only used for event delegation.
+  time.start("measurements:large-clickable");
   if (elementType === "clickable-event" && rects.length === 1) {
     if (area(rects[0]) > t.MAX_CLICKABLE_EVENT_AREA.value) {
       return {
@@ -1539,11 +1548,13 @@ function getMeasurements(
     }
   }
 
+  time.start("measurements:offsets");
   const [offsetX, offsetY] = viewports.reduceRight(
     ([x, y], viewport) => [x + viewport.x, y + viewport.y],
     [0, 0]
   );
 
+  time.start("measurements:visibleBoxes");
   const visibleBoxes = Array.from(rects, rect => getVisibleBox(rect, viewports))
     .filter(Boolean)
     // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
@@ -1551,6 +1562,7 @@ function getMeasurements(
     // with other rects of the frame.
     .map(box => ({ ...box, x: box.x - offsetX, y: box.y - offsetY }));
 
+  time.start("measurements:noVisibleBoxes");
   if (visibleBoxes.length === 0) {
     // If there’s only one rect and that rect has no width it means that all
     // children are floated or absolutely positioned (and that `element` hasn’t
@@ -1567,7 +1579,8 @@ function getMeasurements(
             child,
             elementType,
             viewports,
-            range
+            range,
+            time
           );
           if (!measurements.isRejected) {
             return measurements;
@@ -1585,6 +1598,7 @@ function getMeasurements(
     };
   }
 
+  time.start("measurements:hintPoint");
   const hintPoint =
     rects.length === 1
       ? getSingleRectPoint({
@@ -1603,6 +1617,7 @@ function getMeasurements(
   // worth it since it makes hints in fixed menus so much easier find.
   // If this runs in a frame, the element can still be covered by something in a
   // parent frame, but it's not worth the trouble to try and check that.
+  time.start("measurements:nonCoveredPoint");
   const nonCoveredPoint = getNonCoveredPoint(element, {
     // Rounding upwards is required in html/tridactyl/index.html.
     x: Math.ceil(hintPoint.x),
@@ -1610,6 +1625,7 @@ function getMeasurements(
     maxX,
   });
 
+  time.start("measurements:noNonCoveredPoint");
   if (nonCoveredPoint == null) {
     // Putting a large `<input type="file">` inside a smaller wrapper element
     // with `overflow: hidden;` seems to be a common pattern, used both on
@@ -1624,7 +1640,8 @@ function getMeasurements(
         element.parentNode,
         elementType,
         viewports,
-        range
+        range,
+        time
       );
       return measurements.isRejected
         ? {
@@ -1641,6 +1658,7 @@ function getMeasurements(
     // Targeting those are the only reliable way of focusing CodeMirror
     // editors, and doing so without moving the caret.
     // <https://codemirror.net/demo/complete.html>
+    time.start("measurements:codemirror");
     if (
       !(
         element.nodeName === "TEXTAREA" &&
@@ -1662,6 +1680,7 @@ function getMeasurements(
     }
   }
 
+  time.start("measurements:end");
   const { x, y } = nonCoveredPoint == null ? hintPoint : nonCoveredPoint;
 
   // Where to place the hint and the weight of the element.
