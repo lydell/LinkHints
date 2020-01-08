@@ -126,6 +126,15 @@
         width: 300px;
       }
 
+      .bullet {
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: red;
+        font-size: 0;
+      }
+
       .upload {
         --height: 40px;
         display: inline-block;
@@ -609,7 +618,7 @@
         </svg>
       </button>
     </p>
-    <p>visually-hidden text</p>
+    <p>visually-hidden text.</p>
     <p>
       <button class="icon-button">
         <span class="visually-hidden">Vote</span>
@@ -892,6 +901,9 @@
       <span class="visually-hidden probe">Left</span>
       <span style="margin-left: 30px;">Right</span>
     </a>
+
+    <p>Text hidden via font-size 0:</p>
+    <a href="#" class="bullet">1</a>
 
     <h2>Floats</h2>
     <p>Links which have 0 height due to floated children.</p>

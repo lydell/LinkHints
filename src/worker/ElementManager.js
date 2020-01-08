@@ -1999,7 +1999,7 @@ function getBestNonEmptyTextPoint({
             debug: "getBestNonEmptyTextPoint intermediate",
           };
           // Make sure that the text is inside the element.
-          return isAcceptable(point) ? rect : undefined;
+          return rect.height > 0 && isAcceptable(point) ? rect : undefined;
         }).filter(Boolean);
       }
       return [];
