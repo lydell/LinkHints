@@ -228,6 +228,7 @@
     <script>
       const params = new URLSearchParams(location.search);
       const numLinks = Number(params.get("num_links") || "3000");
+      const absolute = params.get("absolute") === "true";
 
       // https://stackoverflow.com/a/424445/2010616
       class RNG {
@@ -284,15 +285,19 @@
           () => words[rng.next() % words.length]
         ).join(" ");
 
-        const t = document.createTextNode(
-          rng.next() % 10 === 0 ? " and " : ", "
-        );
-
         const s = document.createElement("span");
         s.append(a);
-
         main.append(s);
-        main.append(t);
+
+        if (absolute) {
+          s.style.position = "absolute";
+          s.style.left = `${(rng.next() / rng.m) * window.innerWidth}px`;
+          s.style.top = `${(rng.next() / rng.m) * window.innerHeight}px`;
+        } else {
+          main.append(
+            document.createTextNode(rng.next() % 10 === 0 ? " and " : ", ")
+          );
+        }
       }
 
       mainContainer.append(main);

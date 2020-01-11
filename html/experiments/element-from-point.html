@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>document.elementFromPoint performance</title>
+    <style>
+      #inlineBlock span {
+        display: inline-block;
+      }
+
+      #flex {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      #block span {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const div = document.createElement("div");
+      // Change the number of children here and watch how execution time scales with it.
+      // div.innerHTML = `<div>${"<span>x</span>".repeat(100)}</div>`.repeat(100);
+      div.innerHTML = "<span>x</span>".repeat(10000);
+      document.body.append(div);
+
+      for (const id of ["inline", "inlineBlock", "flex", "block"]) {
+        div.id = id;
+        console.time(id);
+        document.elementFromPoint(12, 12);
+        console.timeEnd(id);
+      }
+    </script>
+  </body>
+</html>

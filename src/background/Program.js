@@ -1299,7 +1299,7 @@ export default class BackgroundProgram {
 
     if (info.frameId === TOP_FRAME_ID) {
       log(
-        "warn",
+        "log",
         prefix,
         "Skipping because this should not happen for the top frame.",
         info

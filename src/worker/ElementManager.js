@@ -88,6 +88,12 @@ export const t = {
   // Tracking at most 10K should be enough for regular sites.
   MAX_INTERSECTION_OBSERVED_ELEMENTS: unsignedInt(10e3),
 
+  // If `.getVisibleElements` is taking too long, skip remaining elements.
+  // Chrome’s implementation of `document.elementFromPoint` is not optimized for
+  // elements with thousands of children, which is rare in practice but present
+  // in the link-monster demo.
+  MAX_DURATION: unsignedInt(10e3),
+
   ELEMENT_TYPES_LOW_QUALITY: elementTypeSet(new Set(["clickable-event"])),
 
   // Give worse hints to scrollable elements and (selectable) frames. They are
@@ -202,7 +208,11 @@ export const tMeta = tweakable("ElementManager", t);
 
 type Rejected = {
   isRejected: true,
-  debug: mixed,
+  debug: {
+    reason: string,
+    [string]: mixed,
+    ...
+  },
 };
 
 type Record = {
@@ -1103,6 +1113,8 @@ export default class ElementManager {
     time: TimeTracker,
     passedCandidates?: Array<HTMLElement>
   ): Array<?VisibleElement> {
+    const startTime = Date.now();
+
     const isUpdate = passedCandidates != null;
     const prefix = `ElementManager#getVisibleElements${
       isUpdate ? " (update)" : ""
@@ -1145,6 +1157,20 @@ export default class ElementManager {
       candidates,
       element => {
         time.start("loop:start");
+
+        const duration = Date.now() - startTime;
+        if (duration > t.MAX_DURATION.value) {
+          return {
+            isRejected: true,
+            debug: {
+              reason: "slow",
+              duration,
+              max: t.MAX_DURATION.value,
+              element,
+            },
+          };
+        }
+
         const type: ?ElementType =
           types === "selectable"
             ? this.getElementTypeSelectable(element)
@@ -1231,6 +1257,17 @@ export default class ElementManager {
     );
 
     log("log", prefix, "results (including rejected)", maybeResults);
+
+    time.start("check duration");
+    const slow = maybeResults.filter(
+      result => result.isRejected && result.debug.reason === "slow"
+    ).length;
+    if (slow > 0) {
+      log("warn", prefix, `Skipped ${slow} element(s) due to timeout`, {
+        duration: Date.now() - startTime,
+        max: t.MAX_DURATION.value,
+      });
+    }
 
     time.start("filter");
     return maybeResults.map(result =>

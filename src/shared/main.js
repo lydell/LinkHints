@@ -30,7 +30,7 @@ export const LOG_LEVELS = {
 };
 
 export const DEFAULT_LOG_LEVEL: LogLevel = PROD
-  ? "error"
+  ? "warn"
   : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
 export function log(level: LogLevel, ...args: Array<mixed>) {
