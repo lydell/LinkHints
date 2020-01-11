@@ -330,6 +330,10 @@ export const SKIP_TEXT_ELEMENTS: Set<string> = new Set([
   "STYLE",
   // If we ignore `<style>` we could just as well ignore `<script>` too.
   "SCRIPT",
+  // Finally, ignore the two elements with the most text of all. They aren’t
+  // useful and cause performance issues.
+  "HTML",
+  "BODY",
 ]);
 
 function shouldSkipElementText(element: HTMLElement): boolean {
