@@ -636,12 +636,13 @@ export default class WorkerProgram {
   ) {
     const time = new TimeTracker();
 
-    const elementsWithNulls: Array<?VisibleElement> = this.elementManager.getVisibleElements(
-      types,
-      viewports,
-      time
+    const [elementsWithNulls, timeLeft]: [
+      Array<?VisibleElement>,
+      number
+    ] = this.elementManager.getVisibleElements(types, viewports, time);
+    const elements = elementsWithNulls.filter(
+      elementData => elementData != null
     );
-    const elements = elementsWithNulls.filter(Boolean);
 
     time.start("frames");
     const frames = this.elementManager.getVisibleFrames(viewports);
@@ -655,16 +656,22 @@ export default class WorkerProgram {
       frame.contentWindow.postMessage(message, "*");
     }
 
-    time.start("report");
+    time.start("element reports");
+    const elementReports = makeElementReports(elements, {
+      maxDuration: timeLeft,
+      prefix: "WorkerProgram#reportVisibleElements",
+    });
+
+    time.start("send results");
     this.sendMessage({
       type: "ReportVisibleElements",
-      elements: elements.map(visibleElementToElementReport),
+      elements: elementReports,
       numFrames: frames.length,
       stats: this.elementManager.makeStats(time.export()),
     });
 
     this.current = {
-      elements,
+      elements: elements.filter(Boolean),
       frames,
       viewports,
       types,
@@ -680,7 +687,10 @@ export default class WorkerProgram {
     current: CurrentElements,
     oneTimeWindowMessageToken: ?string,
   }) {
-    const elements: Array<?VisibleElement> = this.elementManager.getVisibleElements(
+    const [elements, timeLeft]: [
+      Array<?VisibleElement>,
+      number
+    ] = this.elementManager.getVisibleElements(
       current.types,
       current.viewports,
       new TimeTracker(),
@@ -721,17 +731,14 @@ export default class WorkerProgram {
               })
             );
 
+    const elementReports = makeElementReports(elements, {
+      maxDuration: timeLeft,
+      prefix: "WorkerProgram#updateVisibleElements",
+    });
+
     this.sendMessage({
       type: "ReportUpdatedElements",
-      elements: elements
-        // Doing `.filter(Boolean)` _after_ the `.map()` makes sure that the
-        // indexes stay the same.
-        .map((elementData, index) => {
-          return elementData == null
-            ? undefined
-            : visibleElementToElementReport(elementData, index);
-        })
-        .filter(Boolean),
+      elements: elementReports,
       rects,
     });
   }
@@ -1086,11 +1093,47 @@ function suppressEvent(event: Event) {
   event.stopImmediatePropagation();
 }
 
+function makeElementReports(
+  elements: Array<?VisibleElement>,
+  { maxDuration, prefix }: { maxDuration: number, prefix: string }
+): Array<ElementReport> {
+  const startTime = Date.now();
+
+  const elementReports = elements
+    .map((elementData, index) =>
+      elementData != null
+        ? visibleElementToElementReport(elementData, {
+            index,
+            textContent: Date.now() - startTime > maxDuration,
+          })
+        : undefined
+    )
+    .filter(Boolean);
+
+  const skipped = elementReports.filter(report => report.textContent);
+  if (skipped.length > 0) {
+    log(
+      "warn",
+      prefix,
+      `Used .textContent for ${skipped.length} element(s) due to timeout`,
+      {
+        duration: Date.now() - startTime,
+        max: maxDuration,
+        skipped,
+      }
+    );
+  }
+
+  return elementReports;
+}
+
 function visibleElementToElementReport(
   { element, type, measurements, hasClickListener }: VisibleElement,
-  index: number
+  { index, textContent }: { index: number, textContent: boolean }
 ): ElementReport {
-  const text = extractTextHelper(element, type);
+  const text = textContent
+    ? element.textContent
+    : extractTextHelper(element, type);
   return {
     type,
     index,
@@ -1103,6 +1146,7 @@ function visibleElementToElementReport(
         ? getUrlWithTarget(element)
         : undefined,
     text,
+    textContent,
     textWeight: getTextWeight(text, measurements.weight),
     isTextInput: isTextInput(element),
     hasClickListener,

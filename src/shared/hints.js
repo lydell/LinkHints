@@ -71,6 +71,7 @@ export type ElementReport = {
   url: ?string,
   urlWithTarget: ?string,
   text: string,
+  textContent: boolean,
   textWeight: number,
   isTextInput: boolean,
   hasClickListener: boolean,

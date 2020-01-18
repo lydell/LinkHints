@@ -1120,7 +1120,7 @@ export default class ElementManager {
     viewports: Array<Box>,
     time: TimeTracker,
     passedCandidates?: Array<HTMLElement>
-  ): Array<?VisibleElement> {
+  ): [Array<?VisibleElement>, number] {
     const startTime = Date.now();
 
     const isUpdate = passedCandidates != null;
@@ -1278,9 +1278,12 @@ export default class ElementManager {
     }
 
     time.start("filter");
-    return maybeResults.map(result =>
+    const results = maybeResults.map(result =>
       result.isRejected || deduper.rejects(result) ? undefined : result
     );
+
+    const timeLeft = t.MAX_DURATION.value - (Date.now() - startTime);
+    return [results, timeLeft];
   }
 
   getVisibleFrames(

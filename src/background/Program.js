@@ -2681,6 +2681,7 @@ function mergeElements(
       url: update.url,
       urlWithTarget: update.urlWithTarget,
       text: update.text,
+      textContent: update.textContent,
       // Keep the original text weight so that hints don't change.
       textWeight: element.textWeight,
       isTextInput: update.isTextInput,
