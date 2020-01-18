@@ -478,6 +478,18 @@ export function getElementFromPoint(
   return doc.elementFromPoint(x, y);
 }
 
+export function getElementsFromPoint(
+  element: HTMLElement,
+  x: number,
+  y: number
+): Array<HTMLElement> {
+  const root = element.getRootNode();
+  const doc =
+    root instanceof Document || root instanceof ShadowRoot ? root : document;
+  // $FlowIgnore: Flow doesn’t know that `ShadowRoot` has `.elementsFromPoint` yet.
+  return doc.elementsFromPoint(x, y);
+}
+
 export function getLabels(element: HTMLElement): ?NodeList<HTMLLabelElement> {
   // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
   return element.labels instanceof NodeList ? element.labels : undefined;

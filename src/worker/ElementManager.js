@@ -12,6 +12,7 @@ import {
   addEventListener,
   bind,
   getElementFromPoint,
+  getElementsFromPoint,
   getLabels,
   getVisibleBox,
   LAST_NON_WHITESPACE,
@@ -1289,15 +1290,35 @@ export default class ElementManager {
       ) {
         return undefined;
       }
-      // Frames are slow to visit. Gmail has ~10 weird frames that are super
-      // small. Not sure what they do. But not visiting saves around ~80ms on my
-      // machine.
+
       const box = getVisibleBox(element.getBoundingClientRect(), viewports);
-      return box != null &&
-        box.width > t.MIN_SIZE_FRAME.value &&
-        box.height > t.MIN_SIZE_FRAME.value
-        ? element
-        : undefined;
+
+      // Frames are slow to visit. Gmail has ~10 weird frames that are super
+      // small. Not sure what they do. But not visiting those saves around ~80ms
+      // on my machine.
+      if (
+        box == null ||
+        box.width < t.MIN_SIZE_FRAME.value ||
+        box.height < t.MIN_SIZE_FRAME.value
+      ) {
+        return undefined;
+      }
+
+      const elementsAtPoint = getElementsFromPoint(
+        element,
+        Math.round(box.x + box.width / 2),
+        Math.round(box.y + box.height / 2)
+      );
+
+      // Make sure that the frame is visible – for example, not `visibility:
+      // hidden`. Frames are generally quite large and might be partially
+      // covered at different spots, but we can’t know if those spots cover
+      // links or not.
+      if (!elementsAtPoint.includes(element)) {
+        return undefined;
+      }
+
+      return element;
     }).filter(Boolean);
   }
 

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>hidden iframes</title>
+    <style>
+      .partially-covered {
+        display: inline-block;
+        position: relative;
+      }
+
+      .partially-covered > div {
+        position: absolute;
+        top: 0;
+        left: 30%;
+        width: 40%;
+        height: 100%;
+        background-color: red;
+      }
+
+      .paritally-off-screen {
+        position: absolute;
+        top: 100%;
+        left: 100%;
+        transform: translate(-40%, -40%);
+      }
+    </style>
+  </head>
+  <body>
+    <p>visible</p>
+    <iframe src="./iframe.html"></iframe>
+    <p>visible with element partially covering</p>
+    <div class="partially-covered">
+      <div></div>
+      <iframe src="./iframe.html"></iframe>
+    </div>
+    <p>
+      visible with element covering the link – I don’t think it’s worth the
+      trouble trying to exclude the hint here
+    </p>
+    <div class="partially-covered">
+      <div style="left: 0"></div>
+      <iframe src="./iframe.html"></iframe>
+    </div>
+    <p>visible in Shadow DOM</p>
+    <div id="shadow"></div>
+    <p>visibility: hidden</p>
+    <iframe style="visibility: hidden;" src="./iframe.html"></iframe>
+    <p>opacity: 0 – as always, Link Hints doesn’t care about opacity</p>
+    <iframe style="opacity: 0;" src="./iframe.html"></iframe>
+    <p>display: none</p>
+    <iframe style="display: none;" src="./iframe.html"></iframe>
+    <p>transform: scale(0)</p>
+    <iframe style="transform: scale(0)" src="./iframe.html"></iframe>
+    <p>
+      transform: scale(0.2) – in theory the hint could be correctly positioned
+      here, but is this ever used in practice and worth the trouble?
+    </p>
+    <iframe style="transform: scale(0.2)" src="./iframe.html"></iframe>
+    <p>width="0" height="0"</p>
+    <iframe width="0" height="0" src="./iframe.html"></iframe>
+    <div class="paritally-off-screen">
+      <p>Partially off-screen iframe</p>
+      <iframe src="./iframe.html"></iframe>
+    </div>
+    <script>
+      const root = shadow.attachShadow({ mode: "closed" });
+      const iframe = document.createElement("iframe");
+      iframe.src = "./iframe.html";
+      root.append(iframe);
+    </script>
+  </body>
+</html>
