@@ -2104,26 +2104,26 @@ function getBestNonEmptyTextPoint({
   // easier to use, but it takes padding and such of child elements into
   // account. Also, it would count leading visible whitespace as the first
   // character.
-  const rects = [].concat(
-    ...Array.from(walkTextNodes(element), textNode => {
-      const start = textNode.data.search(NON_WHITESPACE);
-      const end = textNode.data.search(LAST_NON_WHITESPACE);
-      if (start >= 0 && end >= 0) {
-        range.setStart(textNode, start);
-        range.setEnd(textNode, end + 1);
-        return Array.from(range.getClientRects(), rect => {
-          const point: Point = {
-            ...getXY(rect),
-            align,
-            debug: "getBestNonEmptyTextPoint intermediate",
-          };
-          // Make sure that the text is inside the element.
-          return rect.height > 0 && isAcceptable(point) ? rect : undefined;
-        }).filter(Boolean);
+  const rects = [];
+  for (const textNode of walkTextNodes(element)) {
+    const start = textNode.data.search(NON_WHITESPACE);
+    const end = textNode.data.search(LAST_NON_WHITESPACE);
+    if (start >= 0 && end >= 0) {
+      range.setStart(textNode, start);
+      range.setEnd(textNode, end + 1);
+      for (const rect of range.getClientRects()) {
+        const point: Point = {
+          ...getXY(rect),
+          align,
+          debug: "getBestNonEmptyTextPoint intermediate",
+        };
+        // Make sure that the text is inside the element.
+        if (rect.height > 0 && isAcceptable(point)) {
+          rects.push(rect);
+        }
       }
-      return [];
-    })
-  );
+    }
+  }
 
   if (rects.length === 0) {
     return undefined;
