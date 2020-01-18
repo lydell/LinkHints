@@ -82,6 +82,11 @@ const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
   "data-image-url",
 ]);
 
+const ATTRIBUTES_NOT_CLICKABLE: Set<string> = new Set([
+  // Google.
+  "data-hveid",
+]);
+
 export const t = {
   // The single-page HTML specification has over 70K links! If trying to track all
   // of those with `IntersectionObserver`, scrolling is noticeably laggy. On my
@@ -164,7 +169,7 @@ export const t = {
     ])
   ),
 
-  // "true" indicates that contenteditable on. Chrome also supports
+  // "true" indicates that contenteditable is on. Chrome also supports
   // "plaintext-only". There may be more modes in the future, such as "caret", so
   // it’s better to only list the values that indicate that an element _isn’t_
   // contenteditable.
@@ -186,6 +191,7 @@ export const t = {
   MIN_SIZE_ICON: unsignedFloat(10), // px
 
   ATTRIBUTES_CLICKABLE: stringSet(ATTRIBUTES_CLICKABLE),
+  ATTRIBUTES_NOT_CLICKABLE: stringSet(ATTRIBUTES_NOT_CLICKABLE),
 
   ATTRIBUTES_MUTATION: stringSet(
     new Set([
@@ -195,6 +201,7 @@ export const t = {
       "role",
       ...CLICKABLE_EVENT_PROPS,
       ...ATTRIBUTES_CLICKABLE,
+      ...ATTRIBUTES_NOT_CLICKABLE,
     ])
   ),
 
@@ -1385,6 +1392,17 @@ export default class ElementManager {
         const role = element.getAttribute("role");
         if (role != null && t.ROLES_CLICKABLE.value.has(role)) {
           return "clickable";
+        }
+
+        // "clickable-event" matched in the next `if` is the lowest quality and
+        // has the biggest risk of false positives. Make sure that some of them
+        // don’t get hints.
+        if (
+          Array.from(t.ATTRIBUTES_NOT_CLICKABLE.value).some(attr =>
+            element.hasAttribute(attr)
+          )
+        ) {
+          return undefined;
         }
 
         if (
