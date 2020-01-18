@@ -1576,6 +1576,12 @@ export default class BackgroundProgram {
           return;
         }
 
+        // Refresh `oneTimeWindowMessageToken`.
+        this.sendWorkerMessage(this.makeWorkerState(tabState), {
+          tabId: info.tabId,
+          frameId: "all_frames",
+        });
+
         enterHintsMode(hintsState.mode);
         break;
       }
