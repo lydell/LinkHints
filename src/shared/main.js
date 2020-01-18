@@ -351,38 +351,6 @@ function shouldSkipElementText(element: HTMLElement): boolean {
 export function* walkTextNodes(
   element: HTMLElement
 ): Generator<Text, void, void> {
-  // In Chrome, `yield*` can cause the maximum call stack to be exceeded. This
-  // does not seem to happen in Firefox. I’ve only been able to reproduce this
-  // on the massive single-page HTML spec. Catch this error in order not to hang
-  // entering hints mode.
-  if (BROWSER === "chrome") {
-    try {
-      walkTextNodesHelper(element);
-    } catch (error) {
-      if (
-        error instanceof RangeError &&
-        error.message === "Maximum call stack size exceeded"
-      ) {
-        log(
-          "warn",
-          "walkTextNodes",
-          `Bailing because of ${error.message}`,
-          element,
-          error
-        );
-        yield document.createTextNode("");
-      } else {
-        throw error;
-      }
-    }
-  } else {
-    walkTextNodesHelper(element);
-  }
-}
-
-function* walkTextNodesHelper(
-  element: HTMLElement
-): Generator<Text, void, void> {
   let ignoreText = false;
 
   if (!shouldSkipElementText(element)) {
