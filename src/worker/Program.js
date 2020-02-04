@@ -1091,6 +1091,26 @@ function suppressEvent(event: Event) {
   // prevents additional listeners on the same node (`window` in this case)
   // from being called.
   event.stopImmediatePropagation();
+
+  // `event.preventDefault()` doesn’t work for `accesskey="x"` in Chrome. See:
+  // https://stackoverflow.com/a/34008999/2010616
+  // Instead, temporarily remove all accesskeys.
+  if (BROWSER === "chrome") {
+    const elements = document.querySelectorAll("[accesskey]");
+    const accesskeyMap: Map<HTMLElement, string> = new Map();
+    for (const element of elements) {
+      const accesskey = element.getAttribute("accesskey");
+      if (accesskey != null) {
+        accesskeyMap.set(element, accesskey);
+        element.removeAttribute("accesskey");
+      }
+    }
+    setTimeout(() => {
+      for (const [element, accesskey] of accesskeyMap) {
+        element.setAttribute("accesskey", accesskey);
+      }
+    }, 0);
+  }
 }
 
 function makeElementReports(

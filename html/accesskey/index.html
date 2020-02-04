@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>accesskey</title>
+  </head>
+  <body>
+    <p>
+      Using LinkHints shortcuts should not trigger accesskeys.
+    </p>
+    <p><a href="other.html" accesskey="j">accesskey="j"</a></p>
+    <p>
+      <a href="other.html" accesskey="k">accesskey="k" with preventDefault</a>
+    </p>
+    <p>
+      <a href="other.html" accesskey="l">accesskey="l" with remove attribute</a>
+    </p>
+    <script>
+      window.addEventListener(
+        "keydown",
+        event => {
+          switch (event.code) {
+            case "KeyK":
+              // Doesn’t work in Chrome: https://stackoverflow.com/a/34008999/2010616
+              event.preventDefault();
+              break;
+
+            case "KeyL": {
+              const elements = document.querySelectorAll(`[accesskey="l"]`);
+              elements.forEach(element => {
+                element.removeAttribute("accesskey");
+              });
+              setTimeout(() => {
+                elements.forEach(element => {
+                  element.setAttribute("accesskey", "k");
+                });
+              });
+            }
+          }
+        },
+        true
+      );
+    </script>
+  </body>
+</html>
