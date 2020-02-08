@@ -13,6 +13,7 @@ sketchy-number
 untyped-type-import
 untyped-import
 unclear-type
+unsafe-addition
 unsafe-getters-setters
 nonstrict-import
 unnecessary-optional-chain
