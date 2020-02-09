@@ -9,7 +9,7 @@ A browser extension that lets you click with your keyboard.
 **[Add to Firefox] | [Add to Chrome]**
 
 [add to chrome]: https://lydell.github.io/LinkHints#note
-[add to firefox]: https://lydell.github.io/LinkHints#note
+[add to firefox]: https://addons.mozilla.org/firefox/addon/LinkHints/
 [changelog]: https://github.com/lydell/LinkHints/issues/1
 [contributing]: https://github.com/lydell/LinkHints/blob/master/CONTRIBUTING.md
 [travis-badge]: https://travis-ci.com/lydell/LinkHints.svg?branch=master

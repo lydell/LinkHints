@@ -275,8 +275,8 @@ const SECTIONS = [
           A couple of months later, the first commit of Link Hints was made
           (then called “Synth”). Soon it was stable enough to be used for
           day-to-day browsing. After almost two years of experimentation,
-          development and real-world usage, Link Hints is planned to be released
-          in early 2020.
+          development and real-world usage, Link Hints was first released in
+          February 2020.
         </p>
       </>
     ),
@@ -331,7 +331,8 @@ export default () =>
         ))}
 
         <p id="note">
-          🚧 Link Hints is under development and is not yet released. 🚧
+          🚧 Link Hints for Chrome is currently waiting for approval from
+          Google. 🚧
         </p>
       </main>
 
@@ -353,7 +354,10 @@ function Header() {
         <Keyboard />
 
         <p className="Header-buttons">
-          <a href="#note" className="Button">
+          <a
+            href="https://addons.mozilla.org/firefox/addon/LinkHints/"
+            className="Button"
+          >
             Add to Firefox
           </a>
           <a href="#note" className="Button">
