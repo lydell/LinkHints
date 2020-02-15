@@ -8,7 +8,7 @@ A browser extension that lets you click with your keyboard.
 
 **[Add to Firefox] | [Add to Chrome]**
 
-[add to chrome]: https://lydell.github.io/LinkHints#note
+[add to chrome]: https://chrome.google.com/webstore/detail/link-hints/kjjgifdfplpegljdfnpmbjmkngdilmkd
 [add to firefox]: https://addons.mozilla.org/firefox/addon/LinkHints/
 [changelog]: https://github.com/lydell/LinkHints/issues/1
 [contributing]: https://github.com/lydell/LinkHints/blob/master/CONTRIBUTING.md

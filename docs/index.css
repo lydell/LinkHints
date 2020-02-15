@@ -625,15 +625,6 @@ nav > ul > li > a:active {
   }
 }
 
-#note {
-  background-color: blue;
-  color: white;
-  font-weight: bold;
-  font-size: 1.5rem;
-  text-align: center;
-  padding: 3rem;
-}
-
 @media (max-width: 50em) {
   .Keyboard {
     transform: scale(0.8);

@@ -329,11 +329,6 @@ export default () =>
             {section.content}
           </section>
         ))}
-
-        <p id="note">
-          🚧 Link Hints for Chrome is currently waiting for approval from
-          Google. 🚧
-        </p>
       </main>
 
       <Scripts macifyKbd observeQuickLinks />
@@ -360,7 +355,10 @@ function Header() {
           >
             Add to Firefox
           </a>
-          <a href="#note" className="Button">
+          <a
+            href="https://chrome.google.com/webstore/detail/link-hints/kjjgifdfplpegljdfnpmbjmkngdilmkd"
+            className="Button"
+          >
             Add to Chrome
           </a>
         </p>
