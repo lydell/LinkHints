@@ -5,7 +5,7 @@
     <title>labels</title>
     <style>
       body {
-        padding: calc(100vh - 1em) 0;
+        padding: calc(100vh - 1em) 2em;
       }
 
       body > div {
@@ -40,6 +40,64 @@
 
       .checkbox input:checked + span {
         background-color: grey;
+      }
+
+      /* Bootstrap v4 checkbox. */
+      .custom-control {
+        box-sizing: border-box;
+        position: relative;
+        display: block;
+        min-height: 1.5rem;
+        padding-left: 1.5rem;
+      }
+      .custom-control-input {
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        box-sizing: border-box;
+        padding: 0;
+        position: absolute;
+        left: 0;
+        z-index: -1;
+        width: 1rem;
+        height: 1.25rem;
+        opacity: 0;
+      }
+      .custom-control-label {
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        box-sizing: border-box;
+        display: inline-block;
+        position: relative;
+        margin-bottom: 0;
+        vertical-align: top;
+      }
+      .custom-control-label::before {
+        box-sizing: border-box;
+        position: absolute;
+        top: 0.25rem;
+        left: -1.5rem;
+        display: block;
+        width: 1rem;
+        height: 1rem;
+        pointer-events: none;
+        content: "";
+        background-color: #fff;
+        border: #adb5bd solid 1px;
+        border-radius: 0.25rem;
+      }
+      .custom-control-label::after {
+        box-sizing: border-box;
+        position: absolute;
+        top: 0.25rem;
+        left: -1.5rem;
+        display: block;
+        width: 1rem;
+        height: 1rem;
+        content: "";
+        background: no-repeat 50%/50% 50%;
       }
     </style>
   </head>
@@ -114,6 +172,35 @@
       </label>
       <br />
       <label for="several">second label</label>
+    </div>
+
+    <div>
+      <input type="checkbox" id="regular-checkbox" />
+      <label for="regular-checkbox">
+        regular checkbox
+      </label>
+    </div>
+
+    <div style="position: relative; padding-left: 1.5em;">
+      <input
+        type="checkbox"
+        id="z-checkbox"
+        style="position: absolute; left:0; z-index: -1;"
+      />
+      <label for="z-checkbox">
+        z-index:-1 checkbox
+      </label>
+    </div>
+
+    <div class="custom-control">
+      <input
+        type="checkbox"
+        id="bootstrap-checkbox"
+        class="custom-control-input"
+      />
+      <label class="custom-control-label" for="bootstrap-checkbox">
+        bootstrap checkbox
+      </label>
     </div>
 
     <div>
