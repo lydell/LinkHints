@@ -319,6 +319,22 @@
         margin-right: 5px;
       }
 
+      .icon-different-line {
+        display: flex;
+        font-size: 12px;
+      }
+
+      .icon-different-line a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 20px;
+      }
+
+      .icon-different-line img {
+        width: 50px;
+      }
+
       .card-wrapper {
         text-decoration: none;
         color: inherit;
@@ -784,6 +800,29 @@
         icon in
         <span class="other-class fa-check" data-icon="✅"></span>
         the middle
+      </a>
+    </div>
+
+    <p>
+      Icons should not be preferred even if further to the left but on a
+      different line.
+    </p>
+    <div class="icon-different-line">
+      <a href="#">
+        <img src="image.svg" />
+        All recipies
+      </a>
+      <a href="#">
+        <img src="image.svg" />
+        Meals
+      </a>
+      <a href="#">
+        All recipies
+        <img src="image.svg" />
+      </a>
+      <a href="#">
+        Meals
+        <img src="image.svg" />
       </a>
     </div>
 

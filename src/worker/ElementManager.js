@@ -2184,12 +2184,17 @@ function getBestNonEmptyTextPoint({
   const isSingleLine = sameLineRects.length === rects.length;
   if (
     isSingleLine &&
+    // There’s space for an image to the left.
     leftMostRect.left >= elementRect.left + t.MIN_SIZE_ICON.value
   ) {
     const imagePoint = getFirstImagePoint(element, viewports);
     if (
       imagePoint != null &&
+      // The image is further to the left than the text.
       imagePoint.point.x < leftMostRect.left &&
+      // The image is on the same line as the text.
+      imagePoint.rect.top < leftMostRect.bottom &&
+      imagePoint.rect.bottom > leftMostRect.top &&
       isAcceptable(imagePoint.point)
     ) {
       return {
