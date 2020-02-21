@@ -1087,7 +1087,7 @@ export default class BackgroundProgram {
     // complicated to replicate in a good way, and there does not seem to be a
     // downside of using the fake ctrl-click method in Chrome. In fact, there’s
     // even an upside to the ctrl-click method: The HTTP Referer header is sent,
-    // just as if you had clicked the link for real.
+    // just as if you had clicked the link for real. See: <bugzil.la/1615860>.
     if (BROWSER === "chrome") {
       this.sendWorkerMessage(
         {

@@ -1283,6 +1283,8 @@ function getUrlWithTarget(link: HTMLAnchorElement): string {
 // what we should do with them (where should they open?).
 // Similarly, `window.open` also triggers the popup blocker. It’s second
 // argument is similar to the `target` attribute on links.
+// Relevant bugzilla tickets: <bugzil.la/1615860>, <bugzil.la/1356309> and
+// <bugzil.la/1348213>.
 function firefoxPopupBlockerWorkaround({
   element,
   isPinned,
