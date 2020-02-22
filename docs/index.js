@@ -495,61 +495,61 @@ function Demo({
           <div className="Demo-bar">
             <div className="Demo-input" onClick="">
               <span className="Demo-relative">
-                <Hint>F</Hint>lorem ipsum
+                <Hint>W</Hint>lorem ipsum
               </span>
             </div>
             <div className="Demo-button" onClick="">
               <span className="Demo-relative">
-                <Hint>J</Hint>Setar
+                <Hint>H</Hint>Setar
               </span>
             </div>
           </div>
           <div className="Demo-box">
             <p>
               <a>
-                <Hint>D</Hint>Lorem ipsum
+                <Hint>F</Hint>Lorem ipsum
               </a>
             </p>
             <p>Dolor sit amet, consectetur adipiscing elit.</p>
             <p>
               <a>
-                <Hint>L</Hint>Sed do
+                <Hint>K</Hint>Sed do
               </a>
               <a>
                 <Hint hint2="F" highlighted>
-                  R
+                  A
                 </Hint>
-                Eius<Match>lab</Match>
+                <Match>Lab</Match>oris
               </a>
               <a>
-                <Hint>O</Hint>Tempor
+                <Hint>I</Hint>Tempor
               </a>
             </p>
           </div>
           <div className="Demo-box">
             <p>
               <a>
-                <Hint hint2="J">K</Hint>Incididunt ut <Match>lab</Match>ore
+                <Hint hint2="J">J</Hint>Incididunt ut <Match>lab</Match>ore
               </a>
             </p>
             <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
             <p>
               <a>
-                <Hint>A</Hint>Nostrud
+                <Hint>S</Hint>Nostrud
               </a>
               <a>
-                <Hint>E</Hint>Exercitation
+                <Hint>U</Hint>Exercitation
               </a>
               <a>
-                <Hint>H</Hint>Ullamco
+                <Hint>E</Hint>Ullamco
               </a>
             </p>
           </div>
           <div className="Demo-box">
             <p>
               <a>
-                <Hint hint2="D">S</Hint>
-                <Match>Lab</Match>oris nisi aliquip
+                <Hint hint2="D">D</Hint>
+                Eius<Match>lab</Match> nisi aliquip
               </a>
             </p>
             <p>
@@ -557,13 +557,13 @@ function Demo({
             </p>
             <p>
               <a>
-                <Hint>U</Hint>In voluptate
+                <Hint>L</Hint>In voluptate
               </a>
               <a>
-                <Hint>I</Hint>Velit esse
+                <Hint>R</Hint>Velit esse
               </a>
               <a>
-                <Hint>W</Hint>Cillum
+                <Hint>O</Hint>Cillum
               </a>
             </p>
           </div>

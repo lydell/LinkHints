@@ -527,7 +527,6 @@ nav > ul > li > a:active {
   padding: 0.5em 1em;
   flex: 1;
   white-space: nowrap;
-  overflow: hidden;
 }
 
 .Demo-button {
