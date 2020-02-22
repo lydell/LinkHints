@@ -452,6 +452,7 @@ nav > ul > li > a:active {
   position: relative;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
     DejaVu Sans, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 @supports (-moz-appearance: meterbar) {
@@ -469,6 +470,12 @@ nav > ul > li > a:active {
   padding: 0 1em;
 }
 
+@media (max-width: 22em) {
+  .Demo-box {
+    padding-right: 0;
+  }
+}
+
 .Demo-box > :first-child {
   font-size: 1.375em;
   margin-bottom: 0.222em;
@@ -484,6 +491,7 @@ nav > ul > li > a:active {
 
 .Demo-box > :last-child > * {
   font-size: 0.8125em;
+  white-space: nowrap;
 }
 
 .Demo-box > :last-child > * + * {
