@@ -474,18 +474,22 @@ function Demo({
     return filterByText && hint2 == null ? null : (
       <span
         className={`hint ${filterByText && highlighted ? "highlighted" : ""}`}
-      >
-        {filterByText ? hint2 : children}
-      </span>
+        data-text={filterByText ? hint2 : children}
+      />
     );
   }
 
   function Match({ children }: { children: string }) {
     return (
-      <span className={filterByText ? "matchedText" : undefined}>
-        {children}
-      </span>
+      <span
+        className={filterByText ? "matchedText" : undefined}
+        data-text={children}
+      />
     );
+  }
+
+  function Text({ children }: { children: string }) {
+    return <span data-text={children} />;
   }
 
   return (
@@ -495,53 +499,69 @@ function Demo({
           <div className="Demo-bar">
             <div className="Demo-input" onClick="">
               <span className="Demo-relative">
-                <Hint>W</Hint>lorem ipsum
+                <Hint>W</Hint>
+                <Text>lorem ipsum</Text>
               </span>
             </div>
             <div className="Demo-button" onClick="">
               <span className="Demo-relative">
-                <Hint>H</Hint>Setar
+                <Hint>H</Hint>
+                <Text>Setar</Text>
               </span>
             </div>
           </div>
           <div className="Demo-box">
             <p>
               <a>
-                <Hint>F</Hint>Lorem ipsum
+                <Hint>F</Hint>
+                <Text>Lorem ipsum</Text>
               </a>
             </p>
-            <p>Dolor sit amet, consectetur adipiscing elit.</p>
+            <p>
+              <Text>Dolor sit amet, consectetur adipiscing elit.</Text>
+            </p>
             <p>
               <a>
-                <Hint>K</Hint>Sed do
+                <Hint>K</Hint>
+                <Text>Sed do</Text>
               </a>
               <a>
                 <Hint hint2="F" highlighted>
                   A
                 </Hint>
-                <Match>Lab</Match>oris
+                <Match>Lab</Match>
+                <Text>oris</Text>
               </a>
               <a>
-                <Hint>I</Hint>Tempor
+                <Hint>I</Hint>
+                <Text>Tempor</Text>
               </a>
             </p>
           </div>
           <div className="Demo-box">
             <p>
               <a>
-                <Hint hint2="J">J</Hint>Incididunt ut <Match>lab</Match>ore
+                <Hint hint2="J">J</Hint>
+                <Text>Incididunt ut </Text>
+                <Match>lab</Match>
+                <Text>ore</Text>
               </a>
             </p>
-            <p>Et dolore magna aliqua. Ut enim ad minim veniam.</p>
+            <p>
+              <Text>Et dolore magna aliqua. Ut enim ad minim veniam.</Text>
+            </p>
             <p>
               <a>
-                <Hint>S</Hint>Nostrud
+                <Hint>S</Hint>
+                <Text>Nostrud</Text>
               </a>
               <a>
-                <Hint>U</Hint>Exercitation
+                <Hint>U</Hint>
+                <Text>Exercitation</Text>
               </a>
               <a>
-                <Hint>E</Hint>Ullamco
+                <Hint>E</Hint>
+                <Text>Ullamco</Text>
               </a>
             </p>
           </div>
@@ -549,25 +569,36 @@ function Demo({
             <p>
               <a>
                 <Hint hint2="D">D</Hint>
-                Eius<Match>lab</Match> nisi aliquip
+                <Text>Eius</Text>
+                <Match>lab</Match>
+                <Text> nisi aliquip</Text>
               </a>
             </p>
             <p>
-              Ex ea commodo consequat. Duis aute irure dolor in reprehenderit.
+              <Text>
+                Ex ea commodo consequat. Duis aute irure dolor in reprehenderit.
+              </Text>
             </p>
             <p>
               <a>
-                <Hint>L</Hint>In voluptate
+                <Hint>L</Hint>
+                <Text>In voluptate</Text>
               </a>
               <a>
-                <Hint>R</Hint>Velit esse
+                <Hint>R</Hint>
+                <Text>Velit esse</Text>
               </a>
               <a>
-                <Hint>O</Hint>Cillum
+                <Hint>O</Hint>
+                <Text>Cillum</Text>
               </a>
             </p>
           </div>
-          {filterByText && <span className="status">lab</span>}
+          {filterByText && (
+            <span className="status">
+              <Text>lab</Text>
+            </span>
+          )}
         </div>
       </div>
 

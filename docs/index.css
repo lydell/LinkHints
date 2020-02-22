@@ -428,6 +428,10 @@ nav > ul > li > a:active {
   position: absolute;
 }
 
+[data-text]::before {
+  content: attr(data-text);
+}
+
 .Demos {
   display: flex;
 }
