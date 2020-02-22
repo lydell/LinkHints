@@ -52,6 +52,7 @@ import {
   diffOptions,
   flattenOptions,
   getDefaults,
+  getRawOptions,
   makeOptionsDecoder,
   unflattenOptions,
 } from "../shared/options";
@@ -1919,7 +1920,7 @@ export default class BackgroundProgram {
     const info = await browser.runtime.getPlatformInfo();
     const mac = info.os === "mac";
     const defaults = getDefaults({ mac });
-    const rawOptions = await browser.storage.sync.get();
+    const rawOptions = await getRawOptions();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const unflattened = unflattenOptions(defaulted);
     const decoder = makeOptionsDecoder(defaults);
@@ -1954,7 +1955,7 @@ export default class BackgroundProgram {
     // flattening `partialOptions` and storing that would mean that you couldn't
     // remove any `options.keys`, for example.
     try {
-      const rawOptions = await browser.storage.sync.get();
+      const rawOptions = await getRawOptions();
       const { keysToRemove, optionsToSet } = diffOptions(
         flattenOptions(this.options.defaults),
         flattenOptions({ ...this.options.values, ...partialOptions }),

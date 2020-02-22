@@ -367,6 +367,14 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
 
 export const DEBUG_PREFIX = "debug.";
 
+export async function getRawOptions(): FlatOptions {
+  const raw = await browser.storage.sync.get();
+  // Exclude all tweakables since they are handled completely differently.
+  return Object.fromEntries(
+    Object.entries(raw).filter(([key]) => !key.startsWith(DEBUG_PREFIX))
+  );
+}
+
 export function diffOptions(
   defaults: FlatOptions,
   fullOptions: FlatOptions,
@@ -385,9 +393,7 @@ export function diffOptions(
   ]);
 
   for (const key of allKeys) {
-    if (key.startsWith(DEBUG_PREFIX)) {
-      continue;
-    } else if (
+    if (
       {}.hasOwnProperty.call(defaults, key) &&
       !{}.hasOwnProperty.call(fullOptions, key)
     ) {
