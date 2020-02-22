@@ -53,9 +53,18 @@ export function parseCSS(css: string): Array<Rule> {
   ruleRegex.lastIndex = 0;
 
   while ((match = ruleRegex.exec(normalized))) {
-    const [, selector, declarationsString] = match;
+    const [, rawSelector, declarationsString] = match;
+    const selector = rawSelector.trim();
+
+    try {
+      document.querySelector(selector);
+    } catch {
+      // Just like in CSS, ignore the entire rule if the selector is invalid.
+      continue;
+    }
+
     rules.push({
-      selector: selector.trim(),
+      selector,
       declarations: parseDeclarations(declarationsString),
     });
   }
