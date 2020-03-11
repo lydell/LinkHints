@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
-    "preact": "10.3.3",
+    "preact": "10.3.4",
     "preact-shadow-root": "1.0.2",
     "tiny-decoders": "4.0.0",
     "webextension-polyfill": "0.6.0"
@@ -53,7 +53,7 @@
     "preact-render-to-string": "5.1.4",
     "prettier": "1.19.1",
     "readdirp": "3.3.0",
-    "rollup": "2.0.2",
+    "rollup": "2.0.3",
     "rollup-plugin-prettier": "0.6.0",
     "web-ext": "4.1.0",
     "yazl": "2.5.1"
