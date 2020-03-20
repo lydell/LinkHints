@@ -16,8 +16,8 @@
     "flow:check": "flow check",
     "eslint": "eslint . --fix",
     "eslint:check": "eslint .",
-    "prettier": "prettier --write \"**/*.{css,html,js,md,yml}\"",
-    "prettier:check": "prettier --check \"**/*.{css,html,js,md,yml}\"",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
     "test": "run-s eslint:check prettier:check flow:check build:chrome build:firefox"
   },
   "dependencies": {
@@ -51,7 +51,7 @@
     "npm-run-all": "4.1.5",
     "optional-require": "1.0.0",
     "preact-render-to-string": "5.1.4",
-    "prettier": "1.19.1",
+    "prettier": "2.0.0",
     "readdirp": "3.4.0",
     "rollup": "2.1.0",
     "rollup-plugin-prettier": "0.6.0",

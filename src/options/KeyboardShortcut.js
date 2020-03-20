@@ -55,11 +55,7 @@ export function viewKey(key: string): string {
   }
 
   if (WHITESPACE.test(key)) {
-    return `U+${key
-      .charCodeAt(0)
-      .toString(16)
-      .padStart(4, "0")
-      .toUpperCase()}`;
+    return `U+${key.charCodeAt(0).toString(16).padStart(4, "0").toUpperCase()}`;
   }
 
   return key;

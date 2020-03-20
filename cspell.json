@@ -1,10 +1,6 @@
 {
   "language": "en,lorem",
-  "ignorePaths": [
-    "node_modules/**",
-    "package-lock.json",
-    ".stuff/**"
-  ],
+  "ignorePaths": ["node_modules/**", "package-lock.json", ".stuff/**"],
   "words": [
     "adipiscing",
     "animationend",

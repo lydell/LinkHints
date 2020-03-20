@@ -128,9 +128,7 @@ function TweakableField<T: TweakableValue>({
           </p>
           <pre>{error}</pre>
         </div>
-      ) : (
-        undefined
-      ),
+      ) : undefined,
     onReset: reset,
   };
 

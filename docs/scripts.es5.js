@@ -3,7 +3,7 @@
 
 function macifyKbd() {
   if (/mac|iPhone|iPad|iPod/i.test(window.navigator.platform)) {
-    [].forEach.call(document.querySelectorAll("kbd"), function(kbd) {
+    [].forEach.call(document.querySelectorAll("kbd"), function (kbd) {
       var mac = kbd.getAttribute("data-mac");
       var text = mac != null ? mac : kbd.textContent;
       switch (text) {
@@ -36,8 +36,8 @@ function observeQuickLinks() {
   }
 
   var intersectionObserver = new IntersectionObserver(
-    function(entries) {
-      entries.forEach(function(entry) {
+    function (entries) {
+      entries.forEach(function (entry) {
         var a = document.querySelector(
           '[data-quick="' + entry.target.id + '"]'
         );
@@ -49,13 +49,13 @@ function observeQuickLinks() {
     { rootMargin: "-32px" }
   );
 
-  [].forEach.call(document.querySelectorAll("section[id]"), function(section) {
+  [].forEach.call(document.querySelectorAll("section[id]"), function (section) {
     intersectionObserver.observe(section);
   });
 }
 
 function autoCloseDetails() {
-  document.addEventListener("click", function(event /*: UIEvent */) {
+  document.addEventListener("click", function (event /*: UIEvent */) {
     var target = event.target;
     if (
       target instanceof HTMLElement &&
@@ -64,7 +64,7 @@ function autoCloseDetails() {
           target.parentElement != null &&
           target.parentElement.classList.contains("Pagination")))
     ) {
-      [].forEach.call(document.querySelectorAll("details"), function(details) {
+      [].forEach.call(document.querySelectorAll("details"), function (details) {
         if (details !== target.parentNode) {
           details.open = false;
         }

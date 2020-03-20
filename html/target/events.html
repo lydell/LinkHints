@@ -122,8 +122,9 @@
         const a = document.createElement("a");
         a.href = `https://example.com/${counter}`;
         a.target = "_blank";
-        const text = `Link ${counter}: ${getFeaturesString(options) ||
-          "(regular)"}`;
+        const text = `Link ${counter}: ${
+          getFeaturesString(options) || "(regular)"
+        }`;
         if (makeChildren != null) {
           makeChildren(a, text);
         } else {

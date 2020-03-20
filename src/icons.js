@@ -276,10 +276,7 @@ function renderTestPage() {
 }
 
 function checksum(string: string): string {
-  return crypto
-    .createHash("md5")
-    .update(string, "utf8")
-    .digest("hex");
+  return crypto.createHash("md5").update(string, "utf8").digest("hex");
 }
 
 function makeChecksumFile(hash: string): string {

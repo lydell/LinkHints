@@ -41,9 +41,7 @@ export default function KeyboardShortcut({
           >
             {name}
           </kbd>
-        ) : (
-          undefined
-        )
+        ) : undefined
       )}
       {press !== "" && <kbd>{press}</kbd>}
     </span>

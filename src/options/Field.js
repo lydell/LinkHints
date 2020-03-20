@@ -36,9 +36,7 @@ export default function Field({
       >
         Reset
       </button>
-    ) : (
-      undefined
-    );
+    ) : undefined;
 
   return (
     <div
