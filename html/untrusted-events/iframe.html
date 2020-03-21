@@ -7,7 +7,7 @@
   <body>
     <a href="#">link in iframe</a>
     <script>
-      window.addEventListener("message", event => {
+      window.addEventListener("message", (event) => {
         console.log("frame message", event.data, event);
       });
     </script>

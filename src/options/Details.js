@@ -12,7 +12,7 @@ export default function Details({
 }: {
   summary: React.Node,
   open: boolean,
-  onChange: boolean => void,
+  onChange: (boolean) => void,
   children: React.Node,
 }) {
   return (

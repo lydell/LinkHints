@@ -311,7 +311,7 @@ export default () =>
 
         <div className="QuickLinks">
           <ul>
-            {SECTIONS.map(section => (
+            {SECTIONS.map((section) => (
               <li key={section.id}>
                 <a href={`#${section.id}`} data-quick={section.id}>
                   #{section.id}
@@ -321,7 +321,7 @@ export default () =>
           </ul>
         </div>
 
-        {SECTIONS.map(section => (
+        {SECTIONS.map((section) => (
           <section key={section.id} id={section.id}>
             <h2>
               <a href={`#${section.id}`}>{section.title}</a>
@@ -416,7 +416,7 @@ function Nav() {
   return (
     <nav>
       <ul className="Container Container--noPaddingSmall">
-        {NAV.map(item => (
+        {NAV.map((item) => (
           <li key={item.href}>
             <a href={item.href}>
               <span className="emoji">{item.emoji}</span> {item.text}
@@ -446,7 +446,7 @@ const REASONS = [
 function Reasons() {
   return (
     <ul className="Reasons">
-      {REASONS.map(reason => (
+      {REASONS.map((reason) => (
         <li key={reason.emoji}>
           <span className="emoji">{reason.emoji}</span> {reason.text}
         </li>

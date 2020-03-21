@@ -16,7 +16,7 @@ export default function ButtonWithPopup({
   buttonContent: React.Node,
   popupContent: ({ close: () => void }) => React.Node,
   open?: boolean,
-  onChange?: boolean => void,
+  onChange?: (boolean) => void,
   className?: string,
   ...
 }) {
@@ -30,7 +30,7 @@ export default function ButtonWithPopup({
   const rootRef = useRef();
 
   const setOpen = useCallback(
-    newOpen => {
+    (newOpen) => {
       if (openProp == null) {
         setOpenState(newOpen);
       }

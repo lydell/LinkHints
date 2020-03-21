@@ -18,7 +18,7 @@
     <script>
       window.addEventListener(
         "keydown",
-        event => {
+        (event) => {
           switch (event.code) {
             case "KeyK":
               // Doesn’t work in Chrome: https://stackoverflow.com/a/34008999/2010616
@@ -27,11 +27,11 @@
 
             case "KeyL": {
               const elements = document.querySelectorAll(`[accesskey="l"]`);
-              elements.forEach(element => {
+              elements.forEach((element) => {
                 element.removeAttribute("accesskey");
               });
               setTimeout(() => {
-                elements.forEach(element => {
+                elements.forEach((element) => {
                   element.setAttribute("accesskey", "k");
                 });
               });

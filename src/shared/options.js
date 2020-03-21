@@ -55,7 +55,7 @@ export type PartialOptions = $Shape<Options>;
 export type FlatOptions = { [string]: mixed, ... };
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
-  return record(field => ({
+  return record((field) => ({
     chars: field("chars", map(string, validateChars), {
       default: defaults.chars,
     }),
@@ -293,7 +293,7 @@ function flattenKeyTranslations(
   prefix: string
 ): FlatOptions {
   return Object.fromEntries(
-    Object.keys(keyTranslations).map(code => [
+    Object.keys(keyTranslations).map((code) => [
       `${prefix}.${code}`,
       keyTranslations[code],
     ])
@@ -305,7 +305,7 @@ function flattenKeyboardMappings(
   prefix: string
 ): FlatOptions {
   return Object.fromEntries(
-    mappings.map(mapping => [
+    mappings.map((mapping) => [
       `${prefix}.${serializeShortcut(mapping.shortcut)}`,
       mapping.action,
     ])
@@ -444,7 +444,7 @@ export function importOptions(
 } {
   try {
     const keyErrors = Object.keys(unflattenOptions(flatOptions))
-      .map(key =>
+      .map((key) =>
         ({}.hasOwnProperty.call(defaults, key)
           ? undefined
           : `Unknown key: ${repr(key)}`)

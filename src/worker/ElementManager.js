@@ -528,7 +528,7 @@ export default class ElementManager {
 
   requestIdleCallback() {
     if (this.idleCallbackId == null) {
-      this.idleCallbackId = requestIdleCallback(deadline => {
+      this.idleCallbackId = requestIdleCallback((deadline) => {
         this.idleCallbackId = undefined;
         this.flushQueue(deadline);
       });
@@ -1163,7 +1163,7 @@ export default class ElementManager {
 
     const maybeResults: Array<VisibleElement | Rejected> = Array.from(
       candidates,
-      element => {
+      (element) => {
         time.start("loop:start");
 
         const duration = Date.now() - startTime;
@@ -1268,7 +1268,7 @@ export default class ElementManager {
 
     time.start("check duration");
     const slow = maybeResults.filter(
-      result => result.isRejected && result.debug.reason === "slow"
+      (result) => result.isRejected && result.debug.reason === "slow"
     ).length;
     if (slow > 0) {
       log("warn", prefix, `Skipped ${slow} element(s) due to timeout`, {
@@ -1278,7 +1278,7 @@ export default class ElementManager {
     }
 
     time.start("filter");
-    const results = maybeResults.map(result =>
+    const results = maybeResults.map((result) =>
       result.isRejected || deduper.rejects(result) ? undefined : result
     );
 
@@ -1292,7 +1292,7 @@ export default class ElementManager {
     // In theory this might need flushing, but in practice this method is always
     // called _after_ `getVisibleElements`, so everything should already be
     // flushed.
-    return Array.from(this.visibleFrames, element => {
+    return Array.from(this.visibleFrames, (element) => {
       if (
         // Needed on reddit.com. There's a Google Ads iframe where
         // `contentWindow` is null.
@@ -1401,7 +1401,7 @@ export default class ElementManager {
         // has the biggest risk of false positives. Make sure that some of them
         // don’t get hints.
         if (
-          Array.from(t.ATTRIBUTES_NOT_CLICKABLE.value).some(attr =>
+          Array.from(t.ATTRIBUTES_NOT_CLICKABLE.value).some((attr) =>
             element.hasAttribute(attr)
           )
         ) {
@@ -1411,7 +1411,7 @@ export default class ElementManager {
         if (
           hasClickListenerProp(element) ||
           this.elementsWithClickListeners.has(element) ||
-          Array.from(t.ATTRIBUTES_CLICKABLE.value).some(attr =>
+          Array.from(t.ATTRIBUTES_CLICKABLE.value).some((attr) =>
             element.hasAttribute(attr)
           )
         ) {
@@ -1602,7 +1602,7 @@ function getMeasurements(
   time.start("measurements:rects");
   const allRects = Array.from(element.getClientRects());
   const filteredRects = allRects.filter(
-    rect =>
+    (rect) =>
       rect.width >= t.MIN_SIZE_TEXT_RECT.value &&
       rect.height >= t.MIN_SIZE_TEXT_RECT.value
   );
@@ -1634,12 +1634,14 @@ function getMeasurements(
   );
 
   time.start("measurements:visibleBoxes");
-  const visibleBoxes = Array.from(rects, rect => getVisibleBox(rect, viewports))
+  const visibleBoxes = Array.from(rects, (rect) =>
+    getVisibleBox(rect, viewports)
+  )
     .filter(Boolean)
     // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
     // system of the current frame. This is so we can easily make comparisons
     // with other rects of the frame.
-    .map(box => ({ ...box, x: box.x - offsetX, y: box.y - offsetY }));
+    .map((box) => ({ ...box, x: box.x - offsetX, y: box.y - offsetY }));
 
   time.start("measurements:noVisibleBoxes");
   if (visibleBoxes.length === 0) {
@@ -1690,7 +1692,7 @@ function getMeasurements(
         })
       : getMultiRectPoint({ element, visibleBoxes, viewports, range, time });
 
-  const maxX = Math.max(...visibleBoxes.map(box => box.x + box.width));
+  const maxX = Math.max(...visibleBoxes.map((box) => box.x + box.width));
 
   // Check that the element isn’t covered. A little bit expensive, but totally
   // worth it since it makes hints in fixed menus so much easier find.
@@ -1921,7 +1923,7 @@ function getMultiRectPoint({
   time: TimeTracker,
 }): Point {
   function isAcceptable(point: Point): boolean {
-    return visibleBoxes.some(box => isWithin(point, box));
+    return visibleBoxes.some((box) => isWithin(point, box));
   }
 
   time.start("getMultiRectPoint:textPoint");
@@ -1941,11 +1943,11 @@ function getMultiRectPoint({
   }
 
   time.start("getMultiRectPoint:default");
-  const minY = Math.min(...visibleBoxes.map(box => box.y));
-  const maxY = Math.max(...visibleBoxes.map(box => box.y + box.height));
+  const minY = Math.min(...visibleBoxes.map((box) => box.y));
+  const maxY = Math.max(...visibleBoxes.map((box) => box.y + box.height));
 
   return {
-    x: Math.min(...visibleBoxes.map(box => box.x)),
+    x: Math.min(...visibleBoxes.map((box) => box.x)),
     y: (minY + maxY) / 2,
     align: "right",
     debug: "getMultiRectPoint default",
@@ -2101,7 +2103,7 @@ function getBestNonEmptyTextPoint({
   element: HTMLElement,
   elementRect: ClientRect,
   viewports: Array<Box>,
-  isAcceptable: Point => boolean,
+  isAcceptable: (Point) => boolean,
   preferTextStart: boolean,
   range: Range,
 }): ?Point {
@@ -2168,7 +2170,7 @@ function getBestNonEmptyTextPoint({
   // more natural to be looking for the tallest _line_ rather than the tallest
   // piece of text and place the hint at the beginning of the line.
   const sameLineRects = rects.filter(
-    rect => rect.top < largestRect.bottom && rect.bottom > largestRect.top
+    (rect) => rect.top < largestRect.bottom && rect.bottom > largestRect.top
   );
 
   // Prefer the left-most part of the line. In case of a tie, prefer the
@@ -2224,7 +2226,7 @@ function isWithin(point: Point, box: Box): boolean {
 
 function replaceConstants(code: string): string {
   const regex = RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g");
-  return code.replace(regex, name => constants[name]);
+  return code.replace(regex, (name) => constants[name]);
 }
 
 function isScrollable(element: HTMLElement): boolean {
@@ -2257,7 +2259,7 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   // use `.hasAttribute` instead. That works, except in rare edge cases
   // where `.onclick = null` is set afterwards (the attribute string
   // will remain but the listener will be gone).
-  return CLICKABLE_EVENT_PROPS.some(prop =>
+  return CLICKABLE_EVENT_PROPS.some((prop) =>
     BROWSER === "chrome"
       ? element.hasAttribute(prop)
       : // $FlowIgnore: I _do_ want to dynamically read properties here.
@@ -2294,8 +2296,8 @@ function hintWeight(
   // than 1px). So round the weight to make the order more predictable.
   const weight = Math.round(
     Math.min(
-      Math.max(...visibleBoxes.map(box => box.width)),
-      Math.max(...visibleBoxes.map(box => box.height))
+      Math.max(...visibleBoxes.map((box) => box.width)),
+      Math.max(...visibleBoxes.map((box) => box.height))
     )
   );
 

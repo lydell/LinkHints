@@ -42,7 +42,7 @@
     <div id="shadow1"></div>
 
     <script>
-      const observer = new MutationObserver(records => {
+      const observer = new MutationObserver((records) => {
         for (const record of records) {
           update(record.target);
         }
@@ -56,11 +56,11 @@
         update(element);
         observer.observe(element, { attributeFilter: ["tabindex"] });
 
-        element.addEventListener("click", event => {
+        element.addEventListener("click", (event) => {
           element.focus();
         });
 
-        element.addEventListener("keydown", event => {
+        element.addEventListener("keydown", (event) => {
           setTimeout(() => {
             const value = values[i % values.length];
             switch (event.key) {
@@ -98,7 +98,7 @@
         });
       }
 
-      window.addEventListener("keydown", event => {
+      window.addEventListener("keydown", (event) => {
         switch (event.key) {
           case "p":
             if (lastDeleted != null && lastDeleted.parent != null) {

@@ -17,7 +17,7 @@ export default function TestLink({ text }: { text: string }) {
       href={`?test=${id}`}
       tabIndex="-1"
       className={classlist("TestLink", { "is-clicked": clicked })}
-      onClick={event => {
+      onClick={(event) => {
         event.preventDefault();
         setClicked(true);
       }}

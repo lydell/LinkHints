@@ -126,7 +126,7 @@ export function bind(
             try {
               const result = method.apply(object, args);
               if (result != null && typeof result.then === "function") {
-                result.then(undefined, error => {
+                result.then(undefined, (error) => {
                   log("error", prefix, error, ...args);
                 });
               }
@@ -171,7 +171,7 @@ export function addEventListener(
 export function addListener<Listener, Options>(
   target: {
     addListener: (Listener, options?: Options) => void,
-    removeListener: Listener => void,
+    removeListener: (Listener) => void,
     ...
   },
   listener: Listener,
@@ -389,7 +389,7 @@ export function extractText(element: HTMLElement): string {
     ? onlyChild.data
     : // This line is sufficient by itself. The above is just a performance
       // optimization for a common case (a single text node child).
-      Array.from(walkTextNodes(element), node => node.data).join("");
+      Array.from(walkTextNodes(element), (node) => node.data).join("");
 }
 
 export function getTextRects({
@@ -446,7 +446,7 @@ export function getTextRects({
 
   return ranges.flatMap(({ range }) => {
     const rects = range.getClientRects();
-    return Array.from(rects, rect => {
+    return Array.from(rects, (rect) => {
       const box = getVisibleBox(rect, viewports);
       if (box == null) {
         return undefined;
@@ -499,7 +499,7 @@ export function classlist(
   ...args: Array<string | { [string]: boolean, ... }>
 ): string {
   return args
-    .flatMap(arg =>
+    .flatMap((arg) =>
       typeof arg === "string"
         ? arg
         : Object.entries(arg)
@@ -514,7 +514,7 @@ export function isMixedCase(string: string): boolean {
 }
 
 export function splitEnteredText(enteredText: string): Array<string> {
-  return enteredText.split(" ").filter(word => word !== "");
+  return enteredText.split(" ").filter((word) => word !== "");
 }
 
 // Deep equal for JSON data.
@@ -564,7 +564,7 @@ export function deepEqual(a: mixed, b: mixed): boolean {
   return false;
 }
 
-export const decodeUnsignedInt: Decoder<number> = map(number, value => {
+export const decodeUnsignedInt: Decoder<number> = map(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
     throw new TypeError(
       `Expected an unsigned finite integer, but got: ${repr(value)}`
@@ -585,7 +585,7 @@ export function normalizeUnsignedInt(
   return defaulted.toString();
 }
 
-export const decodeUnsignedFloat: Decoder<number> = map(number, value => {
+export const decodeUnsignedFloat: Decoder<number> = map(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0)) {
     throw new TypeError(
       `Expected an unsigned finite float, but got: ${repr(value)}`

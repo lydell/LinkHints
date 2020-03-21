@@ -6,7 +6,7 @@
   </head>
   <body>
     <script>
-      const observer = new MutationObserver(records => {
+      const observer = new MutationObserver((records) => {
         console.log(records);
       });
       observer.observe(document.documentElement, {

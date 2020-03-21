@@ -164,7 +164,7 @@ export function tweakable(
           }
 
           case "SelectorString": {
-            const decoded = map(string, val => {
+            const decoded = map(string, (val) => {
               document.querySelector(val);
               return val;
             })(value);
@@ -186,8 +186,8 @@ export function tweakable(
   }
 
   const loaded = browser.storage.sync
-    .get(Object.keys(defaults).map(key => `${keyPrefix}${key}`))
-    .then(rawData => {
+    .get(Object.keys(defaults).map((key) => `${keyPrefix}${key}`))
+    .then((rawData) => {
       const data = Object.fromEntries(
         Object.entries(rawData).map(([fullKey, value]) => [
           fullKey.slice(keyPrefix.length),
@@ -196,7 +196,7 @@ export function tweakable(
       );
       update(data);
     })
-    .catch(error => {
+    .catch((error) => {
       log("error", prefix, "First load failed.", {
         namespace,
         mapping,
@@ -210,7 +210,7 @@ export function tweakable(
       if (areaName === "sync") {
         const data = Object.fromEntries(
           Object.keys(changes)
-            .map(fullKey => {
+            .map((fullKey) => {
               if (fullKey.startsWith(keyPrefix)) {
                 const key = fullKey.slice(keyPrefix.length);
                 if ({}.hasOwnProperty.call(defaults, key)) {
@@ -240,15 +240,15 @@ export function normalizeStringArray(
   arrayOrSet: Array<string> | Set<string>
 ): Array<string> {
   return Array.from(arrayOrSet)
-    .map(item => item.trim())
-    .filter(item => item !== "")
+    .map((item) => item.trim())
+    .filter((item) => item !== "")
     .sort();
 }
 
 function decodeStringSet<T: string>(decoder: Decoder<T>): Decoder<Set<T>> {
   return map(
     array(string),
-    arr => new Set(array(decoder)(normalizeStringArray(arr)))
+    (arr) => new Set(array(decoder)(normalizeStringArray(arr)))
   );
 }
 

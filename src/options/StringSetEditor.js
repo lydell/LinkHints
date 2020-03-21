@@ -50,7 +50,7 @@ export default function StringSetEditor({
           key={index}
           id={index === 0 ? id : undefined}
           savedValue={item}
-          normalize={newValue => newValue.trim()}
+          normalize={(newValue) => newValue.trim()}
           save={(newItem, reason) => {
             const newValue =
               index === value.length
@@ -63,7 +63,7 @@ export default function StringSetEditor({
             setStateValue(newValue);
             save(new Set(newValue), reason);
           }}
-          onKeyDown={event => {
+          onKeyDown={(event) => {
             const { target } = event;
             if (target instanceof HTMLElement && event.key === "Enter") {
               const next = target.nextElementSibling;

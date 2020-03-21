@@ -185,5 +185,5 @@ function needsPolyfill(browser: ?Browser): boolean {
 }
 
 function makeIcons(name: string, extension: string): Array<[number, string]> {
-  return ICON_SIZES.map(size => [size, `icons/${name}/${size}${extension}`]);
+  return ICON_SIZES.map((size) => [size, `icons/${name}/${size}${extension}`]);
 }

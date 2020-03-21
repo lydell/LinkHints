@@ -14,7 +14,7 @@
   <body>
     <div id="probe"></div>
     <script>
-      const observer = new IntersectionObserver(entries => {
+      const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           console.log(entry.isIntersecting ? "Intersecting" : "Outside", entry);
         }

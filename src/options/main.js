@@ -12,7 +12,7 @@ function start() {
 
   render(
     createElement(OptionsProgram, {
-      ref: program => {
+      ref: (program) => {
         // Attach the instance to `window` for debugging in the regular Web
         // Console.
         window.optionsProgram = program;

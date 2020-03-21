@@ -190,7 +190,7 @@ export default class WorkerProgram {
           indexes.includes(index)
         );
         const wordsSet = new Set(words);
-        const rects = elements.flatMap(elementData =>
+        const rects = elements.flatMap((elementData) =>
           getTextRectsHelper({
             element: elementData.element,
             type: elementData.type,
@@ -440,7 +440,7 @@ export default class WorkerProgram {
       keyTranslations: this.keyTranslations,
     });
 
-    const match = this.keyboardShortcuts.find(mapping => {
+    const match = this.keyboardShortcuts.find((mapping) => {
       const { shortcut } = mapping;
       return (
         keypress.key === shortcut.key &&
@@ -641,7 +641,7 @@ export default class WorkerProgram {
       number
     ] = this.elementManager.getVisibleElements(types, viewports, time);
     const elements = elementsWithNulls.filter(
-      elementData => elementData != null
+      (elementData) => elementData != null
     );
 
     time.start("frames");
@@ -891,9 +891,9 @@ function focusElement(element: HTMLElement) {
     const options = { capture: true, passive: true };
     element.addEventListener("blur", stop, options);
 
-    const mutationObserver = new MutationObserver(records => {
+    const mutationObserver = new MutationObserver((records) => {
       const removed = !element.isConnected;
-      tabIndexChanged = records.some(record => record.type === "attributes");
+      tabIndexChanged = records.some((record) => record.type === "attributes");
 
       if (removed || tabIndexChanged) {
         stop();
@@ -942,7 +942,7 @@ function* getRootNodes(fromNode: Node): Generator<Node, void, void> {
 // then we use the original element.
 function getTargetElement(element: HTMLElement): HTMLElement {
   const children = Array.from(element.childNodes).filter(
-    node => !(node instanceof Text && node.data.trim() === "")
+    (node) => !(node instanceof Text && node.data.trim() === "")
   );
   const onlyChild = children.length === 1 ? children[0] : undefined;
   return onlyChild instanceof HTMLElement
@@ -1130,7 +1130,7 @@ function makeElementReports(
     )
     .filter(Boolean);
 
-  const skipped = elementReports.filter(report => report.textContent);
+  const skipped = elementReports.filter((report) => report.textContent);
   if (skipped.length > 0) {
     log(
       "warn",
@@ -1191,7 +1191,7 @@ function updateElementsWithEqualOnes(
     // element had _technically_ been removed). This is an attempt to give such
     // hints new elements.
     if (!item.element.isConnected) {
-      const equalElements = newElements.filter(element =>
+      const equalElements = newElements.filter((element) =>
         item.element.isEqualNode(element)
       );
       if (equalElements.length === 1) {
@@ -1215,7 +1215,7 @@ function extractTextHelper(element: HTMLElement, type: ElementType): string {
   const labels = getLabels(element);
   if (labels != null) {
     return [extractText(element)]
-      .concat(Array.from(labels, label => extractText(label)))
+      .concat(Array.from(labels, (label) => extractText(label)))
       .join(" ");
   }
 
@@ -1243,7 +1243,7 @@ export function getTextRectsHelper({
   // See `extractTextHelper`.
   const labels = getLabels(element);
   if (labels != null) {
-    return [element].concat(Array.from(labels)).flatMap(element2 =>
+    return [element].concat(Array.from(labels)).flatMap((element2) =>
       getTextRects({
         element: element2,
         viewports,
@@ -1374,7 +1374,7 @@ function firefoxPopupBlockerWorkaround({
             target,
             "click",
             // eslint-disable-next-line no-loop-func
-            event => {
+            (event) => {
               // We’re already done – just skip remaining listeners.
               if (defaultPrevented !== "NotPrevented") {
                 return;
@@ -1441,7 +1441,7 @@ function firefoxPopupBlockerWorkaround({
       // called.
       override(
         "stopImmediatePropagation",
-        originalStopImmediatePropagation =>
+        (originalStopImmediatePropagation) =>
           function stopImmediatePropagation(): mixed {
             /* eslint-disable babel/no-invalid-this */
             // We’re already done – just skip remaining listeners.
@@ -1477,7 +1477,7 @@ function firefoxPopupBlockerWorkaround({
             resets.add(
               override(
                 "preventDefault",
-                originalPreventDefault =>
+                (originalPreventDefault) =>
                   function preventDefault(): mixed {
                     log(
                       "log",

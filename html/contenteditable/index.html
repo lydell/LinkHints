@@ -77,11 +77,11 @@
       const elements = Array.from(document.querySelectorAll("*"));
 
       const roots = elements.filter(
-        element =>
+        (element) =>
           element.contentEditable !== "false" &&
           element.contentEditable !== "inherit"
       );
-      const editables = elements.filter(element => element.isContentEditable);
+      const editables = elements.filter((element) => element.isContentEditable);
 
       numRoots.textContent = roots.length;
       numEditables.textContent = editables.length;

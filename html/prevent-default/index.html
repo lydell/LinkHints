@@ -35,9 +35,11 @@
     <p><a href="javascript:alert(1)">javascript link</a></p>
 
     <script>
-      mousedown.addEventListener("mousedown", event => event.preventDefault());
-      mouseup.addEventListener("mouseup", event => event.preventDefault());
-      click.addEventListener("click", event => event.preventDefault());
+      mousedown.addEventListener("mousedown", (event) =>
+        event.preventDefault()
+      );
+      mouseup.addEventListener("mouseup", (event) => event.preventDefault());
+      click.addEventListener("click", (event) => event.preventDefault());
     </script>
   </body>
 </html>

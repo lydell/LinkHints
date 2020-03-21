@@ -57,12 +57,12 @@
       <a href="#">link</a>
     </div>
     <script>
-      const rects = Array.from(grid.querySelectorAll("a"), a =>
+      const rects = Array.from(grid.querySelectorAll("a"), (a) =>
         a.getBoundingClientRect()
       );
-      const areas = new Set(rects.map(rect => rect.width * rect.height));
-      const widths = new Set(rects.map(rect => rect.width));
-      const heights = new Set(rects.map(rect => rect.height));
+      const areas = new Set(rects.map((rect) => rect.width * rect.height));
+      const widths = new Set(rects.map((rect) => rect.width));
+      const heights = new Set(rects.map((rect) => rect.height));
 
       pre.textContent = JSON.stringify(
         {

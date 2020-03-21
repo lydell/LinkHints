@@ -13,7 +13,7 @@
         console.time("pingpong");
         iframe.contentWindow.postMessage("ping", "*");
       }, timeout);
-      window.onmessage = event => {
+      window.onmessage = (event) => {
         console.timeEnd("pingpong");
       };
     </script>

@@ -27,7 +27,7 @@ import { makeRandomToken } from "../shared/main";
 // simple.
 export const CLICKABLE_EVENT_NAMES = ["click", "mousedown"];
 export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
-  eventName => `on${eventName}`
+  (eventName) => `on${eventName}`
 );
 
 // Common prefix for events. It’s important to create a name unique from
@@ -70,7 +70,7 @@ export type FromInjected =
   | { type: "Queue", hasQueue: boolean };
 
 export default (communicator?: {
-  +onInjectedMessage: FromInjected => mixed,
+  +onInjectedMessage: (FromInjected) => mixed,
   +addEventListener: (string, () => mixed, _?: true) => mixed,
   ...
 }) => {
@@ -172,7 +172,7 @@ export default (communicator?: {
               [originalFn.name](...args: Array<any>): any {
                 let wrappedArgs = args;
                 if (BROWSER === "firefox") {
-                  wrappedArgs = args.map(arg => XPCNativeWrapper(arg));
+                  wrappedArgs = args.map((arg) => XPCNativeWrapper(arg));
                 }
 
                 let prehookData = undefined;
@@ -221,7 +221,7 @@ export default (communicator?: {
                     ...wrappedArgs
                   );
                   if (result != null && typeof result.then === "function") {
-                    result.then(undefined, error => {
+                    result.then(undefined, (error) => {
                       logHookError(error, obj, name);
                     });
                   }
@@ -235,7 +235,7 @@ export default (communicator?: {
 
       // Make sure that `.length` is correct. This has to be done _after_
       // `exportFunction`.
-      const setLength = target => {
+      const setLength = (target) => {
         Reflect.defineProperty(target, "length", {
           ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
           value: originalFn.length,
@@ -358,7 +358,7 @@ export default (communicator?: {
 
     requestIdleCallback() {
       if (this.idleCallbackId == null) {
-        this.idleCallbackId = requestIdleCallback(deadline => {
+        this.idleCallbackId = requestIdleCallback((deadline) => {
           this.idleCallbackId = undefined;
           this.flushQueue(deadline);
         });
@@ -623,14 +623,14 @@ export default (communicator?: {
         ? { capture: Boolean(options) }
         : options;
     const optionsString = optionNames
-      .map(name => Boolean(normalized[name]).toString())
+      .map((name) => Boolean(normalized[name]).toString())
       .join(",");
     return `${eventName}:${optionsString}`;
   }
 
   function hasClickListenerProp(element: HTMLElement): boolean {
     return clickableEventProps.some(
-      prop =>
+      (prop) =>
         // $FlowIgnore: I _do_ want to dynamically read properties here.
         typeof element[prop] === "function"
     );

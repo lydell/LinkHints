@@ -38,7 +38,7 @@ const ALL_TWEAKABLES = [
 const ALL_KEYS: Set<string> = new Set(
   ALL_TWEAKABLES.flatMap(([, tMeta]) =>
     Object.keys(tMeta.defaults).map(
-      key => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`
+      (key) => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`
     )
   )
 );
@@ -57,7 +57,9 @@ export default function Tweakable({
     () =>
       addListener(browser.storage.onChanged, (changes, areaName) => {
         if (areaName === "sync") {
-          const didUpdate = Object.keys(changes).some(key => ALL_KEYS.has(key));
+          const didUpdate = Object.keys(changes).some((key) =>
+            ALL_KEYS.has(key)
+          );
           if (didUpdate) {
             onUpdateRef.current();
           }
@@ -73,7 +75,7 @@ export default function Tweakable({
       {ALL_TWEAKABLES.map(([t, tMeta]) =>
         Object.keys(tMeta.defaults)
           .sort()
-          .map(key => {
+          .map((key) => {
             const { [key]: changed = false } = tMeta.changed;
             return (
               <TweakableField
@@ -143,10 +145,10 @@ function TweakableField<T: TweakableValue>({
                 id={id}
                 style={{ width: "50%" }}
                 savedValue={value.value.toString()}
-                normalize={newValue =>
+                normalize={(newValue) =>
                   normalizeUnsignedInt(newValue, defaultValue.value)
                 }
-                save={newValue => {
+                save={(newValue) => {
                   save(fullKey, Number(newValue));
                 }}
               />
@@ -166,10 +168,10 @@ function TweakableField<T: TweakableValue>({
                 id={id}
                 style={{ width: "50%" }}
                 savedValue={value.value.toString()}
-                normalize={newValue =>
+                normalize={(newValue) =>
                   normalizeUnsignedFloat(newValue, defaultValue.value)
                 }
-                save={newValue => {
+                save={(newValue) => {
                   save(fullKey, Number(newValue));
                 }}
               />
@@ -188,7 +190,7 @@ function TweakableField<T: TweakableValue>({
               <StringSetEditor
                 id={id}
                 savedValue={value.value}
-                save={newValue => {
+                save={(newValue) => {
                   save(fullKey, normalizeStringArray(newValue));
                 }}
               />
@@ -207,7 +209,7 @@ function TweakableField<T: TweakableValue>({
               <StringSetEditor
                 id={id}
                 savedValue={new Set(value.value)}
-                save={newValue => {
+                save={(newValue) => {
                   save(fullKey, normalizeStringArray(newValue));
                 }}
               />
@@ -227,11 +229,11 @@ function TweakableField<T: TweakableValue>({
                 id={id}
                 style={{ width: "100%" }}
                 savedValue={value.value}
-                normalize={newValue => {
+                normalize={(newValue) => {
                   const trimmed = newValue.trim();
                   return trimmed === "" ? defaultValue.value : trimmed;
                 }}
-                save={newValue => {
+                save={(newValue) => {
                   save(fullKey, newValue);
                 }}
               />
@@ -280,7 +282,7 @@ export function getTweakableExport(): { [string]: mixed, ... } {
   return Object.fromEntries(
     ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
       Object.keys(tMeta.defaults)
-        .map(key => {
+        .map((key) => {
           const { value } = t[key];
           const { [key]: changed = false } = tMeta.changed;
           return changed

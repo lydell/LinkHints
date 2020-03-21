@@ -21,7 +21,7 @@
     <ul id="ul"></ul>
 
     <script>
-      const obs = new MutationObserver(records => {
+      const obs = new MutationObserver((records) => {
         console.log("Muation!");
         for (const record of records) {
           console.log("added:", record.addedNodes);

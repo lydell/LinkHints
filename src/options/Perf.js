@@ -22,7 +22,7 @@ export default function Perf({
 }) {
   const keys = Object.keys(perf);
 
-  const isEmpty = keys.every(tabId => perf[tabId].length === 0);
+  const isEmpty = keys.every((tabId) => perf[tabId].length === 0);
 
   return (
     <div className="SpacedVertical SpacedVertical--large">
@@ -59,7 +59,7 @@ export default function Perf({
         </div>
       </div>
 
-      {keys.map(tabId => {
+      {keys.map((tabId) => {
         const perfData = perf[tabId];
         if (perfData.length === 0) {
           return null;
@@ -74,7 +74,7 @@ export default function Perf({
         );
 
         const allStats = perfData.map(({ collectStats }) => collectStats);
-        const noFrames = allStats.every(stats => stats.length === 1);
+        const noFrames = allStats.every((stats) => stats.length === 1);
         const collectRows = statsToRows(
           sumStats(noFrames ? "(no frames)" : "total", allStats)
         ).concat(noFrames ? [] : statsToRows(allStats));
@@ -99,7 +99,7 @@ export default function Perf({
                 onClick={() => {
                   onExpandChange(
                     expandedPerfTabIds
-                      .filter(id => id !== tabId)
+                      .filter((id) => id !== tabId)
                       .concat(expanded ? [] : [tabId])
                   );
                 }}
@@ -212,8 +212,8 @@ function sumStats(
   title: string,
   allStats: Array<Array<Stats>>
 ): Array<Array<Stats>> {
-  return allStats.map(stats => {
-    const sum = fn => stats.reduce((result, item) => result + fn(item), 0);
+  return allStats.map((stats) => {
+    const sum = (fn) => stats.reduce((result, item) => result + fn(item), 0);
 
     return [
       {
@@ -246,12 +246,12 @@ function durationsToRows(
   allDurations: Array<Durations>
 ): Array<{ heading: string, values: Array<string> }> {
   const labels = new Set(
-    allDurations.flatMap(durations => durations.map(([label]) => label))
+    allDurations.flatMap((durations) => durations.map(([label]) => label))
   );
 
-  return Array.from(labels, label => ({
+  return Array.from(labels, (label) => ({
     heading: label,
-    values: allDurations.map(durations => {
+    values: allDurations.map((durations) => {
       const match = durations.find(([label2]) => label2 === label);
       return match != null ? formatDuration(match[1]) : "-";
     }),
@@ -264,10 +264,12 @@ function statsToRows(
   title: string,
   data: Array<{ heading: string, values: Array<string> }>,
 }> {
-  const urls = new Set(allStats.flatMap(stats => stats.map(({ url }) => url)));
+  const urls = new Set(
+    allStats.flatMap((stats) => stats.map(({ url }) => url))
+  );
 
-  return Array.from(urls, url => {
-    const allData = allStats.map(stats => {
+  return Array.from(urls, (url) => {
+    const allData = allStats.map((stats) => {
       const match = stats.find(({ url: url2 }) => url2 === url);
       return match != null
         ? {

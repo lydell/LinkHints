@@ -624,7 +624,7 @@ export default class RendererProgram {
     for (const stack of stacks) {
       if (stack.length >= 2) {
         // Hidden hints are rotated separately.
-        const groups = partition(stack, element =>
+        const groups = partition(stack, (element) =>
           element.classList.contains(HIDDEN_CLASS)
         );
         for (const group of groups) {
@@ -632,7 +632,7 @@ export default class RendererProgram {
           group.sort(
             (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
           );
-          const [first, ...rest] = group.map(element => element.style.zIndex);
+          const [first, ...rest] = group.map((element) => element.style.zIndex);
           const zIndexes = [...rest, first];
           for (const [index, element] of group.entries()) {
             setStyles(element, { "z-index": zIndexes[index] });
@@ -882,7 +882,7 @@ function getHintPosition({
 }
 
 function waitUntilBeforeNextRepaint(): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     requestAnimationFrame(() => {
       resolve();
     });
@@ -890,7 +890,7 @@ function waitUntilBeforeNextRepaint(): Promise<void> {
 }
 
 function wait0(): Promise<void> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
 }

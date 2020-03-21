@@ -21,8 +21,8 @@ function run() {
 
   const itemsToRemove = fs
     .readdirSync(DIST)
-    .filter(item => FILE_EXTENSIONS_TO_REMOVE.has(path.extname(item)))
-    .map(item => path.join(DIST, item));
+    .filter((item) => FILE_EXTENSIONS_TO_REMOVE.has(path.extname(item)))
+    .map((item) => path.join(DIST, item));
 
   if (itemsToRemove.length === 0) {
     console.log("No files to clean for BROWSER:", config.browser);

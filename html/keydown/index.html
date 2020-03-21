@@ -32,7 +32,7 @@
           events[eventName] = null;
           target.addEventListener(
             eventName,
-            event => {
+            (event) => {
               events[eventName] = extractEvent(event);
               pre.textContent = JSON.stringify(events, undefined, 2);
             },

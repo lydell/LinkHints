@@ -36,8 +36,8 @@ declare type MessageSender = {|
 
 declare type OnEvent<Listener, Options = void> = {|
   addListener: (Listener, options?: Options) => void,
-  removeListener: Listener => void,
-  hasListener: Listener => boolean,
+  removeListener: (Listener) => void,
+  hasListener: (Listener) => boolean,
 |};
 
 declare type BrowserInfo = {|
@@ -179,7 +179,7 @@ declare var browser: {|
   |},
   runtime: {|
     connect: (() => Port) &
-      (ConnectInfo => Port) &
+      ((ConnectInfo) => Port) &
       ((extensionId: string, ConnectInfo) => Port),
     getBrowserInfo(): Promise<BrowserInfo>,
     getManifest(): any,
@@ -208,7 +208,7 @@ declare var browser: {|
       url?: string,
       windowId?: number,
     |}): Promise<Tab>,
-    executeScript: (ExecuteScriptDetails => Promise<Array<any>>) &
+    executeScript: ((ExecuteScriptDetails) => Promise<Array<any>>) &
       ((tabId: number, ExecuteScriptDetails) => Promise<Array<any>>),
     get: (tabId: number) => Promise<Tab>,
     onActivated: OnEvent<(TabActiveInfo) => void>,
@@ -234,7 +234,7 @@ declare var browser: {|
         windowId?: number,
       |}
     >,
-    insertCSS: (InsertCSSDetails => Promise<void>) &
+    insertCSS: ((InsertCSSDetails) => Promise<void>) &
       ((tabId: number, InsertCSSDetails) => Promise<void>),
     query(queryInfo: {|
       active?: boolean,
@@ -260,7 +260,7 @@ declare var browser: {|
       message: any,
       options?: {| frameId?: number |}
     ): Promise<any>,
-    update: (TabUpdateProperties => Promise<Tab>) &
+    update: ((TabUpdateProperties) => Promise<Tab>) &
       ((tabId: number, TabUpdateProperties) => Promise<Tab>),
   |},
   windows: {|

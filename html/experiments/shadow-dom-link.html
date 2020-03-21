@@ -7,7 +7,7 @@
   <body>
     <a href="#">normal link</a>
     <script>
-      const mutationObserver = new MutationObserver(records => {
+      const mutationObserver = new MutationObserver((records) => {
         console.log("Mutations:", records);
       });
       const mutationOptions = {
@@ -15,7 +15,7 @@
         subtree: true,
       };
 
-      const intersectionObserver = new IntersectionObserver(records => {
+      const intersectionObserver = new IntersectionObserver((records) => {
         console.log("Intersections:", records);
       });
 

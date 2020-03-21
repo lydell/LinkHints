@@ -51,7 +51,7 @@ const main = [
   config.needsPolyfill ? copy(config.polyfill) : undefined,
 ]
   .filter(Boolean)
-  .map(entry => ({
+  .map((entry) => ({
     ...entry,
     input: `${config.src}/${entry.input}`,
     output: {
@@ -69,7 +69,7 @@ const docs = [
   css(config.docs.tutorialCss),
 ]
   .filter(Boolean)
-  .map(entry => ({
+  .map((entry) => ({
     ...entry,
     input: `${config.docs.src}/${entry.input}`,
     output: {
@@ -167,7 +167,7 @@ function template(
       format: "es",
     },
     treeshake: false,
-    external: id => !id.startsWith("."),
+    external: (id) => !id.startsWith("."),
     plugins: [
       sucrase({
         transforms: ["flow", "jsx"],
@@ -215,15 +215,17 @@ function html(
       polyfill: config.needsPolyfill
         ? path.relative(path.dirname(files.html), config.polyfill.output)
         : undefined,
-      js: files.js.map(src => path.relative(path.dirname(files.html), src)),
-      css: files.css.map(href => path.relative(path.dirname(files.html), href)),
+      js: files.js.map((src) => path.relative(path.dirname(files.html), src)),
+      css: files.css.map((href) =>
+        path.relative(path.dirname(files.html), href)
+      ),
     },
   });
 }
 
 function copy(
   { input, output } /*: { input: string, output: string, } */,
-  transform /*: string => string */ = string => string
+  transform /*: string => string */ = (string) => string
 ) {
   let content = "";
   return {

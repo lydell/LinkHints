@@ -434,7 +434,7 @@ export default class BackgroundProgram {
         }
 
         const elements: Array<ExtendedElementReport> = message.elements.map(
-          element => ({
+          (element) => ({
             ...element,
             // Move the element index into the `.frame` property. `.index` is set
             // later (in `this.maybeStartHinting`) and used to map elements in
@@ -731,7 +731,7 @@ export default class BackgroundProgram {
         : [actualMatch.elementWithHint, actualMatch.autoActivated];
 
     // If pressing a hint char that is currently unused, ignore it.
-    if (enteredChars !== "" && updates.every(update => update.hidden)) {
+    if (enteredChars !== "" && updates.every((update) => update.hidden)) {
       return;
     }
 
@@ -739,8 +739,8 @@ export default class BackgroundProgram {
     const highlighted =
       match != null
         ? allElementsWithHints
-            .filter(element => element.hint === match.hint)
-            .map(element => ({ sinceTimestamp: now, element }))
+            .filter((element) => element.hint === match.hint)
+            .map((element) => ({ sinceTimestamp: now, element }))
         : [];
 
     hintsState.enteredChars = enteredChars;
@@ -918,8 +918,8 @@ export default class BackgroundProgram {
 
         const matchedIndexes = new Set(
           hintsState.elementsWithHints
-            .filter(element => element.hint === match.hint)
-            .map(element => element.index)
+            .filter((element) => element.hint === match.hint)
+            .map((element) => element.index)
         );
 
         const highlightedKeys = new Set(
@@ -1153,7 +1153,7 @@ export default class BackgroundProgram {
     ).map((element, index) => ({ ...element, index }));
 
     const elementKeys = new Set(
-      elementsWithHints.map(element => elementKey(element))
+      elementsWithHints.map((element) => elementKey(element))
     );
     const highlightedKeys = new Set(
       hintsState.highlighted.map(({ element }) => elementKey(element))
@@ -1178,7 +1178,7 @@ export default class BackgroundProgram {
       // Other highlighted hints don’t get extra DOM nodes – they instead
       // highlight new hints with the same characters and position. Mark them
       // with an index of -1 for `unhighlightHints`’s sakes.
-      .concat(alreadyHighlighted.map(item => updateIndex(item, -1)));
+      .concat(alreadyHighlighted.map((item) => updateIndex(item, -1)));
 
     const elementRenders: Array<ElementRender> = elementsWithHints
       .map((element, index) => ({
@@ -1255,7 +1255,7 @@ export default class BackgroundProgram {
       Date.now() - updateState.lastUpdateStartTimestamp >=
       t.UPDATE_INTERVAL.value
     ) {
-      if (hintsState.elementsWithHints.every(element => element.hidden)) {
+      if (hintsState.elementsWithHints.every((element) => element.hidden)) {
         this.enterHintsMode({
           tabId,
           timestamp: Date.now(),
@@ -1384,7 +1384,7 @@ export default class BackgroundProgram {
             cssOrigin: "user",
             runAt: "document_start",
           })
-          .catch(error => {
+          .catch((error) => {
             log(
               "error",
               "BackgroundProgram#onRendererMessage",
@@ -2023,14 +2023,14 @@ export default class BackgroundProgram {
       isPinned: tabState.isPinned,
     };
 
-    const getKeyboardShortcuts = shortcuts =>
+    const getKeyboardShortcuts = (shortcuts) =>
       tabState.keyboardMode.type === "PreventOverTyping"
-        ? shortcuts.filter(shortcut =>
+        ? shortcuts.filter((shortcut) =>
             PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS.has(shortcut.action)
           )
         : shortcuts;
 
-    const getKeyboardMode = mode =>
+    const getKeyboardMode = (mode) =>
       tabState.keyboardMode.type === "FromHintsState"
         ? mode
         : tabState.keyboardMode.type;
@@ -2255,9 +2255,9 @@ function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
   const manifest = browser.runtime.getManifest();
 
   const detailsList = manifest.content_scripts
-    .filter(script => script.matches.includes("<all_urls>"))
-    .flatMap(script =>
-      script.js.map(file => ({
+    .filter((script) => script.matches.includes("<all_urls>"))
+    .flatMap((script) =>
+      script.js.map((file) => ({
         file,
         allFrames: script.all_frames,
         matchAboutBlank: script.match_about_blank,
@@ -2266,8 +2266,8 @@ function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
     );
 
   return Promise.all(
-    tabs.flatMap(tab =>
-      detailsList.map(async details => {
+    tabs.flatMap((tab) =>
+      detailsList.map(async (details) => {
         try {
           return await browser.tabs.executeScript(tab.id, details);
         } catch {
@@ -2310,7 +2310,7 @@ async function getCurrentTab(): Promise<Tab> {
 async function openNewTabs(tabId: number, urls: Array<string>) {
   try {
     const newTabs = await Promise.all(
-      urls.map(url =>
+      urls.map((url) =>
         browser.tabs.create({
           active: urls.length === 1,
           url,
@@ -2376,7 +2376,7 @@ function getBadgeText(hintsState: HintsState): string {
       const words = splitEnteredText(enteredText);
       return hintsState.elementsWithHints
         .filter(
-          element =>
+          (element) =>
             // "Hidden" elements have been removed from the DOM or moved off-screen.
             !element.hidden &&
             matchesText(element.text, words) &&
@@ -2396,7 +2396,7 @@ class Combined {
 
   constructor(children: Array<ElementWithHint>) {
     this.children = children;
-    this.weight = Math.max(...children.map(child => child.weight));
+    this.weight = Math.max(...children.map((child) => child.weight));
   }
 }
 
@@ -2422,7 +2422,7 @@ function combineByHref(
   }
 
   return Array.from(map.values())
-    .map(children => new Combined(children))
+    .map((children) => new Combined(children))
     .concat(rest);
 }
 
@@ -2435,12 +2435,12 @@ function assignHints(
   }: { mode: HintsMode, chars: string, hasEnteredText: boolean }
 ): Array<ElementWithHint> {
   const largestTextWeight = hasEnteredText
-    ? Math.max(1, ...passedElements.map(element => element.textWeight))
+    ? Math.max(1, ...passedElements.map((element) => element.textWeight))
     : 0;
 
   // Sort the elements so elements with more weight get higher z-index.
   const elements: Array<ElementWithHint> = passedElements
-    .map(element => ({
+    .map((element) => ({
       ...element,
       // When filtering by text, give better hints to elements with shorter
       // text. The more of the text that is matched, the more likely to be what
@@ -2542,8 +2542,9 @@ function updateHints({
   const words = splitEnteredText(enteredText);
 
   // Filter away elements/hints not matching by text.
-  const [matching, nonMatching] = partition(passedElementsWithHints, element =>
-    matchesText(element.text, words)
+  const [matching, nonMatching] = partition(
+    passedElementsWithHints,
+    (element) => matchesText(element.text, words)
   );
 
   // Update the hints after the above filtering.
@@ -2556,7 +2557,7 @@ function updateHints({
   // Filter away elements that have become hidden _after_ assigning hints, so
   // that the hints stay the same.
   const elementsWithHints = elementsWithHintsAndMaybeHidden.filter(
-    element => !element.hidden
+    (element) => !element.hidden
   );
 
   // Find which hints to highlight (if any), and which to activate (if
@@ -2564,9 +2565,9 @@ function updateHints({
   // auto activation is enabled, if the Enter key is pressed and if hint
   // chars have been entered.
   const allHints = elementsWithHints
-    .map(element => element.hint)
-    .filter(hint => hint.startsWith(enteredChars));
-  const matchingHints = allHints.filter(hint => hint === enteredChars);
+    .map((element) => element.hint)
+    .filter((hint) => hint.startsWith(enteredChars));
+  const matchingHints = allHints.filter((hint) => hint === enteredChars);
   const autoActivate = hasEnteredTextOnly && autoActivateOption;
   const matchingHintsSet = autoActivate
     ? new Set(allHints)
@@ -2575,7 +2576,7 @@ function updateHints({
     matchingHintsSet.size === 1 ? Array.from(matchingHintsSet)[0] : undefined;
   const highlightedHint = hasEnteredText ? allHints[0] : undefined;
   const match = elementsWithHints.find(
-    element =>
+    (element) =>
       element.hint === matchedHint ||
       (matchHighlighted && element.hint === highlightedHint)
   );
@@ -2624,7 +2625,7 @@ function updateHints({
           };
     })
     .concat(
-      nonMatching.map(element => ({
+      nonMatching.map((element) => ({
         // Hide hints for elements filtered by text.
         type: "Hide",
         index: element.index,
@@ -2657,10 +2658,10 @@ function mergeElements(
   frameId: number
 ): Array<ElementWithHint> {
   const updateMap: Map<number, ElementReport> = new Map(
-    updates.map(update => [update.index, update])
+    updates.map((update) => [update.index, update])
   );
 
-  return elementsWithHints.map(element => {
+  return elementsWithHints.map((element) => {
     if (element.frame.id !== frameId) {
       return element;
     }
@@ -2697,5 +2698,5 @@ function mergeElements(
 
 function matchesText(passedText: string, words: Array<string>): boolean {
   const text = passedText.toLowerCase();
-  return words.every(word => text.includes(word));
+  return words.every((word) => text.includes(word));
 }

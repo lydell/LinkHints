@@ -35,7 +35,7 @@ export function parseCSS(css: string): Array<Rule> {
       if (string != null || url != null) {
         return match.replace(
           annoyingCharsRegex,
-          char => `\\${char.charCodeAt(0).toString(16)} `
+          (char) => `\\${char.charCodeAt(0).toString(16)} `
         );
       }
 
@@ -75,7 +75,7 @@ export function parseCSS(css: string): Array<Rule> {
 function parseDeclarations(declarationsString: string): Array<Declaration> {
   return declarationsString
     .split(";")
-    .map(declString => {
+    .map((declString) => {
       const match = declRegex.exec(declString);
 
       if (match == null) {
@@ -93,7 +93,7 @@ function parseDeclarations(declarationsString: string): Array<Declaration> {
 }
 
 export function applyStyles(element: HTMLElement, styles: Array<Rule>) {
-  const [matching, notMatching] = partition(styles, rule =>
+  const [matching, notMatching] = partition(styles, (rule) =>
     element.matches(rule.selector)
   );
 

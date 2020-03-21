@@ -38,7 +38,7 @@ type Props = {
     keypress: NormalizedKeypress,
   },
   onChange: (Array<KeyboardMapping>) => void,
-  onAddChange: boolean => void,
+  onAddChange: (boolean) => void,
 };
 
 type State = {
@@ -88,7 +88,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
         shift: capturedKeypress.shift == null ? false : capturedKeypress.shift,
       };
 
-      const confirm = newShortcutError => {
+      const confirm = (newShortcutError) => {
         if (deepEqual(shortcutError, newShortcutError)) {
           this.saveMapping({
             shortcut,
@@ -136,7 +136,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
         return;
       }
 
-      const conflictingMapping = mappings.find(mapping =>
+      const conflictingMapping = mappings.find((mapping) =>
         deepEqual(mapping.shortcut, shortcut)
       );
       if (conflictingMapping != null) {
@@ -161,7 +161,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
 
       if (
         mode === "Normal" &&
-        getTextEditingShortcuts(mac).some(shortcut2 =>
+        getTextEditingShortcuts(mac).some((shortcut2) =>
           deepEqual(shortcut, shortcut2)
         )
       ) {
@@ -201,7 +201,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
   saveMapping(newMapping: KeyboardMapping) {
     const { mappings, onChange, onAddChange } = this.props;
     const newMappings = mappings
-      .filter(mapping => !deepEqual(mapping.shortcut, newMapping.shortcut))
+      .filter((mapping) => !deepEqual(mapping.shortcut, newMapping.shortcut))
       .concat(newMapping);
 
     this.setState({
@@ -243,8 +243,10 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
               <tbody>
                 {defaultMappings.map((defaultMapping, index) => {
                   const shortcuts = mappings
-                    .filter(mapping => mapping.action === defaultMapping.action)
-                    .map(mapping => ({
+                    .filter(
+                      (mapping) => mapping.action === defaultMapping.action
+                    )
+                    .map((mapping) => ({
                       key: serializeShortcut(mapping.shortcut),
                       shortcut: mapping.shortcut,
                     }))
@@ -296,7 +298,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                                   onClick={() => {
                                     onChange(
                                       mappings.filter(
-                                        mapping =>
+                                        (mapping) =>
                                           !deepEqual(shortcut, mapping.shortcut)
                                       )
                                     );
@@ -314,7 +316,7 @@ export default class KeyboardShortcuts extends React.Component<Props, State> {
                               className="AddShortcutButton-button"
                               open={isAdding}
                               buttonContent={<strong>+</strong>}
-                              onChange={open => {
+                              onChange={(open) => {
                                 this.setState({
                                   addingAction: open
                                     ? defaultMapping.action
@@ -677,10 +679,10 @@ function getConflictingChars(
 ): Array<string> {
   const chars = charsString.split("");
   return shortcuts
-    .map(shortcut =>
+    .map((shortcut) =>
       hasModifier(shortcut)
         ? undefined
-        : chars.find(char => char === shortcut.key)
+        : chars.find((char) => char === shortcut.key)
     )
     .filter(Boolean);
 }
@@ -692,13 +694,13 @@ export function getConflictingKeyboardActions(
 ): Array<[KeyboardAction, Array<string>]> {
   const chars = charsString.split("");
   return defaultMappings
-    .map(defaultMapping => {
+    .map((defaultMapping) => {
       const shortcuts = mappings
-        .filter(mapping => mapping.action === defaultMapping.action)
-        .map(mapping => mapping.shortcut);
-      const conflicts = chars.filter(char =>
+        .filter((mapping) => mapping.action === defaultMapping.action)
+        .map((mapping) => mapping.shortcut);
+      const conflicts = chars.filter((char) =>
         shortcuts.some(
-          shortcut => shortcut.key === char && !hasModifier(shortcut)
+          (shortcut) => shortcut.key === char && !hasModifier(shortcut)
         )
       );
       return [defaultMapping.action, conflicts];

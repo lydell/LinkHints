@@ -19,7 +19,7 @@ export default function TextInput({
   ...restProps
 }: {
   savedValue: string,
-  normalize?: string => string,
+  normalize?: (string) => string,
   save?: (string, Reason) => void,
   textarea?: boolean,
   className?: string,
@@ -113,7 +113,7 @@ export default function TextInput({
           setStateValue(event.target.value);
         }
       }}
-      onKeyDown={event => {
+      onKeyDown={(event) => {
         storeSelection();
         if (onKeyDown != null) {
           onKeyDown(event);

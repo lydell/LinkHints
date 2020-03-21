@@ -12,7 +12,7 @@ export default function Scripts(props: {
   autoCloseDetails?: boolean,
 }) {
   const items = Object.keys(scripts)
-    .map(name => {
+    .map((name) => {
       const fn = scripts[name];
       return fn != null && props[name] === true
         ? `;(${fn.toString()})();`
@@ -30,7 +30,7 @@ export default function Scripts(props: {
 }
 
 function minifyJS(js: string): string {
-  return js.replace(jsTokens, match =>
+  return js.replace(jsTokens, (match) =>
     match.startsWith("/*") || match.startsWith("//")
       ? ""
       : /^\s+$/.test(match)

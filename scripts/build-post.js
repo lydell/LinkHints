@@ -61,11 +61,13 @@ async function makeSourceCodeBundle() {
     "project.config.js",
     "rollup.config.js",
     "web-ext-config.js",
-  ].map(file => path.join(BASE_DIR, file));
+  ].map((file) => path.join(BASE_DIR, file));
 
   const dirs = ["docs", "flow-typed", "scripts", "src"];
 
-  const asyncFiles = await Promise.all(dirs.map(dir => getAllFilesInDir(dir)));
+  const asyncFiles = await Promise.all(
+    dirs.map((dir) => getAllFilesInDir(dir))
+  );
   const allFiles = files.concat(...asyncFiles);
 
   const zip = new ZipFile();
@@ -128,7 +130,7 @@ async function getAllFilesInDir(dir: string): Promise<Array<string>> {
   return results.map(({ fullPath }) => fullPath);
 }
 
-run().catch(error => {
+run().catch((error) => {
   console.error(
     "Failed to run post build operations. Remember to build first!"
   );

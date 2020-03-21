@@ -100,7 +100,7 @@
         (a, text) => {
           const button = document.createElement("button");
           button.textContent = text + " | with preventDefault on button";
-          button.onclick = event => {
+          button.onclick = (event) => {
             event.preventDefault();
           };
           const span = document.createElement("span");
@@ -132,13 +132,13 @@
         }
 
         if (preventDefault) {
-          add(preventDefault, a, event => {
+          add(preventDefault, a, (event) => {
             event.preventDefault();
           });
         }
 
         if (returnValue) {
-          add(returnValue, a, event => {
+          add(returnValue, a, (event) => {
             event.returnValue = false;
           });
         }
@@ -148,19 +148,19 @@
         }
 
         if (stopPropagation) {
-          add(stopPropagation, a, event => {
+          add(stopPropagation, a, (event) => {
             event.stopPropagation();
           });
         }
 
         if (stopImmediatePropagation) {
-          add(stopImmediatePropagation, a, event => {
+          add(stopImmediatePropagation, a, (event) => {
             event.stopImmediatePropagation();
           });
         }
 
         if (cancelBubble) {
-          add(cancelBubble, a, event => {
+          add(cancelBubble, a, (event) => {
             event.cancelBubble = true;
           });
         }
@@ -178,7 +178,7 @@
           case "capture":
             target.addEventListener(
               "click",
-              event => {
+              (event) => {
                 if (event.target === element) {
                   fn(event);
                 }
@@ -192,7 +192,7 @@
               element.onclick = fn;
             } else {
               const previous = target.onclick;
-              target.onclick = event =>
+              target.onclick = (event) =>
                 event.target === element
                   ? fn(event)
                   : previous != null

@@ -86,7 +86,7 @@ export default function CSSPreview({
       viewports: [],
       words: new Set(splitEnteredText(ENTERED_TEXT)),
       checkElementAtPoint: false,
-    }).map(box => ({
+    }).map((box) => ({
       ...box,
       x: box.x - rect.left,
       y: box.y - rect.top,
@@ -195,7 +195,7 @@ export default function CSSPreview({
             {HINT_VARIATIONS.map((variations, y) =>
               variations
                 .flatMap(([numMatched, numChars]) =>
-                  [false, true].map(highlighted => ({
+                  [false, true].map((highlighted) => ({
                     matchedChars: chars.slice(0, numMatched),
                     chars: chars.slice(numMatched, numMatched + numChars),
                     highlighted,

@@ -884,7 +884,7 @@
         const script = document.currentScript;
         const link = script.previousElementSibling;
         const pre = document.createElement("pre");
-        pre.textContent = Array.from(link.getClientRects(), rect =>
+        pre.textContent = Array.from(link.getClientRects(), (rect) =>
           JSON.stringify(rect)
         ).join("\n");
         script.replaceWith(pre);

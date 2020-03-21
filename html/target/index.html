@@ -112,7 +112,7 @@
     <div id="shadow"></div>
 
     <script>
-      stopImmediate.addEventListener("click", event => {
+      stopImmediate.addEventListener("click", (event) => {
         event.stopImmediatePropagation();
         event.preventDefault();
       });
@@ -138,7 +138,7 @@
         a.href = "https://example.com/shadow2";
         a.target = "_blank";
         a.textContent = "Document prevent default";
-        document.addEventListener("click", event => {
+        document.addEventListener("click", (event) => {
           if (getTarget(event) === a) {
             event.preventDefault();
           }
@@ -151,7 +151,7 @@
         a.href = "https://example.com/shadow3";
         a.target = "_blank";
         a.textContent = "Host stopPropagation and prevent default";
-        root.host.addEventListener("click", event => {
+        root.host.addEventListener("click", (event) => {
           if (getTarget(event) === a) {
             event.stopPropagation();
             event.preventDefault();

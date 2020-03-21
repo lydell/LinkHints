@@ -235,7 +235,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
           this.hiddenErrors,
           message.options.errors
         );
-        this.setState(state => ({
+        this.setState((state) => ({
           options: {
             ...message.options,
             errors: errorsHidden ? [] : message.options.errors,
@@ -262,7 +262,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
       case "PerfUpdate":
         this.setState(
-          state => ({
+          (state) => ({
             perf: {
               ...state.perf,
               ...message.perf,
@@ -285,7 +285,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   saveOptions(partialOptions: PartialOptions) {
-    this.setState(state => ({
+    this.setState((state) => ({
       options:
         state.options == null
           ? undefined
@@ -306,7 +306,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
   }
 
   resetOptions() {
-    this.setState(state => ({
+    this.setState((state) => ({
       options:
         state.options == null
           ? undefined
@@ -349,7 +349,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       }
       await saveTweakable(tweakableData);
     } catch (error) {
-      this.setState(state => ({
+      this.setState((state) => ({
         importData: {
           ...state.importData,
           errors: [`The file is invalid: ${error.message}`],
@@ -423,7 +423,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     const customIndex = charsPresets.length;
 
     const rawSelectedIndex = charsPresets.findIndex(
-      preset => preset.value === options.chars
+      (preset) => preset.value === options.chars
     );
     const selectedIndex =
       rawSelectedIndex >= 0 ? rawSelectedIndex : customIndex;
@@ -479,7 +479,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                   id={id}
                   style={{ flex: "1 1 50%" }}
                   savedValue={options.chars}
-                  normalize={value => normalizeChars(value, defaults.chars)}
+                  normalize={(value) => normalizeChars(value, defaults.chars)}
                   save={(value, reason) => {
                     if (reason === "input") {
                       this.setState({ customChars: value });
@@ -508,7 +508,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         </option>
                       ))}
                       {charsPresets.every(
-                        preset => preset.value !== customChars
+                        (preset) => preset.value !== customChars
                       ) && <option value={customIndex}>Custom</option>}
                     </select>
                   </Attachment>
@@ -593,10 +593,10 @@ export default class OptionsProgram extends React.Component<Props, State> {
                       style={{ flex: "1 1 50%" }}
                       disabled={!options.autoActivate}
                       savedValue={options.overTypingDuration.toString()}
-                      normalize={value =>
+                      normalize={(value) =>
                         normalizeUnsignedInt(value, defaults.overTypingDuration)
                       }
-                      save={value => {
+                      save={(value) => {
                         this.saveOptions({ overTypingDuration: Number(value) });
                       }}
                     />
@@ -918,7 +918,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                                 )}
                               </div>
                             )}
-                            onChange={open => {
+                            onChange={(open) => {
                               if (!open) {
                                 this.setState({
                                   keyboardDetect: undefined,
@@ -967,7 +967,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                         <tbody>
                           {Object.keys(options.keyTranslations)
                             .sort()
-                            .map(code => {
+                            .map((code) => {
                               const [
                                 unshifted,
                                 shifted,
@@ -1045,7 +1045,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             mappings={options.normalKeyboardShortcuts}
             defaultMappings={defaults.normalKeyboardShortcuts}
             capturedKeypressWithTimestamp={capturedKeypressWithTimestamp}
-            onChange={newMappings => {
+            onChange={(newMappings) => {
               this.saveOptions({
                 normalKeyboardShortcuts: newMappings,
               });
@@ -1064,7 +1064,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             mappings={options.hintsKeyboardShortcuts}
             defaultMappings={defaults.hintsKeyboardShortcuts}
             capturedKeypressWithTimestamp={capturedKeypressWithTimestamp}
-            onChange={newMappings => {
+            onChange={(newMappings) => {
               this.saveOptions({
                 hintsKeyboardShortcuts: newMappings,
               });
@@ -1087,7 +1087,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     style={{ flex: "1 1 50%", height: 310 }}
                     id={id}
                     savedValue={options.css}
-                    save={value => {
+                    save={(value) => {
                       this.saveOptions({ css: value });
                     }}
                   />
@@ -1180,14 +1180,14 @@ export default class OptionsProgram extends React.Component<Props, State> {
             <Details
               summary="Performance"
               open={expandedPerf}
-              onChange={newOpen => {
+              onChange={(newOpen) => {
                 this.setState({ expandedPerf: newOpen }, this.savePosition);
               }}
             >
               <Perf
                 perf={perf}
                 expandedPerfTabIds={expandedPerfTabIds}
-                onExpandChange={newExpandedPerfTabIds => {
+                onExpandChange={(newExpandedPerfTabIds) => {
                   this.setState(
                     { expandedPerfTabIds: newExpandedPerfTabIds },
                     this.savePosition
@@ -1203,7 +1203,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
             <Details
               summary="Debug"
               open={expandedDebug}
-              onChange={newOpen => {
+              onChange={(newOpen) => {
                 this.setState({ expandedDebug: newOpen }, this.savePosition);
               }}
             >
@@ -1278,7 +1278,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             }
                           }}
                         >
-                          {Object.keys(LOG_LEVELS).map(level => (
+                          {Object.keys(LOG_LEVELS).map((level) => (
                             <option key={level} value={level}>
                               {level.slice(0, 1).toUpperCase() + level.slice(1)}
                             </option>
@@ -1394,7 +1394,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                             />
                           </div>
                         )}
-                        onChange={open => {
+                        onChange={(open) => {
                           if (open) {
                             this.importOptions();
                           } else {
@@ -1475,7 +1475,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
       0,
       ...Array.from(
         keysTable.querySelectorAll("thead th"),
-        th => th.offsetHeight
+        (th) => th.offsetHeight
       )
     );
 
@@ -1527,8 +1527,8 @@ export default class OptionsProgram extends React.Component<Props, State> {
       this.hasRestoredPosition = true;
       const recordProps = {
         expandedPerfTabIds: optional(
-          map(array(string), ids =>
-            ids.filter(id => ({}.hasOwnProperty.call(this.state.perf, id)))
+          map(array(string), (ids) =>
+            ids.filter((id) => ({}.hasOwnProperty.call(this.state.perf, id)))
           ),
           ([]: Array<string>)
         ),
@@ -1564,11 +1564,11 @@ export default class OptionsProgram extends React.Component<Props, State> {
 
       const codes = Object.keys(keyTranslations);
       const newCodes = Array.from(layoutMap.keys()).filter(
-        code => !codes.includes(code)
+        (code) => !codes.includes(code)
       );
 
       const results: Array<[UpdateStatus, string, KeyPair]> = codes
-        .map(code => {
+        .map((code) => {
           const pair = keyTranslations[code];
           const key = layoutMap.get(code);
           if (key == null) {
@@ -1586,7 +1586,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
         })
         .concat(
           newCodes
-            .map(code => {
+            .map((code) => {
               const key = layoutMap.get(code);
               return key == null
                 ? undefined
@@ -1675,14 +1675,14 @@ function ActivateHighlightedKey({
   mappings: Array<KeyboardMapping>,
   defaultMappings: Array<KeyboardMapping>,
 }) {
-  const first = mappings.find(mapping => mapping.action === "ActivateHint");
+  const first = mappings.find((mapping) => mapping.action === "ActivateHint");
 
   if (first != null) {
     return <KeyboardShortcut mac={mac} shortcut={first.shortcut} />;
   }
 
   const firstDefault = defaultMappings.find(
-    mapping => mapping.action === "ActivateHint"
+    (mapping) => mapping.action === "ActivateHint"
   );
 
   const fallback =
@@ -1707,7 +1707,7 @@ function saveFile(content: string, fileName: string, contentType: string) {
 }
 
 function selectFile(accept: string): Promise<File> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = accept;
@@ -1724,7 +1724,7 @@ function readAsJson(file: File): Promise<mixed> {
 }
 
 function toISODateString(date: Date): string {
-  const pad = num => num.toString().padStart(2, "0");
+  const pad = (num) => num.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate()
   )}`;
