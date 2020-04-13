@@ -279,7 +279,6 @@ export default (communicator?: {
     // Make sure that `Function.prototype.toString.call(element.addEventListener)`
     // returns "[native code]". This is used by lodash's `_.isNative`.
     // `.toLocaleString` is automatically taken care of when patching `.toString`.
-    // For the record, Firefox also has `.toSource`.
     conceal() {
       // This isn’t needed in Firefox, thanks to `exportFunction`.
       if (BROWSER !== "firefox") {
