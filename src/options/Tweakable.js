@@ -299,7 +299,7 @@ export function getTweakableExport(): { [string]: mixed, ... } {
 
 export function partitionTweakable(data: {
   +[string]: mixed,
-  ...,
+  ...
 }): [{ [string]: mixed, ... }, { [string]: mixed, ... }] {
   const tweakableData = {};
   const otherData = {};
