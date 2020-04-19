@@ -13,10 +13,6 @@ declare module "tiny-decoders" {
     constantValue: T
   ): (value: mixed) => T;
 
-  declare export function mixedArray(value: mixed): $ReadOnlyArray<mixed>;
-
-  declare export function mixedDict(value: mixed): { +[string]: mixed, ... };
-
   declare export function array<T, U>(
     decoder: Decoder<T>,
     mode?: "throw" | "skip" | {| default: U |}
@@ -27,28 +23,15 @@ declare module "tiny-decoders" {
     mode?: "throw" | "skip" | {| default: U |}
   ): Decoder<{ [key: string]: T | U, ... }>;
 
-  declare export function record<T>(
+  declare export function fields<T>(
     callback: (
       field: <U, V>(
-        key: string,
+        key: string | number,
         decoder: Decoder<U>,
         mode?: "throw" | {| default: V |}
       ) => U | V,
-      fieldError: (key: string, message: string) => TypeError,
+      fieldError: (key: string | number, message: string) => TypeError,
       obj: { +[string]: mixed, ... },
-      errors?: Array<string>
-    ) => T
-  ): Decoder<T>;
-
-  declare export function tuple<T>(
-    callback: (
-      item: <U, V>(
-        index: number,
-        decoder: Decoder<U>,
-        mode?: "throw" | {| default: V |}
-      ) => U | V,
-      itemError: (index: number, message: string) => TypeError,
-      arr: $ReadOnlyArray<mixed>,
       errors?: Array<string>
     ) => T
   ): Decoder<T>;

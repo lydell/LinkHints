@@ -1,7 +1,6 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
-import { mixedDict } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {
@@ -1910,9 +1909,12 @@ export default class BackgroundProgram {
     if (!PROD) {
       if (isInitial) {
         const defaultStorageSync = DEFAULT_STORAGE_SYNC;
-        if (defaultStorageSync != null) {
+        if (
+          typeof defaultStorageSync === "object" &&
+          defaultStorageSync != null
+        ) {
           await browser.storage.sync.clear();
-          await browser.storage.sync.set(mixedDict(defaultStorageSync));
+          await browser.storage.sync.set(defaultStorageSync);
         }
       }
     }

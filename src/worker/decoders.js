@@ -4,8 +4,8 @@ import {
   type Decoder,
   array,
   autoRecord,
+  fields,
   number,
-  record,
   repr,
   string,
 } from "tiny-decoders";
@@ -26,7 +26,7 @@ export type FrameMessage =
       viewports: Array<Box>,
     };
 
-export const decodeFrameMessage: Decoder<FrameMessage> = record(
+export const decodeFrameMessage: Decoder<FrameMessage> = fields(
   (field, fieldError) => {
     const type = field("type", string);
 

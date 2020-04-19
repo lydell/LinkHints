@@ -6,9 +6,9 @@ import {
   autoRecord,
   boolean,
   map,
-  mixedDict,
   number,
   optional,
+  repr,
   string,
 } from "tiny-decoders";
 
@@ -331,7 +331,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
     try {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
-      const [tweakableData, otherData] = partitionTweakable(mixedDict(data));
+      const [tweakableData, otherData] = partitionTweakable(mixedObject(data));
       const { options: newOptions, successCount, errors } = importOptions(
         otherData,
         options,
@@ -1721,6 +1721,13 @@ function selectFile(accept: string): Promise<File> {
 
 function readAsJson(file: File): Promise<mixed> {
   return new Response(file).json();
+}
+
+function mixedObject(value: mixed): { +[string]: mixed, ... } {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    throw new TypeError(`Expected an object, but got: ${repr(value)}`);
+  }
+  return value;
 }
 
 function toISODateString(date: Date): string {

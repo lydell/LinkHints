@@ -5,8 +5,8 @@ import {
   array,
   boolean,
   dict,
+  fields,
   map,
-  record,
   repr,
   string,
 } from "tiny-decoders";
@@ -55,7 +55,7 @@ export type PartialOptions = $Shape<Options>;
 export type FlatOptions = { [string]: mixed, ... };
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
-  return record((field) => ({
+  return fields((field) => ({
     chars: field("chars", map(string, validateChars), {
       default: defaults.chars,
     }),
