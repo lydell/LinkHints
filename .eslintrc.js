@@ -18,6 +18,9 @@ module.exports = {
   rules: {
     ...baseRules({ flow: true, import: true, react: true }),
     "babel/no-invalid-this": "error",
+    "import/default": "off",
+    "import/named": "off",
+    "import/namespace": "off",
     "import/no-restricted-paths": [
       "error",
       {
