@@ -143,6 +143,10 @@ export type ToWorker =
       index: number,
     }
   | {
+      type: "CopyElement",
+      index: number,
+    }
+  | {
       type: "OpenNewTab",
       url: string,
       foreground: boolean,

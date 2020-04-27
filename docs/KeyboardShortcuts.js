@@ -82,5 +82,5 @@ export const shortcuts = {
   ExitHintsMode: <KeyboardShortcut press="Escape" />,
 
   // Extra.
-  ForceOpenInNewTab: <KeyboardShortcut alt={{ mac: "ctrl" }} />,
+  Alt: <KeyboardShortcut alt={{ mac: "ctrl" }} />,
 };

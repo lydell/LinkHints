@@ -226,6 +226,10 @@ const STEPS = [
             selection, unfocus text fields and cancel hinting.
           </li>
         </ul>
+        <p>
+          Finally, you can hold {shortcuts.Alt} while activating a hint (typing
+          the last character) to copy its text or link address!
+        </p>
       </>
     ),
   },
@@ -241,8 +245,8 @@ const STEPS = [
           has focus.
         </p>
         <p>
-          Hold {shortcuts.ForceOpenInNewTab} while activating a hint (typing the
-          last character) to force links to open in a new tab.
+          Hold {shortcuts.Alt} while activating a hint (typing the last
+          character) to force links to open in a new tab.
         </p>
         <p>
           Too many hints near each other? Press {shortcuts.RotateHintsForward}{" "}

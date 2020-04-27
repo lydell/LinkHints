@@ -317,6 +317,46 @@ export default class WorkerProgram {
         break;
       }
 
+      case "CopyElement": {
+        const elementData = this.getElement(message.index);
+        if (elementData == null) {
+          log("error", "CopyElement: Missing element", message, this.current);
+          return;
+        }
+
+        log("log", "WorkerProgram: CopyElement", elementData);
+
+        const { element } = elementData;
+        const text: string =
+          element instanceof HTMLAnchorElement
+            ? element.href
+            : element instanceof HTMLImageElement ||
+              element instanceof HTMLMediaElement
+            ? element.currentSrc
+            : element instanceof HTMLObjectElement
+            ? element.data
+            : element instanceof HTMLEmbedElement ||
+              element instanceof HTMLIFrameElement ||
+              element instanceof HTMLFrameElement
+            ? element.src
+            : element instanceof HTMLInputElement ||
+              element instanceof HTMLTextAreaElement ||
+              element instanceof HTMLSelectElement
+            ? element.value
+            : element instanceof HTMLProgressElement ||
+              element instanceof HTMLMeterElement
+            ? element.value.toString()
+            : element instanceof HTMLCanvasElement
+            ? element.toDataURL()
+            : extractText(element);
+
+        navigator.clipboard.writeText(text).catch((error) => {
+          log("error", "CopyElement: Failed to copy", message, text, error);
+        });
+
+        break;
+      }
+
       // Used instead of `browser.tabs.create` in Chrome, to have the opened tab
       // end up in the same position as if you'd clicked a link with the mouse.
       // This technique does not seem to work in Firefox, but it's not needed

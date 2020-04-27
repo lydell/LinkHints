@@ -762,7 +762,7 @@ export default class BackgroundProgram {
             match,
             updates,
             preventOverTyping,
-            forceForegroundTab:
+            alt:
               // By holding a modifier while typing the last character to
               // activate a hint forces opening links in new tabs. On Windows
               // and Linux, alt is used (since it is the only safe modifier). On
@@ -815,14 +815,14 @@ export default class BackgroundProgram {
     match,
     updates,
     preventOverTyping,
-    forceForegroundTab,
+    alt,
     timestamp,
   }: {
     tabId: number,
     match: ElementWithHint,
     updates: Array<HintUpdate>,
     preventOverTyping: boolean,
-    forceForegroundTab: boolean,
+    alt: boolean,
     timestamp: number,
   }): boolean {
     const tabState = this.tabState.get(tabId);
@@ -838,7 +838,9 @@ export default class BackgroundProgram {
     const { url } = match;
 
     const mode: HintsMode =
-      url != null && forceForegroundTab ? "ForegroundTab" : hintsState.mode;
+      url != null && alt && hintsState.mode !== "Select"
+        ? "ForegroundTab"
+        : hintsState.mode;
 
     switch (mode) {
       case "Click":
@@ -1000,10 +1002,15 @@ export default class BackgroundProgram {
 
       case "Select":
         this.sendWorkerMessage(
-          {
-            type: "SelectElement",
-            index: match.frame.index,
-          },
+          alt
+            ? {
+                type: "CopyElement",
+                index: match.frame.index,
+              }
+            : {
+                type: "SelectElement",
+                index: match.frame.index,
+              },
           {
             tabId,
             frameId: match.frame.id,

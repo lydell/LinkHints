@@ -1031,15 +1031,26 @@ export default class OptionsProgram extends React.Component<Props, State> {
             useKeyTranslations={options.useKeyTranslations}
             name="Main keyboard shortcuts"
             description={
-              <p>
-                <strong>Tip:</strong> Hold{" "}
-                <KeyboardShortcut
-                  mac={mac}
-                  shortcut={{ alt: !mac, ctrl: mac }}
-                />{" "}
-                while activating a hint (typing the last character) to force
-                links to open in a new tab!
-              </p>
+              <>
+                <p>
+                  <strong>Tip:</strong> Hold{" "}
+                  <KeyboardShortcut
+                    mac={mac}
+                    shortcut={{ alt: !mac, ctrl: mac }}
+                  />{" "}
+                  while activating a hint (typing the last character) to force
+                  links to open in a new tab!
+                </p>
+                <p>
+                  For “{describeKeyboardAction("EnterHintsMode_Select").name},”
+                  holding{" "}
+                  <KeyboardShortcut
+                    mac={mac}
+                    shortcut={{ alt: !mac, ctrl: mac }}
+                  />{" "}
+                  instead copies the text or link address of the element.
+                </p>
+              </>
             }
             chars=""
             mappings={options.normalKeyboardShortcuts}
