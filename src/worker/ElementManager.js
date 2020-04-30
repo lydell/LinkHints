@@ -1438,13 +1438,8 @@ export default class ElementManager {
     }
 
     switch (element.nodeName) {
-      // Links _could_ be marked as "clickable" as well for simplicity, but
-      // marking them as "link" allows opening them in a new tab by holding alt
-      // for consistency with all other hints modes.
       case "A":
-        return element instanceof HTMLAnchorElement
-          ? getLinkElementType(element)
-          : undefined;
+        return element instanceof HTMLAnchorElement ? "clickable" : undefined;
       // Always consider the following elements as selectable, regardless of their
       // children, since they have special context menu items. A
       // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
