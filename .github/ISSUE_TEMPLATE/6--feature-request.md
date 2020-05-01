@@ -8,8 +8,8 @@ assignees: ''
 ---
 
 <!--
-Thanks for using Link Hints!
-It's be super nice if you could fill in the below details.
+Thank you for using Link Hints!
+It would be super nice if you could fill in the below details.
 -->
 
 
@@ -19,7 +19,7 @@ It's be super nice if you could fill in the below details.
 All feature requests have their roots in some problem you have.
 Please describe it here!
 
-Note: If you say "on some sites" please paste an example URL (copy from the address bar) here!
+Note: If you say “on some sites” please paste an example URL (copy from the address bar) here!
 -->
 
 
@@ -34,5 +34,5 @@ Together we'll try to find the best solution!
 ### Debug info
 
 <!--
-Click the Link Hints toolbar button, press "Copy debug info" and paste here.
+Click the Link Hints toolbar button, press “Copy debug info” and paste here.
 -->
