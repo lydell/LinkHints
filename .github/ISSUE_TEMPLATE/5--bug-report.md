@@ -8,8 +8,8 @@ assignees: ''
 ---
 
 <!--
-Thanks for using Link Hints!
-It's be super nice if you could fill in the below details.
+Thank you for using Link Hints!
+It would be super nice if you could fill in the below details.
 -->
 
 
@@ -17,7 +17,7 @@ It's be super nice if you could fill in the below details.
 
 <!--
 If possible, please provide exact steps to make the bug happen.
-It's nice to have a specific example even if it happens on "every page".
+It’s nice to have a specific example even if it happens on “every page”.
 -->
 
 1. Go to: ...
@@ -45,5 +45,5 @@ A few words describing the issue.
 ### Debug info
 
 <!--
-Click the Link Hints toolbar button, press "Copy debug info" and paste here.
+Click the Link Hints toolbar button, press “Copy debug info” and paste here.
 -->
