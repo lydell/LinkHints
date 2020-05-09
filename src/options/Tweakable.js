@@ -25,12 +25,14 @@ import {
   t as tElementManager,
   tMeta as tMetaElementManager,
 } from "../worker/ElementManager";
+import { t as tWorker, tMeta as tMetaWorker } from "../worker/Program";
 import Field from "./Field";
 import StringSetEditor from "./StringSetEditor";
 import TextInput from "./TextInput";
 
 const ALL_TWEAKABLES = [
   [tBackground, tMetaBackground],
+  [tWorker, tMetaWorker],
   [tRenderer, tMetaRenderer],
   [tElementManager, tMetaElementManager],
 ];

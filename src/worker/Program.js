@@ -37,6 +37,7 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
+import { tweakable, unsignedInt } from "../shared/tweakable";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
@@ -48,6 +49,13 @@ type CurrentElements = {
   indexes: Array<number>,
   words: Array<string>,
 };
+
+export const t = {
+  // How long a copied element should be selected.
+  FLASH_COPIED_ELEMENT_DURATION: unsignedInt(200), // ms
+};
+
+export const tMeta = tweakable("Worker", t);
 
 export default class WorkerProgram {
   isPinned: boolean = true;
@@ -353,6 +361,8 @@ export default class WorkerProgram {
         navigator.clipboard.writeText(text).catch((error) => {
           log("error", "CopyElement: Failed to copy", message, text, error);
         });
+
+        flashElement(element);
 
         break;
       }
@@ -1635,4 +1645,183 @@ function isInternalHashLink(element: HTMLAnchorElement): boolean {
 function stripHash(url: string): string {
   const index = url.indexOf("#");
   return index === -1 ? url : url.slice(0, index);
+}
+
+function equalRanges(range1: Range, range2: Range): boolean {
+  return (
+    range1.startContainer === range2.startContainer &&
+    range1.startOffset === range2.startOffset &&
+    range1.endContainer === range2.endContainer &&
+    range1.endOffset === range2.endOffset
+  );
+}
+
+function flashElement(element: HTMLElement) {
+  const selection: Selection | null = window.getSelection();
+  if (selection != null) {
+    // Firefox won’t select text inside a ShadowRoot without this timeout.
+    setTimeout(() => {
+      const strategy = getFlashStrategy(element);
+
+      let cleanup1 = undefined;
+      let didSelect = false;
+      if (strategy === "Select" || strategy === "TrySelect") {
+        const range = document.createRange();
+        range.selectNode(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        didSelect = selection.toString().trim() !== "";
+        cleanup1 = () => {
+          if (equalRanges(selection.getRangeAt(0), range)) {
+            selection.removeAllRanges();
+          }
+        };
+      }
+
+      let cleanup2 = undefined;
+      if (strategy === "Invert" || (strategy === "TrySelect" && !didSelect)) {
+        const { filter } = element.style;
+        const newFilter = "invert(1)";
+        element.style.filter = newFilter;
+        cleanup2 = () => {
+          if (element.style.filter === newFilter) {
+            element.style.filter = filter;
+          }
+        };
+      }
+
+      setTimeout(() => {
+        if (cleanup1 != null) {
+          cleanup1();
+        }
+        if (cleanup2 != null) {
+          cleanup2();
+        }
+      }, t.FLASH_COPIED_ELEMENT_DURATION.value);
+    });
+  }
+}
+
+type FlashStrategy = "Select" | "Invert" | "TrySelect";
+
+function getFlashStrategy(element: HTMLElement): FlashStrategy {
+  if (
+    element instanceof HTMLMediaElement ||
+    element instanceof HTMLIFrameElement ||
+    element instanceof HTMLFrameElement ||
+    element instanceof HTMLProgressElement ||
+    element instanceof HTMLMeterElement
+  ) {
+    return "Invert";
+  }
+
+  if (element instanceof HTMLImageElement) {
+    return "Select";
+  }
+
+  if (element instanceof HTMLInputElement) {
+    return getInputFlashStrategy(element);
+  }
+
+  if (BROWSER === "firefox") {
+    if (
+      element instanceof HTMLTextAreaElement ||
+      element instanceof HTMLObjectElement ||
+      element instanceof HTMLEmbedElement
+    ) {
+      return "Invert";
+    }
+
+    if (
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLButtonElement ||
+      element instanceof HTMLCanvasElement
+    ) {
+      return "Select";
+    }
+  } else {
+    if (element instanceof HTMLTextAreaElement) {
+      return element.value === "" ? "Invert" : "Select";
+    }
+
+    if (
+      element instanceof HTMLObjectElement ||
+      element instanceof HTMLEmbedElement
+    ) {
+      return "Select";
+    }
+
+    if (
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLCanvasElement
+    ) {
+      return "Invert";
+    }
+
+    // HTMLButtonElement needs TrySelect in Chrome.
+  }
+
+  return "TrySelect";
+}
+
+function getInputFlashStrategy(input: HTMLInputElement): FlashStrategy {
+  if (BROWSER === "firefox") {
+    switch (input.type) {
+      case "button":
+      case "color":
+      case "reset":
+      case "submit":
+        return "Select";
+
+      // case "checkbox":
+      // case "date":
+      // case "datetime-local":
+      // case "email":
+      // case "file":
+      // case "image":
+      // case "month":
+      // case "number":
+      // case "password":
+      // case "radio":
+      // case "range":
+      // case "search":
+      // case "tel":
+      // case "text":
+      // case "time":
+      // case "url":
+      // case "week":
+      default:
+        return "Invert";
+    }
+  } else {
+    switch (input.type) {
+      case "date":
+      case "datetime-local":
+      case "image":
+      case "time":
+      case "week":
+        return "Select";
+
+      case "email":
+      case "month":
+      case "number":
+      case "password":
+      case "search":
+      case "tel":
+      case "text":
+      case "url":
+        return input.value === "" ? "Invert" : "Select";
+
+      // case "button":
+      // case "checkbox":
+      // case "color":
+      // case "file":
+      // case "radio":
+      // case "range":
+      // case "reset":
+      // case "submit":
+      default:
+        return "Invert";
+    }
+  }
 }
