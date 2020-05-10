@@ -356,7 +356,7 @@ export default class WorkerProgram {
             ? element.value.toString()
             : element instanceof HTMLCanvasElement
             ? element.toDataURL()
-            : extractText(element);
+            : normalizeWhitespace(extractText(element)) || element.outerHTML;
 
         navigator.clipboard.writeText(text).catch((error) => {
           log("error", "CopyElement: Failed to copy", message, text, error);
@@ -1264,12 +1264,18 @@ function extractTextHelper(element: HTMLElement, type: ElementType): string {
   // label text.
   const labels = getLabels(element);
   if (labels != null) {
-    return [extractText(element)]
-      .concat(Array.from(labels, (label) => extractText(label)))
-      .join(" ");
+    return normalizeWhitespace(
+      [extractText(element)]
+        .concat(Array.from(labels, (label) => extractText(label)))
+        .join(" ")
+    );
   }
 
-  return extractText(element);
+  return normalizeWhitespace(extractText(element));
+}
+
+function normalizeWhitespace(string: string): string {
+  return string.trim().replace(/\s+/g, " ");
 }
 
 export function getTextRectsHelper({
