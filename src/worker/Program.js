@@ -1654,10 +1654,12 @@ function stripHash(url: string): string {
 }
 
 function flashElement(element: HTMLElement) {
+  const text = normalizeWhitespace(extractText(element));
   const prop = "filter";
   const originalValue = element.style.getPropertyValue(prop);
   const important = element.style.getPropertyPriority(prop);
-  const newValue = `${originalValue} invert(0.75)`.trim();
+  const value = text === "" ? "brightness(0.75)" : "invert(0.75)";
+  const newValue = `${originalValue} ${value}`.trim();
   element.style.setProperty(prop, newValue, "important");
   setTimeout(() => {
     if (
