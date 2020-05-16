@@ -1654,19 +1654,46 @@ function stripHash(url: string): string {
 }
 
 function flashElement(element: HTMLElement) {
-  const text = normalizeWhitespace(extractText(element));
+  const selector =
+    "img, audio, video, object, embed, iframe, frame, input, textarea, select, progress, meter, canvas";
+  const changes = [
+    temporarilySetFilter(
+      element,
+      element.matches(selector) ? "contrast(0.5)" : "invert(0.75)"
+    ),
+    ...Array.from(element.querySelectorAll(selector), (image) =>
+      temporarilySetFilter(image, "invert(1)")
+    ),
+  ];
+  for (const { apply } of changes) {
+    apply();
+  }
+  setTimeout(() => {
+    for (const { reset } of changes) {
+      reset();
+    }
+  }, t.FLASH_COPIED_ELEMENT_DURATION.value);
+}
+
+function temporarilySetFilter(
+  element: HTMLElement,
+  value: string
+): { apply: () => void, reset: () => void } {
   const prop = "filter";
   const originalValue = element.style.getPropertyValue(prop);
   const important = element.style.getPropertyPriority(prop);
-  const value = text === "" ? "brightness(0.75)" : "invert(0.75)";
   const newValue = `${originalValue} ${value}`.trim();
-  element.style.setProperty(prop, newValue, "important");
-  setTimeout(() => {
-    if (
-      element.style.getPropertyValue(prop) === newValue &&
-      element.style.getPropertyPriority(prop) === "important"
-    ) {
-      element.style.setProperty(prop, originalValue, important);
-    }
-  }, t.FLASH_COPIED_ELEMENT_DURATION.value);
+  return {
+    apply: () => {
+      element.style.setProperty(prop, newValue, "important");
+    },
+    reset: () => {
+      if (
+        element.style.getPropertyValue(prop) === newValue &&
+        element.style.getPropertyPriority(prop) === "important"
+      ) {
+        element.style.setProperty(prop, originalValue, important);
+      }
+    },
+  };
 }
