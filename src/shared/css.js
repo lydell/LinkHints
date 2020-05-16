@@ -44,6 +44,7 @@ export const CSS = `
   text-transform: uppercase;
   font-weight: bold;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .${HIGHLIGHTED_HINT_CLASS} {
