@@ -119,6 +119,10 @@ It’s also possible to develop in Chrome without using `npm run chrome`.
 
 Link Hints should now be installed. You need to press the refresh button after you make changes to the code.
 
+### Shortcut
+
+`npm start` starts `npm run watch`, `npm run firefox` and `npm run chrome` all at once using [run-screen].
+
 ### Website
 
 Open `compiled-docs/index.html` in a browser.
@@ -167,6 +171,7 @@ Note: If you regularly develop for Chrome, you might want to run `npm run build:
 [preact]: https://preactjs.com/
 [prettier]: https://prettier.io/
 [rollup]: https://rollupjs.org/
+[run-screen]: https://github.com/apiel/run-screen
 [sign]: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Getting_started_with_web-ext#Signing_your_extension_for_self-distribution
 [sucrase]: https://github.com/alangpierce/sucrase
 [unbranded builds]: https://wiki.mozilla.org/Add-ons/Extension_Signing#Unbranded_Builds
