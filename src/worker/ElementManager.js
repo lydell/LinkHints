@@ -1463,6 +1463,7 @@ export default class ElementManager {
       case "IFRAME":
       case "IMG":
       case "OBJECT":
+      case "svg": // SVG `.nodeName` is actually lowercase.
         return "selectable";
       default: {
         // If an element has no child _elements_ (but possibly child text nodes),
@@ -1470,7 +1471,7 @@ export default class ElementManager {
         // with only a background image as icon inside. It also catches many
         // elements with text without having to iterate through all child text
         // nodes.
-        if (element.childElementCount === 0) {
+        if (element.childElementCount === 0 && element instanceof HTMLElement) {
           return "selectable";
         }
 

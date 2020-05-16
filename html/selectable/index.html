@@ -137,6 +137,14 @@
 
     <p style="user-select: none;">This paragraph has user-select:none</p>
 
+    <p>These SVG rects should not get hints, but the SVG itself should:</p>
+    <svg viewBox="0 0 32 32" width="32" height="32">
+      <rect x="0" y="0" width="16" height="16" fill="red" />
+      <rect x="16" y="0" width="16" height="16" fill="yellow" />
+      <rect x="0" y="16" width="16" height="16" fill="green" />
+      <rect x="16" y="16" width="16" height="16" fill="blue" />
+    </svg>
+
     <div style="height: 100vh;"></div>
 
     <script>
