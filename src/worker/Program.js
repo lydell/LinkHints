@@ -37,7 +37,7 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
-import { tweakable, unsignedInt } from "../shared/tweakable";
+import { selectorString, tweakable, unsignedInt } from "../shared/tweakable";
 import { type FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
@@ -53,6 +53,10 @@ type CurrentElements = {
 export const t = {
   // How long a copied element should be selected.
   FLASH_COPIED_ELEMENT_DURATION: unsignedInt(200), // ms
+  // Elements that look bad when inverted.
+  FLASH_COPIED_ELEMENT_NO_INVERT_SELECTOR: selectorString(
+    "img, audio, video, object, embed, iframe, frame, input, textarea, select, progress, meter, canvas"
+  ),
 };
 
 export const tMeta = tweakable("Worker", t);
@@ -1654,8 +1658,7 @@ function stripHash(url: string): string {
 }
 
 function flashElement(element: HTMLElement) {
-  const selector =
-    "img, audio, video, object, embed, iframe, frame, input, textarea, select, progress, meter, canvas";
+  const selector = t.FLASH_COPIED_ELEMENT_NO_INVERT_SELECTOR.value;
   const changes = [
     temporarilySetFilter(
       element,
