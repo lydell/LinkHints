@@ -24,8 +24,6 @@ declare type InsertCSSDetails = {|
   runAt?: string,
 |};
 
-declare type HTMLFrameElement = HTMLIFrameElement;
-
 declare type MessageSender = {|
   tab?: Tab,
   frameId?: number,

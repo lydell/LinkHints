@@ -33,3 +33,7 @@ declare function exportFunction(
 ): AnyFunction;
 
 declare function XPCNativeWrapper<T>(x: T): T;
+
+declare type HTMLFrameElement = HTMLIFrameElement;
+
+declare type SVGElement = Element;

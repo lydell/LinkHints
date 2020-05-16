@@ -2002,7 +2002,8 @@ function getBorderAndPaddingPoint(
 
   const left =
     parseFloat(computedStyle.getPropertyValue("border-left-width")) +
-    parseFloat(computedStyle.getPropertyValue("padding-left"));
+    parseFloat(computedStyle.getPropertyValue("padding-left")) +
+    parseFloat(computedStyle.getPropertyValue("text-indent"));
 
   return {
     ...getXY(visibleBox),
@@ -2041,7 +2042,16 @@ function getNonCoveredPoint(
   }
 
   time.start("getNonCoveredPoint:getBoundingClientRect");
-  const rect = elementAtPoint.getBoundingClientRect();
+  // If we found something inside an SVG but not looking for an SVG element,
+  // then look to the right of the actual SVG container (such as an icon),
+  // rather than at the right of some random path inside the SVG.
+  const parent =
+    element instanceof HTMLElement &&
+    elementAtPoint instanceof SVGElement &&
+    elementAtPoint.ownerSVGElement != null
+      ? elementAtPoint.ownerSVGElement
+      : elementAtPoint;
+  const rect = parent.getBoundingClientRect();
 
   // `.getBoundingClientRect()` does not include pseudo-elements that are
   // absolutely positioned so that they go outside of the element, but calling

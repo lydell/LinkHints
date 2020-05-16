@@ -95,12 +95,33 @@
         text-align: center;
       }
 
+      .search2 > svg {
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        width: 24px;
+        height: 24px;
+        transform: translateY(-50%);
+      }
+
       .search2 > input {
         height: var(--height);
         padding: 0 10px;
-        padding-left: calc(var(--height));
         border: 1px solid black;
         border-radius: 4px;
+      }
+
+      .search2 > span + input {
+        padding-left: calc(var(--height));
+      }
+
+      .search2 > svg + input {
+        /* 
+         * Using text-indent or padding with left-aligned text would be more
+         * sensible, but would bypass the “inside SVG” test.
+         */
+        /* text-indent: 24px; */
+        text-align: center;
       }
 
       .visually-hidden {
@@ -571,6 +592,14 @@
         <input type="text" value="value" style="padding: 0; border: none;" />
       </span>
     </p>
+    <p>
+      <input
+        type="text"
+        value="text-indent plus padding"
+        class="input"
+        style="padding-left: 5px; text-indent: 1em; width: 200px;"
+      />
+    </p>
 
     <h2>Tricky search fields</h2>
     <p>This one has unnecessary click handlers. (From Twitter.)</p>
@@ -588,6 +617,18 @@
     <p>This one is fully covered by the search icon to the left. (From MDN.)</p>
     <p class="search2">
       <span>🔍</span>
+      <input type="text" placeholder="Search" />
+    </p>
+    <p>
+      This one is covered by the search icon to the left, and elementAtPoint is
+      a path in the SVG. (From Docker Hub.)
+    </p>
+    <p class="search2">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M15.864 14.32h-.813l-.285-.277c1.008-1.174 1.615-2.696 1.615-4.354C16.38 5.993 13.384 3 9.69 3 5.994 3 3 5.995 3 9.69c0 3.694 2.995 6.688 6.69 6.688 1.656 0 3.18-.607 4.353-1.615l.277.287v.813L19.467 21 21 19.467l-5.136-5.147zm-6.175 0c-2.564 0-4.633-2.068-4.633-4.63s2.07-4.632 4.63-4.632 4.632 2.068 4.632 4.63-2.07 4.632-4.63 4.632z"
+        />
+      </svg>
       <input type="text" placeholder="Search" />
     </p>
 
