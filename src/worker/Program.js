@@ -360,6 +360,8 @@ export default class WorkerProgram {
             ? element.value.toString()
             : element instanceof HTMLCanvasElement
             ? element.toDataURL()
+            : element instanceof HTMLPreElement
+            ? extractText(element)
             : normalizeWhitespace(extractText(element)) || element.outerHTML;
 
         navigator.clipboard.writeText(text).catch((error) => {
