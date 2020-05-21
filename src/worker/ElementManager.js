@@ -1463,6 +1463,7 @@ export default class ElementManager {
       case "IFRAME":
       case "IMG":
       case "OBJECT":
+      case "PRE":
       case "svg": // SVG `.nodeName` is actually lowercase.
         return "selectable";
       default: {
