@@ -1,20 +1,20 @@
 // @flow strict-local
 
-const fs = require("fs");
-const path = require("path");
+import commonjs from "@rollup/plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
+import replace from "@rollup/plugin-replace";
+import sucrase from "@rollup/plugin-sucrase";
+import fs from "fs";
+import fsExtra from "fs-extra";
+import optionalRequireImport from "optional-require";
+import path from "path";
+import React from "preact";
+import prettier from "rollup-plugin-prettier";
 
-const fsExtra = require("fs-extra");
-const optionalRequire = require("optional-require")(require);
-const React = require("preact");
-const commonjs = require("@rollup/plugin-commonjs");
-const prettier = require("rollup-plugin-prettier");
-const replace = require("@rollup/plugin-replace");
-const resolve = require("@rollup/plugin-node-resolve");
-const sucrase = require("@rollup/plugin-sucrase");
-
-const config = require("./project.config");
 const transformCSS = require("./src/css").default;
+const config = require("./project.config");
 
+const optionalRequire = optionalRequireImport(require);
 const customConfig = optionalRequire("./custom.config") || {};
 
 const PROD = config.prod;
@@ -100,6 +100,7 @@ function setup() {
   const { createElement } = React;
 
   // Workarounds for preact-render-to-string unwanted props.
+  // $FlowIgnore: This is a hack.
   React.createElement = (nodeName, props, ...children) => {
     if (props) {
       delete props.__source;
