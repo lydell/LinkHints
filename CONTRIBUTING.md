@@ -121,7 +121,7 @@ Link Hints should now be installed. You need to press the refresh button after y
 
 ### Shortcut
 
-`npm start` starts `npm run watch`, `npm run firefox` and `npm run chrome` all at once using [run-screen].
+`npm start` starts `npm run watch`, `npm run firefox` and `npm run chrome` all at once using [run-pty].
 
 ### Website
 
@@ -171,7 +171,7 @@ Note: If you regularly develop for Chrome, you might want to run `npm run build:
 [preact]: https://preactjs.com/
 [prettier]: https://prettier.io/
 [rollup]: https://rollupjs.org/
-[run-screen]: https://github.com/apiel/run-screen
+[run-pty]: https://github.com/lydell/run-pty
 [sign]: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Getting_started_with_web-ext#Signing_your_extension_for_self-distribution
 [sucrase]: https://github.com/alangpierce/sucrase
 [unbranded builds]: https://wiki.mozilla.org/Add-ons/Extension_Signing#Unbranded_Builds

@@ -37,6 +37,7 @@ module.exports = {
     ],
     "no-invalid-this": "off",
     "no-script-url": "off",
+    "react/prop-types": "off",
     "react/require-default-props": "off",
     "react/self-closing-comp": "error",
     "require-await": "error",
