@@ -323,7 +323,30 @@ export default class BackgroundProgram {
       : browser.tabs.sendMessage(tabId, message, { frameId }));
   }
 
-  async onMessage(message: ToBackground, sender: MessageSender) {
+  // Warning: Don’t make this method async! If a new tab gets for example 3
+  // events in a short time just after being opened, those three events might
+  // overwrite each other. Expected execution:
+  //
+  // 1. Process event1.
+  // 2. Process event2.
+  // 3. Process event3.
+  //
+  // Async execution (for very close events):
+  //
+  // 1. Start processing event1 until the first `await`.
+  // 2. Start processing event2 until the first `await`.
+  // 3. Start processing event3 until the first `await`.
+  // 4. Finish processing event1 (assuming no more `await`s).
+  // 5. Finish processing event2 (assuming no more `await`s).
+  // 6. Finish processing event3 (assuming no more `await`s).
+  //
+  // In the async case, all of the events might try to do `this.tabState.set()`.
+  //
+  // This happens when opening the Options page: WorkerScriptAdded,
+  // OptionsScriptAdded and RendererScriptAdded are all triggered very close to
+  // each other. An overwrite can cause us to lose `tabState.isOptionsPage`,
+  // breaking shortcuts customization.
+  onMessage(message: ToBackground, sender: MessageSender) {
     // `info` can be missing when the message comes from for example the popup
     // (which isn’t associated with a tab). The worker script can even load in
     // an `about:blank` frame somewhere when hovering the browserAction!
@@ -333,7 +356,7 @@ export default class BackgroundProgram {
       info == null ? undefined : this.tabState.get(info.tabId);
     const tabState =
       tabStateRaw == null
-        ? await makeEmptyTabState(info != null ? info.tabId : undefined)
+        ? makeEmptyTabState(info != null ? info.tabId : undefined)
         : tabStateRaw;
 
     if (info != null && tabStateRaw == null) {
@@ -2169,9 +2192,8 @@ export default class BackgroundProgram {
   }
 }
 
-async function makeEmptyTabState(tabId: ?number): Promise<TabState> {
-  const tab = tabId != null ? await browser.tabs.get(tabId) : undefined;
-  return {
+function makeEmptyTabState(tabId: ?number): TabState {
+  const tabState = {
     hintsState: {
       type: "Idle",
       highlighted: [],
@@ -2179,8 +2201,30 @@ async function makeEmptyTabState(tabId: ?number): Promise<TabState> {
     keyboardMode: { type: "FromHintsState" },
     perf: [],
     isOptionsPage: false,
-    isPinned: tab != null ? tab.pinned : false,
+    isPinned: false,
   };
+
+  if (tabId != null) {
+    // This is a really ugly hack. `makeEmptyTabState` is used within
+    // `BackgroundProgram#onMessage`. As mentioned over there, that method must
+    // _not_ be async. So instead of waiting for `browser.tabs.get` (returning a
+    // Promise), we just mutate the tab state as soon as possible. This means
+    // that code trying to access `tabState.isPinned` right after
+    // `makeEmptyTabState` might get the wrong value. At the time of this
+    // writing, no code does that so the hack holds.
+    browser.tabs.get(tabId).then(
+      (tab) => {
+        if (tab != null) {
+          tabState.isPinned = tab.pinned;
+        }
+      },
+      (error) => {
+        log("error", "makeEmptyTabState", `Failed to get tab ${tabId}.`, error);
+      }
+    );
+  }
+
+  return tabState;
 }
 
 const CLICK_TYPES: ElementTypes = [
