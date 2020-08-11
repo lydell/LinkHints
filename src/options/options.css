@@ -540,6 +540,7 @@ pre {
 }
 
 .AddShortcutButton {
+  display: flex;
   align-self: flex-start;
   margin-left: auto;
   flex-shrink: 0;
