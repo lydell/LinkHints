@@ -56,7 +56,7 @@
     "readdirp": "3.4.0",
     "rollup": "2.21.0",
     "rollup-plugin-prettier": "2.1.0",
-    "run-pty": "1.0.1",
+    "run-pty": "2.1.0",
     "web-ext": "4.3.0",
     "yazl": "2.5.1"
   }
