@@ -44,7 +44,7 @@ export function log(level: LogLevel, ...args: Array<mixed>) {
     `[${META_SLUG}]`,
     formatDate(new Date()),
     window.location.protocol.endsWith("-extension:")
-      ? ""
+      ? "extension page"
       : window.location.href,
     "\n ",
     ...args
