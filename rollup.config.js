@@ -126,7 +126,7 @@ function js({ input, output } /*: { input: string, output: string } */) {
       externalLiveBindings: false,
     },
     plugins: [
-      replace(makeGlobals()),
+      replace({ ...makeGlobals(), preventAssignment: false }),
       sucrase({
         exclude: ["node_modules/**"],
         transforms: ["flow", "jsx"],

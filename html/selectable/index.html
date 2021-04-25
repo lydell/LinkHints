@@ -45,9 +45,7 @@
 
     <p>Simple text</p>
     <p>Simple text with <em>nested</em> element.</p>
-    <p>
-      &nbsp;Simple text surrounded by whitespace&nbsp;
-    </p>
+    <p>&nbsp;Simple text surrounded by whitespace&nbsp;</p>
 
     <div>
       Wrappers:
@@ -71,7 +69,7 @@
       Some longer text. The long text should get a hint even if the first line
       isn’t visible.
     </p>
-    <p style="width: 300px;">
+    <p style="width: 300px">
       Lorem ipsum dolor sit amet consectetur adipiscing elit nulla quis at
       iaculis, ac facilisis natoque nibh nascetur potenti taciti integer cras
       maecenas, nullam sodales imperdiet scelerisque sem purus luctus vestibulum
@@ -116,26 +114,26 @@
     <div class="rainbow"></div>
 
     <p>Blurred rainbow:</p>
-    <div class="rainbow" style="filter: blur(5px);"></div>
+    <div class="rainbow" style="filter: blur(5px)"></div>
 
     <p>Inverted rainbow:</p>
-    <div class="rainbow" style="filter: invert(1);"></div>
+    <div class="rainbow" style="filter: invert(1)"></div>
 
     <p>Blurred, inverted rainbow:</p>
-    <div class="rainbow" style="filter: blur(5px) invert(1);"></div>
+    <div class="rainbow" style="filter: blur(5px) invert(1)"></div>
 
     <p>Double-Inverted rainbow:</p>
-    <div class="rainbow" style="filter: invert(1) invert(1);"></div>
+    <div class="rainbow" style="filter: invert(1) invert(1)"></div>
 
     <p>Triple-Inverted rainbow:</p>
-    <div class="rainbow" style="filter: invert(1) invert(1) invert(1);"></div>
+    <div class="rainbow" style="filter: invert(1) invert(1) invert(1)"></div>
 
     <p>Grayscale rainbow (overriding blur with !important):</p>
-    <div class="rainbow blur" style="filter: grayscale(1) !important;"></div>
+    <div class="rainbow blur" style="filter: grayscale(1) !important"></div>
 
     <p class="selection">This paragraph has custom styled ::selection</p>
 
-    <p style="user-select: none;">This paragraph has user-select:none</p>
+    <p style="user-select: none">This paragraph has user-select:none</p>
 
     <p>These SVG rects should not get hints, but the SVG itself should:</p>
     <svg viewBox="0 0 32 32" width="32" height="32">
@@ -145,7 +143,7 @@
       <rect x="16" y="16" width="16" height="16" fill="blue" />
     </svg>
 
-    <div style="height: 100vh;"></div>
+    <div style="height: 100vh"></div>
 
     <script>
       for (const canvas of document.querySelectorAll("canvas")) {

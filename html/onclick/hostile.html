@@ -8,7 +8,7 @@
     <p id="p">
       Detecting this element as clickable should work despite the below script.
     </p>
-    <script style="display: block; white-space: pre;">
+    <script style="display: block; white-space: pre">
       window.CustomEvent = function () {
         throw new Error("buggy CustomEvent implementation");
       };

@@ -504,7 +504,7 @@
       the hint should be at the beginning of the first visible line. This
       doesn’t work in Firefox due to its IntersectionObserver implementation.
     </p>
-    <p style="width: 200px;">
+    <p style="width: 200px">
       some text
       <a href="#"
         >wrapped link text text text text text text text text text text</a
@@ -555,19 +555,14 @@
       <input type="button" value="button" class="button" />
     </p>
     <p>
-      <input
-        type="button"
-        value="button"
-        class="button"
-        style="width: 300px;"
-      />
+      <input type="button" value="button" class="button" style="width: 300px" />
     </p>
     <p>
       <input
         type="button"
         value="button"
         class="button"
-        style="width: 300px; text-align: left;"
+        style="width: 300px; text-align: left"
       />
     </p>
     <p>
@@ -584,12 +579,12 @@
         type="text"
         value="value"
         class="input"
-        style="text-align: center;"
+        style="text-align: center"
       />
     </p>
     <p>
       <span class="input">
-        <input type="text" value="value" style="padding: 0; border: none;" />
+        <input type="text" value="value" style="padding: 0; border: none" />
       </span>
     </p>
     <p>
@@ -597,7 +592,7 @@
         type="text"
         value="text-indent plus padding"
         class="input"
-        style="padding-left: 5px; text-indent: 1em; width: 200px;"
+        style="padding-left: 5px; text-indent: 1em; width: 200px"
       />
     </p>
 
@@ -645,7 +640,7 @@
       href="#"
       role="button"
       aria-label="Play/pause"
-      style="text-decoration: none;"
+      style="text-decoration: none"
     >
       <span
         onclick="this.textContent = this.textContent === '▶️' ? '⏸️' : '▶️'; return false"
@@ -705,7 +700,7 @@
     </p>
     <p>Visually-hidden text and label.</p>
     <p>
-      <button class="icon-button" style="width: 200px;">
+      <button class="icon-button" style="width: 200px">
         <span class="visually-hidden">Vote</span>
         <img src="image.svg" />
         Strawberries
@@ -714,19 +709,19 @@
     <p>padded &lt;img&gt;</p>
     <p>
       <button class="icon-button">
-        <img src="image.svg" style="padding: 7px;" />
+        <img src="image.svg" style="padding: 7px" />
       </button>
     </p>
 
     <h2>Buttons with the preferred hint position off-screen</h2>
-    <div style="margin-left: calc(100vw - 80px);">
+    <div style="margin-left: calc(100vw - 80px)">
       <p>
-        <button class="icon-button" style="width: 200px;">
+        <button class="icon-button" style="width: 200px">
           <img src="image.svg" />
         </button>
       </p>
       <p>
-        <input type="button" value="button" style="padding: 5px 60px;" />
+        <input type="button" value="button" style="padding: 5px 60px" />
       </p>
     </div>
 
@@ -752,12 +747,12 @@
 
     <p>Tabs overlapping using ::before and ::after. (Caniuse.)</p>
     <ul class="tabs">
-      <li role="tab" style="z-index: 99;">Tab 1</li>
-      <li role="tab" style="z-index: 98;">Tab 2</li>
-      <li role="tab" style="z-index: 97;">
-        <img src="image.svg" style="vertical-align: -5px;" />
+      <li role="tab" style="z-index: 99">Tab 1</li>
+      <li role="tab" style="z-index: 98">Tab 2</li>
+      <li role="tab" style="z-index: 97">
+        <img src="image.svg" style="vertical-align: -5px" />
       </li>
-      <li role="tab" style="z-index: 96;">Tab 4</li>
+      <li role="tab" style="z-index: 96">Tab 4</li>
     </ul>
 
     <p>Cases where .selectNodeContents returns a too big rect.</p>
@@ -766,20 +761,18 @@
       <a href="#" class="flex">flex</a>
       <a href="#"><div class="flex">flex inner</div></a>
       <a href="#" class="flex"><div class="flex">flex both</div></a>
-      <a href="#" style="position: relative;">
-        <div style="opacity: 0;">absolute child</div>
+      <a href="#" style="position: relative">
+        <div style="opacity: 0">absolute child</div>
         <div class="absolute">absolute child</div>
       </a>
-      <a href="#" class="flex" style="padding: 0;">
-        <span style="padding: 30px;">padded child</span>
+      <a href="#" class="flex" style="padding: 0">
+        <span style="padding: 30px">padded child</span>
       </a>
     </div>
 
     <p>The hints should ideally not be placed at the "badges".</p>
     <div class="badges">
-      <a href="#" data-icon="🏠">
-        Home
-      </a>
+      <a href="#" data-icon="🏠"> Home </a>
       <a href="#" data-icon="📢">
         <span>5</span>
         Notifications
@@ -838,11 +831,11 @@
 
     <p>Icons should not be preferred if further to the right.</p>
     <div class="stats">
-      <a href="#" style="border: 1px solid; padding: 0 20px;">
+      <a href="#" style="border: 1px solid; padding: 0 20px">
         icon on the right
         <span class="other-class fa-check" data-icon="✅"></span>
       </a>
-      <a href="#" style="border: 1px solid; padding: 0 20px;">
+      <a href="#" style="border: 1px solid; padding: 0 20px">
         icon in
         <span class="other-class fa-check" data-icon="✅"></span>
         the middle
@@ -874,7 +867,7 @@
 
     <p>These links should not be mistaken as badges.</p>
     <p>
-      <a href="#" style="font-size: 1.2em;">10h</a> and
+      <a href="#" style="font-size: 1.2em">10h</a> and
       <a href="#"><strong>100 %</strong></a>
     </p>
 
@@ -984,7 +977,7 @@
     <p>Visually-hidden text at the start:</p>
     <a href="#" class="text-with-visually-hidden">
       <span class="visually-hidden probe">Left</span>
-      <span style="margin-left: 30px;">Right</span>
+      <span style="margin-left: 30px">Right</span>
     </a>
 
     <p>Text hidden via font-size 0:</p>
@@ -995,30 +988,29 @@
     <div class="floats">
       <p>
         <a href="#">
-          <span style="float: left;">floated</span>
+          <span style="float: left">floated</span>
         </a>
       </p>
       <p>
         <a href="#">
-          <img src="image.svg" style="float: left;" />
+          <img src="image.svg" style="float: left" />
         </a>
       </p>
       <p>
         <a href="#">
-          <span style="float: left;">
-            <span style="float: left;">double float</span>
+          <span style="float: left">
+            <span style="float: left">double float</span>
           </span>
         </a>
       </p>
       <p>
-        <a href="#" style="position: relative;">
-          <span style="position: absolute; top: 0; left: 0;">positioned</span>
+        <a href="#" style="position: relative">
+          <span style="position: absolute; top: 0; left: 0">positioned</span>
         </a>
       </p>
       <p>
-        <a href="#" style="position: relative; float: left;">
-          <span
-            style="position: absolute; top: 0; left: 0; white-space: nowrap;"
+        <a href="#" style="position: relative; float: left">
+          <span style="position: absolute; top: 0; left: 0; white-space: nowrap"
             >float-positioned</span
           >
         </a>
@@ -1038,7 +1030,7 @@
           padding: 5px;
         "
       >
-        <span style="float: right;">5</span>
+        <span style="float: right">5</span>
         Notifications
       </a>
     </p>
@@ -1052,7 +1044,7 @@
           padding: 5px;
         "
       >
-        <small style="float: right;">(all)</small>
+        <small style="float: right">(all)</small>
         Notifications
       </a>
     </p>
@@ -1080,7 +1072,7 @@
     </div>
 
     <h2>Selectable elements</h2>
-    <div style="max-width: 500px;">
+    <div style="max-width: 500px">
       <p>
         Even if paragraph is really tall, it's still nice to place the hint at
         the start of it, if possible.

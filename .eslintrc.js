@@ -41,7 +41,8 @@ module.exports = {
     "react/require-default-props": "off",
     "react/self-closing-comp": "error",
     "require-await": "error",
-    "simple-import-sort/sort": "error",
+    "simple-import-sort/exports": "error",
+    "simple-import-sort/imports": "error",
   },
   overrides: [
     {
