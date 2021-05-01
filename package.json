@@ -16,7 +16,7 @@
     "flow": "flow",
     "flow:check": "flow check",
     "eslint": "eslint . --fix",
-    "eslint:check": "eslint .",
+    "eslint:check": "eslint . --report-unused-disable-directives",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
     "test": "run-s eslint:check prettier:check flow:check build:chrome build:firefox"

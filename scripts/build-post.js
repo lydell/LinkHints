@@ -37,7 +37,7 @@ async function run() {
       break;
 
     default:
-      (config.browser: null | void); // eslint-disable-line no-unused-expressions
+      (config.browser: null | void);
       throw new Error(
         `Invalid BROWSER environment variable: ${String(process.env.BROWSER)}`
       );
@@ -93,7 +93,7 @@ function makeSourceCodeReadme() {
   return `
 Steps to reproduce this build:
 
-1. Install [Node.js] 12 with npm 6.
+1. Install [Node.js] 14 with npm 6.
 2. Run \`npm ci\`.
 3. Run \`npm run build:firefox\`.
 4. Output is now available in \`dist-firefox/\`.
