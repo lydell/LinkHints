@@ -8,7 +8,7 @@ import type {
   VisibleElement,
 } from "../shared/hints";
 import {
-  type Box,
+  Box,
   addEventListener,
   bind,
   getElementFromPoint,
@@ -34,7 +34,7 @@ import {
   unsignedInt,
 } from "../shared/tweakable";
 import injected, {
-  type FromInjected,
+  FromInjected,
   CLICKABLE_CHANGED_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,

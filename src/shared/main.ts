@@ -1,6 +1,6 @@
 // @flow
 
-import { type Decoder, map, number, repr } from "tiny-decoders";
+import { Decoder, map, number, repr } from "tiny-decoders";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always

@@ -3,9 +3,9 @@ import * as React from "preact";
 
 import { classlist } from "../shared/main";
 import {
-  type Durations,
-  type Stats,
-  type TabsPerf,
+  Durations,
+  Stats,
+  TabsPerf,
   MAX_PERF_ENTRIES,
 } from "../shared/perf";
 

@@ -1,8 +1,8 @@
 // @flow strict-local
 
-import { type Decoder, array, map, repr, string } from "tiny-decoders";
+import { Decoder, array, map, repr, string } from "tiny-decoders";
 
-import { type ElementType, decodeElementType } from "./hints";
+import { ElementType, decodeElementType } from "./hints";
 import {
   addListener,
   decodeUnsignedFloat,

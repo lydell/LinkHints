@@ -1,21 +1,21 @@
 // @flow strict-local
 
 import {
-  type ElementReport,
-  type ElementType,
-  type ElementTypes,
-  type VisibleElement,
+  ElementReport,
+  ElementType,
+  ElementTypes,
+  VisibleElement,
 } from "../shared/hints";
 import {
-  type KeyboardMapping,
-  type KeyboardModeWorker,
-  type KeyTranslations,
+  KeyboardMapping,
+  KeyboardModeWorker,
+  KeyTranslations,
   isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
-  type Box,
+  Box,
   addEventListener,
   addListener,
   bind,
@@ -38,7 +38,7 @@ import type {
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import { selectorString, tweakable, unsignedInt } from "../shared/tweakable";
-import { type FrameMessage, decodeFrameMessage } from "./decoders";
+import { FrameMessage, decodeFrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
 type CurrentElements = {

@@ -19,11 +19,11 @@ import {
   SUGGESTION_VIMIUM,
 } from "../shared/css";
 import {
-  type KeyboardMapping,
-  type KeyPair,
-  type Keypress,
-  type KeyTranslations,
-  type NormalizedKeypress,
+  KeyboardMapping,
+  KeyPair,
+  Keypress,
+  KeyTranslations,
+  NormalizedKeypress,
   isModifierKey,
   keyboardEventToKeypress,
   normalizeKeypress,
@@ -47,8 +47,8 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import {
-  type OptionsData,
-  type PartialOptions,
+  OptionsData,
+  PartialOptions,
   importOptions,
   normalizeChars,
 } from "../shared/options";

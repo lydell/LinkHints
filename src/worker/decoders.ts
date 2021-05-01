@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import {
-  type Decoder,
+  Decoder,
   array,
   autoRecord,
   fields,
@@ -10,8 +10,8 @@ import {
   string,
 } from "tiny-decoders";
 
-import { type ElementTypes, decodeElementTypes } from "../shared/hints";
-import { type Box, decodeUnsignedFloat } from "../shared/main";
+import { ElementTypes, decodeElementTypes } from "../shared/hints";
+import { Box, decodeUnsignedFloat } from "../shared/main";
 
 export type FrameMessage =
   | {

@@ -3,10 +3,10 @@
 import * as React from "preact";
 
 import {
-  type KeyboardAction,
-  type KeyboardMapping,
-  type NormalizedKeypress,
-  type Shortcut,
+  KeyboardAction,
+  KeyboardMapping,
+  NormalizedKeypress,
+  Shortcut,
   serializeShortcut,
 } from "../shared/keyboard";
 import { classlist, deepEqual, unreachable } from "../shared/main";

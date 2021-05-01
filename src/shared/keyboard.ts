@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import {
-  type Decoder,
+  Decoder,
   autoRecord,
   boolean,
   map,

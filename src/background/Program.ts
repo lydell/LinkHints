@@ -4,20 +4,20 @@ import huffman from "n-ary-huffman";
 
 import iconsChecksum from "../icons/checksum";
 import {
-  type ElementRender,
-  type ElementReport,
-  type ElementTypes,
-  type ElementWithHint,
-  type ExtendedElementReport,
-  type HintMeasurements,
-  type HintUpdate,
+  ElementRender,
+  ElementReport,
+  ElementTypes,
+  ElementWithHint,
+  ExtendedElementReport,
+  HintMeasurements,
+  HintUpdate,
   elementKey,
 } from "../shared/hints";
 import {
-  type HintsMode,
-  type KeyboardAction,
-  type KeyboardModeBackground,
-  type NormalizedKeypress,
+  HintsMode,
+  KeyboardAction,
+  KeyboardModeBackground,
+  NormalizedKeypress,
   PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS,
 } from "../shared/keyboard";
 import {
@@ -45,9 +45,9 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
-  type Options,
-  type OptionsData,
-  type PartialOptions,
+  Options,
+  OptionsData,
+  PartialOptions,
   diffOptions,
   flattenOptions,
   getDefaults,
@@ -56,9 +56,9 @@ import {
   unflattenOptions,
 } from "../shared/options";
 import {
-  type Perf,
-  type Stats,
-  type TabsPerf,
+  Perf,
+  Stats,
+  TabsPerf,
   decodeTabsPerf,
   MAX_PERF_ENTRIES,
   TimeTracker,

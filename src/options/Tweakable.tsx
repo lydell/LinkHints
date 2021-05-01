@@ -20,7 +20,7 @@ import {
   unreachable,
 } from "../shared/main";
 import { DEBUG_PREFIX } from "../shared/options";
-import { type TweakableValue, normalizeStringArray } from "../shared/tweakable";
+import { TweakableValue, normalizeStringArray } from "../shared/tweakable";
 import {
   t as tElementManager,
   tMeta as tMetaElementManager,

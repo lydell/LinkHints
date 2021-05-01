@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { type Decoder, array, either, map, repr, string } from "tiny-decoders";
+import { Decoder, array, either, map, repr, string } from "tiny-decoders";
 
 // Remember to keep `decodeElementType` below in sync.
 export type ElementType =

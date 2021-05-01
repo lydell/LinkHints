@@ -21,7 +21,7 @@ import {
   TEXT_RECT_CLASS,
 } from "../shared/css";
 import {
-  type Box,
+  Box,
   classlist,
   getTextRects,
   isMixedCase,

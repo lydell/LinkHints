@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import {
-  type Decoder,
+  Decoder,
   array,
   boolean,
   dict,
@@ -12,9 +12,9 @@ import {
 } from "tiny-decoders";
 
 import {
-  type KeyboardMapping,
-  type KeyTranslations,
-  type Shortcut,
+  KeyboardMapping,
+  KeyTranslations,
+  Shortcut,
   decodeKeyboardMapping,
   decodeKeyboardMappingWithModifiers,
   decodeKeyPair,
@@ -23,7 +23,7 @@ import {
   serializeShortcut,
 } from "./keyboard";
 import {
-  type LogLevel,
+  LogLevel,
   decodeLogLevel,
   decodeUnsignedInt,
   deepEqual,
