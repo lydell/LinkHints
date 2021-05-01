@@ -5,7 +5,7 @@ const React = {
     tag: string,
     props: ?{
       className?: ?string,
-      onClick?: ?(MouseEvent<HTMLElement>) => mixed,
+      onClick?: ?(MouseEvent<HTMLElement>) => unknown,
       [string]: ?string,
       ...
     },

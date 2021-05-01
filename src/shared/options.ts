@@ -52,7 +52,7 @@ export type Options = {
 
 export type PartialOptions = $Shape<Options>;
 
-export type FlatOptions = { [key: string]: mixed };
+export type FlatOptions = { [key: string]: unknown };
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
   return fields((field) => ({
@@ -319,7 +319,7 @@ const PREFIX_REGEX = /([^.]+)\.([^]*)/;
 export function unflattenOptions(object: FlatOptions): FlatOptions {
   const options = {};
 
-  function set(parent: string, key: string, value: mixed) {
+  function set(parent: string, key: string, value: unknown) {
     if (!(typeof options[parent] === "object" && options[parent] != null)) {
       options[parent] = {};
     }
@@ -328,7 +328,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
     }
   }
 
-  function pushShortcut(parent: string, key: string, value: mixed) {
+  function pushShortcut(parent: string, key: string, value: unknown) {
     if (!Array.isArray(options[parent])) {
       options[parent] = [];
     }

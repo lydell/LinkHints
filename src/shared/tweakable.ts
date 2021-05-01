@@ -101,7 +101,7 @@ export function tweakable(
   const changed: { [$Keys<typeof mapping>]: boolean } = {};
   const errors: { [$Keys<typeof mapping>]: ?string } = {};
 
-  function update(data: { [key: string]: mixed }) {
+  function update(data: { [key: string]: unknown }) {
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!{}.hasOwnProperty.call(defaults, key)) {

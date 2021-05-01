@@ -10,7 +10,7 @@ export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
 export type LogLevel = $Keys<typeof LOG_LEVELS>;
 
-export function decodeLogLevel(logLevel: mixed): LogLevel {
+export function decodeLogLevel(logLevel: unknown): LogLevel {
   switch (logLevel) {
     case "error":
     case "warn":
@@ -33,7 +33,7 @@ export const DEFAULT_LOG_LEVEL: LogLevel = PROD
   ? "warn"
   : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
-export function log(level: LogLevel, ...args: Array<mixed>) {
+export function log(level: LogLevel, ...args: Array<unknown>) {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
     return;
   }
@@ -105,7 +105,7 @@ Example:
     }
 */
 export function bind(
-  object: { [key: string]: mixed },
+  object: { [key: string]: unknown },
   methods: Array<Method | [Method, { log?: boolean, catch?: boolean }]>
 ) {
   for (const item of methods) {
@@ -146,7 +146,7 @@ export function bind(
   }
 }
 
-export function unreachable(value: empty, ...args: Array<mixed>) {
+export function unreachable(value: empty, ...args: Array<unknown>) {
   const message = `Unreachable: ${value}\n${JSON.stringify(
     args,
     undefined,
@@ -187,7 +187,7 @@ export function addListener<Listener, Options>(
   };
 }
 
-export function timeout(duration: number, callback: () => mixed): () => void {
+export function timeout(duration: number, callback: () => unknown): () => void {
   const timeoutId = setTimeout(callback, duration);
   return () => {
     clearTimeout(timeoutId);
@@ -195,9 +195,9 @@ export function timeout(duration: number, callback: () => mixed): () => void {
 }
 
 export class Resets {
-  _callbacks: Array<() => mixed> = [];
+  _callbacks: Array<() => unknown> = [];
 
-  add(...callbacks: Array<() => mixed>) {
+  add(...callbacks: Array<() => unknown>) {
     this._callbacks.push(...callbacks);
   }
 
@@ -306,7 +306,7 @@ export function setStyles(
   styles: { [key: string]: string }
 ) {
   for (const [property, value] of Object.entries(styles)) {
-    // $FlowIgnore: Flow thinks that `value` is `mixed` here, but it is a `string`.
+    // $FlowIgnore: Flow thinks that `value` is `unknown` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
   }
 }
@@ -518,7 +518,7 @@ export function splitEnteredText(enteredText: string): Array<string> {
 }
 
 // Deep equal for JSON data.
-export function deepEqual(a: mixed, b: mixed): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) {
     return true;
   }

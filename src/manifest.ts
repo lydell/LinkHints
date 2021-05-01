@@ -60,11 +60,11 @@ export default () =>
     ],
   });
 
-function toJSON(obj: { [key: string]: mixed }): string {
+function toJSON(obj: { [key: string]: unknown }): string {
   return JSON.stringify(obj, undefined, 2);
 }
 
-function getBrowserSpecificSettings(browser: ?Browser): mixed {
+function getBrowserSpecificSettings(browser: ?Browser): unknown {
   switch (browser) {
     case "chrome":
       return undefined;

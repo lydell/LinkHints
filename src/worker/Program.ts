@@ -1504,7 +1504,7 @@ function firefoxPopupBlockerWorkaround({
       override(
         "stopImmediatePropagation",
         (originalStopImmediatePropagation) =>
-          function stopImmediatePropagation(): mixed {
+          function stopImmediatePropagation(): unknown {
             /* eslint-disable babel/no-invalid-this */
             // We’re already done – just skip remaining listeners.
             if (defaultPrevented !== "NotPrevented") {
@@ -1540,7 +1540,7 @@ function firefoxPopupBlockerWorkaround({
               override(
                 "preventDefault",
                 (originalPreventDefault) =>
-                  function preventDefault(): mixed {
+                  function preventDefault(): unknown {
                     log(
                       "log",
                       prefix,
@@ -1568,11 +1568,11 @@ function firefoxPopupBlockerWorkaround({
   const originalOpen = window.wrappedJSObject.open;
   exportFunction(
     function open(
-      url: mixed,
-      target: mixed,
-      features: mixed,
-      ...args: Array<mixed>
-    ): mixed {
+      url: unknown,
+      target: unknown,
+      features: unknown,
+      ...args: Array<unknown>
+    ): unknown {
       // These may throw exceptions: `{ toString() { throw new Error } }`;
       // If so – let that happen, just like standard `window.open`. If they
       // throw we simply don’t continue.

@@ -262,7 +262,7 @@ function TweakableField<T: TweakableValue>({
   );
 }
 
-async function save(key: string, value: mixed) {
+async function save(key: string, value: unknown) {
   try {
     if (value == null) {
       await browser.storage.sync.remove(key);
@@ -280,7 +280,7 @@ export function hasChangedTweakable(): boolean {
   );
 }
 
-export function getTweakableExport(): { [key: string]: mixed } {
+export function getTweakableExport(): { [key: string]: unknown } {
   return Object.fromEntries(
     ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
       Object.keys(tMeta.defaults)
@@ -300,9 +300,9 @@ export function getTweakableExport(): { [key: string]: mixed } {
 }
 
 export function partitionTweakable(data: {
-  +[string]: mixed,
+  +[string]: unknown,
   ...
-}): [{ [key: string]: mixed }, { [key: string]: mixed }] {
+}): [{ [key: string]: unknown }, { [key: string]: unknown }] {
   const tweakableData = {};
   const otherData = {};
 
@@ -317,7 +317,7 @@ export function partitionTweakable(data: {
   return [tweakableData, otherData];
 }
 
-export function saveTweakable(data: { [key: string]: mixed }): Promise<void> {
+export function saveTweakable(data: { [key: string]: unknown }): Promise<void> {
   const [tweakableData] = partitionTweakable(data);
   return browser.storage.sync.set(tweakableData);
 }

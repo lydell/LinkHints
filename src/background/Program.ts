@@ -2304,7 +2304,7 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   return url != null && !url.includes("#") && !hasClickListener;
 }
 
-function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<mixed>>> {
+function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<unknown>>> {
   const manifest = browser.runtime.getManifest();
 
   const detailsList = manifest.content_scripts
