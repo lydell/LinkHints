@@ -52,7 +52,7 @@ export type Options = {
 
 export type PartialOptions = $Shape<Options>;
 
-export type FlatOptions = { [string]: mixed, ... };
+export type FlatOptions = { [string]: mixed };
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
   return fields((field) => ({

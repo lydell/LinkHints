@@ -45,13 +45,13 @@ export type TweakableValue =
   | ElementTypeSet
   | SelectorString;
 
-export type TweakableMapping = { [string]: TweakableValue, ... };
+export type TweakableMapping = { [string]: TweakableValue };
 
 export type TweakableMeta = {
   namespace: string,
   defaults: TweakableMapping,
-  changed: { [string]: boolean, ... },
-  errors: { [string]: ?string, ... },
+  changed: { [string]: boolean },
+  errors: { [string]: ?string },
   loaded: Promise<void>,
   unlisten: () => void,
 };
@@ -98,10 +98,10 @@ export function tweakable(
   const prefix = "tweakable";
   const keyPrefix = `${DEBUG_PREFIX}${namespace}.`;
   const defaults = { ...mapping };
-  const changed: { [$Keys<typeof mapping>]: boolean, ... } = {};
-  const errors: { [$Keys<typeof mapping>]: ?string, ... } = {};
+  const changed: { [$Keys<typeof mapping>]: boolean } = {};
+  const errors: { [$Keys<typeof mapping>]: ?string } = {};
 
-  function update(data: { [string]: mixed, ... }) {
+  function update(data: { [string]: mixed }) {
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!{}.hasOwnProperty.call(defaults, key)) {

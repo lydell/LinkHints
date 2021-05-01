@@ -54,7 +54,7 @@ export const decodePerf: Decoder<Perf> = array(
   })
 );
 
-export type TabsPerf = { [tabId: string]: Perf, ... };
+export type TabsPerf = { [tabId: string]: Perf };
 
 export const decodeTabsPerf: Decoder<TabsPerf> = dict(decodePerf);
 

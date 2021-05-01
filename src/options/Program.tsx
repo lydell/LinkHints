@@ -1734,7 +1734,7 @@ function readAsJson(file: File): Promise<mixed> {
   return new Response(file).json();
 }
 
-function mixedObject(value: mixed): { +[string]: mixed, ... } {
+function mixedObject(value: mixed): { +[string]: mixed } {
   if (typeof value !== "object" || value == null || Array.isArray(value)) {
     throw new TypeError(`Expected an object, but got: ${repr(value)}`);
   }
