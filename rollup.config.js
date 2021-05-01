@@ -129,7 +129,7 @@ function js({ input, output } /*: { input: string, output: string } */) {
       replace({ ...makeGlobals(), preventAssignment: false }),
       sucrase({
         exclude: ["node_modules/**"],
-        transforms: ["flow", "jsx"],
+        transforms: ["typescript", "jsx"],
         // Don't add `__self` and `__source` to JSX, which Preact does not support.
         production: true,
       }),
@@ -171,7 +171,7 @@ function template(
     external: (id) => !id.startsWith("."),
     plugins: [
       sucrase({
-        transforms: ["flow", "jsx"],
+        transforms: ["typescript", "jsx"],
         production: true,
       }),
       resolve(),

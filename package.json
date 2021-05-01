@@ -13,13 +13,12 @@
     "png-icons": "sucrase-node scripts/png-icons.js",
     "rollup": "sucrase-node node_modules/.bin/rollup",
     "web-ext": "sucrase-node node_modules/.bin/web-ext",
-    "flow": "flow",
-    "flow:check": "flow check",
+    "tsc": "tsc",
     "eslint": "eslint . --fix",
     "eslint:check": "eslint . --report-unused-disable-directives",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "test": "run-s eslint:check prettier:check flow:check build:chrome build:firefox"
+    "test": "run-s eslint:check prettier:check tsc build:chrome build:firefox"
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",
