@@ -134,7 +134,7 @@ export function serializeShortcut(shortcut: Shortcut): string {
 // This turns a shortcut string into an object that can be fed to `decodeShortcut`.
 export function deserializeShortcut(
   shortcutString: string
-): { [string]: mixed } {
+): { [key: string]: mixed } {
   const parts = shortcutString.split(SHORTCUT_SEPARATOR);
   const lastIndex = parts.length - 1;
   return parts.reduce(

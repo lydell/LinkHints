@@ -60,7 +60,7 @@ export default () =>
     ],
   });
 
-function toJSON(obj: { [string]: mixed }): string {
+function toJSON(obj: { [key: string]: mixed }): string {
   return JSON.stringify(obj, undefined, 2);
 }
 

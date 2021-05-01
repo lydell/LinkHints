@@ -138,7 +138,7 @@ export default (communicator?: {
     // `hook` is run _after_ the original function. If you need to do something
     // _before_ the original function is called, use a `prehook`.
     hookInto<T>(
-      obj: { [string]: mixed },
+      obj: { [key: string]: mixed },
       name: string,
       hook?: (
         { returnValue: any, prehookData: T | void },
@@ -289,7 +289,7 @@ export default (communicator?: {
 
   function logHookError(
     error: Error,
-    obj: { [string]: mixed },
+    obj: { [key: string]: mixed },
     name: string
   ) {
     logError(`Failed to run hook for ${name} on`, obj, error);

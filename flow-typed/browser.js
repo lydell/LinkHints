@@ -76,7 +76,7 @@ declare type Port = {|
 declare type StorageArea = {|
   get: ((
     keys?: null | string | Array<string>
-  ) => Promise<{ [string]: mixed, ... }>) &
+  ) => Promise<{ [key: string]: mixed, ... }>) &
     (<T: { +[string]: any, ... }>(T) => Promise<{ [$Keys<T>]: mixed, ... }>),
   getBytesInUse(keys?: null | string | Array<string>): Promise<number>,
   set({ +[string]: any, ... }): Promise<void>,
@@ -168,7 +168,7 @@ declare var browser: {|
       windowId?: number,
     |}): void,
     setIcon({|
-      path: { [string]: string, ... },
+      path: { [key: string]: string, ... },
       tabId?: number,
     |}): Promise<void>,
   |},
@@ -192,7 +192,7 @@ declare var browser: {|
     local: StorageArea,
     managed: StorageArea,
     onChanged: OnEvent<
-      ({ [string]: StorageChange, ... }, "local" | "managed" | "sync") => void
+      ({ [key: string]: StorageChange, ... }, "local" | "managed" | "sync") => void
     >,
     sync: StorageArea,
   |},
