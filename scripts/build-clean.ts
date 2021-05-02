@@ -13,7 +13,7 @@ const FILE_EXTENSIONS_TO_REMOVE: Set<string> = new Set([
   ".crx",
 ]);
 
-function run() {
+function run(): void {
   if (!fs.existsSync(DIST)) {
     console.log("No directory to clean for BROWSER:", config.browser);
     return;

@@ -11,7 +11,7 @@ const MANIFEST_SRC = path.join(BASE_DIR, config.src, config.manifest.input);
 
 const SLEEP_MS = 200;
 
-function poll() {
+function poll(): void {
   if (fs.existsSync(MANIFEST)) {
     process.exit(0);
   }

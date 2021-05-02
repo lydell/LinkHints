@@ -2,6 +2,7 @@
 
 import spawn from "cross-spawn";
 import crx3 from "crx3";
+import type { EventEmitter } from "events";
 import fs from "fs";
 import path from "path";
 import readdirp from "readdirp";
@@ -18,7 +19,7 @@ const CRX_FILE = `${DIST_FILE_BASE}.crx`;
 const KEY_FILE = path.join(DIST, "key.pem");
 const SOURCE_CODE_FILE = path.join(DIST, "source.zip");
 
-async function run() {
+async function run(): Promise<void> {
   switch (config.browser) {
     case "chrome":
       await crx3(fs.createReadStream(ZIP_FILE), {
@@ -36,41 +37,41 @@ async function run() {
       console.log("Created source code bundle:", relative(SOURCE_CODE_FILE));
       break;
 
-    default:
-      (config.browser: null | void);
+    case undefined:
       throw new Error(
         `Invalid BROWSER environment variable: ${String(process.env.BROWSER)}`
       );
   }
 }
 
-function relative(filePath): string {
+function relative(filePath: string): string {
   return path.relative(BASE_DIR, filePath);
 }
 
-async function makeSourceCodeBundle() {
+async function makeSourceCodeBundle(): Promise<void> {
   const files = [
     ".eslintignore",
     ".eslintrc.js",
-    ".flowconfig",
     ".prettierignore",
     ".prettierrc.json",
     "LICENSE",
     "package-lock.json",
     "package.json",
-    "project.config.js",
+    "project.config.ts",
     "rollup.config.js",
+    "tsconfig.json",
     "web-ext-config.js",
   ].map((file) => path.join(BASE_DIR, file));
 
-  const dirs = ["docs", "flow-typed", "scripts", "src"];
+  const dirs = ["@types", "docs", "scripts", "src"];
 
   const asyncFiles = await Promise.all(
     dirs.map((dir) => getAllFilesInDir(dir))
   );
   const allFiles = files.concat(...asyncFiles);
 
-  const zip = new ZipFile();
+  // `ZipFile` extends `EventEmitter`, but that’s missing in the type definition.
+  const zip = new ZipFile() as EventEmitter & ZipFile;
 
   zip.addBuffer(Buffer.from(makeSourceCodeReadme()), "README.md");
 
@@ -89,7 +90,7 @@ async function makeSourceCodeBundle() {
   });
 }
 
-function makeSourceCodeReadme() {
+function makeSourceCodeReadme(): string {
   return `
 Steps to reproduce this build:
 
@@ -130,7 +131,7 @@ async function getAllFilesInDir(dir: string): Promise<Array<string>> {
   return results.map(({ fullPath }) => fullPath);
 }
 
-run().catch((error) => {
+run().catch((error: Error) => {
   console.error(
     "Failed to run post build operations. Remember to build first!"
   );

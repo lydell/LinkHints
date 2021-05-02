@@ -73,19 +73,19 @@ export default {
     output: "browser-polyfill.js",
   },
   background: {
-    input: "background/main.js",
+    input: "background/main.ts",
     output: "background.js",
   },
   worker: {
-    input: "worker/main.js",
+    input: "worker/main.ts",
     output: "worker.js",
   },
   renderer: {
-    input: "renderer/main.js",
+    input: "renderer/main.ts",
     output: "renderer.js",
   },
   popup: {
-    input: "popup/main.js",
+    input: "popup/main.ts",
     output: "popup.js",
   },
   popupCss: {
@@ -94,7 +94,7 @@ export default {
   },
   popupHtml: "popup.html",
   options: {
-    input: "options/main.js",
+    input: "options/main.ts",
     output: "options.js",
   },
   optionsCss: {
@@ -103,7 +103,7 @@ export default {
   },
   optionsHtml: "options.html",
   manifest: {
-    input: "manifest.js",
+    input: "manifest.ts",
     output: "manifest.json",
   },
   docs: {
@@ -122,7 +122,7 @@ export default {
       output: "shared.css",
     },
     index: {
-      input: "index.js",
+      input: "index.tsx",
       output: "index.html",
     },
     indexCss: {
@@ -130,7 +130,7 @@ export default {
       output: "index.css",
     },
     tutorial: {
-      input: "tutorial.js",
+      input: "tutorial.tsx",
       output: "tutorial.html",
     },
     tutorialCss: {
