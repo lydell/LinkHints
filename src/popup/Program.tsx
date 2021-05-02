@@ -6,7 +6,7 @@ import type {
   FromPopup,
   ToBackground,
 } from "../shared/messages";
-import React from "./static-react";
+import { h } from "./static-preact";
 
 const CONTAINER_ID = "container";
 
@@ -81,7 +81,7 @@ export default class PopupProgram {
 
     const errorElement = <p className="Error" />;
 
-    function showError(error: ?Error) {
+    function showError(error: Error | undefined) {
       errorElement.textContent =
         error != null ? error.message : "An unknown error ocurred.";
     }
@@ -167,7 +167,6 @@ async function getDebugInfo(): Promise<string> {
     browser.runtime.getPlatformInfo(),
     browser.storage.sync.get(),
     browser.storage.local.get(),
-    // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
     navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
   ]);
 
