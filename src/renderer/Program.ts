@@ -24,17 +24,16 @@ import type {
   HintUpdate,
 } from "../shared/hints";
 import {
-  Box,
   addEventListener,
   addListener,
   bind,
+  Box,
   CONTAINER_ID,
   getViewport,
   log,
   partition,
   Resets,
   setStyles,
-  unreachable,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -43,12 +42,12 @@ import type {
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import { tweakable, unsignedInt } from "../shared/tweakable";
-import { Rule, applyStyles, parseCSS } from "./css";
+import { applyStyles, parseCSS, Rule } from "./css";
 
 type HintSize = {
-  widthBase: number,
-  widthPerLetter: number,
-  height: number,
+  widthBase: number;
+  widthPerLetter: number;
+  height: number;
 };
 
 export const t = {
@@ -59,24 +58,32 @@ export const tMeta = tweakable("Renderer", t);
 
 export default class RendererProgram {
   hints: Array<HTMLElement> = [];
-  rects: Map<HTMLElement, ClientRect> = new Map();
-  enteredText: string = "";
+
+  rects = new Map<HTMLElement, ClientRect>();
+
+  enteredText = "";
+
   resets: Resets = new Resets();
+
   shruggieElement: HTMLElement;
+
   statusElement: HTMLElement;
+
   statusText: Text;
+
   hintSize: HintSize;
+
   container: {
-    element: HTMLElement,
-    root: HTMLElement,
-    shadowRoot: ShadowRoot,
-    resets: Resets,
-    intersectionObserver: IntersectionObserver,
+    element: HTMLElement;
+    root: HTMLElement;
+    shadowRoot: ShadowRoot;
+    resets: Resets;
+    intersectionObserver: IntersectionObserver;
   };
 
   css: {
-    text: string,
-    parsed: ?Array<Rule>,
+    text: string;
+    parsed: Array<Rule> | undefined;
   } = {
     text: CSS,
     parsed: undefined,
@@ -144,7 +151,7 @@ export default class RendererProgram {
     };
   }
 
-  async start() {
+  async start(): Promise<void> {
     // This is useful during development. If reloading the extension during
     // hints mode, the old hints will be removed as soon as the new version
     // starts.
@@ -192,17 +199,17 @@ export default class RendererProgram {
     });
   }
 
-  stop() {
+  stop(): void {
     this.resets.reset();
     this.unrender();
   }
 
-  async sendMessage(message: FromRenderer) {
+  async sendMessage(message: FromRenderer): Promise<void> {
     log("log", "RendererProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
-  onMessage(wrappedMessage: FromBackground) {
+  onMessage(wrappedMessage: FromBackground): void {
     // As mentioned in `this.start`, re-send the "RendererScriptAdded" message
     // in Firefox as a workaround for its content script loading quirks.
     if (wrappedMessage.type === "FirefoxWorkaround") {
@@ -258,13 +265,10 @@ export default class RendererProgram {
       case "Unrender":
         this.unrender();
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
-  onIntersection(entries: Array<IntersectionObserverEntry>) {
+  onIntersection(entries: Array<IntersectionObserverEntry>): void {
     // There will only be one entry.
     const entry = entries[0];
     if (entry.intersectionRatio !== 1) {
@@ -273,13 +277,15 @@ export default class RendererProgram {
           // `entry.rootBounds` is supposed to be the viewport size, but I've
           // noticed it being way larger in Chrome sometimes, so calculate it
           // manually there.
-          BROWSER === "chrome" ? getViewport() : entry.rootBounds
+          BROWSER === "chrome"
+            ? getViewport()
+            : entry.rootBounds ?? getViewport()
         );
       });
     }
   }
 
-  onResize() {
+  onResize(): void {
     this.updateContainer(getViewport());
   }
 
@@ -292,14 +298,13 @@ export default class RendererProgram {
   // `WorkerProgram`, so we _could_ do this in response to a message from
   // `BackgroundProgram` instead. However, by having our own listener we can
   // unrender faster, to avoid old hints flashing by on screen.
-  onPageShow(event: Event) {
-    // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
+  onPageShow(event: PageTransitionEvent): void {
     if (event.persisted) {
       this.unrender();
     }
   }
 
-  updateContainer(viewport: { +width: number, +height: number }) {
+  updateContainer(viewport: { width: number; height: number }): void {
     const container = this.container.element;
 
     setStyles(container, {
@@ -321,7 +326,7 @@ export default class RendererProgram {
     }
   }
 
-  updateHintSize() {
+  updateHintSize(): void {
     // Note: This requires that the container has been placed into the DOM.
     const { root } = this.container;
 
@@ -355,7 +360,7 @@ export default class RendererProgram {
   async render(
     elements: Array<ElementRender>,
     { mixedCase }: { mixedCase: boolean }
-  ) {
+  ): Promise<void> {
     const { documentElement } = document;
     if (documentElement == null) {
       return;
@@ -502,7 +507,7 @@ export default class RendererProgram {
     });
   }
 
-  updateHints(updates: Array<HintUpdate>, enteredText: string) {
+  updateHints(updates: Array<HintUpdate>, enteredText: string): void {
     const viewport = getViewport();
     const maybeNeedsMoveInsideViewport = [];
 
@@ -589,9 +594,6 @@ export default class RendererProgram {
           }
           break;
         }
-
-        default:
-          unreachable(update.type, update);
       }
 
       // Hidden hints get negative z-index so that visible hints are always
@@ -618,7 +620,7 @@ export default class RendererProgram {
     this.enteredText = enteredText;
   }
 
-  rotateHints({ forward }: { forward: boolean }) {
+  rotateHints({ forward }: { forward: boolean }): void {
     const sign = forward ? 1 : -1;
     const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
@@ -642,7 +644,7 @@ export default class RendererProgram {
     }
   }
 
-  renderTextRects(rects: Array<Box>, frameId: number) {
+  renderTextRects(rects: Array<Box>, frameId: number): void {
     const { root } = this.container;
     for (const rect of rects) {
       const element = document.createElement("div");
@@ -660,7 +662,7 @@ export default class RendererProgram {
     }
   }
 
-  setStatus(status: string) {
+  setStatus(status: string): void {
     // Avoid unnecessary flashing in the devtools when inspecting the hints.
     if (this.statusText.data !== status) {
       this.statusText.data = status;
@@ -668,13 +670,13 @@ export default class RendererProgram {
     this.maybeApplyStyles(this.statusElement);
   }
 
-  togglePeek({ peek }: { peek: boolean }) {
+  togglePeek({ peek }: { peek: boolean }): void {
     const { root } = this.container;
     root.classList.toggle(PEEK_CLASS, peek);
     this.maybeApplyStyles(root);
   }
 
-  unrender() {
+  unrender(): void {
     this.hints = [];
     this.rects.clear();
 
@@ -695,7 +697,7 @@ export default class RendererProgram {
     }
   }
 
-  unrenderTextRects(frameId?: number) {
+  unrenderTextRects(frameId?: number): void {
     const selector =
       frameId == null
         ? `.${TEXT_RECT_CLASS}`
@@ -707,7 +709,7 @@ export default class RendererProgram {
 
   // It’s important to use `setStyles` instead of `.style.foo =` in this file,
   // since `applyStyles` could override inline styles otherwise.
-  maybeApplyStyles(element: HTMLElement) {
+  maybeApplyStyles(element: HTMLElement): void {
     if (BROWSER === "firefox" && this.css.parsed != null) {
       applyStyles(element, this.css.parsed);
     }
@@ -756,7 +758,7 @@ function wrapMessage(message: FromRenderer): ToBackground {
   };
 }
 
-function emptyNode(node: Node) {
+function emptyNode(node: Node): void {
   while (node.firstChild != null) {
     node.removeChild(node.firstChild);
   }
@@ -778,7 +780,7 @@ function getStacks(
   const stacks = [];
 
   while (elements.length > 0) {
-    stacks.push(getStackFor(elements.pop(), elements, rects));
+    stacks.push(getStackFor(elements.pop() as HTMLElement, elements, rects));
   }
 
   return stacks;
@@ -802,9 +804,9 @@ function getStackFor(
     // hint elements are run through `moveInsideViewport`), so
     // `.getBoundingClientRect()` never hits here. That is a major performance
     // boost.
-    const rect = rects.get(element) || element.getBoundingClientRect();
+    const rect = rects.get(element) ?? element.getBoundingClientRect();
     const nextRect =
-      rects.get(nextElement) || nextElement.getBoundingClientRect();
+      rects.get(nextElement) ?? nextElement.getBoundingClientRect();
 
     if (overlaps(nextRect, rect)) {
       // Also get all elements overlapping this one.
@@ -834,13 +836,13 @@ function getHintPosition({
   hintMeasurements,
   viewport,
 }: {
-  hintSize: HintSize,
-  hint: string,
-  hintMeasurements: HintMeasurements,
-  viewport: Box,
+  hintSize: HintSize;
+  hint: string;
+  hintMeasurements: HintMeasurements;
+  viewport: Box;
 }): {
-  styles: { [key: string]: string },
-  maybeOutsideHorizontally: boolean,
+  styles: { [key: string]: string };
+  maybeOutsideHorizontally: boolean;
 } {
   const width = Math.ceil(
     hintSize.widthBase + hintSize.widthPerLetter * hint.length
@@ -881,7 +883,7 @@ function getHintPosition({
   };
 }
 
-function waitUntilBeforeNextRepaint(): Promise<void> {
+async function waitUntilBeforeNextRepaint(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       resolve();
@@ -889,7 +891,7 @@ function waitUntilBeforeNextRepaint(): Promise<void> {
   });
 }
 
-function wait0(): Promise<void> {
+async function wait0(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
