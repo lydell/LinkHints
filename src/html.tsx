@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 import renderToString from "preact-render-to-string";
 
 export default ({
@@ -9,15 +9,15 @@ export default ({
   js,
   css,
 }: {
-  title: string,
-  polyfill: ?string,
-  js: Array<string>,
-  css: Array<string>,
+  title: string;
+  polyfill: string | undefined;
+  js: Array<string>;
+  css: Array<string>;
 }) => {
   const doc = (
     <html lang="en">
       <head>
-        <meta charset="utf-8" />
+        <meta charSet="utf-8" />
         <title>{title}</title>
         {css.map((href) => (
           <link key={href} rel="stylesheet" href={href} />

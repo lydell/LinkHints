@@ -9,7 +9,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import fsExtra from "fs-extra";
-import * as React from "preact";
+import { h } from "preact";
 import renderToString from "preact-render-to-string";
 
 import config from "../project.config";
@@ -54,7 +54,7 @@ function pointer({
   inset: number; // l1–l2, r1–r2
   tailLength: number; // l2–l3, r2–r3
 }): Array<Point> {
-  const start = [0, 0];
+  const start: Point = [0, 0];
 
   const l1 = go({ fromPoint: start, angle: -90, length: height });
   const l2 = go({ fromPoint: l1, angle: 45, length: inset });
@@ -79,7 +79,7 @@ function go({
   length: number;
 }): Point {
   // First make a vector with the requested length.
-  const point = [length, 0];
+  const point: Point = [length, 0];
   // Then rotate it by the requested angle.
   const [a, b] = rotate(point, angle);
   // Finally move it so it starts at (x, y).
@@ -243,7 +243,7 @@ for (const img of document.querySelectorAll("img")) {
 `.trim();
 
 function renderTestPage() {
-  const variations = [
+  const variations: Array<[typeof config.icons, string]> = [
     [config.icons, BACKGROUND_COLORS.light],
     [config.icons, BACKGROUND_COLORS.dark],
     [config.iconsDisabled, BACKGROUND_COLORS.light],
@@ -253,7 +253,7 @@ function renderTestPage() {
   const doc = (
     <html lang="en">
       <head>
-        <meta charset="utf-8" />
+        <meta charSet="utf-8" />
         <title>Icons</title>
         <style dangerouslySetInnerHTML={{ __html: testStyles }} />
       </head>
@@ -301,7 +301,7 @@ const OPTIONS_DISABLED = { opacity: 0.5 };
 const KEYCAP_SIZE = 48;
 
 export default () => {
-  const all = [
+  const all: Array<[typeof config.icons.svg, typeof OPTIONS_NORMAL]> = [
     [config.icons.svg, OPTIONS_NORMAL],
     [config.iconsDisabled.svg, OPTIONS_DISABLED],
   ];
