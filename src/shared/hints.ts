@@ -67,8 +67,8 @@ export type ElementReport = {
   type: ElementType;
   index: number;
   hintMeasurements: HintMeasurements;
-  url: string | string;
-  urlWithTarget: string | string;
+  url: string | undefined;
+  urlWithTarget: string | undefined;
   text: string;
   textContent: boolean;
   textWeight: number;

@@ -32,3 +32,29 @@ declare function exportFunction(
 ): AnyFunction;
 
 declare function XPCNativeWrapper<T>(x: T): T;
+
+declare type IdleDeadline = {
+  didTimeout: boolean;
+  timeRemaining: () => number;
+};
+declare const ___idleCallbackID: unique symbol;
+declare type IdleCallbackID = number & { [___idleCallbackID]: true };
+declare function requestIdleCallback(
+  callback: (deadline: IdleDeadline) => void,
+  opts?: {
+    timeout?: number;
+  }
+): IdleCallbackID;
+declare function cancelIdleCallback(idleCallbackID: IdleCallbackID): void;
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+interface Window {
+  Element: typeof Element;
+  Event: typeof Event;
+  EventTarget: typeof EventTarget;
+  Function: typeof Function;
+  HTMLElement: typeof HTMLElement;
+  Object: typeof Object;
+  String: typeof String;
+  wrappedJSObject?: Window;
+}

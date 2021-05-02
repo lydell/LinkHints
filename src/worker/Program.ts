@@ -1,24 +1,24 @@
 // @flow strict-local
 
-import {
+import type {
   ElementReport,
   ElementType,
   ElementTypes,
   VisibleElement,
 } from "../shared/hints";
 import {
+  isModifierKey,
+  keyboardEventToKeypress,
   KeyboardMapping,
   KeyboardModeWorker,
   KeyTranslations,
-  isModifierKey,
-  keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
-  Box,
   addEventListener,
   addListener,
   bind,
+  Box,
   CONTAINER_ID,
   extractText,
   getLabels,
@@ -28,7 +28,6 @@ import {
   log,
   NON_WHITESPACE,
   Resets,
-  unreachable,
   walkTextNodes,
 } from "../shared/main";
 import type {
@@ -38,16 +37,16 @@ import type {
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import { selectorString, tweakable, unsignedInt } from "../shared/tweakable";
-import { FrameMessage, decodeFrameMessage } from "./decoders";
+import { decodeFrameMessage, FrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
 type CurrentElements = {
-  elements: Array<VisibleElement>,
-  frames: Array<HTMLIFrameElement | HTMLFrameElement>,
-  viewports: Array<Box>,
-  types: ElementTypes,
-  indexes: Array<number>,
-  words: Array<string>,
+  elements: Array<VisibleElement>;
+  frames: Array<HTMLFrameElement | HTMLIFrameElement>;
+  viewports: Array<Box>;
+  types: ElementTypes;
+  indexes: Array<number>;
+  words: Array<string>;
 };
 
 export const t = {
@@ -62,15 +61,24 @@ export const t = {
 export const tMeta = tweakable("Worker", t);
 
 export default class WorkerProgram {
-  isPinned: boolean = true;
+  isPinned = true;
+
   keyboardShortcuts: Array<KeyboardMapping> = [];
+
   keyboardMode: KeyboardModeWorker = "Normal";
+
   keyTranslations: KeyTranslations = {};
-  current: ?CurrentElements = undefined;
-  oneTimeWindowMessageToken: ?string = undefined;
-  mac: boolean = false;
-  suppressNextKeyup: ?{ key: string, code: string } = undefined;
-  resets: Resets = new Resets();
+
+  current: CurrentElements | undefined = undefined;
+
+  oneTimeWindowMessageToken: string | undefined = undefined;
+
+  mac = false;
+
+  suppressNextKeyup: { key: string; code: string } | undefined = undefined;
+
+  resets = new Resets();
+
   elementManager: ElementManager = new ElementManager({
     onMutation: this.onMutation.bind(this),
   });
@@ -90,7 +98,7 @@ export default class WorkerProgram {
     ]);
   }
 
-  async start() {
+  async start(): Promise<void> {
     this.resets.add(
       addListener(browser.runtime.onMessage, this.onMessage),
       addEventListener(window, "keydown", this.onKeydown, { passive: false }),
@@ -116,19 +124,19 @@ export default class WorkerProgram {
     });
   }
 
-  stop() {
+  stop(): void {
     this.resets.reset();
     this.elementManager.stop();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
   }
 
-  async sendMessage(message: FromWorker) {
+  async sendMessage(message: FromWorker): Promise<void> {
     log("log", "WorkerProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
-  onMessage(wrappedMessage: FromBackground) {
+  onMessage(wrappedMessage: FromBackground): void {
     // See `RendererProgram#onMessage`.
     if (wrappedMessage.type === "FirefoxWorkaround") {
       this.sendMessage({ type: "WorkerScriptAdded" });
@@ -362,7 +370,8 @@ export default class WorkerProgram {
             ? element.toDataURL()
             : element instanceof HTMLPreElement
             ? extractText(element)
-            : normalizeWhitespace(extractText(element)) || element.outerHTML;
+            : // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+              normalizeWhitespace(extractText(element)) || element.outerHTML;
 
         navigator.clipboard.writeText(text).catch((error) => {
           log("error", "CopyElement: Failed to copy", message, text, error);
@@ -410,13 +419,10 @@ export default class WorkerProgram {
         }
         break;
       }
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
-  onWindowMessage(event: MessageEvent) {
+  onWindowMessage(event: MessageEvent): void {
     const { oneTimeWindowMessageToken } = this;
 
     if (
@@ -424,8 +430,9 @@ export default class WorkerProgram {
       event.data != null &&
       typeof event.data === "object" &&
       !Array.isArray(event.data) &&
-      event.data.token === oneTimeWindowMessageToken &&
-      typeof event.data.type === "string"
+      (event.data as Record<string, unknown>).token ===
+        oneTimeWindowMessageToken &&
+      typeof (event.data as Record<string, unknown>).type === "string"
     ) {
       let message = undefined;
       try {
@@ -467,9 +474,6 @@ export default class WorkerProgram {
           });
           break;
         }
-
-        default:
-          unreachable(message.type, message);
       }
     }
   }
@@ -483,7 +487,7 @@ export default class WorkerProgram {
   // shortcut without causing side-effects. This feels like a common thing, so
   // (at least for now) the extension shortcuts always do their thing (making it
   // impossible to trigger a site shortcut using the same keys).
-  onKeydown(event: KeyboardEvent) {
+  onKeydown(event: KeyboardEvent): void {
     const prefix = "WorkerProgram#onKeydown";
 
     if (!event.isTrusted) {
@@ -591,7 +595,7 @@ export default class WorkerProgram {
     }
   }
 
-  onKeyup(event: KeyboardEvent) {
+  onKeyup(event: KeyboardEvent): void {
     const prefix = "WorkerProgram#onKeyup";
 
     if (!event.isTrusted) {
@@ -613,7 +617,7 @@ export default class WorkerProgram {
     }
   }
 
-  onMutation(records: Array<MutationRecord>) {
+  onMutation(records: Array<MutationRecord>): void {
     const { current } = this;
     if (current == null) {
       return;
@@ -638,7 +642,7 @@ export default class WorkerProgram {
     }
   }
 
-  onPageHide(event: Event) {
+  onPageHide(event: Event): void {
     if (!event.isTrusted) {
       log("log", "WorkerProgram#onPageHide", "ignoring untrusted event", event);
       return;
@@ -650,13 +654,12 @@ export default class WorkerProgram {
     }
   }
 
-  onPageShow(event: Event) {
+  onPageShow(event: PageTransitionEvent): void {
     if (!event.isTrusted) {
       log("log", "WorkerProgram#onPageShow", "ignoring untrusted event", event);
       return;
     }
 
-    // $FlowIgnore: Flow doesn't know about `PageTransitionEvent` yet.
     if (event.persisted) {
       // We have returned to the page via the back/forward buttons.
       this.sendMessage({ type: "PersistedPageShow" });
@@ -681,7 +684,7 @@ export default class WorkerProgram {
     return Array.from(elements);
   }
 
-  getElement(index: number): ?VisibleElement {
+  getElement(index: number): VisibleElement | undefined {
     return this.current == null ? undefined : this.current.elements[index];
   }
 
@@ -689,27 +692,29 @@ export default class WorkerProgram {
     types: ElementTypes,
     viewports: Array<Box>,
     oneTimeWindowMessageToken: string
-  ) {
+  ): void {
     const time = new TimeTracker();
 
     const [elementsWithNulls, timeLeft]: [
-      Array<?VisibleElement>,
+      Array<VisibleElement | undefined>,
       number
     ] = this.elementManager.getVisibleElements(types, viewports, time);
-    const elements = elementsWithNulls.filter(
-      (elementData) => elementData != null
+    const elements = elementsWithNulls.flatMap((elementData) =>
+      elementData == null ? [] : elementData
     );
 
     time.start("frames");
     const frames = this.elementManager.getVisibleFrames(viewports);
     for (const frame of frames) {
-      const message: FrameMessage = {
-        type: "FindElements",
-        token: oneTimeWindowMessageToken,
-        types,
-        viewports: viewports.concat(getFrameViewport(frame)),
-      };
-      frame.contentWindow.postMessage(message, "*");
+      if (frame.contentWindow !== null) {
+        const message: FrameMessage = {
+          type: "FindElements",
+          token: oneTimeWindowMessageToken,
+          types,
+          viewports: viewports.concat(getFrameViewport(frame)),
+        };
+        frame.contentWindow.postMessage(message, "*");
+      }
     }
 
     time.start("element reports");
@@ -740,11 +745,11 @@ export default class WorkerProgram {
     current,
     oneTimeWindowMessageToken,
   }: {
-    current: CurrentElements,
-    oneTimeWindowMessageToken: ?string,
-  }) {
+    current: CurrentElements;
+    oneTimeWindowMessageToken: string | undefined;
+  }): void {
     const [elements, timeLeft]: [
-      Array<?VisibleElement>,
+      Array<VisibleElement | undefined>,
       number
     ] = this.elementManager.getVisibleElements(
       current.types,
@@ -775,17 +780,18 @@ export default class WorkerProgram {
     const rects =
       words.length === 0
         ? []
-        : elements
-            .filter((_elementData, index) => current.indexes.includes(index))
-            .filter(Boolean)
-            .flatMap(({ element, type }) =>
-              getTextRectsHelper({
-                element,
-                type,
-                viewports: current.viewports,
-                words: wordsSet,
-              })
-            );
+        : elements.flatMap((maybeItem, index) => {
+            if (maybeItem === undefined || current.indexes.includes(index)) {
+              return [];
+            }
+            const { element, type } = maybeItem;
+            return getTextRectsHelper({
+              element,
+              type,
+              viewports: current.viewports,
+              words: wordsSet,
+            });
+          });
 
     const elementReports = makeElementReports(elements, {
       maxDuration: timeLeft,
@@ -801,7 +807,7 @@ export default class WorkerProgram {
 
   // Let the tutorial page know that Link Hints is installed, so it can toggle
   // some content.
-  markTutorial() {
+  markTutorial(): void {
     if (
       window.location.origin + window.location.pathname === META_TUTORIAL ||
       (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) != null)
@@ -891,7 +897,7 @@ function wrapMessage(message: FromWorker): ToBackground {
   };
 }
 
-function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {
+function getFrameViewport(frame: HTMLFrameElement | HTMLIFrameElement): Box {
   const rect = frame.getBoundingClientRect();
   const computedStyle = window.getComputedStyle(frame);
   const border = {
@@ -918,7 +924,7 @@ function getFrameViewport(frame: HTMLIFrameElement | HTMLFrameElement): Box {
 
 // Focus any element. Temporarily alter tabindex if needed, and properly
 // restore it again when blurring.
-function focusElement(element: HTMLElement) {
+function focusElement(element: HTMLElement): void {
   const focusable = isFocusable(element);
   const tabIndexAttr = element.getAttribute("tabindex");
 
@@ -931,7 +937,7 @@ function focusElement(element: HTMLElement) {
   if (!focusable) {
     let tabIndexChanged = false;
 
-    const stop = () => {
+    const stop = (): void => {
       element.removeEventListener("blur", stop, options);
       mutationObserver.disconnect();
 
@@ -1058,7 +1064,7 @@ function isTextInput(element: HTMLElement): boolean {
   );
 }
 
-function reverseSelection(selection: Selection) {
+function reverseSelection(selection: Selection): void {
   const direction = getSelectionDirection(selection);
 
   if (direction == null) {
@@ -1077,7 +1083,7 @@ function reverseSelection(selection: Selection) {
 }
 
 // true → forward, false → backward, undefined → unknown
-function getSelectionDirection(selection: Selection): ?boolean {
+function getSelectionDirection(selection: Selection): boolean | undefined {
   if (selection.isCollapsed) {
     return undefined;
   }
@@ -1140,7 +1146,7 @@ function getTextWeight(text: string, weight: number): number {
   return Math.max(1, text.replace(/\s/g, "").length + Math.log10(weight));
 }
 
-function suppressEvent(event: Event) {
+function suppressEvent(event: Event): void {
   event.preventDefault();
   // `event.stopPropagation()` prevents the event from propagating further
   // up and down the DOM tree. `event.stopImmediatePropagation()` also
@@ -1152,8 +1158,8 @@ function suppressEvent(event: Event) {
   // https://stackoverflow.com/a/34008999/2010616
   // Instead, temporarily remove all accesskeys.
   if (BROWSER === "chrome") {
-    const elements = document.querySelectorAll("[accesskey]");
-    const accesskeyMap: Map<HTMLElement, string> = new Map();
+    const elements = document.querySelectorAll<HTMLElement>("[accesskey]");
+    const accesskeyMap = new Map<HTMLElement, string>();
     for (const element of elements) {
       const accesskey = element.getAttribute("accesskey");
       if (accesskey != null) {
@@ -1170,21 +1176,19 @@ function suppressEvent(event: Event) {
 }
 
 function makeElementReports(
-  elements: Array<?VisibleElement>,
-  { maxDuration, prefix }: { maxDuration: number, prefix: string }
+  elements: Array<VisibleElement | undefined>,
+  { maxDuration, prefix }: { maxDuration: number; prefix: string }
 ): Array<ElementReport> {
   const startTime = Date.now();
 
-  const elementReports = elements
-    .map((elementData, index) =>
-      elementData != null
-        ? visibleElementToElementReport(elementData, {
-            index,
-            textContent: Date.now() - startTime > maxDuration,
-          })
-        : undefined
-    )
-    .filter(Boolean);
+  const elementReports = elements.flatMap((elementData, index) =>
+    elementData != null
+      ? visibleElementToElementReport(elementData, {
+          index,
+          textContent: Date.now() - startTime > maxDuration,
+        })
+      : []
+  );
 
   const skipped = elementReports.filter((report) => report.textContent);
   if (skipped.length > 0) {
@@ -1205,10 +1209,10 @@ function makeElementReports(
 
 function visibleElementToElementReport(
   { element, type, measurements, hasClickListener }: VisibleElement,
-  { index, textContent }: { index: number, textContent: boolean }
+  { index, textContent }: { index: number; textContent: boolean }
 ): ElementReport {
   const text = textContent
-    ? element.textContent
+    ? element.textContent ?? ""
     : extractTextHelper(element, type);
   return {
     type,
@@ -1233,7 +1237,7 @@ function visibleElementToElementReport(
 function updateElementsWithEqualOnes(
   current: CurrentElements,
   newElements: Array<HTMLElement>
-) {
+): void {
   if (newElements.length === 0) {
     return;
   }
@@ -1291,11 +1295,11 @@ export function getTextRectsHelper({
   words,
   checkElementAtPoint,
 }: {
-  element: HTMLElement,
-  type: ElementType,
-  viewports: Array<Box>,
-  words: Set<string>,
-  checkElementAtPoint?: boolean,
+  element: HTMLElement;
+  type: ElementType;
+  viewports: Array<Box>;
+  words: Set<string>;
+  checkElementAtPoint?: boolean;
 }): Array<Box> {
   // See `extractTextHelper`.
   if (type === "scrollable") {
@@ -1351,16 +1355,17 @@ function firefoxPopupBlockerWorkaround({
   element,
   isPinned,
 }: {
-  element: HTMLElement,
-  isPinned: boolean,
+  element: HTMLElement;
+  isPinned: boolean;
 }): () => {
-  pagePreventedDefault: ?boolean,
-  urlsToOpenInNewTabs: Array<string>,
+  pagePreventedDefault: boolean | undefined;
+  urlsToOpenInNewTabs: Array<string>;
 } {
   const prefix = "firefoxPopupBlockerWorkaround";
+  const { wrappedJSObject } = window;
 
   // In the Options page, `window.wrappedJSObject` does not exist.
-  if (window.wrappedJSObject == null) {
+  if (wrappedJSObject === undefined) {
     log("log", prefix, "No window.wrappedJSObject");
     return () => ({
       pagePreventedDefault: undefined,
@@ -1369,14 +1374,14 @@ function firefoxPopupBlockerWorkaround({
   }
 
   const resets = new Resets();
-  let linkUrl = undefined;
+  let linkUrl: string | undefined = undefined;
 
   // If the link has `target="_blank"` (or the pinned tab stuff is true), then
   // `event.preventDefault()` must _always_ be called, no matter what. Either
   // the page or ourselves will do it. We have to wait doing it ourselves for as
   // long as possible, though, to be able to detect `return false` from inline
   // listeners.
-  let defaultPrevented: "NotPrevented" | "ByPage" | "ByUs" = "NotPrevented";
+  let defaultPrevented: "ByPage" | "ByUs" | "NotPrevented" = "NotPrevented";
 
   // Returns `element` if it is a link, or its first parent that is a link (if
   // any). Clicking on an element inside a link also activates the link.
@@ -1395,16 +1400,21 @@ function firefoxPopupBlockerWorkaround({
     // Default to opening this link in a new tab.
     linkUrl = link.href;
 
-    const override = (method, fn) => {
-      const { prototype } = window.wrappedJSObject.Event;
+    const override = (
+      method: "preventDefault" | "stopImmediatePropagation",
+      fn: (original: AnyFunction) => AnyFunction
+    ): (() => void) => {
+      const { prototype } = wrappedJSObject.Event;
       const original = prototype[method];
-      exportFunction(fn(original), prototype, { defineAs: method });
+      exportFunction(fn(original as AnyFunction), prototype, {
+        defineAs: method,
+      });
       return () => {
         prototype[method] = original;
       };
     };
 
-    const onPagePreventDefault = () => {
+    const onPagePreventDefault = (): void => {
       defaultPrevented = "ByPage";
       // If the page prevents the default action, it does not want the link
       // opened at all, so clear out `linkUrl`.
@@ -1435,8 +1445,8 @@ function firefoxPopupBlockerWorkaround({
           addEventListener(
             target,
             "click",
-            // eslint-disable-next-line no-loop-func
-            (event) => {
+            // eslint-disable-next-line @typescript-eslint/no-loop-func
+            (event: Event) => {
               // We’re already done – just skip remaining listeners.
               if (defaultPrevented !== "NotPrevented") {
                 return;
@@ -1504,8 +1514,7 @@ function firefoxPopupBlockerWorkaround({
       override(
         "stopImmediatePropagation",
         (originalStopImmediatePropagation) =>
-          function stopImmediatePropagation(): unknown {
-            /* eslint-disable babel/no-invalid-this */
+          function stopImmediatePropagation(this: Event): unknown {
             // We’re already done – just skip remaining listeners.
             if (defaultPrevented !== "NotPrevented") {
               return originalStopImmediatePropagation.call(this);
@@ -1540,7 +1549,7 @@ function firefoxPopupBlockerWorkaround({
               override(
                 "preventDefault",
                 (originalPreventDefault) =>
-                  function preventDefault(): unknown {
+                  function preventDefault(this: Event): unknown {
                     log(
                       "log",
                       prefix,
@@ -1554,7 +1563,6 @@ function firefoxPopupBlockerWorkaround({
             );
 
             return originalStopImmediatePropagation.call(this);
-            /* eslint-enable babel/no-invalid-this */
           }
       )
     );
@@ -1565,9 +1573,10 @@ function firefoxPopupBlockerWorkaround({
   // Temporarily override `window.open`. (If the page has overridden
   // `window.open` to something completely different, this breaks down a little.
   // Hopefully that’s rare.)
-  const originalOpen = window.wrappedJSObject.open;
+  const originalOpen = wrappedJSObject.open;
   exportFunction(
     function open(
+      this: Window,
       url: unknown,
       target: unknown,
       features: unknown,
@@ -1578,8 +1587,8 @@ function firefoxPopupBlockerWorkaround({
       // throw we simply don’t continue.
       // (If using just `String` rather than `window.wrappedJSObject.String`,
       // the errors would not show up in the console.)
-      const toString = window.wrappedJSObject.String;
-      const urlString = toString(url);
+      const toString = wrappedJSObject.String;
+      const urlString: string = toString(url);
       const targetString = toString(target);
       toString(features);
 
@@ -1604,7 +1613,7 @@ function firefoxPopupBlockerWorkaround({
         return null;
       }
 
-      // eslint-disable-next-line babel/no-invalid-this
+      // @ts-expect-error Intentionally passing on the original, possibly invalid, arguments.
       return originalOpen.call(this, url, target, features, ...args);
     },
     window.wrappedJSObject,
@@ -1613,7 +1622,7 @@ function firefoxPopupBlockerWorkaround({
 
   return () => {
     resets.reset();
-    window.wrappedJSObject.open = originalOpen;
+    wrappedJSObject.open = originalOpen;
 
     const result = {
       pagePreventedDefault: shouldWorkaroundLinks
@@ -1633,7 +1642,7 @@ function firefoxPopupBlockerWorkaround({
 function* getAllEventTargetsUpwards(
   fromNode: Node
 ): Generator<EventTarget, void, void> {
-  let node = fromNode;
+  let node: Node = fromNode;
   do {
     yield node;
     const parent = node.parentNode;
@@ -1641,7 +1650,9 @@ function* getAllEventTargetsUpwards(
       yield parent;
       node = parent.host;
     } else {
-      node = parent;
+      // `parent` can be `null` here. That will end the loop. But at the start
+      // of the loop we know that `node` is never `null`.
+      node = parent as Node;
     }
   } while (node != null);
   yield window;
@@ -1659,14 +1670,14 @@ function stripHash(url: string): string {
   return index === -1 ? url : url.slice(0, index);
 }
 
-function flashElement(element: HTMLElement) {
+function flashElement(element: HTMLElement): void {
   const selector = t.FLASH_COPIED_ELEMENT_NO_INVERT_SELECTOR.value;
   const changes = [
     temporarilySetFilter(
       element,
       element.matches(selector) ? "contrast(0.5)" : "invert(0.75)"
     ),
-    ...Array.from(element.querySelectorAll(selector), (image) =>
+    ...Array.from(element.querySelectorAll<HTMLElement>(selector), (image) =>
       temporarilySetFilter(image, "invert(1)")
     ),
   ];
@@ -1683,7 +1694,7 @@ function flashElement(element: HTMLElement) {
 function temporarilySetFilter(
   element: HTMLElement,
   value: string
-): { apply: () => void, reset: () => void } {
+): { apply: () => void; reset: () => void } {
   const prop = "filter";
   const originalValue = element.style.getPropertyValue(prop);
   const important = element.style.getPropertyPriority(prop);

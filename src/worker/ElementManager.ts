@@ -8,9 +8,9 @@ import type {
   VisibleElement,
 } from "../shared/hints";
 import {
-  Box,
   addEventListener,
   bind,
+  Box,
   getElementFromPoint,
   getElementsFromPoint,
   getLabels,
@@ -34,13 +34,13 @@ import {
   unsignedInt,
 } from "../shared/tweakable";
 import injected, {
-  FromInjected,
   CLICKABLE_CHANGED_EVENT,
   CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
   CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
   FLUSH_EVENT,
+  FromInjected,
   OPEN_SHADOW_ROOT_CREATED_EVENT,
   QUEUE_EVENT,
   REGISTER_SECRET_ELEMENT_EVENT,
@@ -137,8 +137,8 @@ export const t = {
         // Firefox does not allow opening `file://` URLs in new tabs, but Chrome
         // does. Both allow _clicking_ them.
         // See: <https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create>
-        BROWSER === "chrome" ? "file:" : undefined,
-      ].filter(Boolean)
+        BROWSER === "chrome" ? "file:" : "",
+      ].filter((string) => string !== "")
     )
   ),
 
@@ -215,49 +215,48 @@ export const t = {
 export const tMeta = tweakable("ElementManager", t);
 
 type Rejected = {
-  isRejected: true,
+  isRejected: true;
   debug: {
-    reason: string,
-    [string]: unknown,
-    ...
-  },
+    reason: string;
+    [key: string]: unknown;
+  };
 };
 
 type Record = {
-  addedNodes: Array<Node> | NodeList<Node>,
-  removedNodes: Array<Node> | NodeList<Node>,
-  attributeName: ?string,
-  target: Node,
+  addedNodes: Array<Node> | NodeListOf<Node>;
+  removedNodes: Array<Node> | NodeListOf<Node>;
+  attributeName: string | null;
+  target: Node;
 };
 
 type QueueItem =
   | {
-      type: "Records",
-      records: Array<MutationRecord> | Array<Record>,
-      recordIndex: number,
-      addedNodeIndex: number,
-      removedNodeIndex: number,
-      childIndex: number,
-      children: ?NodeList<HTMLElement>,
-      removalsOnly: boolean,
+      type: "ClickableChanged";
+      target: EventTarget;
+      clickable: boolean;
     }
   | {
-      type: "ClickableChanged",
-      target: EventTarget,
-      clickable: boolean,
+      type: "OverflowChanged";
+      target: EventTarget;
     }
   | {
-      type: "OverflowChanged",
-      target: EventTarget,
+      type: "Records";
+      records: Array<MutationRecord> | Array<Record>;
+      recordIndex: number;
+      addedNodeIndex: number;
+      removedNodeIndex: number;
+      childIndex: number;
+      children: NodeListOf<HTMLElement> | undefined;
+      removalsOnly: boolean;
     };
 
-type MutationType = "added" | "removed" | "changed";
+type MutationType = "added" | "changed" | "removed";
 
 type ShadowRootData = {
-  shadowRoot: ShadowRoot,
-  mutationObserver: MutationObserver,
-  resets: Resets,
-  active: boolean,
+  shadowRoot: ShadowRoot;
+  mutationObserver: MutationObserver;
+  resets: Resets;
+  active: boolean;
 };
 
 type Deadline = { timeRemaining: () => number };
@@ -267,20 +266,33 @@ const infiniteDeadline: Deadline = {
 };
 
 export default class ElementManager {
-  onMutationExternal: (Array<MutationRecord>) => unknown;
+  onMutationExternal: (records: Array<MutationRecord>) => unknown;
+
   queue: Queue<QueueItem> = makeEmptyQueue();
-  injectedHasQueue: boolean = false;
-  injectedListeners: Map<string, Array<() => unknown>> = new Map();
-  elements: Map<HTMLElement, ElementType> = new Map();
-  visibleElements: Set<HTMLElement> = new Set();
-  visibleFrames: Set<HTMLIFrameElement | HTMLFrameElement> = new Set();
-  elementsWithClickListeners: WeakSet<HTMLElement> = new WeakSet();
-  elementsWithScrollbars: WeakSet<HTMLElement> = new WeakSet();
-  shadowRoots: WeakMap<Element, ShadowRootData> = new WeakMap();
-  idleCallbackId: ?IdleCallbackID = undefined;
-  bailed: boolean = false;
-  secretElementResets: Resets = new Resets();
-  resets: Resets = new Resets();
+
+  injectedHasQueue = false;
+
+  injectedListeners = new Map<string, Array<() => unknown>>();
+
+  elements = new Map<HTMLElement, ElementType>();
+
+  visibleElements = new Set<HTMLElement>();
+
+  visibleFrames = new Set<HTMLFrameElement | HTMLIFrameElement>();
+
+  elementsWithClickListeners = new WeakSet<HTMLElement>();
+
+  elementsWithScrollbars = new WeakSet<HTMLElement>();
+
+  shadowRoots = new WeakMap<Element, ShadowRootData>();
+
+  idleCallbackId: IdleCallbackID | undefined = undefined;
+
+  bailed = false;
+
+  secretElementResets = new Resets();
+
+  resets = new Resets();
 
   intersectionObserver: IntersectionObserver = new IntersectionObserver(
     this.onIntersection.bind(this)
@@ -301,7 +313,7 @@ export default class ElementManager {
   constructor({
     onMutation,
   }: {
-    onMutation: (Array<MutationRecord>) => unknown,
+    onMutation: (records: Array<MutationRecord>) => unknown;
   }) {
     this.onMutationExternal = onMutation;
 
@@ -315,7 +327,7 @@ export default class ElementManager {
     ]);
   }
 
-  async start() {
+  async start(): Promise<void> {
     const { documentElement } = document;
     if (documentElement == null) {
       return;
@@ -370,7 +382,7 @@ export default class ElementManager {
       {
         addedNodes: [documentElement],
         removedNodes: [],
-        attributeName: undefined,
+        attributeName: null,
         target: documentElement,
       },
     ];
@@ -381,7 +393,7 @@ export default class ElementManager {
     }
   }
 
-  stop() {
+  stop(): void {
     if (this.idleCallbackId != null) {
       cancelIdleCallback(this.idleCallbackId);
     }
@@ -392,7 +404,7 @@ export default class ElementManager {
     this.removalObserver.disconnect();
     this.queue = makeEmptyQueue();
     this.injectedHasQueue = false;
-    this.injectedListeners = new Map();
+    this.injectedListeners = new Map<string, Array<() => unknown>>();
     this.elements.clear();
     this.visibleElements.clear();
     this.visibleFrames.clear();
@@ -409,7 +421,7 @@ export default class ElementManager {
   // Stop using the intersection observer for everything except frames. The
   // reason to still track frames is because it saves more than half a second
   // when generating hints on the single-page HTML specification.
-  bail() {
+  bail(): void {
     if (this.bailed) {
       return;
     }
@@ -428,7 +440,7 @@ export default class ElementManager {
     );
   }
 
-  injectScript() {
+  injectScript(): void {
     // Neither Chrome nor Firefox allow inline scripts in the options page. It’s
     // not needed there anyway.
     if (window.location.protocol.endsWith("-extension:")) {
@@ -471,7 +483,7 @@ export default class ElementManager {
   }
 
   *getAllElements(
-    node: HTMLElement | Document | ShadowRoot
+    node: Document | HTMLElement | ShadowRoot
   ): Generator<HTMLElement, void, void> {
     const children =
       node instanceof ShadowRoot
@@ -481,7 +493,7 @@ export default class ElementManager {
           node.getElementsByTagName("*");
 
     for (const child of children) {
-      yield child;
+      yield child as HTMLElement;
 
       const root = this.shadowRoots.get(child);
       if (root != null) {
@@ -490,8 +502,7 @@ export default class ElementManager {
     }
   }
 
-  getActiveElement(node: Document | ShadowRoot): ?HTMLElement {
-    // $FlowIgnore: Flow doesn’t know about `.activeElement` on `ShadowRoot` yet.
+  getActiveElement(node: Document | ShadowRoot): HTMLElement | undefined {
     const { activeElement } = node;
     if (activeElement == null) {
       return undefined;
@@ -500,10 +511,10 @@ export default class ElementManager {
     if (root != null) {
       return this.getActiveElement(root.shadowRoot);
     }
-    return activeElement;
+    return activeElement as HTMLElement;
   }
 
-  queueItem(item: QueueItem) {
+  queueItem(item: QueueItem): void {
     this.queue.items.push(item);
     this.requestIdleCallback();
   }
@@ -511,7 +522,7 @@ export default class ElementManager {
   queueRecords(
     records: Array<MutationRecord> | Array<Record>,
     { removalsOnly = false }: { removalsOnly?: boolean } = {}
-  ) {
+  ): void {
     if (records.length > 0) {
       this.queueItem({
         type: "Records",
@@ -526,7 +537,7 @@ export default class ElementManager {
     }
   }
 
-  requestIdleCallback() {
+  requestIdleCallback(): void {
     if (this.idleCallbackId == null) {
       this.idleCallbackId = requestIdleCallback((deadline) => {
         this.idleCallbackId = undefined;
@@ -535,17 +546,17 @@ export default class ElementManager {
     }
   }
 
-  onIntersection(entries: Array<IntersectionObserverEntry>) {
+  onIntersection(entries: Array<IntersectionObserverEntry>): void {
     for (const entry of entries) {
       if (entry.isIntersecting) {
-        this.visibleElements.add(entry.target);
+        this.visibleElements.add(entry.target as HTMLElement);
       } else {
-        this.visibleElements.delete(entry.target);
+        this.visibleElements.delete(entry.target as HTMLElement);
       }
     }
   }
 
-  onFrameIntersection(entries: Array<IntersectionObserverEntry>) {
+  onFrameIntersection(entries: Array<IntersectionObserverEntry>): void {
     for (const entry of entries) {
       const element = entry.target;
       if (
@@ -561,7 +572,7 @@ export default class ElementManager {
     }
   }
 
-  onMutation(records: Array<MutationRecord>) {
+  onMutation(records: Array<MutationRecord>): void {
     if (records.length > 0) {
       this.queueRecords(records);
       this.observeRemovals(records);
@@ -569,7 +580,7 @@ export default class ElementManager {
     }
   }
 
-  onRemoval(records: Array<MutationRecord>) {
+  onRemoval(records: Array<MutationRecord>): void {
     this.queueRecords(records, {
       // Ignore added nodes and changed attributes.
       removalsOnly: true,
@@ -595,7 +606,7 @@ export default class ElementManager {
   // MutationObservers don’t have an `.unobserve` method, so all of these are
   // unsubscribed in bulk when `this.queue` is emptied by calling
   // `.disconnect()`.
-  observeRemovals(records: Array<MutationRecord>) {
+  observeRemovals(records: Array<MutationRecord>): void {
     for (const record of records) {
       for (const node of record.removedNodes) {
         this.removalObserver.observe(node, {
@@ -606,7 +617,7 @@ export default class ElementManager {
     }
   }
 
-  onClickableChanged(event: CustomEvent) {
+  onClickableChanged(event: CustomEvent): void {
     this.onInjectedMessage({
       type: "ClickableChanged",
       target: getTarget(event),
@@ -614,11 +625,11 @@ export default class ElementManager {
     });
   }
 
-  onInjectedQueue(event: CustomEvent) {
+  onInjectedQueue(event: CustomEvent): void {
     this.onInjectedMessage({ type: "Queue", hasQueue: Boolean(event.detail) });
   }
 
-  onOpenShadowRootCreated(event: CustomEvent) {
+  onOpenShadowRootCreated(event: CustomEvent): void {
     const target = getTarget(event);
     if (target instanceof HTMLElement) {
       const { shadowRoot } = target;
@@ -629,7 +640,7 @@ export default class ElementManager {
     }
   }
 
-  onClosedShadowRootCreated(event: CustomEvent) {
+  onClosedShadowRootCreated(event: CustomEvent): void {
     const target = getTarget(event);
     if (target instanceof HTMLElement) {
       // Closed shadow roots are reported in two phases. First, a temporary
@@ -662,7 +673,7 @@ export default class ElementManager {
     }
   }
 
-  onRegisterSecretElement(event: CustomEvent) {
+  onRegisterSecretElement(event: CustomEvent): void {
     const target = getTarget(event);
     if (target instanceof HTMLElement) {
       log("log", "ElementManager#onRegisterSecretElement", target);
@@ -687,12 +698,12 @@ export default class ElementManager {
     }
   }
 
-  onOverflowChange(event: UIEvent) {
+  onOverflowChange(event: UIEvent): void {
     const target = getTarget(event);
     this.queueItem({ type: "OverflowChanged", target });
   }
 
-  onInjectedMessage(message: FromInjected) {
+  onInjectedMessage(message: FromInjected): void {
     switch (message.type) {
       case "ClickableChanged":
         this.queueItem(message);
@@ -705,20 +716,17 @@ export default class ElementManager {
       case "Queue":
         this.injectedHasQueue = message.hasQueue;
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
-  addEventListener(eventName: string, fn: () => unknown) {
-    const previous = this.injectedListeners.get(eventName) || [];
+  addEventListener(eventName: string, fn: () => unknown): void {
+    const previous = this.injectedListeners.get(eventName) ?? [];
     this.injectedListeners.set(eventName, previous.concat(fn));
   }
 
-  sendInjectedEvent(eventName: string) {
+  sendInjectedEvent(eventName: string): void {
     if (BROWSER === "firefox") {
-      const listeners = this.injectedListeners.get(eventName) || [];
+      const listeners = this.injectedListeners.get(eventName) ?? [];
       for (const listener of listeners) {
         listener();
       }
@@ -727,7 +735,7 @@ export default class ElementManager {
     }
   }
 
-  setShadowRoot(shadowRoot: ShadowRoot) {
+  setShadowRoot(shadowRoot: ShadowRoot): void {
     // MutationObservers don’t have an `.unobserve` method, so each shadow root
     // has its own MutationObserver, which can be `.disconnect()`:ed when hosts
     // are removed.
@@ -759,7 +767,7 @@ export default class ElementManager {
         {
           addedNodes: childNodes,
           removedNodes: [],
-          attributeName: undefined,
+          attributeName: null,
           target: shadowRoot,
         },
       ];
@@ -772,7 +780,7 @@ export default class ElementManager {
   // the page. If so, we need access to closed shadow roots again. Since
   // `this.shadowRoots` is a `WeakMap`, items should disappear from it
   // automatically as the host elements are garbage collected.
-  deactivateShadowRoot(root: ShadowRootData) {
+  deactivateShadowRoot(root: ShadowRootData): void {
     root.mutationObserver.disconnect();
     root.resets.reset();
     root.active = false;
@@ -783,7 +791,7 @@ export default class ElementManager {
         {
           addedNodes: [],
           removedNodes: childNodes,
-          attributeName: undefined,
+          attributeName: null,
           target: root.shadowRoot,
         },
       ];
@@ -791,7 +799,7 @@ export default class ElementManager {
     }
   }
 
-  addOrRemoveElement(mutationType: MutationType, element: HTMLElement) {
+  addOrRemoveElement(mutationType: MutationType, element: HTMLElement): void {
     if (
       element instanceof HTMLIFrameElement ||
       element instanceof HTMLFrameElement
@@ -887,7 +895,7 @@ export default class ElementManager {
     }
   }
 
-  flushQueue(deadline: Deadline) {
+  flushQueue(deadline: Deadline): void {
     const startQueueIndex = this.queue.index;
 
     log(
@@ -1104,9 +1112,6 @@ export default class ElementManager {
           }
           break;
         }
-
-        default:
-          unreachable(item.type, item);
       }
     }
 
@@ -1120,7 +1125,7 @@ export default class ElementManager {
     viewports: Array<Box>,
     time: TimeTracker,
     passedCandidates?: Array<HTMLElement>
-  ): [Array<?VisibleElement>, number] {
+  ): [Array<VisibleElement | undefined>, number] {
     const startTime = Date.now();
 
     const isUpdate = passedCandidates != null;
@@ -1161,7 +1166,7 @@ export default class ElementManager {
     const range = document.createRange();
     const deduper = new Deduper();
 
-    const maybeResults: Array<VisibleElement | Rejected> = Array.from(
+    const maybeResults: Array<Rejected | VisibleElement> = Array.from(
       candidates,
       (element) => {
         time.start("loop:start");
@@ -1179,7 +1184,7 @@ export default class ElementManager {
           };
         }
 
-        const type: ?ElementType =
+        const type: ElementType | undefined =
           types === "selectable"
             ? this.getElementTypeSelectable(element)
             : this.elements.get(element);
@@ -1230,7 +1235,7 @@ export default class ElementManager {
           time
         );
 
-        if (measurements.isRejected) {
+        if ("isRejected" in measurements) {
           return {
             isRejected: true,
             debug: {
@@ -1268,7 +1273,7 @@ export default class ElementManager {
 
     time.start("check duration");
     const slow = maybeResults.filter(
-      (result) => result.isRejected && result.debug.reason === "slow"
+      (result) => "isRejected" in result && result.debug.reason === "slow"
     ).length;
     if (slow > 0) {
       log("warn", prefix, `Skipped ${slow} element(s) due to timeout`, {
@@ -1279,7 +1284,7 @@ export default class ElementManager {
 
     time.start("filter");
     const results = maybeResults.map((result) =>
-      result.isRejected || deduper.rejects(result) ? undefined : result
+      "isRejected" in result || deduper.rejects(result) ? undefined : result
     );
 
     const timeLeft = t.MAX_DURATION.value - (Date.now() - startTime);
@@ -1288,17 +1293,17 @@ export default class ElementManager {
 
   getVisibleFrames(
     viewports: Array<Box>
-  ): Array<HTMLIFrameElement | HTMLFrameElement> {
+  ): Array<HTMLFrameElement | HTMLIFrameElement> {
     // In theory this might need flushing, but in practice this method is always
     // called _after_ `getVisibleElements`, so everything should already be
     // flushed.
-    return Array.from(this.visibleFrames, (element) => {
+    return Array.from(this.visibleFrames).flatMap((element) => {
       if (
         // Needed on reddit.com. There's a Google Ads iframe where
         // `contentWindow` is null.
         element.contentWindow == null
       ) {
-        return undefined;
+        return [];
       }
 
       const box = getVisibleBox(element.getBoundingClientRect(), viewports);
@@ -1311,7 +1316,7 @@ export default class ElementManager {
         box.width < t.MIN_SIZE_FRAME.value ||
         box.height < t.MIN_SIZE_FRAME.value
       ) {
-        return undefined;
+        return [];
       }
 
       const elementsAtPoint = getElementsFromPoint(
@@ -1325,14 +1330,14 @@ export default class ElementManager {
       // covered at different spots, but we can’t know if those spots cover
       // links or not.
       if (!elementsAtPoint.includes(element)) {
-        return undefined;
+        return [];
       }
 
       return element;
-    }).filter(Boolean);
+    });
   }
 
-  getElementType(element: HTMLElement): ?ElementType {
+  getElementType(element: HTMLElement): ElementType | undefined {
     if (isDisabled(element)) {
       return undefined;
     }
@@ -1429,7 +1434,7 @@ export default class ElementManager {
     }
   }
 
-  getElementTypeSelectable(element: HTMLElement): ?ElementType {
+  getElementTypeSelectable(element: HTMLElement): ElementType | undefined {
     // A shadow host element usually has 0 children, but it _can_ have children,
     // although they are never displayed. So it never makes sense to consider
     // shadow hosts selectable.
@@ -1492,9 +1497,9 @@ export default class ElementManager {
 }
 
 type Queue<T> = {
-  items: Array<T>,
-  index: number,
-  addedElements: Set<HTMLElement>,
+  items: Array<T>;
+  index: number;
+  addedElements: Set<HTMLElement>;
 };
 
 function makeEmptyQueue<T>(): Queue<T> {
@@ -1509,10 +1514,11 @@ function makeEmptyQueue<T>(): Queue<T> {
 // (`<label>`–`<input>` pairs) or hints that are most likely false positives
 // (`<div>`s with click listeners wrapping a `<button>`).
 class Deduper {
-  positionMap: Map<string, Array<VisibleElement>> = new Map();
+  positionMap = new Map<string, Array<VisibleElement>>();
+
   rejected: Set<HTMLElement> = new Set();
 
-  add(visibleElement: VisibleElement) {
+  add(visibleElement: VisibleElement): void {
     const { element } = visibleElement;
 
     // Exclude `<label>` elements whose associated control has a hint.
@@ -1630,10 +1636,8 @@ function getMeasurements(
   );
 
   time.start("measurements:visibleBoxes");
-  const visibleBoxes = Array.from(rects, (rect) =>
-    getVisibleBox(rect, viewports)
-  )
-    .filter(Boolean)
+  const visibleBoxes = Array.from(rects)
+    .flatMap((rect) => getVisibleBox(rect, viewports) ?? [])
     // Remove `offsetX` and `offsetY` to turn `x` and `y` back to the coordinate
     // system of the current frame. This is so we can easily make comparisons
     // with other rects of the frame.
@@ -1653,13 +1657,13 @@ function getMeasurements(
       if (rect.width === 0) {
         for (const child of element.children) {
           const measurements = getMeasurements(
-            child,
+            child as HTMLElement,
             elementType,
             viewports,
             range,
             time
           );
-          if (!measurements.isRejected) {
+          if (!("isRejected" in measurements)) {
             return measurements;
           }
         }
@@ -1720,7 +1724,7 @@ function getMeasurements(
         range,
         time
       );
-      return measurements.isRejected
+      return "isRejected" in measurements
         ? {
             ...measurements,
             debug: {
@@ -1779,13 +1783,13 @@ function getSingleRectPoint({
   range,
   time,
 }: {
-  element: HTMLElement,
-  elementType: ElementType,
-  rect: ClientRect,
-  visibleBox: Box,
-  viewports: Array<Box>,
-  range: Range,
-  time: TimeTracker,
+  element: HTMLElement;
+  elementType: ElementType;
+  rect: ClientRect;
+  visibleBox: Box;
+  viewports: Array<Box>;
+  range: Range;
+  time: TimeTracker;
 }): Point {
   // Scrollbars are usually on the right side, so put the hint there, making it
   // easier to see that the hint is for scrolling and reducing overlap.
@@ -1912,11 +1916,11 @@ function getMultiRectPoint({
   range,
   time,
 }: {
-  element: HTMLElement,
-  visibleBoxes: Array<Box>,
-  viewports: Array<Box>,
-  range: Range,
-  time: TimeTracker,
+  element: HTMLElement;
+  visibleBoxes: Array<Box>;
+  viewports: Array<Box>;
+  range: Range;
+  time: TimeTracker;
 }): Point {
   function isAcceptable(point: Point): boolean {
     return visibleBoxes.some((box) => isWithin(point, box));
@@ -1953,7 +1957,7 @@ function getMultiRectPoint({
 function getFirstImagePoint(
   element: HTMLElement,
   viewports: Array<Box>
-): ?{ point: Point, rect: ClientRect } {
+): { point: Point; rect: ClientRect } | undefined {
   const images = [
     // First try to find an image _child._ For example, <button
     // class="icon-button"><img></button>`. (This button should get the hint at
@@ -1975,7 +1979,7 @@ function getFirstImagePoint(
 
     if (visibleBox != null) {
       const borderAndPaddingPoint = getBorderAndPaddingPoint(
-        image,
+        image as HTMLElement,
         rect,
         visibleBox
       );
@@ -2026,8 +2030,8 @@ function getNonCoveredPoint(
     y,
     maxX,
     time,
-  }: { x: number, y: number, maxX: number, time: TimeTracker }
-): ?{ x: number, y: number } {
+  }: { x: number; y: number; maxX: number; time: TimeTracker }
+): { x: number; y: number } | undefined {
   time.start("getNonCoveredPoint:getElementFromPoint");
   const elementAtPoint = getElementFromPoint(element, x, y);
 
@@ -2106,13 +2110,13 @@ function getBestNonEmptyTextPoint({
   preferTextStart = false,
   range,
 }: {
-  element: HTMLElement,
-  elementRect: ClientRect,
-  viewports: Array<Box>,
-  isAcceptable: (Point) => boolean,
-  preferTextStart: boolean,
-  range: Range,
-}): ?Point {
+  element: HTMLElement;
+  elementRect: ClientRect;
+  viewports: Array<Box>;
+  isAcceptable: (point: Point) => boolean;
+  preferTextStart: boolean;
+  range: Range;
+}): Point | undefined {
   const align = "right";
 
   // This goes through _all_ text nodes inside the element. That sounds
@@ -2232,7 +2236,10 @@ function isWithin(point: Point, box: Box): boolean {
 
 function replaceConstants(code: string): string {
   const regex = RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g");
-  return code.replace(regex, (name) => constants[name]);
+  return code.replace(
+    regex,
+    (name) => constants[name as keyof typeof constants]
+  );
 }
 
 function isScrollable(element: HTMLElement): boolean {
@@ -2243,13 +2250,13 @@ function isScrollable(element: HTMLElement): boolean {
   // are Firefox-only as well. Those properties are the easiest way to check if
   // an element overflows in either the X or Y direction.
   return (
-    // $FlowIgnore: See above.
+    // @ts-expect-error See above.
     (element.scrollLeftMax > 0 &&
       (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
         computedStyle.getPropertyValue("overflow-x")
       ) ||
         element === document.scrollingElement)) ||
-    // $FlowIgnore: See above.
+    // @ts-expect-error See above.
     (element.scrollTopMax > 0 &&
       (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
         computedStyle.getPropertyValue("overflow-y")
@@ -2268,16 +2275,16 @@ function hasClickListenerProp(element: HTMLElement): boolean {
   return CLICKABLE_EVENT_PROPS.some((prop) =>
     BROWSER === "chrome"
       ? element.hasAttribute(prop)
-      : // $FlowIgnore: I _do_ want to dynamically read properties here.
-        typeof element[prop] === "function"
+      : typeof element[prop as keyof HTMLElement] === "function"
   );
 }
 
-function getXY(box: Box | ClientRect): { x: number, y: number } {
+function getXY(passedBox: Box | ClientRect): { x: number; y: number } {
+  // Chrome and Firefox _do_ support `.x` and `.y` on ClientRects (aka
+  // DOMRects), but TypeScript does not include them.
+  const box = passedBox as Box;
   return {
-    // $FlowIgnore: Chrome and Firefox _do_ support `.x` and `.y` on ClientRects (aka DOMRects).
     x: box.x,
-    // $FlowIgnore: See above.
     y: box.y + box.height / 2,
   };
 }
@@ -2336,7 +2343,7 @@ function getLinkElementType(element: HTMLAnchorElement): ElementType {
 }
 
 function isDisabled(element: HTMLElement): boolean {
-  // $FlowIgnore: Not all HTMLElements have the `disabled` property, but for performance we don’t check.
+  // @ts-expect-error Not all HTMLElements have the `disabled` property, but for performance we don’t check.
   return element.disabled === true;
 }
 
@@ -2344,12 +2351,11 @@ function isDisabled(element: HTMLElement): boolean {
 // `shadowRoot.host`, while `event.composedPath()[0]` is the actual element that
 // the event came from.
 function getTarget(event: Event): EventTarget {
-  // $FlowIgnore: Flow doesn’t know about `.composedPath()` yet.
   const path = event.composedPath();
-  return path.length > 0 ? path[0] : event.target;
+  return path.length > 0 ? path[0] : (event.target as EventTarget);
 }
 
-function mutationObserve(mutationObserver: MutationObserver, node: Node) {
+function mutationObserve(mutationObserver: MutationObserver, node: Node): void {
   mutationObserver.observe(node, {
     childList: true,
     subtree: true,

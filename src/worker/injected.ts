@@ -1,3 +1,11 @@
+/* eslint-disable
+@typescript-eslint/no-explicit-any,
+@typescript-eslint/no-unsafe-argument,
+@typescript-eslint/no-unsafe-assignment,
+@typescript-eslint/no-unsafe-call,
+@typescript-eslint/no-unsafe-member-access,
+@typescript-eslint/no-unsafe-return,
+*/
 // @flow
 
 import { makeRandomToken } from "../shared/main";
@@ -65,17 +73,20 @@ export const FLUSH_EVENT = `${secretPrefix}Flush`;
 export const RESET_EVENT = `${secretPrefix}Reset`;
 
 export type FromInjected =
-  | { type: "ClickableChanged", target: EventTarget, clickable: boolean }
-  | { type: "ShadowRootCreated", shadowRoot: ShadowRoot }
-  | { type: "Queue", hasQueue: boolean };
+  | { type: "ClickableChanged"; target: EventTarget; clickable: boolean }
+  | { type: "Queue"; hasQueue: boolean }
+  | { type: "ShadowRootCreated"; shadowRoot: ShadowRoot };
 
 export default (communicator?: {
-  +onInjectedMessage: (FromInjected) => unknown,
-  +addEventListener: (string, () => unknown, _?: true) => unknown,
-  ...
-}) => {
+  onInjectedMessage: (message: FromInjected) => unknown;
+  addEventListener: (
+    eventName: string,
+    listenter: () => unknown,
+    _?: true
+  ) => unknown;
+}): void => {
   // Refers to the page `window` both in Firefox and other browsers.
-  const win = BROWSER === "firefox" ? window.wrappedJSObject || window : window;
+  const win = BROWSER === "firefox" ? window.wrappedJSObject ?? window : window;
 
   // These arrays are replaced in by ElementManager; only refer to them once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
@@ -98,7 +109,7 @@ export default (communicator?: {
   const { apply } = Reflect;
   const { get: mapGet } = Map.prototype;
 
-  function logError(...args: Array<unknown>) {
+  function logError(...args: Array<unknown>): void {
     consoleLogError(`[${META_SLUG}]`, ...args);
   }
 
@@ -109,10 +120,11 @@ export default (communicator?: {
   };
 
   class HookManager {
-    fnMap: Map<AnyFunction, AnyFunction> = new Map();
+    fnMap = new Map<AnyFunction, AnyFunction>();
+
     resetFns: Array<AnyFunction> = [];
 
-    reset() {
+    reset(): void {
       // Reset all overridden methods.
       for (const resetFn of this.resetFns) {
         resetFn();
@@ -138,17 +150,20 @@ export default (communicator?: {
     // `hook` is run _after_ the original function. If you need to do something
     // _before_ the original function is called, use a `prehook`.
     hookInto<T>(
-      obj: { [key: string]: unknown },
+      obj: any,
       name: string,
       hook?: (
-        { returnValue: any, prehookData: T | void },
+        data: { returnValue: any; prehookData: T | undefined },
         ...args: Array<any>
       ) => any,
-      prehook?: (...args: Array<any>) => T
-    ) {
-      const descriptor = Reflect.getOwnPropertyDescriptor(obj, name);
+      prehook?: (...args: Array<any>) => T | undefined
+    ): void {
+      const descriptor = Reflect.getOwnPropertyDescriptor(
+        obj,
+        name
+      ) as PropertyDescriptor;
       const prop = "value" in descriptor ? "value" : "set";
-      const originalFn = descriptor[prop];
+      const originalFn = descriptor[prop] as AnyFunction;
 
       const { fnMap } = this;
 
@@ -163,7 +178,7 @@ export default (communicator?: {
                 // _original_ function, not the overriding function.
                 return apply(
                   originalFn,
-                  apply(mapGet, fnMap, [this]) || this,
+                  apply(mapGet, fnMap, [this]) ?? this,
                   args
                 );
               },
@@ -179,7 +194,8 @@ export default (communicator?: {
                 if (prehook != null) {
                   try {
                     prehookData = prehook(this, ...wrappedArgs);
-                  } catch (error) {
+                  } catch (errorAny) {
+                    const error = errorAny as Error;
                     logHookError(error, obj, name);
                   }
                 }
@@ -196,15 +212,16 @@ export default (communicator?: {
                     returnValue = XPCNativeWrapper(
                       apply(originalFn, this, args)
                     );
-                  } catch (error) {
+                  } catch (errorAny) {
+                    const error = errorAny as Error | null | undefined;
                     if (
-                      error &&
+                      error != null &&
                       error.name === "TypeError" &&
                       error.message === "can't access dead object"
                     ) {
                       return undefined;
                     }
-                    throw error;
+                    throw error as Error;
                   }
                 } else {
                   returnValue = apply(originalFn, this, args);
@@ -221,7 +238,7 @@ export default (communicator?: {
                     ...wrappedArgs
                   );
                   if (result != null && typeof result.then === "function") {
-                    result.then(undefined, (error) => {
+                    result.then(undefined, (error: Error) => {
                       logHookError(error, obj, name);
                     });
                   }
@@ -235,8 +252,8 @@ export default (communicator?: {
 
       // Make sure that `.length` is correct. This has to be done _after_
       // `exportFunction`.
-      const setLength = (target) => {
-        Reflect.defineProperty(target, "length", {
+      const setLength = (target: unknown): void => {
+        Reflect.defineProperty(target as any, "length", {
           ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
           value: originalFn.length,
         });
@@ -279,7 +296,7 @@ export default (communicator?: {
     // Make sure that `Function.prototype.toString.call(element.addEventListener)`
     // returns "[native code]". This is used by lodash's `_.isNative`.
     // `.toLocaleString` is automatically taken care of when patching `.toString`.
-    conceal() {
+    conceal(): void {
       // This isn’t needed in Firefox, thanks to `exportFunction`.
       if (BROWSER !== "firefox") {
         this.hookInto(win.Function.prototype, "toString");
@@ -287,11 +304,7 @@ export default (communicator?: {
     }
   }
 
-  function logHookError(
-    error: Error,
-    obj: { [key: string]: unknown },
-    name: string
-  ) {
+  function logHookError(error: Error, obj: any, name: string): void {
     logError(`Failed to run hook for ${name} on`, obj, error);
   }
 
@@ -300,38 +313,41 @@ export default (communicator?: {
   type OptionsSet = Set<string>;
 
   // Changes to event listeners.
-  type QueueItem = QueueItemProp | QueueItemMethod;
+  type QueueItem = QueueItemMethod | QueueItemProp;
 
   // `.onclick` and similar.
   type QueueItemProp = {
-    type: "prop",
-    hadListener: boolean,
-    element: HTMLElement,
+    type: "prop";
+    hadListener: boolean;
+    element: HTMLElement;
   };
 
   // `.addEventListener` and `.removeEventListener`.
   type QueueItemMethod = {
-    type: "method",
-    added: boolean,
-    element: HTMLElement,
-    eventName: string,
-    listener: unknown,
-    options: unknown,
+    type: "method";
+    added: boolean;
+    element: HTMLElement;
+    eventName: string;
+    listener: unknown;
+    options: unknown;
   };
 
   // Elements waiting to be sent to ElementManager.js (in Chrome only).
   type SendQueueItem = {
-    added: boolean,
-    element: HTMLElement,
+    added: boolean;
+    element: HTMLElement;
   };
 
   class ClickListenerTracker {
     clickListenersByElement: ClickListenersByElement = new Map();
-    queue: Queue<QueueItem> = makeEmptyQueue();
-    sendQueue: Queue<SendQueueItem> = makeEmptyQueue();
-    idleCallbackId: ?IdleCallbackID = undefined;
 
-    reset() {
+    queue: Queue<QueueItem> = makeEmptyQueue();
+
+    sendQueue: Queue<SendQueueItem> = makeEmptyQueue();
+
+    idleCallbackId: IdleCallbackID | undefined = undefined;
+
+    reset(): void {
       if (this.idleCallbackId != null) {
         cancelIdleCallback(this.idleCallbackId);
       }
@@ -342,7 +358,7 @@ export default (communicator?: {
       this.idleCallbackId = undefined;
     }
 
-    queueItem(item: QueueItem) {
+    queueItem(item: QueueItem): void {
       const numItems = this.queue.items.push(item);
       this.requestIdleCallback();
 
@@ -355,7 +371,7 @@ export default (communicator?: {
       }
     }
 
-    requestIdleCallback() {
+    requestIdleCallback(): void {
       if (this.idleCallbackId == null) {
         this.idleCallbackId = requestIdleCallback((deadline) => {
           this.idleCallbackId = undefined;
@@ -364,7 +380,7 @@ export default (communicator?: {
       }
     }
 
-    flushQueue(deadline: Deadline) {
+    flushQueue(deadline: Deadline): void {
       const hadQueue =
         this.queue.items.length > 0 || this.sendQueue.items.length > 0;
       this._flushQueue(deadline);
@@ -379,7 +395,7 @@ export default (communicator?: {
       }
     }
 
-    _flushQueue(deadline: Deadline) {
+    _flushQueue(deadline: Deadline): void {
       const done = this.flushSendQueue(deadline);
 
       if (!done || this.queue.items.length === 0) {
@@ -390,7 +406,7 @@ export default (communicator?: {
       // The data structure simplifies additions and removals: If first adding
       // an element and then removing it, it’s the same as never having added or
       // removed the element at all (and vice versa).
-      const addedRemoved = new AddedRemoved();
+      const addedRemoved = new AddedRemoved<HTMLElement>();
 
       const startQueueIndex = this.queue.index;
       let timesUp = false;
@@ -582,8 +598,8 @@ export default (communicator?: {
   }
 
   type Queue<T> = {
-    items: Array<T>,
-    index: number,
+    items: Array<T>;
+    index: number;
   };
 
   function makeEmptyQueue<T>(): Queue<T> {
@@ -594,10 +610,11 @@ export default (communicator?: {
   }
 
   class AddedRemoved<T> {
-    added: Set<T> = new Set();
-    removed: Set<T> = new Set();
+    added = new Set<T>();
 
-    add(item: T) {
+    removed = new Set<T>();
+
+    add(item: T): void {
       if (this.removed.has(item)) {
         this.removed.delete(item);
       } else {
@@ -605,7 +622,7 @@ export default (communicator?: {
       }
     }
 
-    remove(item: T) {
+    remove(item: T): void {
       if (this.added.has(item)) {
         this.added.delete(item);
       } else {
@@ -618,9 +635,9 @@ export default (communicator?: {
 
   function stringifyOptions(eventName: string, options: unknown): string {
     const normalized =
-      options == null || typeof options !== "object"
+      options === null || typeof options !== "object"
         ? { capture: Boolean(options) }
-        : options;
+        : (options as Record<string, unknown>);
     const optionsString = optionNames
       .map((name) => Boolean(normalized[name]).toString())
       .join(",");
@@ -629,13 +646,11 @@ export default (communicator?: {
 
   function hasClickListenerProp(element: HTMLElement): boolean {
     return clickableEventProps.some(
-      (prop) =>
-        // $FlowIgnore: I _do_ want to dynamically read properties here.
-        typeof element[prop] === "function"
+      (prop) => typeof element[prop as keyof HTMLElement] === "function"
     );
   }
 
-  function sendWindowEvent(eventName: string, detail: any) {
+  function sendWindowEvent(eventName: string, detail: any): void {
     apply(dispatchEvent, window, [new CustomEvent2(eventName, { detail })]);
   }
 
@@ -669,8 +684,8 @@ export default (communicator?: {
     element: Element,
     detail: any = undefined,
     root: OpenComposedRootNode = getOpenComposedRootNode(element)
-  ) {
-    const send = () => {
+  ): void {
+    const send = (): void => {
       apply(dispatchEvent, element, [
         // `composed: true` is used to allow the event to be observed outside
         // the current ShadowRoot (if any).
@@ -729,9 +744,9 @@ export default (communicator?: {
   }
 
   type OpenComposedRootNode =
+    | { type: "Closed" }
     | { type: "Document" }
-    | { type: "Element", element: Element }
-    | { type: "Closed" };
+    | { type: "Element"; element: Element };
 
   function getOpenComposedRootNode(element: Element): OpenComposedRootNode {
     const root = apply(getRootNode, element, []);
@@ -748,11 +763,11 @@ export default (communicator?: {
   const hookManager = new HookManager();
 
   function onAddEventListener(
-    element: unknown,
-    eventName: unknown,
-    listener: unknown,
-    options: unknown
-  ) {
+    element?: unknown,
+    eventName?: unknown,
+    listener?: unknown,
+    options?: unknown
+  ): void {
     if (
       !(
         typeof eventName === "string" &&
@@ -761,7 +776,8 @@ export default (communicator?: {
         (typeof listener === "function" ||
           (typeof listener === "object" &&
             listener != null &&
-            typeof listener.handleEvent === "function"))
+            typeof (listener as EventListenerObject).handleEvent ===
+              "function"))
       )
     ) {
       return;
@@ -772,7 +788,7 @@ export default (communicator?: {
     if (
       typeof options === "object" &&
       options != null &&
-      Boolean(options.once)
+      Boolean((options as AddEventListenerOptions).once)
     ) {
       apply(addEventListener, element, [
         eventName,
@@ -794,11 +810,11 @@ export default (communicator?: {
   }
 
   function onRemoveEventListener(
-    element: unknown,
-    eventName: unknown,
-    listener: unknown,
-    options: unknown
-  ) {
+    element?: unknown,
+    eventName?: unknown,
+    listener?: unknown,
+    options?: unknown
+  ): void {
     if (
       !(
         typeof eventName === "string" &&
@@ -807,7 +823,8 @@ export default (communicator?: {
         (typeof listener === "function" ||
           (typeof listener === "object" &&
             listener != null &&
-            typeof listener.handleEvent === "function"))
+            typeof (listener as EventListenerObject).handleEvent ===
+              "function"))
       )
     ) {
       return;
@@ -823,7 +840,7 @@ export default (communicator?: {
     });
   }
 
-  function onPropChangePreHook(element: unknown): QueueItem | void {
+  function onPropChangePreHook(element: unknown): QueueItem | undefined {
     if (!(element instanceof HTMLElement2)) {
       return undefined;
     }
@@ -838,9 +855,8 @@ export default (communicator?: {
   function onPropChange({
     prehookData,
   }: {
-    prehookData: QueueItem | void,
-    ...
-  }) {
+    prehookData: QueueItem | undefined;
+  }): void {
     if (prehookData != null) {
       clickListenerTracker.queueItem(prehookData);
     }
@@ -849,9 +865,8 @@ export default (communicator?: {
   function onShadowRootCreated({
     returnValue: shadowRoot,
   }: {
-    returnValue: ShadowRoot,
-    ...
-  }) {
+    returnValue: ShadowRoot;
+  }): void {
     if (communicator != null) {
       communicator.onInjectedMessage({
         type: "ShadowRootCreated",
@@ -894,11 +909,11 @@ export default (communicator?: {
     }
   }
 
-  function onFlush() {
+  function onFlush(): void {
     clickListenerTracker.flushQueue(infiniteDeadline);
   }
 
-  function onReset() {
+  function onReset(): void {
     if (!PROD) {
       consoleLog(`[${META_SLUG}] Resetting injected.js`, RESET_EVENT);
     }
@@ -916,7 +931,7 @@ export default (communicator?: {
 
   // Use `document` rather than `window` in order not to appear in the “Global
   // event listeners” listing in devtools.
-  const target = communicator || document;
+  const target = communicator ?? document;
   target.addEventListener(FLUSH_EVENT, onFlush, true);
   target.addEventListener(RESET_EVENT, onReset, true);
 

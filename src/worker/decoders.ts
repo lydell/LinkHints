@@ -1,29 +1,29 @@
 // @flow strict-local
 
 import {
-  Decoder,
   array,
   autoRecord,
+  Decoder,
   fields,
   number,
   repr,
   string,
 } from "tiny-decoders";
 
-import { ElementTypes, decodeElementTypes } from "../shared/hints";
+import { decodeElementTypes, ElementTypes } from "../shared/hints";
 import { Box, decodeUnsignedFloat } from "../shared/main";
 
 export type FrameMessage =
   | {
-      type: "FindElements",
-      token: string,
-      types: ElementTypes,
-      viewports: Array<Box>,
+      type: "FindElements";
+      token: string;
+      types: ElementTypes;
+      viewports: Array<Box>;
     }
   | {
-      type: "UpdateElements",
-      token: string,
-      viewports: Array<Box>,
+      type: "UpdateElements";
+      token: string;
+      viewports: Array<Box>;
     };
 
 export const decodeFrameMessage: Decoder<FrameMessage> = fields(
