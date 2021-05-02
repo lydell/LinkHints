@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 
 import config from "../project.config";
 import KeyboardShortcut, { shortcuts } from "./KeyboardShortcuts";

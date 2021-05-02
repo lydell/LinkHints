@@ -1,5 +1,5 @@
 // @flow strict-local
-import * as React from "preact";
+import { h } from "preact";
 
 import { classlist } from "../shared/main";
 import {

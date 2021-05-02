@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 import { useState } from "preact/hooks";
 
 import { classlist } from "../shared/main";

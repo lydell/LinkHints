@@ -4,7 +4,7 @@
 
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 
 import {

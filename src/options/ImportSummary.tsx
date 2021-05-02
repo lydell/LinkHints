@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 
 export default function ImportSummary({
   success,

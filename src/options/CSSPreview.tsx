@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import * as React from "preact";
+import { h } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import Shadow from "preact-shadow-root";
 

@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import jsTokens, { type Token } from "js-tokens";
-import * as React from "preact";
+import { h } from "preact";
 
 import config from "../project.config";
 import scripts from "./scripts.es5";

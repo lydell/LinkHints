@@ -1,6 +1,6 @@
 // @flow
 
-import * as React from "preact";
+import { h } from "preact";
 
 import { shortcuts } from "./KeyboardShortcuts";
 
