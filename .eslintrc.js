@@ -81,7 +81,7 @@ module.exports = {
     eqeqeq: [warn, "always", { null: "ignore" }],
     yoda: warn,
     "import/no-cycle": error,
-    "import/extensions": warn,
+    "import/extensions": [warn, { ts: "never", config: "always" }],
     "import/first": warn,
     "import/newline-after-import": warn,
     "import/no-duplicates": warn,

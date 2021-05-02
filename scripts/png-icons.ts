@@ -1,10 +1,10 @@
 // @flow strict-local
 
-import spawn from "cross-spawn";
+import * as spawn from "cross-spawn";
 
 import config from "../project.config";
 
-function run() {
+function run(): void {
   for (const icons of [config.icons, config.iconsDisabled]) {
     for (const [index, [, svg]] of icons.svg.entries()) {
       const [, png] = icons.png[index];
@@ -20,7 +20,7 @@ function run() {
   }
 }
 
-function svgToPng(svgPath, pngPath) {
+function svgToPng(svgPath: string, pngPath: string): void {
   spawn.sync("inkscape", ["-z", "-e", pngPath, svgPath], {
     stdio: "inherit",
   });
