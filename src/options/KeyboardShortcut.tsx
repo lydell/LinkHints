@@ -2,7 +2,7 @@
 
 import { h } from "preact";
 
-import { type Shortcut } from "../shared/keyboard";
+import type { Shortcut } from "../shared/keyboard";
 
 const WHITESPACE = /^\s$/;
 
@@ -10,8 +10,8 @@ export default function KeyboardShortcut({
   mac,
   shortcut,
 }: {
-  mac: boolean,
-  shortcut: $Shape<Shortcut>,
+  mac: boolean;
+  shortcut: Partial<Shortcut>;
 }) {
   const { key = "" } = shortcut;
   return (
@@ -41,12 +41,12 @@ export default function KeyboardShortcut({
   );
 }
 
-export function hasShift(shortcut: Shortcut): boolean {
+export function hasShift(shortcut: Partial<Shortcut>): boolean {
   const { key = "" } = shortcut;
   return key.length === 1
     ? // For printable keys, guess that Shift is used for uppercase letters.
       key.toLowerCase() !== key.toUpperCase() && key.toUpperCase() === key
-    : shortcut.shift;
+    : shortcut.shift ?? false;
 }
 
 export function viewKey(key: string): string {

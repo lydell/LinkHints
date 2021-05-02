@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 import { classlist } from "../shared/main";
 
@@ -16,16 +16,16 @@ export default function Field({
   render,
   onReset,
 }: {
-  id: string,
-  connected?: boolean,
-  fullWidth?: boolean,
-  label: React.Node,
-  span?: boolean,
-  description?: React.Node,
-  changed: boolean,
-  changedRight?: boolean,
-  render: ({ id: string }) => React.Node,
-  onReset?: () => void,
+  id: string;
+  connected?: boolean;
+  fullWidth?: boolean;
+  label: VNode | string;
+  span?: boolean;
+  description?: VNode | null;
+  changed: boolean;
+  changedRight?: boolean;
+  render: (options: { id: string }) => VNode;
+  onReset?: () => void;
 }) {
   const reset =
     onReset != null && changed ? (

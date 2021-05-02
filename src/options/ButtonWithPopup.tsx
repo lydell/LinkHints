@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, JSX, VNode } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import { addEventListener, classlist, Resets } from "../shared/main";
@@ -9,28 +9,27 @@ export default function ButtonWithPopup({
   open: openProp,
   buttonContent,
   popupContent,
-  onChange,
+  onOpenChange,
   className = "",
   ...restProps
-}: {
-  buttonContent: React.Node,
-  popupContent: ({ close: () => void }) => React.Node,
-  open?: boolean,
-  onChange?: (boolean) => void,
-  className?: string,
-  ...
+}: JSX.HTMLAttributes<HTMLButtonElement> & {
+  buttonContent: VNode | string;
+  popupContent: (options: { close: () => void }) => VNode;
+  open?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  className?: string;
 }) {
-  const onChangeRef = useRef();
-  onChangeRef.current = onChange;
+  const onChangeRef = useRef<((isOpen: boolean) => void) | undefined>();
+  onChangeRef.current = onOpenChange;
 
   const [openState, setOpenState] = useState<boolean>(false);
 
   const open = openProp != null ? openProp : openState;
 
-  const rootRef = useRef();
+  const rootRef = useRef<HTMLDivElement>();
 
   const setOpen = useCallback(
-    (newOpen) => {
+    (newOpen: boolean) => {
       if (openProp == null) {
         setOpenState(newOpen);
       }

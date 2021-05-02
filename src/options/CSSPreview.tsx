@@ -63,12 +63,12 @@ export default function CSSPreview({
   css,
   peek,
 }: {
-  chars: string,
-  css: string,
-  peek: boolean,
+  chars: string;
+  css: string;
+  peek: boolean;
 }) {
-  const containerRef = useRef();
-  const filterByTextRef = useRef();
+  const containerRef = useRef<HTMLDivElement>();
+  const filterByTextRef = useRef<HTMLDivElement>();
 
   const [textRects, setTextRects] = useState<Array<Box>>([]);
 
@@ -106,12 +106,12 @@ export default function CSSPreview({
     highlighted = false,
     hidden = false,
   }: {
-    left: number,
-    top: number,
-    matchedChars?: string,
-    chars: string,
-    highlighted?: boolean,
-    hidden?: boolean,
+    left: number;
+    top: number;
+    matchedChars?: string;
+    chars: string;
+    highlighted?: boolean;
+    hidden?: boolean;
   }) => {
     hintZIndex--;
     const hasMatchedChars = matchedChars !== "";

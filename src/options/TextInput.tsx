@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, JSX } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { classlist, timeout } from "../shared/main";
@@ -17,15 +17,15 @@ export default function TextInput({
   className = "",
   onKeyDown,
   ...restProps
-}: {
-  savedValue: string,
-  normalize?: (string) => string,
-  save?: (string, Reason) => void,
-  textarea?: boolean,
-  className?: string,
-  onKeyDown?: (SyntheticKeyboardEvent<HTMLInputElement>) => void,
-  ...
-}) {
+}: JSX.HTMLAttributes<HTMLInputElement> &
+  JSX.HTMLAttributes<HTMLTextAreaElement> & {
+    savedValue: string;
+    normalize?: (text: string) => string;
+    save?: (text: string, reason: Reason) => void;
+    textarea?: boolean;
+    className?: string;
+    onKeyDown?: (event: KeyboardEvent) => void;
+  }) {
   const Tag = textarea ? "textarea" : "input";
   const readonly = saveProp == null;
 
@@ -34,7 +34,9 @@ export default function TextInput({
 
   const value = stateValue != null ? stateValue : savedValue;
 
-  const saveRef = useRef();
+  const saveRef = useRef<
+    ((text: string, reason: Reason) => void) | undefined
+  >();
   saveRef.current = saveProp;
 
   const normalizeRef = useRef(normalize);
@@ -42,7 +44,7 @@ export default function TextInput({
 
   const selectionStartRef = useRef<number>(0);
   const selectionEndRef = useRef<number>(0);
-  const rootRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const rootRef = useRef<(HTMLInputElement & HTMLTextAreaElement) | null>(null);
 
   function storeSelection() {
     const element = rootRef.current;
@@ -100,7 +102,7 @@ export default function TextInput({
       ref={rootRef}
       className={classlist(className, { "is-readonly": readonly })}
       value={value}
-      spellCheck="false"
+      spellcheck={false}
       onInput={(
         event: SyntheticInputEvent<HTMLInputElement | HTMLTextAreaElement>
       ) => {

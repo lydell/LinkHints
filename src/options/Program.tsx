@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { Component, createRef, h } from "preact";
 import {
   array,
   autoRecord,
@@ -52,7 +52,7 @@ import {
   importOptions,
   normalizeChars,
 } from "../shared/options";
-import { type TabsPerf } from "../shared/perf";
+import type { TabsPerf } from "../shared/perf";
 import Attachment from "./Attachment";
 import ButtonWithPopup from "./ButtonWithPopup";
 import CSSPreview from "./CSSPreview";
@@ -89,61 +89,60 @@ const CSS_SUGGESTIONS = [
   { name: "Vimium", value: SUGGESTION_VIMIUM },
 ];
 
-const getLayoutMap: ?() => Promise<Map<string, string>> =
-  // $FlowIgnore: Flow doesn’t know about `navigator.keyboard` yet.
-  navigator.keyboard != null &&
-  typeof navigator.keyboard.getLayoutMap === "function"
-    ? // $FlowIgnore: Flow doesn’t allow `.bind`:ing this "unknown" function.
-      navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
+const getLayoutMap =
+  navigator.keyboard !== undefined
+    ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
     : undefined;
 
 type Props = {};
 
 type State = {
-  options: ?OptionsData,
-  hasSaved: boolean,
-  customChars: string,
+  options: OptionsData | undefined;
+  hasSaved: boolean;
+  customChars: string;
   keyTranslationsInput: {
-    text: string,
-    testOnly: boolean,
-    lastKeypress: ?Keypress,
-  },
-  keyboardDetect: ?(
+    text: string;
+    testOnly: boolean;
+    lastKeypress: Keypress | undefined;
+  };
+  keyboardDetect:
     | Error
     | {
-        numReceived: number,
-        numFullyUpdated: number,
-        numAlreadyFullyUpdated: number,
-        numPartiallyUpdated: number,
-        numAlreadyPartiallyUpdated: number,
-        numNotUpdated: number,
+        numReceived: number;
+        numFullyUpdated: number;
+        numAlreadyFullyUpdated: number;
+        numPartiallyUpdated: number;
+        numAlreadyPartiallyUpdated: number;
+        numNotUpdated: number;
       }
-  ),
-  capturedKeypressWithTimestamp: ?{
-    timestamp: number,
-    keypress: NormalizedKeypress,
-  },
-  peek: boolean,
-  cssSuggestion: string,
+    | undefined;
+  capturedKeypressWithTimestamp:
+    | {
+        timestamp: number;
+        keypress: NormalizedKeypress;
+      }
+    | undefined;
+  peek: boolean;
+  cssSuggestion: string;
   importData: {
-    successCount: ?number,
-    tweakableCount: ?number,
-    errors: Array<string>,
-  },
-  perf: TabsPerf,
-  expandedPerfTabIds: Array<string>,
-  expandedPerf: boolean,
-  expandedDebug: boolean,
-  localStorageCleared: ?Date,
+    successCount: number | undefined;
+    tweakableCount: number | undefined;
+    errors: Array<string>;
+  };
+  perf: TabsPerf;
+  expandedPerfTabIds: Array<string>;
+  expandedPerf: boolean;
+  expandedDebug: boolean;
+  localStorageCleared: Date | undefined;
 };
 
-export default class OptionsProgram extends React.Component<Props, State> {
-  resets: Resets = new Resets();
+export default class OptionsProgram extends Component<Props, State> {
+  resets = new Resets();
   hiddenErrors: Array<string> = [];
-  keysTableRef: { current: HTMLDivElement | null } = React.createRef();
-  hasRestoredPosition: boolean = false;
+  keysTableRef = createRef<HTMLDivElement>();
+  hasRestoredPosition = false;
 
-  state = {
+  state: State = {
     options: undefined,
     hasSaved: false,
     customChars: "",
@@ -271,9 +270,6 @@ export default class OptionsProgram extends React.Component<Props, State> {
           this.savePerf
         );
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
@@ -493,7 +489,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     <select
                       style={{ flexGrow: 1 }}
                       value={selectedIndex}
-                      onChange={(event: SyntheticEvent<HTMLSelectElement>) => {
+                      onChange={(event: Event) => {
                         const index = Number(event.currentTarget.value);
                         const chars =
                           index >= 0 && index < charsPresets.length
@@ -712,7 +708,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
                     >
                       <textarea
                         id={id}
-                        spellCheck="false"
+                        spellcheck={false}
                         className="TextSmall"
                         style={{ resize: "none" }}
                         placeholder={
@@ -1541,7 +1537,7 @@ export default class OptionsProgram extends React.Component<Props, State> {
           map(array(string), (ids) =>
             ids.filter((id) => ({}.hasOwnProperty.call(this.state.perf, id)))
           ),
-          ([]: Array<string>)
+          []
         ),
         expandedPerf: optional(boolean, false),
         expandedDebug: optional(boolean, false),
@@ -1643,7 +1639,7 @@ function wrapMessage(message: FromOptions): ToBackground {
 }
 
 function updateKeyTranslations(
-  { code, key, shift }: { code: string, key: string, shift: boolean },
+  { code, key, shift }: { code: string; key: string; shift: boolean },
   keyTranslations: KeyTranslations
 ): ?KeyTranslations {
   const previousPair = {}.hasOwnProperty.call(keyTranslations, code)
@@ -1656,7 +1652,7 @@ function updateKeyTranslations(
 }
 
 function updatePair(
-  { key, shift }: { key: string, shift: boolean },
+  { key, shift }: { key: string; shift: boolean },
   previousPair: ?KeyPair
 ): KeyPair {
   if (!shift && key.length === 1 && key.toLowerCase() !== key.toUpperCase()) {
@@ -1682,9 +1678,9 @@ function ActivateHighlightedKey({
   mappings,
   defaultMappings,
 }: {
-  mac: boolean,
-  mappings: Array<KeyboardMapping>,
-  defaultMappings: Array<KeyboardMapping>,
+  mac: boolean;
+  mappings: Array<KeyboardMapping>;
+  defaultMappings: Array<KeyboardMapping>;
 }) {
   const first = mappings.find((mapping) => mapping.action === "ActivateHint");
 
@@ -1734,15 +1730,15 @@ function readAsJson(file: File): Promise<unknown> {
   return new Response(file).json();
 }
 
-function mixedObject(value: unknown): { +[string]: unknown } {
+function mixedObject(value: unknown): { [key: string]: unknown } {
   if (typeof value !== "object" || value == null || Array.isArray(value)) {
     throw new TypeError(`Expected an object, but got: ${repr(value)}`);
   }
-  return value;
+  return value as { [key: string]: unknown };
 }
 
 function toISODateString(date: Date): string {
-  const pad = (num) => num.toString().padStart(2, "0");
+  const pad = (num: number) => num.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate()
   )}`;

@@ -1,13 +1,8 @@
 // @flow strict-local
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 import { classlist } from "../shared/main";
-import {
-  Durations,
-  Stats,
-  TabsPerf,
-  MAX_PERF_ENTRIES,
-} from "../shared/perf";
+import { Durations, Stats, TabsPerf, MAX_PERF_ENTRIES } from "../shared/perf";
 
 export default function Perf({
   perf,
@@ -15,10 +10,10 @@ export default function Perf({
   onExpandChange,
   onReset,
 }: {
-  perf: TabsPerf,
-  expandedPerfTabIds: Array<string>,
-  onExpandChange: (Array<string>) => void,
-  onReset: () => void,
+  perf: TabsPerf;
+  expandedPerfTabIds: Array<string>;
+  onExpandChange: (expandedPerfTabIds: Array<string>) => void;
+  onReset: () => void;
 }) {
   const keys = Object.keys(perf);
 
@@ -185,7 +180,7 @@ export default function Perf({
   );
 }
 
-function toCells(items: Array<string>): Array<React.Node> {
+function toCells(items: Array<string>): Array<VNode> {
   const lastIndex = items.length - 1;
   return Array.from({ length: MAX_PERF_ENTRIES }, (_, index) => (
     <td key={index}>{index <= lastIndex ? items[index] : null}</td>
@@ -213,7 +208,8 @@ function sumStats(
   allStats: Array<Array<Stats>>
 ): Array<Array<Stats>> {
   return allStats.map((stats) => {
-    const sum = (fn) => stats.reduce((result, item) => result + fn(item), 0);
+    const sum = (fn: (stats: Stats) => number) =>
+      stats.reduce((result, item) => result + fn(item), 0);
 
     return [
       {
@@ -244,7 +240,7 @@ function sumDurations(allDurations: Array<Durations>): Durations {
 
 function durationsToRows(
   allDurations: Array<Durations>
-): Array<{ heading: string, values: Array<string> }> {
+): Array<{ heading: string; values: Array<string> }> {
   const labels = new Set(
     allDurations.flatMap((durations) => durations.map(([label]) => label))
   );
@@ -261,8 +257,8 @@ function durationsToRows(
 function statsToRows(
   allStats: Array<Array<Stats>>
 ): Array<{
-  title: string,
-  data: Array<{ heading: string, values: Array<string> }>,
+  title: string;
+  data: Array<{ heading: string; values: Array<string> }>;
 }> {
   const urls = new Set(
     allStats.flatMap((stats) => stats.map(({ url }) => url))

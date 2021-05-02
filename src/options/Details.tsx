@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { ComponentChildren, h, VNode } from "preact";
 
 import { classlist } from "../shared/main";
 
@@ -10,10 +10,10 @@ export default function Details({
   onChange,
   children,
 }: {
-  summary: React.Node,
-  open: boolean,
-  onChange: (boolean) => void,
-  children: React.Node,
+  summary: VNode | string;
+  open: boolean;
+  onChange: (isOpen: boolean) => void;
+  children: ComponentChildren;
 }) {
   return (
     <div>

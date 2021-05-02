@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { ComponentChildren, h, JSX, VNode } from "preact";
 
 import { classlist } from "../shared/main";
 
@@ -9,12 +9,12 @@ export default function Attachment({
   content,
   children,
   ...restProps
-}: {
-  label?: React.Node,
-  content?: React.Node,
-  children: React.Node,
-  ...
-}) {
+}: JSX.HTMLAttributes<HTMLLabelElement> &
+  JSX.HTMLAttributes<HTMLSpanElement> & {
+    label?: VNode | string;
+    content?: VNode;
+    children: ComponentChildren;
+  }) {
   const Tag = label != null ? "label" : "span";
   return (
     <Tag {...restProps} className="Attachment">

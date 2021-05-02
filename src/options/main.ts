@@ -4,7 +4,7 @@ import { createElement, render } from "preact";
 
 import OptionsProgram from "./Program";
 
-function start() {
+function start(): void {
   const { body } = document;
   if (body == null) {
     return;
@@ -12,9 +12,10 @@ function start() {
 
   render(
     createElement(OptionsProgram, {
-      ref: (program) => {
+      ref: (program: OptionsProgram) => {
         // Attach the instance to `window` for debugging in the regular Web
         // Console.
+        // @ts-expect-error Only for debugging use.
         window.optionsProgram = program;
       },
     }),
