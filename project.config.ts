@@ -62,7 +62,7 @@ export default {
   icons: ICONS,
   iconsDisabled: ICONS_DISABLED,
   iconsTestPage: "icons/test.html",
-  iconsChecksum: "icons/checksum.js",
+  iconsChecksum: "icons/checksum.ts",
   iconsCompilation: {
     input: "icons.js",
     output: "../icon.svg",

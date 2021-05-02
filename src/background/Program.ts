@@ -4,6 +4,7 @@ import huffman from "n-ary-huffman";
 
 import iconsChecksum from "../icons/checksum";
 import {
+  elementKey,
   ElementRender,
   ElementReport,
   ElementTypes,
@@ -11,12 +12,13 @@ import {
   ExtendedElementReport,
   HintMeasurements,
   HintUpdate,
-  elementKey,
 } from "../shared/hints";
 import {
   HintsMode,
   KeyboardAction,
+  KeyboardMapping,
   KeyboardModeBackground,
+  KeyboardModeWorker,
   NormalizedKeypress,
   PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS,
 } from "../shared/keyboard";
@@ -45,107 +47,109 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
-  Options,
-  OptionsData,
-  PartialOptions,
   diffOptions,
   flattenOptions,
   getDefaults,
   getRawOptions,
   makeOptionsDecoder,
+  Options,
+  OptionsData,
+  PartialOptions,
   unflattenOptions,
 } from "../shared/options";
 import {
+  decodeTabsPerf,
+  MAX_PERF_ENTRIES,
   Perf,
   Stats,
   TabsPerf,
-  decodeTabsPerf,
-  MAX_PERF_ENTRIES,
   TimeTracker,
 } from "../shared/perf";
 import { tweakable, unsignedInt } from "../shared/tweakable";
 
 type MessageInfo = {
-  tabId: number,
-  frameId: number,
-  url: ?string,
+  tabId: number;
+  frameId: number;
+  url: string | undefined;
 };
 
 type TabState = {
-  hintsState: HintsState,
-  keyboardMode: KeyboardModeBackground,
-  perf: Perf,
-  isOptionsPage: boolean,
-  isPinned: boolean,
+  hintsState: HintsState;
+  keyboardMode: KeyboardModeBackground;
+  perf: Perf;
+  isOptionsPage: boolean;
+  isPinned: boolean;
 };
 
 type HintsState =
   | {
-      type: "Idle",
-      highlighted: Highlighted,
+      type: "Collecting";
+      mode: HintsMode;
+      pendingElements: PendingElements;
+      startTime: number;
+      time: TimeTracker;
+      stats: Array<Stats>;
+      refreshing: boolean;
+      highlighted: Highlighted;
     }
   | {
-      type: "Collecting",
-      mode: HintsMode,
-      pendingElements: PendingElements,
-      startTime: number,
-      time: TimeTracker,
-      stats: Array<Stats>,
-      refreshing: boolean,
-      highlighted: Highlighted,
+      type: "Hinting";
+      mode: HintsMode;
+      startTime: number;
+      time: TimeTracker;
+      stats: Array<Stats>;
+      enteredChars: string;
+      enteredText: string;
+      elementsWithHints: Array<ElementWithHint>;
+      highlighted: Highlighted;
+      updateState: UpdateState;
+      peeking: boolean;
     }
   | {
-      type: "Hinting",
-      mode: HintsMode,
-      startTime: number,
-      time: TimeTracker,
-      stats: Array<Stats>,
-      enteredChars: string,
-      enteredText: string,
-      elementsWithHints: Array<ElementWithHint>,
-      highlighted: Highlighted,
-      updateState: UpdateState,
-      peeking: boolean,
+      type: "Idle";
+      highlighted: Highlighted;
     };
 
 // All HintsState types store the highlighted hints (highlighted due to being
 // matched, not due to filtering by text), so that they can stay highlighted for
 // `t.MATCH_HIGHLIGHT_DURATION` ms.
-type Highlighted = Array<{
-  sinceTimestamp: number,
-  element: ElementWithHint,
-}>;
+type Highlighted = Array<HighlightedItem>;
+
+type HighlightedItem = {
+  sinceTimestamp: number;
+  element: ElementWithHint;
+};
 
 type PendingElements = {
   pendingFrames: {
-    answering: number,
-    collecting: number,
-    lastStartWaitTimestamp: number,
-  },
-  elements: Array<ExtendedElementReport>,
+    answering: number;
+    collecting: number;
+    lastStartWaitTimestamp: number;
+  };
+  elements: Array<ExtendedElementReport>;
 };
 
 type UpdateState =
   | {
-      type: "WaitingForTimeout",
-      lastUpdateStartTimestamp: number,
+      type: "WaitingForResponse";
+      lastUpdateStartTimestamp: number;
     }
   | {
-      type: "WaitingForResponse",
-      lastUpdateStartTimestamp: number,
+      type: "WaitingForTimeout";
+      lastUpdateStartTimestamp: number;
     };
 
 type HintInput =
   | {
-      type: "Input",
-      keypress: NormalizedKeypress,
+      type: "ActivateHint";
+      alt: boolean;
     }
   | {
-      type: "ActivateHint",
-      alt: boolean,
+      type: "Backspace";
     }
   | {
-      type: "Backspace",
+      type: "Input";
+      keypress: NormalizedKeypress;
     };
 
 // As far as I can tell, the top frameId is always 0. This is also mentioned here:
@@ -177,9 +181,13 @@ export const tMeta = tweakable("Background", t);
 
 export default class BackgroundProgram {
   options: OptionsData;
-  tabState: Map<number, TabState> = new Map();
+
+  tabState = new Map<number, TabState>();
+
   restoredTabsPerf: TabsPerf = {};
+
   oneTimeWindowMessageToken: string = makeRandomToken();
+
   resets: Resets = new Resets();
 
   constructor() {
@@ -222,12 +230,13 @@ export default class BackgroundProgram {
     ]);
   }
 
-  async start() {
+  async start(): Promise<void> {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
     try {
       await this.updateOptions({ isInitial: true });
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.options.errors = [error.message];
     }
 
@@ -252,7 +261,9 @@ export default class BackgroundProgram {
     );
 
     for (const tab of tabs) {
-      this.updateIcon(tab.id);
+      if (tab.id !== undefined) {
+        this.updateIcon(tab.id);
+      }
     }
 
     browser.browserAction.setBadgeBackgroundColor({ color: COLOR_BADGE });
@@ -271,32 +282,35 @@ export default class BackgroundProgram {
     }
   }
 
-  stop() {
+  stop(): void {
     this.resets.reset();
   }
 
   async sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: { tabId: number, frameId: number | "all_frames" }
-  ) {
+    { tabId, frameId }: { tabId: number; frameId: number | "all_frames" }
+  ): Promise<void> {
     await this.sendContentMessage(
       { type: "ToWorker", message },
       { tabId, frameId }
     );
   }
 
-  async sendRendererMessage(message: ToRenderer, { tabId }: { tabId: number }) {
+  async sendRendererMessage(
+    message: ToRenderer,
+    { tabId }: { tabId: number }
+  ): Promise<void> {
     await this.sendContentMessage(
       { type: "ToRenderer", message },
       { tabId, frameId: TOP_FRAME_ID }
     );
   }
 
-  async sendPopupMessage(message: ToPopup) {
+  async sendPopupMessage(message: ToPopup): Promise<void> {
     await this.sendBackgroundMessage({ type: "ToPopup", message });
   }
 
-  async sendOptionsMessage(message: ToOptions) {
+  async sendOptionsMessage(message: ToOptions): Promise<void> {
     const optionsTabOpen = Array.from(this.tabState).some(
       ([, tabState]) => tabState.isOptionsPage
     );
@@ -310,14 +324,14 @@ export default class BackgroundProgram {
   // This might seem like sending a message to oneself, but
   // `browser.runtime.sendMessage` seems to only send messages to *other*
   // background scripts, such as the popup script.
-  async sendBackgroundMessage(message: FromBackground) {
+  async sendBackgroundMessage(message: FromBackground): Promise<void> {
     await browser.runtime.sendMessage(message);
   }
 
   async sendContentMessage(
     message: FromBackground,
-    { tabId, frameId }: { tabId: number, frameId: number | "all_frames" }
-  ) {
+    { tabId, frameId }: { tabId: number; frameId: number | "all_frames" }
+  ): Promise<void> {
     await (frameId === "all_frames"
       ? browser.tabs.sendMessage(tabId, message)
       : browser.tabs.sendMessage(tabId, message, { frameId }));
@@ -346,7 +360,10 @@ export default class BackgroundProgram {
   // OptionsScriptAdded and RendererScriptAdded are all triggered very close to
   // each other. An overwrite can cause us to lose `tabState.isOptionsPage`,
   // breaking shortcuts customization.
-  onMessage(message: ToBackground, sender: MessageSender) {
+  onMessage(
+    message: ToBackground,
+    sender: browser.runtime.MessageSender
+  ): void {
     // `info` can be missing when the message comes from for example the popup
     // (which isn’t associated with a tab). The worker script can even load in
     // an `about:blank` frame somewhere when hovering the browserAction!
@@ -387,13 +404,10 @@ export default class BackgroundProgram {
           this.onOptionsMessage(message.message, info, tabState);
         }
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
-  onConnect(port: Port) {
+  onConnect(port: browser.runtime.Port): void {
     port.onDisconnect.addListener(({ sender }) => {
       const info = sender == null ? undefined : makeMessageInfo(sender);
       if (info != null) {
@@ -404,7 +418,11 @@ export default class BackgroundProgram {
     });
   }
 
-  onWorkerMessage(message: FromWorker, info: MessageInfo, tabState: TabState) {
+  onWorkerMessage(
+    message: FromWorker,
+    info: MessageInfo,
+    tabState: TabState
+  ): void {
     switch (message.type) {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(
@@ -623,9 +641,6 @@ export default class BackgroundProgram {
         }
 
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
@@ -637,13 +652,13 @@ export default class BackgroundProgram {
   // from where or in which state `onTimeout` is called, it should always do the
   // correct thing. This means that we never have to clear any timeouts, which
   // is very tricky to keep track of.
-  setTimeout(tabId: number, duration: number) {
+  setTimeout(tabId: number, duration: number): void {
     setTimeout(() => {
-      return this.onTimeout(tabId);
+      this.onTimeout(tabId);
     }, duration);
   }
 
-  onTimeout(tabId: number) {
+  onTimeout(tabId: number): void {
     this.updateBadge(tabId);
     this.maybeStartHinting(tabId);
     this.updateElements(tabId);
@@ -657,14 +672,14 @@ export default class BackgroundProgram {
     words,
     tabId,
   }: {
-    enteredChars: string,
-    allElementsWithHints: Array<ElementWithHint>,
-    words: Array<string>,
-    tabId: number,
-  }) {
-    const indexesByFrame: Map<number, Array<number>> = new Map();
+    enteredChars: string;
+    allElementsWithHints: Array<ElementWithHint>;
+    words: Array<string>;
+    tabId: number;
+  }): void {
+    const indexesByFrame = new Map<number, Array<number>>();
     for (const { text, hint, frame } of allElementsWithHints) {
-      const previous = indexesByFrame.get(frame.id) || [];
+      const previous = indexesByFrame.get(frame.id) ?? [];
       indexesByFrame.set(frame.id, previous);
       if (matchesText(text, words) && hint.startsWith(enteredChars)) {
         previous.push(frame.index);
@@ -682,7 +697,7 @@ export default class BackgroundProgram {
     }
   }
 
-  handleHintInput(tabId: number, timestamp: number, input: HintInput) {
+  handleHintInput(tabId: number, timestamp: number, input: HintInput): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -841,12 +856,12 @@ export default class BackgroundProgram {
     alt,
     timestamp,
   }: {
-    tabId: number,
-    match: ElementWithHint,
-    updates: Array<HintUpdate>,
-    preventOverTyping: boolean,
-    alt: boolean,
-    timestamp: number,
+    tabId: number;
+    match: ElementWithHint;
+    updates: Array<HintUpdate>;
+    preventOverTyping: boolean;
+    alt: boolean;
+    timestamp: number;
   }): boolean {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
@@ -1047,7 +1062,7 @@ export default class BackgroundProgram {
     }
   }
 
-  refreshHintsRendering(tabId: number) {
+  refreshHintsRendering(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1093,12 +1108,12 @@ export default class BackgroundProgram {
     frameId,
     foreground,
   }: {
-    url: string,
-    elementIndex: number,
-    tabId: number,
-    frameId: number,
-    foreground: boolean,
-  }) {
+    url: string;
+    elementIndex: number;
+    tabId: number;
+    frameId: number;
+    foreground: boolean;
+  }): Promise<void> {
     this.sendWorkerMessage(
       {
         type: "FocusElement",
@@ -1136,7 +1151,7 @@ export default class BackgroundProgram {
     }
   }
 
-  maybeStartHinting(tabId: number) {
+  maybeStartHinting(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1195,7 +1210,10 @@ export default class BackgroundProgram {
       elementKeys.has(elementKey(element))
     );
 
-    const updateIndex = ({ element, sinceTimestamp }, index) => ({
+    const updateIndex = (
+      { element, sinceTimestamp }: HighlightedItem,
+      index: number
+    ): HighlightedItem => ({
       element: { ...element, index },
       sinceTimestamp,
     });
@@ -1264,7 +1282,7 @@ export default class BackgroundProgram {
     this.updateBadge(tabId);
   }
 
-  updateElements(tabId: number) {
+  updateElements(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1313,7 +1331,7 @@ export default class BackgroundProgram {
     }
   }
 
-  hideElements(info: MessageInfo) {
+  hideElements(info: MessageInfo): void {
     const tabState = this.tabState.get(info.tabId);
     if (tabState == null) {
       return;
@@ -1386,7 +1404,7 @@ export default class BackgroundProgram {
     message: FromRenderer,
     info: MessageInfo,
     tabState: TabState
-  ) {
+  ): void {
     switch (message.type) {
       case "RendererScriptAdded":
         this.sendRendererMessage(
@@ -1451,17 +1469,15 @@ export default class BackgroundProgram {
         });
         break;
       }
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
-  async onPopupMessage(message: FromPopup) {
+  async onPopupMessage(message: FromPopup): Promise<void> {
     switch (message.type) {
       case "PopupScriptAdded": {
         const tab = await getCurrentTab();
-        const tabState = this.tabState.get(tab.id);
+        const tabState =
+          tab.id === undefined ? undefined : this.tabState.get(tab.id);
         this.sendPopupMessage({
           type: "Init",
           logLevel: log.level,
@@ -1469,9 +1485,6 @@ export default class BackgroundProgram {
         });
         break;
       }
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
@@ -1479,7 +1492,7 @@ export default class BackgroundProgram {
     message: FromOptions,
     info: MessageInfo,
     tabState: TabState
-  ) {
+  ): Promise<void> {
     switch (message.type) {
       case "OptionsScriptAdded": {
         tabState.isOptionsPage = true;
@@ -1527,9 +1540,6 @@ export default class BackgroundProgram {
           frameId: "all_frames",
         });
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 
@@ -1537,8 +1547,8 @@ export default class BackgroundProgram {
     action: KeyboardAction,
     info: MessageInfo,
     timestamp: number
-  ) {
-    const enterHintsMode = (mode: HintsMode) => {
+  ): void {
+    const enterHintsMode = (mode: HintsMode): void => {
       this.enterHintsMode({
         tabId: info.tabId,
         timestamp,
@@ -1679,10 +1689,10 @@ export default class BackgroundProgram {
     timestamp,
     mode,
   }: {
-    tabId: number,
-    timestamp: number,
-    mode: HintsMode,
-  }) {
+    tabId: number;
+    timestamp: number;
+    mode: HintsMode;
+  }): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1707,14 +1717,14 @@ export default class BackgroundProgram {
     tabState.hintsState = {
       type: "Collecting",
       mode,
-      pendingElements: ({
+      pendingElements: {
         pendingFrames: {
           answering: 0,
           collecting: 1, // The top frame is collecting.
           lastStartWaitTimestamp: Date.now(),
         },
         elements: [],
-      }: PendingElements),
+      },
       startTime: timestamp,
       time,
       stats: [],
@@ -1731,10 +1741,10 @@ export default class BackgroundProgram {
     delayed = false,
     sendMessages = true,
   }: {
-    tabId: number,
-    delayed?: boolean,
-    sendMessages?: boolean,
-  }) {
+    tabId: number;
+    delayed?: boolean;
+    sendMessages?: boolean;
+  }): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1763,7 +1773,7 @@ export default class BackgroundProgram {
     this.updateBadge(tabId);
   }
 
-  unhighlightHints(tabId: number) {
+  unhighlightHints(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1778,7 +1788,7 @@ export default class BackgroundProgram {
         now - sinceTimestamp >= t.MATCH_HIGHLIGHT_DURATION.value
     );
 
-    const hideDoneWaiting = () => {
+    const hideDoneWaiting = (): void => {
       if (doneWaiting.length > 0) {
         this.sendRendererMessage(
           {
@@ -1820,13 +1830,10 @@ export default class BackgroundProgram {
         this.refreshHintsRendering(tabId);
         break;
       }
-
-      default:
-        unreachable(hintsState.type, hintsState);
     }
   }
 
-  stopPreventOvertyping(tabId: number) {
+  stopPreventOvertyping(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1846,15 +1853,20 @@ export default class BackgroundProgram {
     }
   }
 
-  onTabCreated(tab: Tab) {
-    this.updateIcon(tab.id);
+  onTabCreated(tab: browser.tabs.Tab): void {
+    if (tab.id !== undefined) {
+      this.updateIcon(tab.id);
+    }
   }
 
-  onTabActivated() {
+  onTabActivated(): void {
     this.updateOptionsPageData();
   }
 
-  onTabUpdated(tabId: number, changeInfo: TabChangeInfo) {
+  onTabUpdated(
+    tabId: number,
+    changeInfo: browser.tabs._OnUpdatedChangeInfo
+  ): void {
     if (changeInfo.status != null) {
       this.updateIcon(tabId);
     }
@@ -1874,11 +1886,11 @@ export default class BackgroundProgram {
     }
   }
 
-  onTabRemoved(tabId: number) {
+  onTabRemoved(tabId: number): void {
     this.deleteTabState(tabId);
   }
 
-  deleteTabState(tabId: number) {
+  deleteTabState(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1896,7 +1908,7 @@ export default class BackgroundProgram {
     this.updateOptionsPageData();
   }
 
-  async updateIcon(tabId: number) {
+  async updateIcon(tabId: number): Promise<void> {
     // In Chrome the below check fails for the extension options page, so check
     // for the options page explicitly.
     const tabState = this.tabState.get(tabId);
@@ -1921,7 +1933,7 @@ export default class BackgroundProgram {
     await browser.browserAction.setIcon({ path: icons, tabId });
   }
 
-  updateBadge(tabId: number) {
+  updateBadge(tabId: number): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -1935,7 +1947,9 @@ export default class BackgroundProgram {
     });
   }
 
-  async updateOptions({ isInitial = false }: { isInitial?: boolean } = {}) {
+  async updateOptions({
+    isInitial = false,
+  }: { isInitial?: boolean } = {}): Promise<void> {
     if (!PROD) {
       if (isInitial) {
         const defaultStorageSync = DEFAULT_STORAGE_SYNC;
@@ -1979,7 +1993,7 @@ export default class BackgroundProgram {
     log.level = options.logLevel;
   }
 
-  async saveOptions(partialOptions: PartialOptions) {
+  async saveOptions(partialOptions: PartialOptions): Promise<void> {
     // The options are stored flattened to increase the chance of the browser
     // sync not overwriting things when options has changed from multiple
     // places. This means we have to retrieve the whole storage, unflatten it,
@@ -2001,21 +2015,23 @@ export default class BackgroundProgram {
       await browser.storage.sync.remove(keysToRemove);
       await browser.storage.sync.set(optionsToSet);
       await this.updateOptions();
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.options.errors = [error.message];
     }
   }
 
-  async resetOptions() {
+  async resetOptions(): Promise<void> {
     try {
       await browser.storage.sync.clear();
       await this.updateOptions();
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.options.errors = [error.message];
     }
   }
 
-  updateTabsAfterOptionsChange() {
+  updateTabsAfterOptionsChange(): void {
     this.sendOptionsMessage({
       type: "StateSync",
       logLevel: log.level,
@@ -2055,14 +2071,16 @@ export default class BackgroundProgram {
       isPinned: tabState.isPinned,
     };
 
-    const getKeyboardShortcuts = (shortcuts) =>
+    const getKeyboardShortcuts = (
+      shortcuts: Array<KeyboardMapping>
+    ): Array<KeyboardMapping> =>
       tabState.keyboardMode.type === "PreventOverTyping"
         ? shortcuts.filter((shortcut) =>
             PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS.has(shortcut.action)
           )
         : shortcuts;
 
-    const getKeyboardMode = (mode) =>
+    const getKeyboardMode = (mode: KeyboardModeWorker): KeyboardModeWorker =>
       tabState.keyboardMode.type === "FromHintsState"
         ? mode
         : tabState.keyboardMode.type;
@@ -2096,9 +2114,9 @@ export default class BackgroundProgram {
     tabId,
     preventOverTyping,
   }: {
-    tabId: number,
-    preventOverTyping: boolean,
-  }) {
+    tabId: number;
+    preventOverTyping: boolean;
+  }): void {
     const tabState = this.tabState.get(tabId);
     if (tabState == null) {
       return;
@@ -2118,7 +2136,7 @@ export default class BackgroundProgram {
     });
   }
 
-  async updateOptionsPageData() {
+  async updateOptionsPageData(): Promise<void> {
     if (!PROD) {
       const optionsTabState = Array.from(this.tabState).filter(
         ([, tabState]) => tabState.isOptionsPage
@@ -2143,7 +2161,7 @@ export default class BackgroundProgram {
     }
   }
 
-  async maybeOpenTutorial() {
+  async maybeOpenTutorial(): Promise<void> {
     const { tutorialShown } = await browser.storage.local.get("tutorialShown");
     if (tutorialShown !== true) {
       await browser.tabs.create({
@@ -2154,21 +2172,21 @@ export default class BackgroundProgram {
     }
   }
 
-  async maybeReopenOptions() {
+  async maybeReopenOptions(): Promise<void> {
     if (!PROD) {
       const { optionsPage } = await browser.storage.local.get("optionsPage");
       if (typeof optionsPage === "boolean") {
         const isActive = optionsPage;
-        const activeTab = await getCurrentTab;
+        const activeTab = await getCurrentTab();
         await browser.runtime.openOptionsPage();
-        if (!isActive) {
+        if (!isActive && activeTab.id !== undefined) {
           await browser.tabs.update(activeTab.id, { active: true });
         }
       }
     }
   }
 
-  async restoreTabsPerf() {
+  async restoreTabsPerf(): Promise<void> {
     if (!PROD) {
       try {
         const { perf } = await browser.storage.local.get("perf");
@@ -2192,8 +2210,8 @@ export default class BackgroundProgram {
   }
 }
 
-function makeEmptyTabState(tabId: ?number): TabState {
-  const tabState = {
+function makeEmptyTabState(tabId: number | undefined): TabState {
+  const tabState: TabState = {
     hintsState: {
       type: "Idle",
       highlighted: [],
@@ -2263,7 +2281,10 @@ function getElementTypes(mode: HintsMode): ElementTypes {
   }
 }
 
-function getCombiningUrl(mode: HintsMode, element: ElementWithHint): ?string {
+function getCombiningUrl(
+  mode: HintsMode,
+  element: ElementWithHint
+): string | undefined {
   switch (mode) {
     case "Click":
       return shouldCombineHintsForClick(element)
@@ -2304,25 +2325,38 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   return url != null && !url.includes("#") && !hasClickListener;
 }
 
-function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<unknown>>> {
+async function runContentScripts(
+  tabs: Array<browser.tabs.Tab>
+): Promise<Array<Array<unknown>>> {
   const manifest = browser.runtime.getManifest();
 
-  const detailsList = manifest.content_scripts
-    .filter((script) => script.matches.includes("<all_urls>"))
-    .flatMap((script) =>
-      script.js.map((file) => ({
-        file,
-        allFrames: script.all_frames,
-        matchAboutBlank: script.match_about_blank,
-        runAt: script.run_at,
-      }))
-    );
+  const detailsList =
+    manifest.content_scripts === undefined
+      ? []
+      : manifest.content_scripts
+          .filter((script) => script.matches.includes("<all_urls>"))
+          .flatMap((script) =>
+            script.js === undefined
+              ? []
+              : script.js.map((file) => ({
+                  file,
+                  allFrames: script.all_frames,
+                  matchAboutBlank: script.match_about_blank,
+                  runAt: script.run_at,
+                }))
+          );
 
   return Promise.all(
     tabs.flatMap((tab) =>
       detailsList.map(async (details) => {
+        if (tab.id === undefined) {
+          return [];
+        }
         try {
-          return await browser.tabs.executeScript(tab.id, details);
+          return (await browser.tabs.executeScript(
+            tab.id,
+            details
+          )) as Array<unknown>;
         } catch {
           // If `executeScript` fails it means that the extension is not
           // allowed to run content scripts in the tab. Example: most
@@ -2334,19 +2368,21 @@ function runContentScripts(tabs: Array<Tab>): Promise<Array<Array<unknown>>> {
   );
 }
 
-function firefoxWorkaround(tabs: Array<Tab>) {
+function firefoxWorkaround(tabs: Array<browser.tabs.Tab>): void {
   for (const tab of tabs) {
-    const message: FromBackground = { type: "FirefoxWorkaround" };
-    browser.tabs.sendMessage(tab.id, message).catch(() => {
-      // If `sendMessage` fails it means that there’s no content script
-      // listening in that tab. Example:  `about:` pages (where extensions
-      // are not allowed to run content scripts). We don’t need to do
-      // anything in that case.
-    });
+    if (tab.id !== undefined) {
+      const message: FromBackground = { type: "FirefoxWorkaround" };
+      browser.tabs.sendMessage(tab.id, message).catch(() => {
+        // If `sendMessage` fails it means that there’s no content script
+        // listening in that tab. Example:  `about:` pages (where extensions
+        // are not allowed to run content scripts). We don’t need to do
+        // anything in that case.
+      });
+    }
   }
 }
 
-async function getCurrentTab(): Promise<Tab> {
+async function getCurrentTab(): Promise<browser.tabs.Tab> {
   const tabs = await browser.tabs.query({
     active: true,
     windowId: browser.windows.WINDOW_ID_CURRENT,
@@ -2360,7 +2396,7 @@ async function getCurrentTab(): Promise<Tab> {
 }
 
 // Open a bunch of tabs, and then focus the first of them.
-async function openNewTabs(tabId: number, urls: Array<string>) {
+async function openNewTabs(tabId: number, urls: Array<string>): Promise<void> {
   try {
     const newTabs = await Promise.all(
       urls.map((url) =>
@@ -2371,7 +2407,7 @@ async function openNewTabs(tabId: number, urls: Array<string>) {
         })
       )
     );
-    if (newTabs.length >= 2) {
+    if (newTabs.length >= 2 && newTabs[0].id !== undefined) {
       await browser.tabs.update(newTabs[0].id, { active: true });
     }
   } catch (error) {
@@ -2379,13 +2415,13 @@ async function openNewTabs(tabId: number, urls: Array<string>) {
   }
 }
 
-type IconType = "normal" | "disabled";
+type IconType = "disabled" | "normal";
 
 function getIcons(type: IconType): { [key: string]: string } {
   const manifest = browser.runtime.getManifest();
   return Object.fromEntries(
-    Object.entries(manifest.browser_action.default_icon)
-      .map(([key, value]) => {
+    Object.entries(manifest.browser_action?.default_icon ?? {}).flatMap(
+      ([key, value]) => {
         if (typeof value === "string") {
           const newValue = value.replace(/(\$)\w+/, `$1${type}`);
           // Default icons are always PNG in development to support Chrome. Switch
@@ -2396,16 +2432,17 @@ function getIcons(type: IconType): { [key: string]: string } {
             !PROD && BROWSER === "firefox"
               ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
               : newValue;
-          return [key, finalValue];
+          return [[key, finalValue]];
         }
-        return undefined;
-      })
-      .filter(Boolean)
+        return [];
+      }
+    )
   );
 }
 
 // Left to right, top to bottom.
 function comparePositions(a: HintMeasurements, b: HintMeasurements): number {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   return a.x - b.x || a.y - b.y;
 }
 
@@ -2437,14 +2474,12 @@ function getBadgeText(hintsState: HintsState): string {
         )
         .length.toString();
     }
-
-    default:
-      return unreachable(hintsState.type, hintsState);
   }
 }
 
 class Combined {
   children: Array<ElementWithHint>;
+
   weight: number;
 
   constructor(children: Array<ElementWithHint>) {
@@ -2457,7 +2492,7 @@ function combineByHref(
   elements: Array<ElementWithHint>,
   mode: HintsMode
 ): Array<Combined | ElementWithHint> {
-  const map: Map<string, Array<ElementWithHint>> = new Map();
+  const map = new Map<string, Array<ElementWithHint>>();
   const rest: Array<ElementWithHint> = [];
 
   for (const element of elements) {
@@ -2475,7 +2510,7 @@ function combineByHref(
   }
 
   return Array.from(map.values())
-    .map((children) => new Combined(children))
+    .map((children): Combined | ElementWithHint => new Combined(children))
     .concat(rest);
 }
 
@@ -2485,7 +2520,7 @@ function assignHints(
     mode,
     chars,
     hasEnteredText,
-  }: { mode: HintsMode, chars: string, hasEnteredText: boolean }
+  }: { mode: HintsMode; chars: string; hasEnteredText: boolean }
 ): Array<ElementWithHint> {
   const largestTextWeight = hasEnteredText
     ? Math.max(1, ...passedElements.map((element) => element.textWeight))
@@ -2507,6 +2542,7 @@ function assignHints(
     .sort(
       (a, b) =>
         // Higher weights first.
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         b.weight - a.weight ||
         // If the weights are the same, sort by on-screen position, left to
         // right and then top to bottom (reading order in LTR languages). If you
@@ -2542,8 +2578,10 @@ function assignHints(
   return elements;
 }
 
-function makeMessageInfo(sender: MessageSender): ?MessageInfo {
-  return sender.tab != null && sender.frameId != null
+function makeMessageInfo(
+  sender: browser.runtime.MessageSender
+): MessageInfo | undefined {
+  return sender.tab?.id !== undefined && sender.frameId !== undefined
     ? { tabId: sender.tab.id, frameId: sender.frameId, url: sender.url }
     : undefined;
 }
@@ -2558,8 +2596,6 @@ function updateChars(chars: string, input: HintInput): string {
       return chars;
     case "Backspace":
       return chars.slice(0, -1);
-    default:
-      return unreachable(input.type, input);
   }
 }
 
@@ -2574,21 +2610,23 @@ function updateHints({
   matchHighlighted,
   updateMeasurements,
 }: {
-  mode: HintsMode,
-  enteredChars: string,
-  enteredText: string,
-  elementsWithHints: Array<ElementWithHint>,
-  highlighted: Highlighted,
-  chars: string,
-  autoActivate: boolean,
-  matchHighlighted: boolean,
-  updateMeasurements: boolean,
+  mode: HintsMode;
+  enteredChars: string;
+  enteredText: string;
+  elementsWithHints: Array<ElementWithHint>;
+  highlighted: Highlighted;
+  chars: string;
+  autoActivate: boolean;
+  matchHighlighted: boolean;
+  updateMeasurements: boolean;
 }): {
-  elementsWithHints: Array<ElementWithHint>,
-  allElementsWithHints: Array<ElementWithHint>,
-  match: ?{ elementWithHint: ElementWithHint, autoActivated: boolean },
-  updates: Array<HintUpdate>,
-  words: Array<string>,
+  elementsWithHints: Array<ElementWithHint>;
+  allElementsWithHints: Array<ElementWithHint>;
+  match:
+    | { elementWithHint: ElementWithHint; autoActivated: boolean }
+    | undefined;
+  updates: Array<HintUpdate>;
+  words: Array<string>;
 } {
   const hasEnteredText = enteredText !== "";
   const hasEnteredTextOnly = hasEnteredText && enteredChars === "";
@@ -2639,44 +2677,46 @@ function updateHints({
   );
 
   const updates: Array<HintUpdate> = elementsWithHintsAndMaybeHidden
-    .map((element, index) => {
-      const matches = element.hint.startsWith(enteredChars);
-      const isHighlighted =
-        (match != null && element.hint === match.hint) ||
-        element.hint === highlightedHint ||
-        highlightedKeys.has(elementKey(element));
+    .map(
+      (element, index): HintUpdate => {
+        const matches = element.hint.startsWith(enteredChars);
+        const isHighlighted =
+          (match != null && element.hint === match.hint) ||
+          element.hint === highlightedHint ||
+          highlightedKeys.has(elementKey(element));
 
-      return updateMeasurements
-        ? {
-            // Update the position of the hint.
-            type: "UpdatePosition",
-            index: element.index,
-            order: index,
-            hint: element.hint,
-            hintMeasurements: element.hintMeasurements,
-            highlighted: isHighlighted,
-            hidden: element.hidden || !matches,
-          }
-        : matches && (match == null || highlighted)
-        ? {
-            // Update the hint (which can change based on text filtering),
-            // which part of the hint has been matched and whether it
-            // should be marked as highlighted/matched.
-            type: "UpdateContent",
-            index: element.index,
-            order: index,
-            matchedChars: enteredChars,
-            restChars: element.hint.slice(enteredChars.length),
-            highlighted: isHighlighted,
-            hidden: element.hidden || !matches,
-          }
-        : {
-            // Hide hints that don’t match the entered hint chars.
-            type: "Hide",
-            index: element.index,
-            hidden: true,
-          };
-    })
+        return updateMeasurements
+          ? {
+              // Update the position of the hint.
+              type: "UpdatePosition",
+              index: element.index,
+              order: index,
+              hint: element.hint,
+              hintMeasurements: element.hintMeasurements,
+              highlighted: isHighlighted,
+              hidden: element.hidden || !matches,
+            }
+          : matches && (match == null || isHighlighted)
+          ? {
+              // Update the hint (which can change based on text filtering),
+              // which part of the hint has been matched and whether it
+              // should be marked as highlighted/matched.
+              type: "UpdateContent",
+              index: element.index,
+              order: index,
+              matchedChars: enteredChars,
+              restChars: element.hint.slice(enteredChars.length),
+              highlighted: isHighlighted,
+              hidden: element.hidden || !matches,
+            }
+          : {
+              // Hide hints that don’t match the entered hint chars.
+              type: "Hide",
+              index: element.index,
+              hidden: true,
+            };
+      }
+    )
     .concat(
       nonMatching.map((element) => ({
         // Hide hints for elements filtered by text.

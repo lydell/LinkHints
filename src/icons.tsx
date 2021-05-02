@@ -17,9 +17,9 @@ import config from "../project.config";
 type Point = [number, number];
 
 type Colors = {
-  edges: string,
-  surface: string,
-  pointer: string,
+  edges: string;
+  surface: string;
+  pointer: string;
 };
 
 const COLORS = {
@@ -50,9 +50,9 @@ function pointer({
   inset,
   tailLength,
 }: {
-  height: number, // start–l1, start–r1
-  inset: number, // l1–l2, r1–r2
-  tailLength: number, // l2–l3, r2–r3
+  height: number; // start–l1, start–r1
+  inset: number; // l1–l2, r1–r2
+  tailLength: number; // l2–l3, r2–r3
 }): Array<Point> {
   const start = [0, 0];
 
@@ -74,9 +74,9 @@ function go({
   angle,
   length,
 }: {
-  fromPoint: Point,
-  angle: number,
-  length: number,
+  fromPoint: Point;
+  angle: number;
+  length: number;
 }): Point {
   // First make a vector with the requested length.
   const point = [length, 0];
@@ -101,7 +101,7 @@ function render(
   {
     opacity = 1,
     pointer: shouldDrawPointer = true,
-  }: { opacity?: number, pointer?: boolean } = {}
+  }: { opacity?: number; pointer?: boolean } = {}
 ): string {
   const surfaceRect = {
     left: size * (1 / 8),
@@ -280,9 +280,7 @@ function checksum(string: string): string {
 }
 
 function makeChecksumFile(hash: string): string {
-  return `// @flow strict-local
-export default ${JSON.stringify(hash)};
-`;
+  return `export default ${JSON.stringify(hash)};`;
 }
 
 function writeFileIfNeeded(filepath: string, content: string) {

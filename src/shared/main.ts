@@ -8,7 +8,7 @@ import { Decoder, map, number, repr } from "tiny-decoders";
 // ElementManager might not get the same random number.
 export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
-export type LogLevel = $Keys<typeof LOG_LEVELS>;
+export type LogLevel = keyof typeof LOG_LEVELS;
 
 export function decodeLogLevel(logLevel: unknown): LogLevel {
   switch (logLevel) {
@@ -78,14 +78,11 @@ function getLogMethod(level: LogLevel): AnyFunction {
 
     case "debug":
       return console.debug;
-
-    default:
-      return unreachable(level);
   }
 }
 /* eslint-enable no-console */
 
-type Method = (...args: Array<any>) => void | Promise<void>;
+type Method = (...args: Array<any>) => Promise<void> | void;
 
 /*
 Binds class methods to the instance, so you can do `foo(this.method)` instead
@@ -105,9 +102,9 @@ Example:
     }
 */
 export function bind(
-  object: { [key: string]: unknown },
-  methods: Array<Method | [Method, { log?: boolean, catch?: boolean }]>
-) {
+  object: unknown,
+  methods: Array<Method | [Method, { log?: boolean; catch?: boolean }]>
+): void {
   for (const item of methods) {
     const [method, options] = Array.isArray(item) ? item : [item, {}];
     const { log: shouldLog = false, catch: shouldCatch = false } = options;
@@ -116,9 +113,12 @@ export function bind(
       writable: true,
       enumerable: false,
       configurable: true,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       value: Object.defineProperty(
-        (...args: Array<any>) => {
-          const prefix = `${object.constructor.name}#${method.name}`;
+        (...args: Array<unknown>) => {
+          const prefix = `${
+            (object as { constructor: AnyFunction }).constructor.name
+          }#${method.name}`;
           if (shouldLog) {
             log("log", prefix, ...args);
           }
@@ -146,8 +146,8 @@ export function bind(
   }
 }
 
-export function unreachable(value: empty, ...args: Array<unknown>) {
-  const message = `Unreachable: ${value}\n${JSON.stringify(
+export function unreachable(value: never, ...args: Array<unknown>): never {
+  const message = `Unreachable: ${value as string}\n${JSON.stringify(
     args,
     undefined,
     2
@@ -159,7 +159,7 @@ export function addEventListener(
   target: EventTarget,
   eventName: string,
   listener: AnyFunction,
-  options: { capture?: boolean, passive?: boolean } = { ...undefined }
+  options: { capture?: boolean; passive?: boolean } = {}
 ): () => void {
   const fullOptions = { capture: true, passive: true, ...options };
   target.addEventListener(eventName, listener, fullOptions);
@@ -170,9 +170,8 @@ export function addEventListener(
 
 export function addListener<Listener, Options>(
   target: {
-    addListener: (Listener, options?: Options) => void,
-    removeListener: (Listener) => void,
-    ...
+    addListener: (listener: Listener, options?: Options) => void;
+    removeListener: (listener: Listener) => void;
   },
   listener: Listener,
   options?: Options
@@ -197,11 +196,11 @@ export function timeout(duration: number, callback: () => unknown): () => void {
 export class Resets {
   _callbacks: Array<() => unknown> = [];
 
-  add(...callbacks: Array<() => unknown>) {
+  add(...callbacks: Array<() => unknown>): void {
     this._callbacks.push(...callbacks);
   }
 
-  reset() {
+  reset(): void {
     for (const callback of this._callbacks) {
       callback();
     }
@@ -215,10 +214,10 @@ export class Resets {
  */
 export function partition<T>(
   array: Array<T>,
-  fn: (T, number, Array<T>) => boolean
+  fn: (item: T, index: number, array: Array<T>) => boolean
 ): [Array<T>, Array<T>] {
-  const left = [];
-  const right = [];
+  const left: Array<T> = [];
+  const right: Array<T> = [];
 
   array.forEach((item, index) => {
     if (fn(item, index, array)) {
@@ -238,10 +237,17 @@ export function makeRandomToken(): string {
 }
 
 export type Box = {
-  +x: number,
-  +y: number,
-  +width: number,
-  +height: number,
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type IntermediateRect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
 };
 
 // Turn a `ClientRect` into a `Box` using the coordinates of the topmost
@@ -250,11 +256,11 @@ export type Box = {
 export function getVisibleBox(
   passedRect: ClientRect,
   viewports: Array<Box>
-): ?Box {
+): Box | undefined {
   // No shortcuts (such as summing up viewport x:s and y:s) can be taken here,
   // since each viewport (frame) clips the visible area. We have to loop them
   // all through.
-  const visibleRect = viewports.reduceRight(
+  const visibleRect = viewports.reduceRight<IntermediateRect>(
     (rect, viewport) => ({
       left: viewport.x + Math.max(rect.left, 0),
       right: viewport.x + Math.min(rect.right, viewport.width),
@@ -283,11 +289,7 @@ export function getViewport(): Box {
   // In `<frameset>` documents `.scrollingElement` is null so fall back to
   // `.documentElement`.
   const scrollingElement =
-    document.scrollingElement || document.documentElement;
-
-  if (scrollingElement == null) {
-    return { x: 0, y: 0, width: 0, height: 0 };
-  }
+    document.scrollingElement ?? document.documentElement;
 
   // `scrollingElement.client{Width,Height}` is the size of the viewport without
   // scrollbars (unlike `window.inner{Width,Height}` which include the
@@ -304,7 +306,7 @@ export function getViewport(): Box {
 export function setStyles(
   element: HTMLElement,
   styles: { [key: string]: string }
-) {
+): void {
   for (const [property, value] of Object.entries(styles)) {
     // $FlowIgnore: Flow thinks that `value` is `unknown` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
@@ -398,10 +400,10 @@ export function getTextRects({
   words,
   checkElementAtPoint = true,
 }: {
-  element: HTMLElement,
-  viewports: Array<Box>,
-  words: Set<string>,
-  checkElementAtPoint?: boolean,
+  element: HTMLElement;
+  viewports: Array<Box>;
+  words: Set<string>;
+  checkElementAtPoint?: boolean;
 }): Array<Box> {
   const text = extractText(element).toLowerCase();
 
@@ -449,7 +451,7 @@ export function getTextRects({
     return Array.from(rects, (rect) => {
       const box = getVisibleBox(rect, viewports);
       if (box == null) {
-        return undefined;
+        return [];
       }
       if (!checkElementAtPoint) {
         return box;
@@ -461,8 +463,8 @@ export function getTextRects({
       );
       return elementAtPoint != null && element.contains(elementAtPoint)
         ? box
-        : undefined;
-    }).filter(Boolean);
+        : [];
+    }).flat();
   });
 }
 
@@ -470,12 +472,14 @@ export function getElementFromPoint(
   element: HTMLElement,
   x: number,
   y: number
-): ?HTMLElement {
+): HTMLElement | undefined {
   const root = element.getRootNode();
   const doc =
     root instanceof Document || root instanceof ShadowRoot ? root : document;
-  // $FlowIgnore: Flow doesn’t know that `ShadowRoot` has `.elementFromPoint` yet.
-  return doc.elementFromPoint(x, y);
+  const elementFromPoint = doc.elementFromPoint(x, y);
+  return elementFromPoint === null
+    ? undefined
+    : (elementFromPoint as HTMLElement);
 }
 
 export function getElementsFromPoint(
@@ -486,13 +490,17 @@ export function getElementsFromPoint(
   const root = element.getRootNode();
   const doc =
     root instanceof Document || root instanceof ShadowRoot ? root : document;
-  // $FlowIgnore: Flow doesn’t know that `ShadowRoot` has `.elementsFromPoint` yet.
-  return doc.elementsFromPoint(x, y);
+  return doc.elementsFromPoint(x, y) as Array<HTMLElement>;
 }
 
-export function getLabels(element: HTMLElement): ?NodeList<HTMLLabelElement> {
-  // $FlowIgnore: Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
-  return element.labels instanceof NodeList ? element.labels : undefined;
+export function getLabels(
+  element: HTMLElement
+): NodeListOf<HTMLLabelElement> | undefined {
+  // @ts-expect-error Only some types of elements have `.labels`, and I'm not going to `instanceof` check them all.
+  const labels: unknown = element.labels; // eslint-disable-line prefer-destructuring
+  return labels instanceof NodeList
+    ? (labels as NodeListOf<HTMLLabelElement>)
+    : undefined;
 }
 
 export function classlist(
@@ -553,7 +561,12 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     const keys = new Set(keysA.concat(keysB));
 
     for (const key of keys) {
-      if (!deepEqual(a[key], b[key])) {
+      if (
+        !deepEqual(
+          (a as Record<string, unknown>)[key],
+          (b as Record<string, unknown>)[key]
+        )
+      ) {
         return false;
       }
     }

@@ -1,9 +1,9 @@
 // @flow strict-local
 
 import {
-  Decoder,
   array,
   boolean,
+  Decoder,
   dict,
   fields,
   map,
@@ -12,45 +12,45 @@ import {
 } from "tiny-decoders";
 
 import {
-  KeyboardMapping,
-  KeyTranslations,
-  Shortcut,
   decodeKeyboardMapping,
   decodeKeyboardMappingWithModifiers,
   decodeKeyPair,
   deserializeShortcut,
   EN_US_QWERTY_TRANSLATIONS,
+  KeyboardMapping,
+  KeyTranslations,
   serializeShortcut,
+  Shortcut,
 } from "./keyboard";
 import {
-  LogLevel,
   decodeLogLevel,
   decodeUnsignedInt,
   deepEqual,
   DEFAULT_LOG_LEVEL,
+  LogLevel,
 } from "./main";
 
 export type OptionsData = {
-  values: Options,
-  defaults: Options,
-  raw: FlatOptions,
-  errors: Array<string>,
-  mac: boolean,
+  values: Options;
+  defaults: Options;
+  raw: FlatOptions;
+  errors: Array<string>;
+  mac: boolean;
 };
 
 export type Options = {
-  chars: string,
-  autoActivate: boolean,
-  overTypingDuration: number,
-  css: string,
-  logLevel: LogLevel,
-  useKeyTranslations: boolean,
-  keyTranslations: KeyTranslations,
-  normalKeyboardShortcuts: Array<KeyboardMapping>,
-  hintsKeyboardShortcuts: Array<KeyboardMapping>,
+  chars: string;
+  autoActivate: boolean;
+  overTypingDuration: number;
+  css: string;
+  logLevel: LogLevel;
+  useKeyTranslations: boolean;
+  keyTranslations: KeyTranslations;
+  normalKeyboardShortcuts: Array<KeyboardMapping>;
+  hintsKeyboardShortcuts: Array<KeyboardMapping>;
 };
 
-export type PartialOptions = $Shape<Options>;
+export type PartialOptions = Partial<Options>;
 
 export type FlatOptions = { [key: string]: unknown };
 
@@ -342,7 +342,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
 
   for (const key of Object.keys(object)) {
     const item = object[key];
-    const [, start, rest] = PREFIX_REGEX.exec(key) || ["", "", ""];
+    const [, start, rest] = PREFIX_REGEX.exec(key) != null || ["", "", ""];
 
     switch (start) {
       case "keys":
@@ -367,7 +367,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
 
 export const DEBUG_PREFIX = "debug.";
 
-export async function getRawOptions(): FlatOptions {
+export async function getRawOptions(): Promise<FlatOptions> {
   const raw = await browser.storage.sync.get();
   // Exclude all tweakables since they are handled completely differently.
   return Object.fromEntries(
@@ -379,7 +379,7 @@ export function diffOptions(
   defaults: FlatOptions,
   fullOptions: FlatOptions,
   saved: FlatOptions
-): { keysToRemove: Array<string>, optionsToSet: FlatOptions } {
+): { keysToRemove: Array<string>; optionsToSet: FlatOptions } {
   const keysToRemove = [];
   const optionsToSet = {};
 
@@ -438,9 +438,9 @@ export function importOptions(
   options: Options,
   defaults: Options
 ): {
-  options: ?Options,
-  successCount: number,
-  errors: Array<string>,
+  options: ?Options;
+  successCount: number;
+  errors: Array<string>;
 } {
   try {
     const keyErrors = Object.keys(unflattenOptions(flatOptions))

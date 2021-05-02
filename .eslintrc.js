@@ -157,7 +157,7 @@ module.exports = {
         "@typescript-eslint/no-empty-function": warn,
         "@typescript-eslint/no-empty-interface": warn,
         "@typescript-eslint/no-explicit-any": warn,
-        "@typescript-eslint/no-floating-promises": error,
+        // "@typescript-eslint/no-floating-promises": error,
         "@typescript-eslint/no-for-in-array": warn,
         "@typescript-eslint/no-implied-eval": error,
         "@typescript-eslint/no-inferrable-types": [
@@ -214,7 +214,7 @@ module.exports = {
         ],
         "@typescript-eslint/switch-exhaustiveness-check": error,
         "@typescript-eslint/triple-slash-reference": warn,
-        "@typescript-eslint/unbound-method": error,
+        // "@typescript-eslint/unbound-method": error,
         "@typescript-eslint/unified-signatures": warn,
       },
     },
