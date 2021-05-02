@@ -33,7 +33,7 @@ export const DEFAULT_LOG_LEVEL: LogLevel = PROD
   ? "warn"
   : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
-export function log(level: LogLevel, ...args: Array<unknown>) {
+export function log(level: LogLevel, ...args: Array<unknown>): void {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
     return;
   }
@@ -56,7 +56,8 @@ export function log(level: LogLevel, ...args: Array<unknown>) {
 log.level = DEFAULT_LOG_LEVEL;
 
 function formatDate(date: Date): string {
-  const pad = (num: number, length = 2) => num.toString().padStart(length, "0");
+  const pad = (num: number, length: number = 2): string =>
+    num.toString().padStart(length, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate()
   )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
@@ -82,6 +83,7 @@ function getLogMethod(level: LogLevel): AnyFunction {
 }
 /* eslint-enable no-console */
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Method = (...args: Array<any>) => Promise<void> | void;
 
 /*

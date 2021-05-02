@@ -1,9 +1,9 @@
 // @flow strict-local
 
 import {
-  Decoder,
   autoRecord,
   boolean,
+  Decoder,
   map,
   pair,
   repr,
@@ -11,22 +11,22 @@ import {
 } from "tiny-decoders";
 
 export type KeyboardAction =
-  | "EnterHintsMode_Click"
+  | "ActivateHint"
+  | "ActivateHintAlt"
+  | "Backspace"
   | "EnterHintsMode_BackgroundTab"
+  | "EnterHintsMode_Click"
   | "EnterHintsMode_ForegroundTab"
   | "EnterHintsMode_ManyClick"
   | "EnterHintsMode_ManyTab"
   | "EnterHintsMode_Select"
-  | "ReverseSelection"
   | "Escape"
-  | "ActivateHint"
-  | "ActivateHintAlt"
-  | "Backspace"
-  | "RotateHintsForward"
-  | "RotateHintsBackward"
+  | "ExitHintsMode"
   | "RefreshHints"
-  | "TogglePeek"
-  | "ExitHintsMode";
+  | "ReverseSelection"
+  | "RotateHintsBackward"
+  | "RotateHintsForward"
+  | "TogglePeek";
 
 export function decodeKeyboardAction(type: string): KeyboardAction {
   switch (type) {
@@ -59,34 +59,34 @@ export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = 
 
 // Raw values from a `KeyboardEvent` that we care about.
 export type Keypress = {
-  key: string,
-  code: string,
-  alt: boolean,
-  cmd: boolean,
-  ctrl: boolean,
-  shift: boolean,
-  capslock: boolean,
+  key: string;
+  code: string;
+  alt: boolean;
+  cmd: boolean;
+  ctrl: boolean;
+  shift: boolean;
+  capslock: boolean;
 };
 
 // A `Keypress` after taking `KeyTranslations` into account.
 export type NormalizedKeypress = {
-  key: string,
-  printableKey: ?string,
-  alt: boolean,
-  cmd: boolean,
-  ctrl: boolean,
+  key: string;
+  printableKey: string | undefined;
+  alt: boolean;
+  cmd: boolean;
+  ctrl: boolean;
   // If missing it means that the shift key doesn’t matter. For example, it
   // doesn’t matter if you need to press shift to type a `/` or not (which
   // differs between keyboard layouts).
-  shift: ?boolean,
+  shift: boolean | undefined;
 };
 
 export type Shortcut = {
-  key: string,
-  alt: boolean,
-  cmd: boolean,
-  ctrl: boolean,
-  shift: boolean,
+  key: string;
+  alt: boolean;
+  cmd: boolean;
+  ctrl: boolean;
+  shift: boolean;
 };
 
 const decodeShortcut: Decoder<Shortcut> = autoRecord({
@@ -152,8 +152,8 @@ export function deserializeShortcut(
 }
 
 export type KeyboardMapping = {
-  shortcut: Shortcut,
-  action: KeyboardAction,
+  shortcut: Shortcut;
+  action: KeyboardAction;
 };
 
 export const decodeKeyboardMapping: Decoder<KeyboardMapping> = autoRecord({
@@ -169,22 +169,22 @@ export const decodeKeyboardMappingWithModifiers: Decoder<KeyboardMapping> = auto
 );
 
 export type KeyboardModeBackground =
+  | { type: "Capture" }
   | { type: "FromHintsState" }
-  | { type: "PreventOverTyping", sinceTimestamp: number }
-  | { type: "Capture" };
+  | { type: "PreventOverTyping"; sinceTimestamp: number };
 
 export type KeyboardModeWorker =
-  | "Normal"
+  | "Capture"
   | "Hints"
-  | "PreventOverTyping"
-  | "Capture";
+  | "Normal"
+  | "PreventOverTyping";
 
 export type HintsMode =
+  | "BackgroundTab"
   | "Click"
+  | "ForegroundTab"
   | "ManyClick"
   | "ManyTab"
-  | "BackgroundTab"
-  | "ForegroundTab"
   | "Select";
 
 export function decodeHintsMode(type: string): HintsMode {
@@ -273,8 +273,8 @@ export function normalizeKeypress({
   keypress,
   keyTranslations,
 }: {
-  keypress: Keypress,
-  keyTranslations: KeyTranslations,
+  keypress: Keypress;
+  keyTranslations: KeyTranslations;
 }): NormalizedKeypress {
   // If ignoring the keyboard layout, try to translate `.code` to a `.key`
   // value. Use `.key` otherwise.
@@ -341,10 +341,10 @@ function translateCode({
   shift,
   keyTranslations,
 }: {
-  code: string,
-  shift: boolean,
-  keyTranslations: KeyTranslations,
-}): ?string {
+  code: string;
+  shift: boolean;
+  keyTranslations: KeyTranslations;
+}): string | undefined {
   if ({}.hasOwnProperty.call(keyTranslations, code)) {
     const [unshifted, shifted] = keyTranslations[code];
     return shift ? shifted : unshifted;

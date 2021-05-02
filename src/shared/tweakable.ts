@@ -1,59 +1,58 @@
 // @flow strict-local
 
-import { Decoder, array, map, repr, string } from "tiny-decoders";
+import { array, Decoder, map, repr, string } from "tiny-decoders";
 
-import { ElementType, decodeElementType } from "./hints";
+import { decodeElementType, ElementType } from "./hints";
 import {
   addListener,
   decodeUnsignedFloat,
   decodeUnsignedInt,
   deepEqual,
   log,
-  unreachable,
 } from "./main";
 import { DEBUG_PREFIX } from "./options";
 
 type UnsignedInt = {
-  type: "UnsignedInt",
-  value: number,
+  type: "UnsignedInt";
+  value: number;
 };
 
 type UnsignedFloat = {
-  type: "UnsignedFloat",
-  value: number,
+  type: "UnsignedFloat";
+  value: number;
 };
 
 type StringSet = {
-  type: "StringSet",
-  value: Set<string>,
+  type: "StringSet";
+  value: Set<string>;
 };
 
 type ElementTypeSet = {
-  type: "ElementTypeSet",
-  value: Set<ElementType>,
+  type: "ElementTypeSet";
+  value: Set<ElementType>;
 };
 
 type SelectorString = {
-  type: "SelectorString",
-  value: string,
+  type: "SelectorString";
+  value: string;
 };
 
 export type TweakableValue =
-  | UnsignedInt
-  | UnsignedFloat
-  | StringSet
   | ElementTypeSet
-  | SelectorString;
+  | SelectorString
+  | StringSet
+  | UnsignedFloat
+  | UnsignedInt;
 
 export type TweakableMapping = { [key: string]: TweakableValue };
 
 export type TweakableMeta = {
-  namespace: string,
-  defaults: TweakableMapping,
-  changed: { [key: string]: boolean },
-  errors: { [key: string]: ?string },
-  loaded: Promise<void>,
-  unlisten: () => void,
+  namespace: string;
+  defaults: TweakableMapping;
+  changed: { [key: string]: boolean };
+  errors: { [key: string]: string | undefined };
+  loaded: Promise<void>;
+  unlisten: () => void;
 };
 
 export function unsignedInt(value: number): UnsignedInt {
@@ -98,10 +97,10 @@ export function tweakable(
   const prefix = "tweakable";
   const keyPrefix = `${DEBUG_PREFIX}${namespace}.`;
   const defaults = { ...mapping };
-  const changed: { [$Keys<typeof mapping>]: boolean } = {};
-  const errors: { [$Keys<typeof mapping>]: ?string } = {};
+  const changed: { [key: string]: boolean } = {};
+  const errors: { [key: string]: string | undefined } = {};
 
-  function update(data: { [key: string]: unknown }) {
+  function update(data: { [key: string]: unknown }): void {
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!{}.hasOwnProperty.call(defaults, key)) {
@@ -164,6 +163,7 @@ export function tweakable(
           }
 
           case "SelectorString": {
+            // eslint-disable-next-line @typescript-eslint/no-loop-func
             const decoded = map(string, (val) => {
               document.querySelector(val);
               return val;
@@ -175,11 +175,9 @@ export function tweakable(
             changed[key] = decoded !== original.value;
             break;
           }
-
-          default:
-            unreachable(original.type, original);
         }
-      } catch (error) {
+      } catch (errorAny) {
+        const error = errorAny as Error;
         errors[key] = error.message;
       }
     }
@@ -196,7 +194,7 @@ export function tweakable(
       );
       update(data);
     })
-    .catch((error) => {
+    .catch((error: Error) => {
       log("error", prefix, "First load failed.", {
         namespace,
         mapping,
@@ -209,17 +207,15 @@ export function tweakable(
     (changes, areaName) => {
       if (areaName === "sync") {
         const data = Object.fromEntries(
-          Object.keys(changes)
-            .map((fullKey) => {
-              if (fullKey.startsWith(keyPrefix)) {
-                const key = fullKey.slice(keyPrefix.length);
-                if ({}.hasOwnProperty.call(defaults, key)) {
-                  return [key, changes[fullKey].newValue];
-                }
+          Object.keys(changes).flatMap((fullKey) => {
+            if (fullKey.startsWith(keyPrefix)) {
+              const key = fullKey.slice(keyPrefix.length);
+              if ({}.hasOwnProperty.call(defaults, key)) {
+                return [[key, changes[fullKey].newValue]];
               }
-              return undefined;
-            })
-            .filter(Boolean)
+            }
+            return [];
+          })
         );
         update(data);
       }
@@ -245,7 +241,9 @@ export function normalizeStringArray(
     .sort();
 }
 
-function decodeStringSet<T: string>(decoder: Decoder<T>): Decoder<Set<T>> {
+function decodeStringSet<T extends string>(
+  decoder: Decoder<T>
+): Decoder<Set<T>> {
   return map(
     array(string),
     (arr) => new Set(array(decoder)(normalizeStringArray(arr)))

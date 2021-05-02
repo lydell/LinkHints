@@ -1,9 +1,9 @@
 // @flow strict-local
 
 import {
-  Decoder,
   array,
   autoRecord,
+  Decoder,
   dict,
   number,
   pair,
@@ -17,13 +17,13 @@ export type Durations = Array<[string, number]>;
 export const decodeDurations: Decoder<Durations> = array(pair(string, number));
 
 export type Stats = {
-  url: string,
-  numTotalElements: number,
-  numTrackedElements: number,
-  numVisibleElements: number,
-  numVisibleFrames: number,
-  bailed: number,
-  durations: Durations,
+  url: string;
+  numTotalElements: number;
+  numTrackedElements: number;
+  numVisibleElements: number;
+  numVisibleFrames: number;
+  bailed: number;
+  durations: Durations;
 };
 
 export const decodeStats: Decoder<Stats> = autoRecord({
@@ -37,11 +37,11 @@ export const decodeStats: Decoder<Stats> = autoRecord({
 });
 
 export type Perf = Array<{
-  timeToFirstPaint: number,
-  timeToLastPaint: number,
-  topDurations: Durations,
-  collectStats: Array<Stats>,
-  renderDurations: Durations,
+  timeToFirstPaint: number;
+  timeToLastPaint: number;
+  topDurations: Durations;
+  collectStats: Array<Stats>;
+  renderDurations: Durations;
 }>;
 
 export const decodePerf: Decoder<Perf> = array(
@@ -60,9 +60,10 @@ export const decodeTabsPerf: Decoder<TabsPerf> = dict(decodePerf);
 
 export class TimeTracker {
   _durations: Durations = [];
-  _current: ?{ label: string, timestamp: number } = undefined;
 
-  start(label: string) {
+  _current: { label: string; timestamp: number } | undefined = undefined;
+
+  start(label: string): void {
     this.stop();
 
     this._current = {
@@ -71,7 +72,7 @@ export class TimeTracker {
     };
   }
 
-  stop() {
+  stop(): void {
     const current = this._current;
     if (current == null) {
       return;
@@ -80,7 +81,7 @@ export class TimeTracker {
     const duration = Date.now() - current.timestamp;
 
     const previous = this._durations.find(([label]) => label === current.label);
-    if (previous) {
+    if (previous != null) {
       previous[1] += duration;
     } else {
       this._durations.push([current.label, duration]);

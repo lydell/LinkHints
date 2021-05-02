@@ -19,231 +19,231 @@ import type { Durations, Stats, TabsPerf } from "./perf";
 
 export type FromBackground =
   | {
-      type: "ToWorker",
-      message: ToWorker,
+      type: "FirefoxWorkaround";
     }
   | {
-      type: "ToRenderer",
-      message: ToRenderer,
+      type: "ToOptions";
+      message: ToOptions;
     }
   | {
-      type: "ToPopup",
-      message: ToPopup,
+      type: "ToPopup";
+      message: ToPopup;
     }
   | {
-      type: "ToOptions",
-      message: ToOptions,
+      type: "ToRenderer";
+      message: ToRenderer;
     }
   | {
-      type: "FirefoxWorkaround",
+      type: "ToWorker";
+      message: ToWorker;
     };
 
 export type ToBackground =
   | {
-      type: "FromWorker",
-      message: FromWorker,
+      type: "FromOptions";
+      message: FromOptions;
     }
   | {
-      type: "FromRenderer",
-      message: FromRenderer,
+      type: "FromPopup";
+      message: FromPopup;
     }
   | {
-      type: "FromPopup",
-      message: FromPopup,
+      type: "FromRenderer";
+      message: FromRenderer;
     }
   | {
-      type: "FromOptions",
-      message: FromOptions,
+      type: "FromWorker";
+      message: FromWorker;
     };
 
 export type FromWorker =
   | {
-      type: "WorkerScriptAdded",
+      type: "ClickedLinkNavigatingToOtherPage";
     }
   | {
-      type: "KeyboardShortcutMatched",
-      action: KeyboardAction,
-      timestamp: number,
+      type: "KeyboardShortcutMatched";
+      action: KeyboardAction;
+      timestamp: number;
     }
   | {
-      type: "NonKeyboardShortcutKeypress",
-      keypress: NormalizedKeypress,
-      timestamp: number,
+      type: "KeypressCaptured";
+      keypress: NormalizedKeypress;
     }
   | {
-      type: "KeypressCaptured",
-      keypress: NormalizedKeypress,
+      type: "NonKeyboardShortcutKeypress";
+      keypress: NormalizedKeypress;
+      timestamp: number;
     }
   | {
-      type: "ReportVisibleFrame",
+      type: "OpenNewTabs";
+      urls: Array<string>;
     }
   | {
-      type: "ReportVisibleElements",
-      elements: Array<ElementReport>,
-      numFrames: number,
-      stats: Stats,
+      type: "PersistedPageShow";
     }
   | {
-      type: "ReportUpdatedElements",
-      elements: Array<ElementReport>,
-      rects: Array<Box>,
+      type: "ReportTextRects";
+      rects: Array<Box>;
     }
   | {
-      type: "ReportTextRects",
-      rects: Array<Box>,
+      type: "ReportUpdatedElements";
+      elements: Array<ElementReport>;
+      rects: Array<Box>;
     }
   | {
-      type: "ClickedLinkNavigatingToOtherPage",
+      type: "ReportVisibleElements";
+      elements: Array<ElementReport>;
+      numFrames: number;
+      stats: Stats;
     }
   | {
-      type: "TopPageHide",
+      type: "ReportVisibleFrame";
     }
   | {
-      type: "PersistedPageShow",
+      type: "TopPageHide";
     }
   | {
-      type: "OpenNewTabs",
-      urls: Array<string>,
+      type: "WorkerScriptAdded";
     };
 
 export type ToWorker =
   | {
-      type: "StateSync",
-      logLevel: LogLevel,
-      clearElements: boolean,
-      keyboardShortcuts: Array<KeyboardMapping>,
-      keyboardMode: KeyboardModeWorker,
-      keyTranslations: KeyTranslations,
-      oneTimeWindowMessageToken: string,
-      mac: boolean,
-      isPinned: boolean,
+      type: "ClickElement";
+      index: number;
     }
   | {
-      type: "StartFindElements",
-      types: ElementTypes,
+      type: "CopyElement";
+      index: number;
     }
   | {
-      type: "UpdateElements",
+      type: "Escape";
     }
   | {
-      type: "GetTextRects",
-      indexes: Array<number>,
-      words: Array<string>,
+      type: "FocusElement";
+      index: number;
     }
   | {
-      type: "FocusElement",
-      index: number,
+      type: "GetTextRects";
+      indexes: Array<number>;
+      words: Array<string>;
     }
   | {
-      type: "ClickElement",
-      index: number,
+      type: "OpenNewTab";
+      url: string;
+      foreground: boolean;
     }
   | {
-      type: "SelectElement",
-      index: number,
+      type: "ReverseSelection";
     }
   | {
-      type: "CopyElement",
-      index: number,
+      type: "SelectElement";
+      index: number;
     }
   | {
-      type: "OpenNewTab",
-      url: string,
-      foreground: boolean,
+      type: "StartFindElements";
+      types: ElementTypes;
     }
   | {
-      type: "Escape",
+      type: "StateSync";
+      logLevel: LogLevel;
+      clearElements: boolean;
+      keyboardShortcuts: Array<KeyboardMapping>;
+      keyboardMode: KeyboardModeWorker;
+      keyTranslations: KeyTranslations;
+      oneTimeWindowMessageToken: string;
+      mac: boolean;
+      isPinned: boolean;
     }
   | {
-      type: "ReverseSelection",
+      type: "UpdateElements";
     };
 
 export type FromRenderer =
   | {
-      type: "RendererScriptAdded",
+      type: "Rendered";
+      durations: Durations;
+      firstPaintTimestamp: number;
+      lastPaintTimestamp: number;
     }
   | {
-      type: "Rendered",
-      durations: Durations,
-      firstPaintTimestamp: number,
-      lastPaintTimestamp: number,
+      type: "RendererScriptAdded";
     };
 
 export type ToRenderer =
   | {
-      type: "StateSync",
-      css: string,
-      logLevel: LogLevel,
+      type: "Peek";
     }
   | {
-      type: "Render",
-      elements: Array<ElementRender>,
-      mixedCase: boolean,
+      type: "Render";
+      elements: Array<ElementRender>;
+      mixedCase: boolean;
     }
   | {
-      type: "UpdateHints",
-      updates: Array<HintUpdate>,
-      enteredText: string,
+      type: "RenderTextRects";
+      rects: Array<Box>;
+      frameId: number;
     }
   | {
-      type: "RotateHints",
-      forward: boolean,
+      type: "RotateHints";
+      forward: boolean;
     }
   | {
-      type: "RenderTextRects",
-      rects: Array<Box>,
-      frameId: number,
+      type: "StateSync";
+      css: string;
+      logLevel: LogLevel;
     }
   | {
-      type: "Peek",
+      type: "Unpeek";
     }
   | {
-      type: "Unpeek",
+      type: "Unrender";
     }
   | {
-      type: "Unrender",
+      type: "UpdateHints";
+      updates: Array<HintUpdate>;
+      enteredText: string;
     };
 
 export type FromPopup = {
-  type: "PopupScriptAdded",
+  type: "PopupScriptAdded";
 };
 
 export type ToPopup = {
-  type: "Init",
-  logLevel: LogLevel,
-  isEnabled: boolean,
+  type: "Init";
+  logLevel: LogLevel;
+  isEnabled: boolean;
 };
 
 export type FromOptions =
   | {
-      type: "OptionsScriptAdded",
+      type: "OptionsScriptAdded";
     }
   | {
-      type: "SaveOptions",
-      partialOptions: PartialOptions,
+      type: "ResetOptions";
     }
   | {
-      type: "ResetOptions",
+      type: "ResetPerf";
     }
   | {
-      type: "ResetPerf",
+      type: "SaveOptions";
+      partialOptions: PartialOptions;
     }
   | {
-      type: "ToggleKeyboardCapture",
-      capture: boolean,
+      type: "ToggleKeyboardCapture";
+      capture: boolean;
     };
 
 export type ToOptions =
   | {
-      type: "StateSync",
-      logLevel: LogLevel,
-      options: OptionsData,
+      type: "KeypressCaptured";
+      keypress: NormalizedKeypress;
     }
   | {
-      type: "KeypressCaptured",
-      keypress: NormalizedKeypress,
+      type: "PerfUpdate";
+      perf: TabsPerf;
     }
   | {
-      type: "PerfUpdate",
-      perf: TabsPerf,
+      type: "StateSync";
+      logLevel: LogLevel;
+      options: OptionsData;
     };

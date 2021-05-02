@@ -139,7 +139,7 @@ export function getDefaults({ mac }: { mac: boolean }): Options {
     cmd = false,
     ctrl = false,
     shift = false,
-  }: $Shape<Shortcut>): Shortcut {
+  }: Partial<Shortcut> & Pick<Shortcut, "key">): Shortcut {
     return { key, alt, cmd, ctrl, shift };
   }
 
@@ -317,23 +317,23 @@ const PREFIX_REGEX = /([^.]+)\.([^]*)/;
 // This takes a flat object and turns it into an object that can be fed to
 // `makeOptionsDecoder`.
 export function unflattenOptions(object: FlatOptions): FlatOptions {
-  const options = {};
+  const options: FlatOptions = {};
 
-  function set(parent: string, key: string, value: unknown) {
+  function set(parent: string, key: string, value: unknown): void {
     if (!(typeof options[parent] === "object" && options[parent] != null)) {
       options[parent] = {};
     }
     if (value !== null) {
-      options[parent][key] = value;
+      (options[parent] as FlatOptions)[key] = value;
     }
   }
 
-  function pushShortcut(parent: string, key: string, value: unknown) {
+  function pushShortcut(parent: string, key: string, value: unknown): void {
     if (!Array.isArray(options[parent])) {
       options[parent] = [];
     }
     if (value !== null) {
-      options[parent].push({
+      (options[parent] as Array<unknown>).push({
         shortcut: deserializeShortcut(key),
         action: value,
       });
@@ -342,7 +342,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
 
   for (const key of Object.keys(object)) {
     const item = object[key];
-    const [, start, rest] = PREFIX_REGEX.exec(key) != null || ["", "", ""];
+    const [, start, rest] = PREFIX_REGEX.exec(key) ?? ["", "", ""];
 
     switch (start) {
       case "keys":
@@ -380,8 +380,8 @@ export function diffOptions(
   fullOptions: FlatOptions,
   saved: FlatOptions
 ): { keysToRemove: Array<string>; optionsToSet: FlatOptions } {
-  const keysToRemove = [];
-  const optionsToSet = {};
+  const keysToRemove: Array<string> = [];
+  const optionsToSet: FlatOptions = {};
 
   // `defaults` and `fullOptions` have some keys in common. `fullOptions` might
   // have removed some keys present in `defaults`, and added some new ones. If
@@ -438,18 +438,16 @@ export function importOptions(
   options: Options,
   defaults: Options
 ): {
-  options: ?Options;
+  options: Options | undefined;
   successCount: number;
   errors: Array<string>;
 } {
   try {
-    const keyErrors = Object.keys(unflattenOptions(flatOptions))
-      .map((key) =>
-        ({}.hasOwnProperty.call(defaults, key)
-          ? undefined
-          : `Unknown key: ${repr(key)}`)
-      )
-      .filter(Boolean);
+    const keyErrors = Object.keys(
+      unflattenOptions(flatOptions)
+    ).flatMap((key) =>
+      ({}.hasOwnProperty.call(defaults, key) ? [] : `Unknown key: ${repr(key)}`)
+    );
     const updatedOptionsFlat = {
       ...flattenOptions(options),
       ...flatOptions,
@@ -464,7 +462,8 @@ export function importOptions(
       successCount: Object.keys(flatOptions).length - errors.length,
       errors,
     };
-  } catch (error) {
+  } catch (errorAny) {
+    const error = errorAny as Error;
     return {
       options: undefined,
       successCount: 0,
