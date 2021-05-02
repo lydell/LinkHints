@@ -1,15 +1,15 @@
 // @flow strict-local
 
-import jsTokens, { type Token } from "js-tokens";
+import jsTokens, { Token } from "js-tokens";
 import { h } from "preact";
 
 import config from "../project.config";
 import scripts from "./scripts.es5";
 
 export default function Scripts(props: {
-  macifyKbd?: boolean,
-  observeQuickLinks?: boolean,
-  autoCloseDetails?: boolean,
+  macifyKbd?: boolean;
+  observeQuickLinks?: boolean;
+  autoCloseDetails?: boolean;
 }) {
   const items = Object.keys(scripts)
     .map((name) => {
@@ -29,7 +29,7 @@ export default function Scripts(props: {
   ) : null;
 }
 
-type State = { ignored: false } | { ignored: true, multiline: boolean };
+type State = { ignored: false } | { ignored: true; multiline: boolean };
 
 const NEWLINE = /[\r\n\u2028\u2029]/;
 
@@ -49,8 +49,11 @@ function stateFromToken(token: Token): State {
 }
 
 function minifyJS(js: string): string {
-  return Array.from(jsTokens(js)).reduce(
-    ([state, previousToken, result]: [State, ?Token, string], token) => {
+  return Array.from(jsTokens(js)).reduce<[State, Token | undefined, string]>(
+    (
+      [state, previousToken, result]: [State, Token | undefined, string],
+      token
+    ) => {
       const tokenState = stateFromToken(token);
       return state.ignored
         ? tokenState.ignored

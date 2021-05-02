@@ -17,12 +17,12 @@ export default function KeyboardShortcut({
   shift = false,
   press = "",
 }: {
-  alt?: Modifier,
-  ctrl?: Modifier,
-  shift?: Modifier,
-  press?: string,
+  alt?: Modifier;
+  ctrl?: Modifier;
+  shift?: Modifier;
+  press?: string;
 }) {
-  const modifiers = [
+  const modifiers: Array<[string, Modifier]> = [
     [MODIFIER_NAMES.ctrl, ctrl],
     [MODIFIER_NAMES.alt, alt],
     [MODIFIER_NAMES.shift, shift],
@@ -52,8 +52,8 @@ function MainShortcut({
   shift = false,
   press,
 }: {
-  shift?: boolean,
-  press: string,
+  shift?: boolean;
+  press: string;
 }) {
   return <KeyboardShortcut alt={{ mac: "ctrl" }} shift={shift} press={press} />;
 }
