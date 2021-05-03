@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import Shadow from "preact-shadow-root";
 
@@ -66,13 +66,13 @@ export default function CSSPreview({
   chars: string;
   css: string;
   peek: boolean;
-}) {
+}): VNode {
   const containerRef = useRef<HTMLDivElement>();
   const filterByTextRef = useRef<HTMLDivElement>();
 
   const [textRects, setTextRects] = useState<Array<Box>>([]);
 
-  function updateTextRects() {
+  function updateTextRects(): void {
     const containerElement = containerRef.current;
     const filterByTextElement = filterByTextRef.current;
     if (containerElement == null || filterByTextElement == null) {
@@ -112,7 +112,7 @@ export default function CSSPreview({
     chars: string;
     highlighted?: boolean;
     hidden?: boolean;
-  }) => {
+  }): VNode => {
     hintZIndex--;
     const hasMatchedChars = matchedChars !== "";
     return (

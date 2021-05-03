@@ -62,6 +62,11 @@ interface Window {
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface Navigator {
   keyboard?: {
-    getLayoutMap: () => Promise<Iterable<readonly [string, string]>>;
+    getLayoutMap: () => Promise<{
+      [Symbol.iterator]: () => IterableIterator<[string, string]>;
+      keys: () => Array<string>;
+      get: (key: string) => string | undefined;
+      size: number;
+    }>;
   };
 }

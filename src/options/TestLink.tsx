@@ -1,13 +1,13 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 import { useState } from "preact/hooks";
 
 import { classlist } from "../shared/main";
 
 const params = new URLSearchParams(window.location.search);
 
-export default function TestLink({ text }: { text: string }) {
+export default function TestLink({ text }: { text: string }): VNode {
   const [clicked, setClicked] = useState<boolean>(false);
 
   const id = text.toLowerCase().replace(/\W+/g, "-");
@@ -15,7 +15,7 @@ export default function TestLink({ text }: { text: string }) {
   return (
     <a
       href={`?test=${id}`}
-      tabIndex="-1"
+      tabIndex={-1}
       className={classlist("TestLink", { "is-clicked": clicked })}
       onClick={(event) => {
         event.preventDefault();

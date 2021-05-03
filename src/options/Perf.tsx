@@ -1,8 +1,8 @@
 // @flow strict-local
-import { h, VNode } from "preact";
+import { Fragment, h, VNode } from "preact";
 
 import { classlist } from "../shared/main";
-import { Durations, Stats, TabsPerf, MAX_PERF_ENTRIES } from "../shared/perf";
+import { Durations, MAX_PERF_ENTRIES, Stats, TabsPerf } from "../shared/perf";
 
 export default function Perf({
   perf,
@@ -14,7 +14,7 @@ export default function Perf({
   expandedPerfTabIds: Array<string>;
   onExpandChange: (expandedPerfTabIds: Array<string>) => void;
   onReset: () => void;
-}) {
+}): VNode {
   const keys = Object.keys(perf);
 
   const isEmpty = keys.every((tabId) => perf[tabId].length === 0);
@@ -153,8 +153,8 @@ export default function Perf({
                   )}
                 </tr>
 
-                {allRows.map(({ title, data }) => (
-                  <>
+                {allRows.map(({ title, data }, rowIndex) => (
+                  <Fragment key={rowIndex}>
                     <tr>
                       <th colSpan={MAX_PERF_ENTRIES + 1}>{title}</th>
                     </tr>
@@ -169,7 +169,7 @@ export default function Perf({
                         {toCells(values)}
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             )}
@@ -208,7 +208,7 @@ function sumStats(
   allStats: Array<Array<Stats>>
 ): Array<Array<Stats>> {
   return allStats.map((stats) => {
-    const sum = (fn: (stats: Stats) => number) =>
+    const sum = (fn: (stats: Stats) => number): number =>
       stats.reduce((result, item) => result + fn(item), 0);
 
     return [
@@ -226,11 +226,11 @@ function sumStats(
 }
 
 function sumDurations(allDurations: Array<Durations>): Durations {
-  const result: Map<string, number> = new Map();
+  const result = new Map<string, number>();
 
   for (const durations of allDurations) {
     for (const [label, duration] of durations) {
-      const previous = result.get(label) || 0;
+      const previous = result.get(label) ?? 0;
       result.set(label, previous + duration);
     }
   }

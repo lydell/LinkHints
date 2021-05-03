@@ -6,15 +6,15 @@ import { classlist } from "../shared/main";
 
 export default function Attachment({
   label,
-  content,
+  contents,
   children,
   ...restProps
 }: JSX.HTMLAttributes<HTMLLabelElement> &
   JSX.HTMLAttributes<HTMLSpanElement> & {
     label?: VNode | string;
-    content?: VNode;
+    contents?: VNode;
     children: ComponentChildren;
-  }) {
+  }): VNode {
   const Tag = label != null ? "label" : "span";
   return (
     <Tag {...restProps} className="Attachment">
@@ -23,7 +23,7 @@ export default function Attachment({
           TinyLabel: label != null,
         })}
       >
-        {label != null ? label : content}
+        {label != null ? label : contents}
       </span>
       {children}
     </Tag>

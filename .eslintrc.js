@@ -120,7 +120,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: "*.ts",
+      files: ["*.{ts,tsx}"],
       parser: "@typescript-eslint/parser",
       parserOptions: {
         sourceType: "module",
@@ -219,7 +219,7 @@ module.exports = {
       },
     },
     {
-      files: ["src/*/**/*.ts"],
+      files: ["src/*/**/*.{ts,tsx}"],
       env: {
         es2020: true,
         node: false,

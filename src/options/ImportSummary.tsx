@@ -1,16 +1,16 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 export default function ImportSummary({
   success,
   tweakable,
   errors,
 }: {
-  success: number,
-  tweakable: number,
-  errors: number,
-}) {
+  success: number;
+  tweakable: number;
+  errors: number;
+}): VNode {
   const successString = success === 1 ? `1 value` : `${success} values`;
   const tweakableString =
     tweakable === 1 ? `1 debug value` : `${tweakable} debug values`;

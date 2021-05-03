@@ -14,7 +14,7 @@ export default function Details({
   open: boolean;
   onChange: (isOpen: boolean) => void;
   children: ComponentChildren;
-}) {
+}): VNode {
   return (
     <div>
       <button

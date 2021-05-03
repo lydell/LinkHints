@@ -26,7 +26,7 @@ export default function Field({
   changedRight?: boolean;
   render: (options: { id: string }) => VNode;
   onReset?: () => void;
-}) {
+}): VNode {
   const reset =
     onReset != null && changed ? (
       <button

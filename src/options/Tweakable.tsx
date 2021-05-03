@@ -4,7 +4,7 @@
 
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 
 import {
@@ -20,7 +20,11 @@ import {
   unreachable,
 } from "../shared/main";
 import { DEBUG_PREFIX } from "../shared/options";
-import { TweakableValue, normalizeStringArray } from "../shared/tweakable";
+import {
+  normalizeStringArray,
+  TweakableMeta,
+  TweakableValue,
+} from "../shared/tweakable";
 import {
   t as tElementManager,
   tMeta as tMetaElementManager,
@@ -30,7 +34,7 @@ import Field from "./Field";
 import StringSetEditor from "./StringSetEditor";
 import TextInput from "./TextInput";
 
-const ALL_TWEAKABLES = [
+const ALL_TWEAKABLES: Array<[Record<string, TweakableValue>, TweakableMeta]> = [
   [tBackground, tMetaBackground],
   [tWorker, tMetaWorker],
   [tRenderer, tMetaRenderer],
@@ -49,9 +53,9 @@ export default function Tweakable({
   before,
   onUpdate,
 }: {
-  before?: React.Node,
-  onUpdate: () => void,
-}) {
+  before?: VNode;
+  onUpdate: () => void;
+}): VNode {
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
@@ -96,7 +100,7 @@ export default function Tweakable({
   );
 }
 
-function TweakableField<T: TweakableValue>({
+function TweakableField<T extends TweakableValue>({
   namespace,
   name,
   value,
@@ -104,16 +108,16 @@ function TweakableField<T: TweakableValue>({
   changed,
   error,
 }: {
-  namespace: string,
-  name: string,
-  value: T,
-  defaultValue: T,
-  changed: boolean,
-  error: ?string,
-}) {
+  namespace: string;
+  name: string;
+  value: T;
+  defaultValue: T;
+  changed: boolean;
+  error: string | undefined;
+}): VNode {
   const fullKey = `${DEBUG_PREFIX}${namespace}.${name}`;
 
-  const reset = () => {
+  const reset = (): void => {
     save(fullKey, undefined);
   };
 
@@ -283,28 +287,29 @@ export function hasChangedTweakable(): boolean {
 export function getTweakableExport(): { [key: string]: unknown } {
   return Object.fromEntries(
     ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
-      Object.keys(tMeta.defaults)
-        .map((key) => {
+      Object.keys(tMeta.defaults).flatMap(
+        (key): Array<[string, unknown]> => {
           const { value } = t[key];
           const { [key]: changed = false } = tMeta.changed;
           return changed
             ? [
-                `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
-                value instanceof Set ? Array.from(value) : value,
+                [
+                  `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
+                  value instanceof Set ? Array.from(value) : value,
+                ],
               ]
-            : undefined;
-        })
-        .filter(Boolean)
+            : [];
+        }
+      )
     )
   );
 }
 
 export function partitionTweakable(data: {
-  +[string]: unknown,
-  ...
+  [key: string]: unknown;
 }): [{ [key: string]: unknown }, { [key: string]: unknown }] {
-  const tweakableData = {};
-  const otherData = {};
+  const tweakableData: { [key: string]: unknown } = {};
+  const otherData: { [key: string]: unknown } = {};
 
   for (const [key, value] of Object.entries(data)) {
     if (ALL_KEYS.has(key)) {
@@ -317,7 +322,9 @@ export function partitionTweakable(data: {
   return [tweakableData, otherData];
 }
 
-export function saveTweakable(data: { [key: string]: unknown }): Promise<void> {
+export async function saveTweakable(data: {
+  [key: string]: unknown;
+}): Promise<void> {
   const [tweakableData] = partitionTweakable(data);
   return browser.storage.sync.set(tweakableData);
 }

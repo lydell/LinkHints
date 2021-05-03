@@ -1,24 +1,26 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 import { useLayoutEffect, useState } from "preact/hooks";
 
 import { timeout } from "../shared/main";
 import TextInput from "./TextInput";
 
-type Reason = "input" | "blur";
+type Reason = "blur" | "input";
 
 export default function StringSetEditor({
   save,
   id,
   savedValue,
 }: {
-  savedValue: Set<string>,
-  save: (Set<string>, Reason) => void,
-  id?: string,
-}) {
+  savedValue: Set<string>;
+  save: (set: Set<string>, reason: Reason) => void;
+  id?: string;
+}): VNode {
   const [hasFocus, setHasFocus] = useState<boolean>(false);
-  const [stateValue, setStateValue] = useState<Array<string> | void>(undefined);
+  const [stateValue, setStateValue] = useState<Array<string> | undefined>(
+    undefined
+  );
 
   const value = stateValue != null ? stateValue : Array.from(savedValue);
   const endsWithBlank =
@@ -63,7 +65,7 @@ export default function StringSetEditor({
             setStateValue(newValue);
             save(new Set(newValue), reason);
           }}
-          onKeyDown={(event) => {
+          onKeyDown={(event: KeyboardEvent) => {
             const { target } = event;
             if (target instanceof HTMLElement && event.key === "Enter") {
               const next = target.nextElementSibling;

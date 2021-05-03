@@ -39,7 +39,6 @@ import {
   LOG_LEVELS,
   normalizeUnsignedInt,
   Resets,
-  unreachable,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -489,7 +488,7 @@ export default class OptionsProgram extends Component<Props, State> {
                     <select
                       style={{ flexGrow: 1 }}
                       value={selectedIndex}
-                      onChange={(event: Event) => {
+                      onChange={(event) => {
                         const index = Number(event.currentTarget.value);
                         const chars =
                           index >= 0 && index < charsPresets.length
@@ -563,7 +562,7 @@ export default class OptionsProgram extends Component<Props, State> {
                       type="checkbox"
                       id={id}
                       checked={options.autoActivate}
-                      onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                      onChange={(event) => {
                         this.saveOptions({
                           autoActivate: event.currentTarget.checked,
                         });
@@ -681,7 +680,7 @@ export default class OptionsProgram extends Component<Props, State> {
                   <div className="SpacedVertical" style={{ flex: "1 1 50%" }}>
                     <Attachment
                       style={{ flexGrow: "1" }}
-                      content={
+                      contents={
                         <div className="TinyLabel Spaced">
                           <label
                             className="Spaced Spaced--center"
@@ -690,10 +689,8 @@ export default class OptionsProgram extends Component<Props, State> {
                             <span>Test only</span>
                             <input
                               type="checkbox"
-                              value={keyTranslationsInput.testOnly}
-                              onChange={(
-                                event: SyntheticEvent<HTMLInputElement>
-                              ) => {
+                              checked={keyTranslationsInput.testOnly}
+                              onChange={(event) => {
                                 this.setState({
                                   keyTranslationsInput: {
                                     ...keyTranslationsInput,
@@ -717,11 +714,7 @@ export default class OptionsProgram extends Component<Props, State> {
                             : "Type with your main layout…"
                         }
                         value={keyTranslationsInput.text}
-                        onInput={(
-                          event: SyntheticInputEvent<
-                            HTMLInputElement | HTMLTextAreaElement
-                          >
-                        ) => {
+                        onInput={(event) => {
                           event.currentTarget.value = keyTranslationsInput.text;
                         }}
                         onBlur={() => {
@@ -854,7 +847,7 @@ export default class OptionsProgram extends Component<Props, State> {
                   </div>
 
                   <Attachment
-                    content={
+                    contents={
                       <div className="Spaced Spaced--end TinyLabel">
                         <span style={{ marginRight: "auto" }}>
                           Key translations
@@ -1100,13 +1093,11 @@ export default class OptionsProgram extends Component<Props, State> {
                   />
 
                   <Attachment
-                    content={
+                    contents={
                       <div className="Spaced TinyLabel">
                         <select
                           value={cssSuggestion}
-                          onChange={(
-                            event: SyntheticEvent<HTMLSelectElement>
-                          ) => {
+                          onChange={(event) => {
                             this.setState({
                               cssSuggestion: event.currentTarget.value,
                             });
@@ -1165,8 +1156,8 @@ export default class OptionsProgram extends Component<Props, State> {
                       <span>Peek</span>
                       <input
                         type="checkbox"
-                        value={peek}
-                        onChange={(event: SyntheticEvent<HTMLInputElement>) => {
+                        checked={peek}
+                        onChange={(event) => {
                           this.setState({ peek: event.currentTarget.checked });
                         }}
                       />
@@ -1268,9 +1259,7 @@ export default class OptionsProgram extends Component<Props, State> {
                           id={id}
                           value={options.logLevel}
                           style={{ width: "50%" }}
-                          onChange={(
-                            event: SyntheticEvent<HTMLSelectElement>
-                          ) => {
+                          onChange={(event) => {
                             const { value } = event.currentTarget;
                             try {
                               const logLevel = decodeLogLevel(value);
@@ -1481,7 +1470,7 @@ export default class OptionsProgram extends Component<Props, State> {
     const headingsHeight = Math.max(
       0,
       ...Array.from(
-        keysTable.querySelectorAll("thead th"),
+        keysTable.querySelectorAll<HTMLElement>("thead th"),
         (th) => th.offsetHeight
       )
     );
@@ -1575,14 +1564,14 @@ export default class OptionsProgram extends Component<Props, State> {
       );
 
       const results: Array<[UpdateStatus, string, KeyPair]> = codes
-        .map((code) => {
+        .map((code): [UpdateStatus, string, KeyPair] => {
           const pair = keyTranslations[code];
           const key = layoutMap.get(code);
           if (key == null) {
             return ["NotUpdated", code, pair];
           }
           if (isShiftable(key)) {
-            const newPair = [key, key.toUpperCase()];
+            const newPair: KeyPair = [key, key.toUpperCase()];
             return deepEqual(pair, newPair)
               ? ["AlreadyFullyUpdated", code, pair]
               : ["FullyUpdated", code, newPair];
@@ -1592,16 +1581,16 @@ export default class OptionsProgram extends Component<Props, State> {
             : ["PartiallyUpdated", code, [key, "?"]];
         })
         .concat(
-          newCodes
-            .map((code) => {
+          newCodes.flatMap(
+            (code): Array<[UpdateStatus, string, KeyPair]> => {
               const key = layoutMap.get(code);
               return key == null
-                ? undefined
+                ? []
                 : isShiftable(key)
-                ? ["FullyUpdated", code, [key, key.toUpperCase()]]
-                : ["PartiallyUpdated", code, [key, "?"]];
-            })
-            .filter(Boolean)
+                ? [["FullyUpdated", code, [key, key.toUpperCase()]]]
+                : [["PartiallyUpdated", code, [key, "?"]]];
+            }
+          )
         );
 
       function count(updateStatus: UpdateStatus): number {
@@ -1641,7 +1630,7 @@ function wrapMessage(message: FromOptions): ToBackground {
 function updateKeyTranslations(
   { code, key, shift }: { code: string; key: string; shift: boolean },
   keyTranslations: KeyTranslations
-): ?KeyTranslations {
+): KeyTranslations | undefined {
   const previousPair = {}.hasOwnProperty.call(keyTranslations, code)
     ? keyTranslations[code]
     : undefined;
@@ -1653,7 +1642,7 @@ function updateKeyTranslations(
 
 function updatePair(
   { key, shift }: { key: string; shift: boolean },
-  previousPair: ?KeyPair
+  previousPair: KeyPair | undefined
 ): KeyPair {
   if (!shift && key.length === 1 && key.toLowerCase() !== key.toUpperCase()) {
     return [key, key.toUpperCase()];
@@ -1720,7 +1709,9 @@ function selectFile(accept: string): Promise<File> {
     input.accept = accept;
     input.onchange = () => {
       input.onchange = null;
-      resolve(input.files[0]);
+      if (input.files !== null) {
+        resolve(input.files[0]);
+      }
     };
     input.dispatchEvent(new MouseEvent("click"));
   });

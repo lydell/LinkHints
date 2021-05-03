@@ -6,8 +6,8 @@ import {
   KeyboardAction,
   KeyboardMapping,
   NormalizedKeypress,
-  Shortcut,
   serializeShortcut,
+  Shortcut,
 } from "../shared/keyboard";
 import { classlist, deepEqual, unreachable } from "../shared/main";
 import ButtonWithPopup from "./ButtonWithPopup";
@@ -15,13 +15,13 @@ import Field from "./Field";
 import KeyboardShortcut, { hasShift, viewKey } from "./KeyboardShortcut";
 
 type ShortcutError =
-  | { type: "UnrecognizedKey" }
+  | { type: "CommonTextEditingShortcutConflict" }
+  | { type: "MacOptionKey"; printableKey: string; hasOtherModifier: boolean }
   | { type: "MissingModifier"; shift: boolean }
   | { type: "OtherShortcutConflict"; otherMapping: KeyboardMapping }
-  | { type: "CommonTextEditingShortcutConflict" }
-  | { type: "MacOptionKey"; printableKey: string; hasOtherModifier: boolean };
+  | { type: "UnrecognizedKey" };
 
-type Mode = "Normal" | "Hints";
+type Mode = "Hints" | "Normal";
 
 type Props = {
   id: string;
@@ -59,7 +59,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
     shortcutError: undefined,
   };
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props): void {
     const {
       capturedKeypressWithTimestamp,
       mode,
@@ -95,7 +95,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
       const confirm = (newShortcutError: {
         shortcut: Shortcut;
         error: ShortcutError;
-      }) => {
+      }): void => {
         if (deepEqual(shortcutError, newShortcutError)) {
           this.saveMapping({
             shortcut,
@@ -205,7 +205,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
     }
   }
 
-  saveMapping(newMapping: KeyboardMapping) {
+  saveMapping(newMapping: KeyboardMapping): void {
     const { mappings, onChange, onAddChange } = this.props;
     const newMappings = mappings
       .filter((mapping) => !deepEqual(mapping.shortcut, newMapping.shortcut))
@@ -220,7 +220,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
     onAddChange(false);
   }
 
-  render() {
+  render(): VNode {
     const {
       id,
       name,
@@ -389,7 +389,7 @@ function ShortcutAddDisplay({
 }: {
   mac: boolean;
   defaultMapping: KeyboardMapping;
-}) {
+}): VNode {
   return (
     <div>
       <p>
@@ -428,7 +428,7 @@ function ShortcutErrorDisplay({
   mode: Mode;
   useKeyTranslations: boolean;
   error: ShortcutError;
-}) {
+}): VNode {
   switch (error.type) {
     case "UnrecognizedKey":
       return (

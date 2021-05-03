@@ -18,7 +18,7 @@ export default function ButtonWithPopup({
   open?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   className?: string;
-}) {
+}): VNode {
   const onChangeRef = useRef<((isOpen: boolean) => void) | undefined>();
   onChangeRef.current = onOpenChange;
 
@@ -42,7 +42,7 @@ export default function ButtonWithPopup({
 
   useEffect(() => {
     if (open) {
-      function closeIfOutside(event: Event) {
+      function closeIfOutside(event: Event): void {
         const root = rootRef.current;
         const { target } = event;
 

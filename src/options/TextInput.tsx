@@ -103,9 +103,7 @@ export default function TextInput({
       className={classlist(className, { "is-readonly": readonly })}
       value={value}
       spellcheck={false}
-      onInput={(
-        event: SyntheticInputEvent<HTMLInputElement | HTMLTextAreaElement>
-      ) => {
+      onInput={(event) => {
         if (readonly) {
           // This is like the `readonly` attribute, but with a visible cursor,
           // which is nice when selecting parts of the text for copying.
@@ -115,7 +113,7 @@ export default function TextInput({
           setStateValue(event.target.value);
         }
       }}
-      onKeyDown={(event) => {
+      onKeyDown={(event: KeyboardEvent) => {
         storeSelection();
         if (onKeyDown != null) {
           onKeyDown(event);

@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 import type { Shortcut } from "../shared/keyboard";
 
@@ -12,17 +12,17 @@ export default function KeyboardShortcut({
 }: {
   mac: boolean;
   shortcut: Partial<Shortcut>;
-}) {
+}): VNode {
   const { key = "" } = shortcut;
   return (
     <span className="KeyboardShortcut">
-      {shortcut.cmd && (
+      {shortcut.cmd === true && (
         <kbd title={mac ? "Command" : undefined}>{mac ? "⌘" : "Cmd"}</kbd>
       )}
-      {shortcut.ctrl && (
+      {shortcut.ctrl === true && (
         <kbd title={mac ? "Control" : undefined}>{mac ? "^" : "Ctrl"}</kbd>
       )}
-      {shortcut.alt && (
+      {shortcut.alt === true && (
         <kbd title={mac ? "Option/Alt" : undefined}>{mac ? "⌥" : "Alt"}</kbd>
       )}
       {hasShift(shortcut) && (
