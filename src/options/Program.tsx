@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { Component, createRef, h } from "preact";
+import { Component, createRef, h, VNode } from "preact";
 import {
   array,
   autoRecord,
@@ -19,13 +19,13 @@ import {
   SUGGESTION_VIMIUM,
 } from "../shared/css";
 import {
+  isModifierKey,
+  keyboardEventToKeypress,
   KeyboardMapping,
   KeyPair,
   Keypress,
   KeyTranslations,
   NormalizedKeypress,
-  isModifierKey,
-  keyboardEventToKeypress,
   normalizeKeypress,
 } from "../shared/keyboard";
 import {
@@ -46,10 +46,10 @@ import type {
   ToBackground,
 } from "../shared/messages";
 import {
-  OptionsData,
-  PartialOptions,
   importOptions,
   normalizeChars,
+  OptionsData,
+  PartialOptions,
 } from "../shared/options";
 import type { TabsPerf } from "../shared/perf";
 import Attachment from "./Attachment";
@@ -76,11 +76,11 @@ import Tweakable, {
 } from "./Tweakable";
 
 type UpdateStatus =
-  | "NotUpdated"
-  | "FullyUpdated"
   | "AlreadyFullyUpdated"
-  | "PartiallyUpdated"
-  | "AlreadyPartiallyUpdated";
+  | "AlreadyPartiallyUpdated"
+  | "FullyUpdated"
+  | "NotUpdated"
+  | "PartiallyUpdated";
 
 const CSS_SUGGESTIONS = [
   { name: "Base CSS", value: CSS },
@@ -93,7 +93,7 @@ const getLayoutMap =
     ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
     : undefined;
 
-type Props = {};
+type Props = undefined;
 
 type State = {
   options: OptionsData | undefined;
@@ -137,8 +137,11 @@ type State = {
 
 export default class OptionsProgram extends Component<Props, State> {
   resets = new Resets();
+
   hiddenErrors: Array<string> = [];
+
   keysTableRef = createRef<HTMLDivElement>();
+
   hasRestoredPosition = false;
 
   state: State = {
@@ -182,7 +185,7 @@ export default class OptionsProgram extends Component<Props, State> {
     ]);
   }
 
-  start() {
+  start(): void {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     if (!PROD) {
@@ -197,24 +200,24 @@ export default class OptionsProgram extends Component<Props, State> {
     this.sendMessage({ type: "OptionsScriptAdded" });
   }
 
-  stop() {
+  stop(): void {
     this.resets.reset();
   }
 
-  componentDidMount() {
+  componentDidMount(): void {
     this.start();
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     this.stop();
   }
 
-  async sendMessage(message: FromOptions) {
+  async sendMessage(message: FromOptions): Promise<void> {
     log("log", "OptionsProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
 
-  onMessage(wrappedMessage: FromBackground) {
+  onMessage(wrappedMessage: FromBackground): void {
     if (wrappedMessage.type !== "ToOptions") {
       return;
     }
@@ -272,14 +275,14 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
-  async savePerf() {
+  async savePerf(): Promise<void> {
     if (!PROD) {
       await browser.storage.local.set({ perf: this.state.perf });
       await this.restorePosition();
     }
   }
 
-  saveOptions(partialOptions: PartialOptions) {
+  saveOptions(partialOptions: PartialOptions): void {
     this.setState((state) => ({
       options:
         state.options == null
@@ -300,7 +303,7 @@ export default class OptionsProgram extends Component<Props, State> {
     });
   }
 
-  resetOptions() {
+  resetOptions(): void {
     this.setState((state) => ({
       options:
         state.options == null
@@ -317,7 +320,7 @@ export default class OptionsProgram extends Component<Props, State> {
     });
   }
 
-  async importOptions() {
+  async importOptions(): Promise<void> {
     const { options: optionsData } = this.state;
     if (optionsData == null) {
       return;
@@ -343,7 +346,8 @@ export default class OptionsProgram extends Component<Props, State> {
         this.saveOptions(newOptions);
       }
       await saveTweakable(tweakableData);
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.setState((state) => ({
         importData: {
           ...state.importData,
@@ -353,7 +357,7 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
-  exportOptions() {
+  exportOptions(): void {
     const { options: optionsData } = this.state;
 
     const tweakableExport = getTweakableExport();
@@ -370,12 +374,12 @@ export default class OptionsProgram extends Component<Props, State> {
     );
   }
 
-  async resetLocalStorage() {
+  async resetLocalStorage(): Promise<void> {
     await browser.storage.local.clear();
     this.setState({ localStorageCleared: new Date() });
   }
 
-  render() {
+  render(): VNode | null {
     const {
       options: optionsData,
       hasSaved,
@@ -907,7 +911,7 @@ export default class OptionsProgram extends Component<Props, State> {
                                 )}
                               </div>
                             )}
-                            onChange={(open) => {
+                            onOpenChange={(open) => {
                               if (!open) {
                                 this.setState({
                                   keyboardDetect: undefined,
@@ -1384,13 +1388,13 @@ export default class OptionsProgram extends Component<Props, State> {
                         popupContent={() => (
                           <div style={{ whiteSpace: "nowrap" }}>
                             <ImportSummary
-                              success={importData.successCount || 0}
-                              tweakable={importData.tweakableCount || 0}
+                              success={importData.successCount ?? 0}
+                              tweakable={importData.tweakableCount ?? 0}
                               errors={importData.errors.length}
                             />
                           </div>
                         )}
-                        onChange={(open) => {
+                        onOpenChange={(open) => {
                           if (open) {
                             this.importOptions();
                           } else {
@@ -1446,7 +1450,7 @@ export default class OptionsProgram extends Component<Props, State> {
     );
   }
 
-  onKeyboardShortcutAddChange = (isAdding: boolean) => {
+  onKeyboardShortcutAddChange = (isAdding: boolean): void => {
     this.setState({ capturedKeypressWithTimestamp: undefined });
     this.sendMessage({
       type: "ToggleKeyboardCapture",
@@ -1454,7 +1458,7 @@ export default class OptionsProgram extends Component<Props, State> {
     });
   };
 
-  scrollKeyIntoView(code: string) {
+  scrollKeyIntoView(code: string): void {
     const id = makeKeysRowId(code);
     const element = document.getElementById(id);
     const keysTable = this.keysTableRef.current;
@@ -1496,7 +1500,7 @@ export default class OptionsProgram extends Component<Props, State> {
     );
   }
 
-  async onScroll() {
+  async onScroll(): Promise<void> {
     if (!PROD) {
       if (this.hasRestoredPosition) {
         await browser.storage.local.set({ scrollY: window.scrollY });
@@ -1504,7 +1508,7 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
-  async savePosition() {
+  async savePosition(): Promise<void> {
     if (!PROD) {
       const { expandedPerfTabIds, expandedPerf, expandedDebug } = this.state;
       await browser.storage.local.set({
@@ -1515,7 +1519,7 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
-  async restorePosition() {
+  async restorePosition(): Promise<void> {
     if (!PROD) {
       if (this.hasRestoredPosition) {
         return;
@@ -1541,7 +1545,7 @@ export default class OptionsProgram extends Component<Props, State> {
     }
   }
 
-  async detectKeyboard() {
+  async detectKeyboard(): Promise<void> {
     try {
       if (getLayoutMap == null) {
         throw new Error(
@@ -1614,7 +1618,8 @@ export default class OptionsProgram extends Component<Props, State> {
           numNotUpdated: count("NotUpdated"),
         },
       });
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.setState({ keyboardDetect: error });
     }
   }
@@ -1670,7 +1675,7 @@ function ActivateHighlightedKey({
   mac: boolean;
   mappings: Array<KeyboardMapping>;
   defaultMappings: Array<KeyboardMapping>;
-}) {
+}): VNode {
   const first = mappings.find((mapping) => mapping.action === "ActivateHint");
 
   if (first != null) {
@@ -1692,7 +1697,11 @@ function ActivateHighlightedKey({
   );
 }
 
-function saveFile(content: string, fileName: string, contentType: string) {
+function saveFile(
+  content: string,
+  fileName: string,
+  contentType: string
+): void {
   const a = document.createElement("a");
   const file = new Blob([content], { type: contentType });
   const url = URL.createObjectURL(file);
@@ -1702,7 +1711,7 @@ function saveFile(content: string, fileName: string, contentType: string) {
   URL.revokeObjectURL(url);
 }
 
-function selectFile(accept: string): Promise<File> {
+async function selectFile(accept: string): Promise<File> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -1717,7 +1726,7 @@ function selectFile(accept: string): Promise<File> {
   });
 }
 
-function readAsJson(file: File): Promise<unknown> {
+async function readAsJson(file: File): Promise<unknown> {
   return new Response(file).json();
 }
 
@@ -1729,7 +1738,7 @@ function mixedObject(value: unknown): { [key: string]: unknown } {
 }
 
 function toISODateString(date: Date): string {
-  const pad = (num: number) => num.toString().padStart(2, "0");
+  const pad = (num: number): string => num.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate()
   )}`;

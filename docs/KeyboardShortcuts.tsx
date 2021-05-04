@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 type Modifier = boolean | { mac: "alt" | "cmd" | "ctrl" | "shift" };
 
@@ -21,7 +21,7 @@ export default function KeyboardShortcut({
   ctrl?: Modifier;
   shift?: Modifier;
   press?: string;
-}) {
+}): VNode {
   const modifiers: Array<[string, Modifier]> = [
     [MODIFIER_NAMES.ctrl, ctrl],
     [MODIFIER_NAMES.alt, alt],
@@ -30,7 +30,7 @@ export default function KeyboardShortcut({
   return (
     <span className="KeyboardShortcut">
       {modifiers.map(([name, modifier]) =>
-        modifier ? (
+        modifier !== false ? (
           <kbd
             key={name}
             data-mac={
@@ -54,7 +54,7 @@ function MainShortcut({
 }: {
   shift?: boolean;
   press: string;
-}) {
+}): VNode {
   return <KeyboardShortcut alt={{ mac: "ctrl" }} shift={shift} press={press} />;
 }
 

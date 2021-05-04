@@ -17,7 +17,6 @@ import {
   log,
   normalizeUnsignedFloat,
   normalizeUnsignedInt,
-  unreachable,
 } from "../shared/main";
 import { DEBUG_PREFIX } from "../shared/options";
 import {
@@ -100,7 +99,7 @@ export default function Tweakable({
   );
 }
 
-function TweakableField<T extends TweakableValue>({
+function TweakableField({
   namespace,
   name,
   value,
@@ -110,8 +109,8 @@ function TweakableField<T extends TweakableValue>({
 }: {
   namespace: string;
   name: string;
-  value: T;
-  defaultValue: T;
+  value: TweakableValue;
+  defaultValue: TweakableValue;
   changed: boolean;
   error: string | undefined;
 }): VNode {
@@ -248,9 +247,6 @@ function TweakableField<T extends TweakableValue>({
         );
       }
       break;
-
-    default:
-      unreachable(value.type, value);
   }
 
   return (
@@ -266,7 +262,7 @@ function TweakableField<T extends TweakableValue>({
   );
 }
 
-async function save(key: string, value: unknown) {
+async function save(key: string, value: unknown): Promise<void> {
   try {
     if (value == null) {
       await browser.storage.sync.remove(key);
