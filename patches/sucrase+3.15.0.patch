@@ -53,7 +53,7 @@ index edc5bb5..5bc9586 100644
        stopState.stop = true;
        return;
 diff --git a/node_modules/sucrase/dist/transformers/RootTransformer.js b/node_modules/sucrase/dist/transformers/RootTransformer.js
-index 57118d9..f71fee5 100644
+index 57118d9..079c6aa 100644
 --- a/node_modules/sucrase/dist/transformers/RootTransformer.js
 +++ b/node_modules/sucrase/dist/transformers/RootTransformer.js
 @@ -39,11 +39,11 @@ var _TypeScriptTransformer = require('./TypeScriptTransformer'); var _TypeScript
@@ -73,3 +73,13 @@ index 57118d9..f71fee5 100644
      if (transforms.includes("jsx")) {
        this.transformers.push(
          new (0, _JSXTransformer2.default)(this, tokenProcessor, importProcessor, this.nameManager, options),
+@@ -156,7 +156,8 @@ var _TypeScriptTransformer = require('./TypeScriptTransformer'); var _TypeScript
+ 
+   processToken() {
+     if (this.tokens.matches1(_types.TokenType._class)) {
+-      this.processClass();
++      // this.processClass();
++      this.tokens.copyToken();
+       return;
+     }
+     for (const transformer of this.transformers) {
