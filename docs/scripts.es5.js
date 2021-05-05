@@ -55,7 +55,7 @@ function observeQuickLinks() {
 }
 
 function autoCloseDetails() {
-  document.addEventListener("click", function (event /*: UIEvent */) {
+  document.addEventListener("click", function (event) {
     var target = event.target;
     if (
       target instanceof HTMLElement &&
@@ -73,8 +73,8 @@ function autoCloseDetails() {
   });
 }
 
-module.exports = {
-  macifyKbd: macifyKbd,
-  observeQuickLinks: observeQuickLinks,
-  autoCloseDetails: autoCloseDetails,
+exports.scripts = {
+  macifyKbd: macifyKbd.toString(),
+  observeQuickLinks: observeQuickLinks.toString(),
+  autoCloseDetails: autoCloseDetails.toString(),
 };

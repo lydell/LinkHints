@@ -1,23 +1,24 @@
 // @flow strict-local
 
 import jsTokens, { Token } from "js-tokens";
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 import config from "../project.config";
-import scripts from "./scripts.es5";
+import { scripts } from "./scripts.es5";
 
-export default function Scripts(props: {
+type Props = {
   macifyKbd?: boolean;
   observeQuickLinks?: boolean;
   autoCloseDetails?: boolean;
-}) {
-  const items = Object.keys(scripts)
-    .map((name) => {
-      const fn = scripts[name];
-      return fn != null && props[name] === true
-        ? `;(${fn.toString()})();`
-        : undefined;
-    })
+};
+
+export default function Scripts(props: Props): VNode | null {
+  const items = Object.entries(scripts)
+    .map(([name, fn]) =>
+      fn !== undefined && props[name as keyof Props] === true
+        ? `;(${fn})();`
+        : undefined
+    )
     .filter(Boolean);
 
   const code = items.join("");

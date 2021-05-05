@@ -287,6 +287,12 @@ module.exports = {
       // },
     },
     {
+      files: ["docs/**/*.{ts,tsx}"],
+      rules: {
+        "react/no-danger": "off",
+      },
+    },
+    {
       files: ["rollup.config.js"],
       parserOptions: {
         sourceType: "module",
