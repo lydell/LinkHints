@@ -288,7 +288,7 @@ const SECTIONS = [
   },
 ];
 
-export default () =>
+export default (): string =>
   render(
     <Page
       title="Link Hints"
@@ -340,7 +340,7 @@ export default () =>
     </Page>
   );
 
-function Header() {
+function Header(): VNode {
   return (
     <header className="Header">
       <div className="Header-inner Container">
@@ -372,7 +372,7 @@ function Header() {
   );
 }
 
-function Keyboard() {
+function Keyboard(): VNode {
   return (
     <div className="Keyboard">
       <div>
@@ -417,7 +417,7 @@ const NAV = [
   },
 ];
 
-function Nav() {
+function Nav(): VNode {
   return (
     <nav>
       <ul className="Container Container--noPaddingSmall">
@@ -448,7 +448,7 @@ const REASONS = [
   },
 ];
 
-function Reasons() {
+function Reasons(): VNode {
   return (
     <ul className="Reasons">
       {REASONS.map((reason) => (
@@ -466,7 +466,7 @@ function Demo({
 }: {
   title: VNode | string;
   filterByText?: boolean;
-}) {
+}): VNode {
   function Hint({
     hint2,
     highlighted = false,
@@ -475,7 +475,7 @@ function Demo({
     hint2?: string;
     highlighted?: boolean;
     children: string;
-  }) {
+  }): VNode | null {
     return filterByText && hint2 == null ? null : (
       <span
         className={`hint ${filterByText && highlighted ? "highlighted" : ""}`}
@@ -484,7 +484,7 @@ function Demo({
     );
   }
 
-  function Match({ children }: { children: string }) {
+  function Match({ children }: { children: string }): VNode {
     return (
       <span
         className={filterByText ? "matchedText" : undefined}
@@ -493,22 +493,24 @@ function Demo({
     );
   }
 
-  function Text({ children }: { children: string }) {
+  function Text({ children }: { children: string }): VNode {
     return <span data-text={children} />;
   }
+
+  const demoClickable = { onclick: "" };
 
   return (
     <figure>
       <div className="Demo" aria-hidden="true">
         <div className="Demo-inner">
           <div className="Demo-bar">
-            <div className="Demo-input" onClick="">
+            <div className="Demo-input" {...demoClickable}>
               <span className="Demo-relative">
                 <Hint>W</Hint>
                 <Text>lorem ipsum</Text>
               </span>
             </div>
-            <div className="Demo-button" onClick="">
+            <div className="Demo-button" {...demoClickable}>
               <span className="Demo-relative">
                 <Hint>H</Hint>
                 <Text>Setar</Text>
