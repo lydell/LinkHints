@@ -1,13 +1,13 @@
 // @flow strict-local
 
-import { h, JSX } from "preact";
+import { h, JSX, VNode } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { classlist, timeout } from "../shared/main";
 
 const SAVE_TIMEOUT = 200; // ms
 
-type Reason = "input" | "blur";
+type Reason = "blur" | "input";
 
 export default function TextInput({
   savedValue,
@@ -25,12 +25,13 @@ export default function TextInput({
     textarea?: boolean;
     className?: string;
     onKeyDown?: (event: KeyboardEvent) => void;
-  }) {
-  const Tag = textarea ? "textarea" : "input";
+  }): VNode {
+  // `as "input"` is there because I could not figure out how to make `onInput` type-check otherwise.
+  const Tag = textarea ? ("textarea" as "input") : "input";
   const readonly = saveProp == null;
 
   const [focused, setFocused] = useState<boolean>(false);
-  const [stateValue, setStateValue] = useState<string | void>(undefined);
+  const [stateValue, setStateValue] = useState<string | undefined>(undefined);
 
   const value = stateValue != null ? stateValue : savedValue;
 
@@ -46,7 +47,7 @@ export default function TextInput({
   const selectionEndRef = useRef<number>(0);
   const rootRef = useRef<(HTMLInputElement & HTMLTextAreaElement) | null>(null);
 
-  function storeSelection() {
+  function storeSelection(): void {
     const element = rootRef.current;
     if (element != null) {
       selectionStartRef.current = element.selectionStart;
@@ -54,7 +55,7 @@ export default function TextInput({
     }
   }
 
-  function restoreSelection() {
+  function restoreSelection(): void {
     const element = rootRef.current;
     if (element != null) {
       element.selectionStart = selectionStartRef.current;
@@ -62,12 +63,12 @@ export default function TextInput({
     }
   }
 
-  useLayoutEffect(
-    () =>
-      // Move the default cursor position from the end of the textarea to the start.
-      textarea ? restoreSelection() : undefined,
-    [textarea]
-  );
+  useLayoutEffect(() => {
+    // Move the default cursor position from the end of the textarea to the start.
+    if (textarea) {
+      restoreSelection();
+    }
+  }, [textarea]);
 
   useLayoutEffect(() => {
     // When readonly textareas change, move the cursor back to the start.
@@ -110,7 +111,7 @@ export default function TextInput({
           event.currentTarget.value = value;
           restoreSelection();
         } else {
-          setStateValue(event.target.value);
+          setStateValue(event.currentTarget.value);
         }
       }}
       onKeyDown={(event: KeyboardEvent) => {
