@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { createElement, Ref, render } from "preact";
+import { h, render } from "preact";
 
 import OptionsProgram from "./Program";
 
@@ -11,14 +11,14 @@ function start(): void {
   }
 
   render(
-    createElement<{ ref?: Ref<OptionsProgram> }>(OptionsProgram, {
-      ref: (program) => {
+    <OptionsProgram
+      ref={(program: OptionsProgram | null) => {
         // Attach the instance to `window` for debugging in the regular Web
         // Console.
         // @ts-expect-error Only for debugging use.
         window.optionsProgram = program;
-      },
-    }),
+      }}
+    />,
     body
   );
 }
