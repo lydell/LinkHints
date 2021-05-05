@@ -11,7 +11,8 @@ import { h } from "./static-preact";
 const CONTAINER_ID = "container";
 
 export default class PopupProgram {
-  debugInfo: string = "Debug info was never loaded.";
+  debugInfo = "Debug info was never loaded.";
+
   resets: Resets = new Resets();
 
   constructor() {
@@ -30,16 +31,17 @@ export default class PopupProgram {
 
     try {
       this.debugInfo = await getDebugInfo();
-    } catch (error) {
+    } catch (errorAny) {
+      const error = errorAny as Error;
       this.debugInfo = `Failed to get debug info: ${error.message}`;
     }
   }
 
-  stop() {
+  stop(): void {
     this.resets.reset();
   }
 
-  async sendMessage(message: FromPopup) {
+  async sendMessage(message: FromPopup): Promise<void> {
     log("log", "PopupProgram#sendMessage", message.type, message, this);
     await browser.runtime.sendMessage(wrapMessage(message));
   }
@@ -81,7 +83,7 @@ export default class PopupProgram {
 
     const errorElement = <p className="Error" />;
 
-    function showError(error: Error | undefined) {
+    function showError(error: Error | undefined): void {
       errorElement.textContent =
         error != null ? error.message : "An unknown error ocurred.";
     }

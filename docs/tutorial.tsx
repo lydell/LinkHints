@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { ComponentChildren, h } from "preact";
+import { ComponentChildren, h, VNode } from "preact";
 
 import config from "../project.config";
 import KeyboardShortcut, { shortcuts } from "./KeyboardShortcuts";
@@ -288,7 +288,7 @@ const STEPS = [
   },
 ];
 
-export default () =>
+export default (): string =>
   render(
     <Page
       title="Link Hints Tutorial"
@@ -331,7 +331,7 @@ export default () =>
     </Page>
   );
 
-function Intro() {
+function Intro(): VNode {
   return (
     <section className="Intro">
       <h1>Link Hints Tutorial</h1>
@@ -374,7 +374,7 @@ function Info({
 }: {
   title: string;
   children: ComponentChildren;
-}) {
+}): VNode {
   return (
     <div className="Info">
       <h3>ℹ️ {title}</h3>
@@ -383,7 +383,7 @@ function Info({
   );
 }
 
-function Pagination() {
+function Pagination(): VNode {
   return (
     <p className="Pagination">
       {Array.from({ length: 12 }, (_, index) => (

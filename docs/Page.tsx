@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { ComponentChildren, h } from "preact";
+import { ComponentChildren, h, VNode } from "preact";
 
 import config from "../project.config";
 
@@ -14,7 +14,7 @@ export default function Page({
   description: string;
   css: string;
   children: ComponentChildren;
-}) {
+}): VNode {
   return (
     <html lang="en">
       <head>

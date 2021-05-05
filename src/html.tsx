@@ -13,7 +13,7 @@ export default ({
   polyfill: string | undefined;
   js: Array<string>;
   css: Array<string>;
-}) => {
+}): string => {
   const doc = (
     <html lang="en">
       <head>

@@ -1,6 +1,6 @@
 // @flow
 
-import { h } from "preact";
+import { h, VNode } from "preact";
 
 import { shortcuts } from "./KeyboardShortcuts";
 
@@ -31,7 +31,7 @@ const SHORTCUTS = [
   },
 ];
 
-export default function ShortcutsSummary() {
+export default function ShortcutsSummary(): VNode {
   return (
     <ul className="Shortcuts">
       {SHORTCUTS.map(({ shortcut, description }) => (

@@ -1,5 +1,4 @@
 /* eslint-disable react/jsx-key */
-/* eslint-disable react/no-unknown-property */
 // @flow strict-local
 
 // NOTE: If you make changes in this file you need to save twice for the changes
@@ -242,7 +241,7 @@ for (const img of document.querySelectorAll("img")) {
 }
 `.trim();
 
-function renderTestPage() {
+function renderTestPage(): string {
   const variations: Array<[typeof config.icons, string]> = [
     [config.icons, BACKGROUND_COLORS.light],
     [config.icons, BACKGROUND_COLORS.dark],
@@ -283,7 +282,7 @@ function makeChecksumFile(hash: string): string {
   return `export default ${JSON.stringify(hash)};`;
 }
 
-function writeFileIfNeeded(filepath: string, content: string) {
+function writeFileIfNeeded(filepath: string, content: string): void {
   let needed = undefined;
   try {
     const previous = fs.readFileSync(filepath, "utf8");
@@ -300,7 +299,7 @@ const OPTIONS_NORMAL = { opacity: 1 };
 const OPTIONS_DISABLED = { opacity: 0.5 };
 const KEYCAP_SIZE = 48;
 
-export default () => {
+export default (): string => {
   const all: Array<[typeof config.icons.svg, typeof OPTIONS_NORMAL]> = [
     [config.icons.svg, OPTIONS_NORMAL],
     [config.iconsDisabled.svg, OPTIONS_DISABLED],

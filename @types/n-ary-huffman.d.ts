@@ -1,8 +1,11 @@
 declare module "n-ary-huffman" {
   export class BranchPoint<T> {
     children: Array<T>;
+
     weight: number;
+
     constructor(children: Array<T>, weight: number);
+
     assignCodeWords(
       alphabet: string,
       callback: (node: T, codeWord: string) => void,

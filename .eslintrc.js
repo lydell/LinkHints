@@ -287,7 +287,7 @@ module.exports = {
       // },
     },
     {
-      files: ["docs/**/*.{ts,tsx}"],
+      files: ["docs/**/*.{ts,tsx}", "src/icons.tsx"],
       rules: {
         "react/no-danger": "off",
       },
