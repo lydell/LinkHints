@@ -24,7 +24,7 @@ export default class PopupProgram {
     ]);
   }
 
-  async start() {
+  async start(): Promise<void> {
     this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
 
     this.sendMessage({ type: "PopupScriptAdded" });
@@ -54,7 +54,7 @@ export default class PopupProgram {
   // script, which can receive messages from content scripts. So the
   // `FromBackground` type annotation isn't entirely true, but the
   // `wrappedMessage.type` check narrows the messages down correctly anyway.
-  onMessage(wrappedMessage: FromBackground) {
+  onMessage(wrappedMessage: FromBackground): void {
     if (wrappedMessage.type !== "ToPopup") {
       return;
     }
@@ -74,7 +74,7 @@ export default class PopupProgram {
     }
   }
 
-  render({ isEnabled }: { isEnabled: boolean }) {
+  render({ isEnabled }: { isEnabled: boolean }): void {
     const previous = document.getElementById(CONTAINER_ID);
 
     if (previous != null) {
@@ -114,7 +114,8 @@ export default class PopupProgram {
               try {
                 await browser.runtime.openOptionsPage();
                 window.close();
-              } catch (error) {
+              } catch (errorAny) {
+                const error = errorAny as Error;
                 showError(error);
               }
             }}
@@ -129,7 +130,8 @@ export default class PopupProgram {
               try {
                 await navigator.clipboard.writeText(this.debugInfo);
                 window.close();
-              } catch (error) {
+              } catch (errorAny) {
+                const error = errorAny as Error;
                 showError(error);
               }
             }}

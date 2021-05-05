@@ -45,5 +45,6 @@ export declare namespace h {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     type IntrinsicElements = PreactJSX.IntrinsicElements;
+    type Element = HTMLElement;
   }
 }
