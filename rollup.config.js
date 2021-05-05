@@ -8,7 +8,6 @@ import fs from "fs";
 import fsExtra from "fs-extra";
 import optionalRequireImport from "optional-require";
 import path from "path";
-import Preact from "preact";
 import prettier from "rollup-plugin-prettier";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import register from "sucrase/dist/register";
@@ -112,22 +111,6 @@ function setup() {
     `${config.docs.src}/${config.docs.iconsDir}`,
     `${config.docs.compiled}/${config.docs.iconsDir}`
   );
-
-  const { createElement } = Preact;
-
-  // Workarounds for preact-render-to-string unwanted props.
-  // $FlowIgnore: This is a hack.
-  Preact.createElement = (nodeName, props, ...children) => {
-    if (props) {
-      delete props.__source;
-      delete props.__self;
-      if (props.htmlFor != null) {
-        props.for = props.htmlFor;
-        delete props.htmlFor;
-      }
-    }
-    return createElement(nodeName, props, ...children);
-  };
 
   console.timeEnd("setup");
 }
