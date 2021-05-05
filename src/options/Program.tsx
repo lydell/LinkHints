@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { Component, createRef, h, Ref, VNode } from "preact";
+import { Component, createRef, Fragment, h, Ref, VNode } from "preact";
 import {
   array,
   autoRecord,
