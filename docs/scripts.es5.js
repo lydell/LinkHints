@@ -1,5 +1,5 @@
 // @flow strict-local
-/* global module */
+/* global exports */
 
 function macifyKbd() {
   if (/mac|iPhone|iPad|iPod/i.test(window.navigator.platform)) {

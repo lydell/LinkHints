@@ -8,11 +8,27 @@ import fs from "fs";
 import fsExtra from "fs-extra";
 import optionalRequireImport from "optional-require";
 import path from "path";
-import React from "preact";
+import Preact from "preact";
 import prettier from "rollup-plugin-prettier";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import register from "sucrase/dist/register";
+
+const jsx = {
+  jsxPragma: "h",
+  jsxFragmentPragma: "Fragment",
+};
+
+register.addHook(".ts", {
+  transforms: ["typescript", "imports"],
+});
+
+register.addHook(".tsx", {
+  transforms: ["typescript", "jsx", "imports"],
+  ...jsx,
+});
 
 const transformCSS = require("./src/css").default;
-const config = require("./project.config");
+const config = require("./project.config").default;
 
 const optionalRequire = optionalRequireImport(require);
 const customConfig = optionalRequire("./custom.config") || {};
@@ -97,11 +113,11 @@ function setup() {
     `${config.docs.compiled}/${config.docs.iconsDir}`
   );
 
-  const { createElement } = React;
+  const { createElement } = Preact;
 
   // Workarounds for preact-render-to-string unwanted props.
   // $FlowIgnore: This is a hack.
-  React.createElement = (nodeName, props, ...children) => {
+  Preact.createElement = (nodeName, props, ...children) => {
     if (props) {
       delete props.__source;
       delete props.__self;
@@ -132,6 +148,7 @@ function js({ input, output } /*: { input: string, output: string } */) {
         transforms: ["typescript", "jsx"],
         // Don't add `__self` and `__source` to JSX, which Preact does not support.
         production: true,
+        ...jsx,
       }),
       resolve(),
       commonjs(),
@@ -173,6 +190,7 @@ function template(
       sucrase({
         transforms: ["typescript", "jsx"],
         production: true,
+        ...jsx,
       }),
       resolve(),
       commonjs(),
@@ -209,7 +227,7 @@ function html(
   } */
 ) {
   return template({
-    input: "html.js",
+    input: "html.tsx",
     output: files.html,
     data: {
       title: files.title,

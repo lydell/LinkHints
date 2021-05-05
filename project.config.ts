@@ -64,7 +64,7 @@ export default {
   iconsTestPage: "icons/test.html",
   iconsChecksum: "icons/checksum.ts",
   iconsCompilation: {
-    input: "icons.js",
+    input: "icons.tsx",
     output: "../icon.svg",
   },
   needsPolyfill: needsPolyfill(currentBrowser),
@@ -94,7 +94,7 @@ export default {
   },
   popupHtml: "popup.html",
   options: {
-    input: "options/main.ts",
+    input: "options/main.tsx",
     output: "options.js",
   },
   optionsCss: {

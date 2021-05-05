@@ -224,30 +224,15 @@ module.exports = {
         es2020: true,
         node: false,
       },
-      // globals: {
-      //   ...baseRules.browserEnv(),
-      //   BROWSER: false,
-      //   browser: false,
-      //   BUILD_ID: false,
-      //   COLOR_BADGE: false,
-      //   COLOR_GREEN: false,
-      //   COLOR_PURPLE: false,
-      //   COLOR_YELLOW: false,
-      //   DEFAULT_LOG_LEVEL_CONFIG: false,
-      //   DEFAULT_STORAGE_SYNC: false,
-      //   exportFunction: false,
-      //   META_HOMEPAGE: false,
-      //   META_ICON: false,
-      //   META_NAME: false,
-      //   META_SLUG: false,
-      //   META_TUTORIAL: false,
-      //   META_VERSION: false,
-      //   navigator: false,
-      //   PROD: false,
-      //   XPCNativeWrapper: false,
-      // },
       rules: {
         "no-console": warn,
+      },
+    },
+    {
+      files: ["*.js"],
+      rules: {
+        "no-undef": error,
+        "no-unused-vars": error,
       },
     },
     {
@@ -256,9 +241,8 @@ module.exports = {
       env: {
         es6: false,
         node: false,
-        // browser: true,
+        browser: true,
       },
-      // globals: baseRules.browserEnv(),
       rules: {
         "no-var": "off",
         "object-shorthand": "off",
@@ -280,11 +264,8 @@ module.exports = {
       env: {
         es2020: true,
         node: false,
+        browser: true,
       },
-      // globals: baseRules.browserEnv(),
-      // rules: {
-      //   "flowtype/require-parameter-type": "off",
-      // },
     },
     {
       files: ["docs/**/*.{ts,tsx}", "src/icons.tsx"],

@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { ComponentChildren, h, VNode } from "preact";
+import { ComponentChildren, Fragment, h, VNode } from "preact";
 
 import config from "../project.config";
 import KeyboardShortcut, { shortcuts } from "./KeyboardShortcuts";
