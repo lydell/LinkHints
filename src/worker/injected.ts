@@ -17,10 +17,10 @@ import { makeRandomToken } from "../shared/main";
 // function, since `.toString()` is called on it in ElementManager. This also
 // means that `import`s generally cannot be used in this file. All of the below
 // constants are `.replace()`:ed in by ElementManager, but they are defined in
-// this file so that ESLint and Flow know about them.
+// this file so that TypeScript knows about them.
 
 // NOTE: If you add a new constant, you have to update the `constants` object in
-// ElementManager.js as well!
+// ElementManager.ts as well!
 
 // To make things even more complicated, in Firefox the `export default`
 // function is actually executed rather than inserted as an inline script. This
@@ -262,11 +262,7 @@ export default (communicator?: {
       // original in the case with no `hook` above.
       fnMap.set(fn, originalFn);
 
-      // Cannot use a computed property here due to Flow.
-      let newDescriptor =
-        prop === "value"
-          ? { ...descriptor, value: fn }
-          : { ...descriptor, set: fn };
+      let newDescriptor = { ...descriptor, [prop]: fn };
 
       if (BROWSER === "firefox") {
         if (prop === "value") {
@@ -331,7 +327,7 @@ export default (communicator?: {
     options: unknown;
   };
 
-  // Elements waiting to be sent to ElementManager.js (in Chrome only).
+  // Elements waiting to be sent to ElementManager.ts (in Chrome only).
   type SendQueueItem = {
     added: boolean;
     element: HTMLElement;
@@ -913,7 +909,7 @@ export default (communicator?: {
 
   function onReset(): void {
     if (!PROD) {
-      consoleLog(`[${META_SLUG}] Resetting injected.js`, RESET_EVENT);
+      consoleLog(`[${META_SLUG}] Resetting injected.ts`, RESET_EVENT);
     }
 
     // ElementManager removes listeners itself on reset.

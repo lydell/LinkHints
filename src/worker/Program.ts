@@ -383,7 +383,7 @@ export default class WorkerProgram {
       // Used instead of `browser.tabs.create` in Chrome, to have the opened tab
       // end up in the same position as if you'd clicked a link with the mouse.
       // This technique does not seem to work in Firefox, but it's not needed
-      // there anyway (see background/Program.js).
+      // there anyway (see background/Program.ts).
       case "OpenNewTab": {
         const { url, foreground } = message;
         const link = document.createElement("a");

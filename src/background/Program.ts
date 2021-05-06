@@ -272,7 +272,7 @@ export default class BackgroundProgram {
 
     // Firefox automatically loads content scripts into existing tabs, while
     // Chrome only automatically loads content scripts into _new_ tabs.
-    // Firefox requires a workaround (see renderer/Program.js), while we
+    // Firefox requires a workaround (see renderer/Program.ts), while we
     // manually load the content scripts into existing tabs in Chrome.
     if (BROWSER === "firefox") {
       firefoxWorkaround(tabs);

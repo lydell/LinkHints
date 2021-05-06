@@ -44,7 +44,7 @@ import injected, {
   RESET_EVENT,
 } from "./injected";
 
-// Keep the above imports and this object in sync. See injected.js.
+// Keep the above imports and this object in sync. See injected.ts.
 const constants = {
   CLICKABLE_CHANGED_EVENT: JSON.stringify(CLICKABLE_CHANGED_EVENT),
   CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
@@ -1140,7 +1140,7 @@ export default class ElementManager {
     this.onMutation(this.mutationObserver.takeRecords());
 
     // If `injectedNeedsFlush` then `this.queue` will be modified, so check the
-    // length _after_ flushing injected.js.
+    // length _after_ flushing injected.ts.
     const needsFlush = this.queue.items.length > 0;
 
     if (needsFlush) {

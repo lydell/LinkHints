@@ -130,7 +130,7 @@ export default class RendererProgram {
 
     // Using `mode: "closed"` means that ElementManager won’t be able to get
     // into this shadow root, which is a small optimization. (The override of
-    // `.attachShadow` in injected.js does not apply to code running in the
+    // `.attachShadow` in injected.ts does not apply to code running in the
     // extension context, only in the page context).
     const shadowRoot = container.attachShadow({ mode: "closed" });
 
@@ -189,7 +189,7 @@ export default class RendererProgram {
     // make the effectively disable the script.
     // In Firefox, content scripts are nuked when uninstalling. `onDisconnect`
     // never runs. Hopefully this changes some day, since we’d ideally want to
-    // clean up injected.js. There does not seem to be any good way of running
+    // clean up injected.ts. There does not seem to be any good way of running
     // cleanups when a WebExtension is disabled in Firefox. See:
     // <bugzil.la/1223425>
     browser.runtime.connect().onDisconnect.addListener(() => {
@@ -386,7 +386,7 @@ export default class RendererProgram {
       // of CSP. I look forward to the day Firefox works this way too. See
       // <bugzil.la/1267027>. If `style.sheet` is null in Firefox (it is always
       // available in Chrome), it means that the style tag was blocked by CSP.
-      // Unlike the case with the script tag in ElementManager.js, a data URI
+      // Unlike the case with the script tag in ElementManager.ts, a data URI
       // (`<link rel="stylesheet" href="data:text/css;utf8,...">`) does not work
       // here (it causes no CSP warning in the console, but no styles are
       // applied). The only workaround I could find was manually parsing and
