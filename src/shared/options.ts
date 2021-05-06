@@ -278,7 +278,6 @@ export function flattenOptions(options: Options): FlatOptions {
 
   return {
     ...rest,
-    // $FlowIgnore: Merging these objects is fine.
     ...flattenKeyTranslations(keyTranslations, "keys"),
     ...flattenKeyboardMappings(normalKeyboardShortcuts, "normal"),
     ...flattenKeyboardMappings(hintsKeyboardShortcuts, "hints"),

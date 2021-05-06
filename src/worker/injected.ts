@@ -872,7 +872,6 @@ export default (communicator?: {
         type: "ShadowRootCreated",
         shadowRoot,
       });
-      // $FlowIgnore: Flow doesn’t know about the `.mode` property yet.
     } else if (shadowRoot.mode === "open") {
       // In “open” mode, ElementManager can access shadow roots via the
       // `.shadowRoot` property on elements. All we need to do here is tell

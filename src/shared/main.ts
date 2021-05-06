@@ -301,7 +301,6 @@ export function setStyles(
   styles: { [key: string]: string }
 ): void {
   for (const [property, value] of Object.entries(styles)) {
-    // $FlowIgnore: Flow thinks that `value` is `unknown` here, but it is a `string`.
     element.style.setProperty(property, value, "important");
   }
 }
