@@ -279,7 +279,7 @@ function checksum(string: string): string {
 }
 
 function makeChecksumFile(hash: string): string {
-  return `export default ${JSON.stringify(hash)};`;
+  return `export default ${JSON.stringify(hash)};\n`;
 }
 
 function writeFileIfNeeded(filepath: string, content: string): void {

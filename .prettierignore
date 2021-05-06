@@ -3,3 +3,4 @@
 *.custom.js
 /compiled/
 /compiled-docs/
+*.json
