@@ -21,7 +21,6 @@ import {
   partition,
   Resets,
   SKIP_TEXT_ELEMENTS,
-  unreachable,
   walkTextNodes,
 } from "../shared/main";
 import type { Durations, Stats, TimeTracker } from "../shared/perf";
@@ -819,8 +818,6 @@ export default class ElementManager {
         case "changed":
           // Do nothing.
           break;
-        default:
-          unreachable(mutationType);
       }
       return;
     }

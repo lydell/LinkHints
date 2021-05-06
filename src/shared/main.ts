@@ -148,15 +148,6 @@ export function bind(
   }
 }
 
-export function unreachable(value: never, ...args: Array<unknown>): never {
-  const message = `Unreachable: ${value as string}\n${JSON.stringify(
-    args,
-    undefined,
-    2
-  )}`;
-  throw new Error(message);
-}
-
 export function addEventListener(
   target: EventTarget,
   eventName: string,

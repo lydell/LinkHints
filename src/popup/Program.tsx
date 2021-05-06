@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { addListener, bind, log, Resets, unreachable } from "../shared/main";
+import { addListener, bind, log, Resets } from "../shared/main";
 import type {
   FromBackground,
   FromPopup,
@@ -68,9 +68,6 @@ export default class PopupProgram {
         log.level = message.logLevel;
         this.render({ isEnabled: message.isEnabled });
         break;
-
-      default:
-        unreachable(message.type, message);
     }
   }
 

@@ -33,7 +33,6 @@ import {
   partition,
   Resets,
   splitEnteredText,
-  unreachable,
 } from "../shared/main";
 import type {
   FromBackground,
@@ -1057,10 +1056,6 @@ export default class BackgroundProgram {
           }
         );
         return true;
-
-      default:
-        unreachable(mode);
-        return true;
     }
   }
 
@@ -1680,9 +1675,6 @@ export default class BackgroundProgram {
           { tabId: info.tabId, frameId: "all_frames" }
         );
         break;
-
-      default:
-        unreachable(action);
     }
   }
 
@@ -2281,9 +2273,6 @@ function getElementTypes(mode: HintsMode): ElementTypes {
 
     case "Select":
       return "selectable";
-
-    default:
-      return unreachable(mode);
   }
 }
 
@@ -2313,9 +2302,6 @@ function getCombiningUrl(
 
     case "Select":
       return undefined;
-
-    default:
-      return unreachable(mode);
   }
 }
 
