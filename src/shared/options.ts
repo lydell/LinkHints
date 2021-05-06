@@ -90,26 +90,27 @@ const MIN_CHARS = 2;
 
 function validateChars(chars: string): string {
   if (/\s/.test(chars)) {
-    throw new TypeError(
-      `Expected chars not to contain whitespace, but got: ${repr(chars)}`
-    );
+    throw new DecoderError({
+      message: "Expected chars not to contain whitespace",
+      value: chars,
+    });
   }
 
   const match = /(.)(?=.*\1)/.exec(chars);
   if (match != null) {
-    throw new TypeError(
-      `Expected chars not to contain duplicate characters, but got ${repr(
+    throw new DecoderError({
+      message: `Expected chars not to contain duplicate characters, but got ${repr(
         match[1]
-      )} more than once.`
-    );
+      )} more than once.`,
+      value: DecoderError.MISSING_VALUE,
+    });
   }
 
   if (chars.length < MIN_CHARS) {
-    throw new TypeError(
-      `Expected at least ${repr(MIN_CHARS)} chars, but got: ${repr(
-        chars.length
-      )}`
-    );
+    throw new DecoderError({
+      message: `Expected at least ${repr(MIN_CHARS)} chars`,
+      value: chars.length,
+    });
   }
 
   return chars;

@@ -1,7 +1,5 @@
 // @flow strict-local
 
-import type { DecoderError } from "tiny-decoders";
-
 import type {
   ElementReport,
   ElementType,

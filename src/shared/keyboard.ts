@@ -3,8 +3,8 @@
 import {
   boolean,
   chain,
+  DecoderError,
   fieldsAuto,
-  repr,
   string,
   stringUnion,
   tuple,
@@ -79,11 +79,10 @@ const EMPTY_SHORTCUT: Shortcut = {
 function requireModifier(shortcut: Shortcut): Shortcut {
   const { key, alt, cmd, ctrl, shift } = shortcut;
   if (!(alt || cmd || ctrl || (shift && key.length > 1))) {
-    throw new TypeError(
-      `Expected Shortcut to use a least one modifier, but got: ${repr(
-        shortcut
-      )}`
-    );
+    throw new DecoderError({
+      message: "Expected Shortcut to use a least one modifier",
+      value: shortcut,
+    });
   }
   return shortcut;
 }

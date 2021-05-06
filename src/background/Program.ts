@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
-import { DecoderError } from "tiny-decoders";
+import type { DecoderError } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {

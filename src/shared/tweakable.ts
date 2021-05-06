@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { array, chain, Decoder, repr, string } from "tiny-decoders";
+import { array, chain, Decoder, DecoderError, string } from "tiny-decoders";
 
 import { ElementType } from "./hints";
 import {
@@ -104,7 +104,11 @@ export function tweakable(
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!{}.hasOwnProperty.call(defaults, key)) {
-          throw new TypeError(`Unknown key: ${repr(key)}`);
+          throw new DecoderError({
+            message: "Unknown key",
+            value: DecoderError.MISSING_VALUE,
+            key,
+          });
         }
 
         const original: TweakableValue = defaults[key];
@@ -176,7 +180,8 @@ export function tweakable(
         }
       } catch (errorAny) {
         const error = errorAny as Error;
-        errors[key] = error.message;
+        errors[key] =
+          error instanceof DecoderError ? error.format() : error.message;
       }
     }
   }

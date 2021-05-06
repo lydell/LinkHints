@@ -5,7 +5,6 @@ import {
   array,
   boolean,
   chain,
-  DecoderError,
   fieldsAuto,
   multi,
   number,

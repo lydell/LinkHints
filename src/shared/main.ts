@@ -5,7 +5,6 @@ import {
   Decoder,
   DecoderError,
   number,
-  repr,
   stringUnion,
 } from "tiny-decoders";
 
@@ -582,9 +581,10 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 
 export const UnsignedInt: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
-    throw new TypeError(
-      `Expected an unsigned finite integer, but got: ${repr(value)}`
-    );
+    throw new DecoderError({
+      message: `Expected an unsigned finite integer`,
+      value,
+    });
   }
   return value;
 });
@@ -603,9 +603,10 @@ export function normalizeUnsignedInt(
 
 export const UnsignedFloat: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0)) {
-    throw new TypeError(
-      `Expected an unsigned finite float, but got: ${repr(value)}`
-    );
+    throw new DecoderError({
+      message: "Expected an unsigned finite float",
+      value,
+    });
   }
   return value;
 });
