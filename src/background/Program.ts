@@ -1,6 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
+import type { DecoderError } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {
@@ -1970,7 +1971,7 @@ export default class BackgroundProgram {
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const unflattened = unflattenOptions(defaulted);
     const decoder = makeOptionsDecoder(defaults);
-    const decodeErrors: Array<string> = [];
+    const decodeErrors: Array<DecoderError> = [];
     const options: Options = decoder(unflattened, decodeErrors);
 
     log("log", "BackgroundProgram#updateOptions", {
@@ -1986,7 +1987,7 @@ export default class BackgroundProgram {
       values: options,
       defaults,
       raw: rawOptions,
-      errors: decodeErrors,
+      errors: decodeErrors.map((error) => error.format()),
       mac,
     };
 

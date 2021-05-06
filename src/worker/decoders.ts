@@ -1,59 +1,12 @@
 // @flow strict-local
 
-import {
-  array,
-  autoRecord,
-  Decoder,
-  fields,
-  number,
-  repr,
-  string,
-} from "tiny-decoders";
+import { array, Decoder, fieldsAuto, fieldsUnion, number } from "tiny-decoders";
 
-import { decodeElementTypes, ElementTypes } from "../shared/hints";
+import { decodeElementTypes } from "../shared/hints";
 import { Box, decodeUnsignedFloat } from "../shared/main";
 
-export type FrameMessage =
-  | {
-      type: "FindElements";
-      token: string;
-      types: ElementTypes;
-      viewports: Array<Box>;
-    }
-  | {
-      type: "UpdateElements";
-      token: string;
-      viewports: Array<Box>;
-    };
-
-export const decodeFrameMessage: Decoder<FrameMessage> = fields(
-  (field, fieldError) => {
-    const type = field("type", string);
-
-    switch (type) {
-      case "FindElements":
-        return {
-          type: "FindElements",
-          token: "",
-          types: field("types", decodeElementTypes),
-          viewports: field("viewports", decodeViewports),
-        };
-
-      case "UpdateElements":
-        return {
-          type: "UpdateElements",
-          token: "",
-          viewports: field("viewports", decodeViewports),
-        };
-
-      default:
-        throw fieldError("type", `Unknown FrameMessage type: ${repr(type)}`);
-    }
-  }
-);
-
 const decodeViewports: Decoder<Array<Box>> = array(
-  autoRecord({
+  fieldsAuto<Box>({
     // A viewport of a frame can be partially off-screen.
     x: number,
     y: number,
@@ -61,3 +14,18 @@ const decodeViewports: Decoder<Array<Box>> = array(
     height: decodeUnsignedFloat,
   })
 );
+
+export type FrameMessage = ReturnType<typeof decodeFrameMessage>;
+export const decodeFrameMessage = fieldsUnion("type", {
+  FindElements: fieldsAuto({
+    type: () => "FindElements" as const,
+    token: () => "",
+    types: decodeElementTypes,
+    viewports: decodeViewports,
+  }),
+  UpdateElements: fieldsAuto({
+    type: () => "UpdateElements" as const,
+    token: () => "",
+    viewports: decodeViewports,
+  }),
+});

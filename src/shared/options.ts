@@ -3,10 +3,11 @@
 import {
   array,
   boolean,
+  chain,
   Decoder,
-  dict,
+  DecoderError,
   fields,
-  map,
+  record,
   repr,
   string,
 } from "tiny-decoders";
@@ -56,36 +57,38 @@ export type FlatOptions = { [key: string]: unknown };
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
   return fields((field) => ({
-    chars: field("chars", map(string, validateChars), {
-      default: defaults.chars,
+    chars: field("chars", chain(string, validateChars), {
+      mode: { default: defaults.chars },
     }),
     autoActivate: field("autoActivate", boolean, {
-      default: defaults.autoActivate,
+      mode: { default: defaults.autoActivate },
     }),
     overTypingDuration: field("overTypingDuration", decodeUnsignedInt, {
-      default: defaults.overTypingDuration,
+      mode: { default: defaults.overTypingDuration },
     }),
     css: field("css", string, {
-      default: defaults.css,
+      mode: { default: defaults.css },
     }),
-    logLevel: field("logLevel", map(string, decodeLogLevel), {
-      default: defaults.logLevel,
+    logLevel: field("logLevel", decodeLogLevel, {
+      mode: { default: defaults.logLevel },
     }),
     useKeyTranslations: field("useKeyTranslations", boolean, {
-      default: defaults.useKeyTranslations,
+      mode: { default: defaults.useKeyTranslations },
     }),
-    keyTranslations: field("keyTranslations", dict(decodeKeyPair, "skip"), {
-      default: defaults.keyTranslations,
-    }),
+    keyTranslations: field(
+      "keyTranslations",
+      record(decodeKeyPair, { mode: "skip" }),
+      { mode: { default: defaults.keyTranslations } }
+    ),
     normalKeyboardShortcuts: field(
       "normalKeyboardShortcuts",
-      array(decodeKeyboardMappingWithModifiers, "skip"),
-      { default: defaults.normalKeyboardShortcuts }
+      array(decodeKeyboardMappingWithModifiers, { mode: "skip" }),
+      { mode: { default: defaults.normalKeyboardShortcuts } }
     ),
     hintsKeyboardShortcuts: field(
       "hintsKeyboardShortcuts",
-      array(decodeKeyboardMapping, "skip"),
-      { default: defaults.hintsKeyboardShortcuts }
+      array(decodeKeyboardMapping, { mode: "skip" }),
+      { mode: { default: defaults.hintsKeyboardShortcuts } }
     ),
   }));
 }
@@ -454,9 +457,11 @@ export function importOptions(
     };
     const unflattened = unflattenOptions(updatedOptionsFlat);
     const decoder = makeOptionsDecoder(defaults);
-    const decodeErrors: Array<string> = [];
+    const decodeErrors: Array<DecoderError> = [];
     const newOptions = decoder(unflattened, decodeErrors);
-    const errors = keyErrors.concat(decodeErrors);
+    const errors = keyErrors.concat(
+      decodeErrors.map((error) => error.format())
+    );
     return {
       options: newOptions,
       successCount: Object.keys(flatOptions).length - errors.length,

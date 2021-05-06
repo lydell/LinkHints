@@ -1,6 +1,6 @@
 // @flow
 
-import { Decoder, map, number, repr } from "tiny-decoders";
+import { chain, Decoder, number, repr, stringUnion } from "tiny-decoders";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -8,21 +8,15 @@ import { Decoder, map, number, repr } from "tiny-decoders";
 // ElementManager might not get the same random number.
 export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
-export type LogLevel = keyof typeof LOG_LEVELS;
+export type LogLevel = ReturnType<typeof decodeLogLevel>;
+export const decodeLogLevel = stringUnion({
+  error: null,
+  warn: null,
+  log: null,
+  debug: null,
+});
 
-export function decodeLogLevel(logLevel: unknown): LogLevel {
-  switch (logLevel) {
-    case "error":
-    case "warn":
-    case "log":
-    case "debug":
-      return logLevel;
-    default:
-      throw new TypeError(`Invalid LogLevel: ${repr(logLevel)}`);
-  }
-}
-
-export const LOG_LEVELS = {
+export const LOG_LEVELS: { [key in LogLevel]: number } = {
   error: 0,
   warn: 1,
   log: 2,
@@ -579,7 +573,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
-export const decodeUnsignedInt: Decoder<number> = map(number, (value) => {
+export const decodeUnsignedInt: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
     throw new TypeError(
       `Expected an unsigned finite integer, but got: ${repr(value)}`
@@ -600,7 +594,7 @@ export function normalizeUnsignedInt(
   return defaulted.toString();
 }
 
-export const decodeUnsignedFloat: Decoder<number> = map(number, (value) => {
+export const decodeUnsignedFloat: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0)) {
     throw new TypeError(
       `Expected an unsigned finite float, but got: ${repr(value)}`

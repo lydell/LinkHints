@@ -3,12 +3,12 @@
 import { Component, createRef, Fragment, h, Ref, VNode } from "preact";
 import {
   array,
-  autoRecord,
   boolean,
-  map,
+  chain,
+  fieldsAuto,
+  multi,
   number,
   optional,
-  repr,
   string,
 } from "tiny-decoders";
 
@@ -332,7 +332,9 @@ export default class OptionsProgram extends Component<Props, State> {
     try {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
-      const [tweakableData, otherData] = partitionTweakable(mixedObject(data));
+      const [tweakableData, otherData] = partitionTweakable(
+        multi({ object: (x) => x })(data)
+      );
       const { options: newOptions, successCount, errors } = importOptions(
         otherData,
         options,
@@ -1539,7 +1541,7 @@ export default class OptionsProgram extends Component<Props, State> {
       this.hasRestoredPosition = true;
       const recordProps = {
         expandedPerfTabIds: optional(
-          map(array(string), (ids) =>
+          chain(array(string), (ids) =>
             ids.filter((id) => ({}.hasOwnProperty.call(this.state.perf, id)))
           ),
           []
@@ -1549,7 +1551,7 @@ export default class OptionsProgram extends Component<Props, State> {
         scrollY: optional(number, 0),
       };
       const data = await browser.storage.local.get(Object.keys(recordProps));
-      const decoder = autoRecord(recordProps);
+      const decoder = fieldsAuto(recordProps);
       const { scrollY, expandedPerfTabIds, ...state } = decoder(data);
       this.setState({ ...state, expandedPerfTabIds }, () => {
         window.scrollTo(0, scrollY);
@@ -1740,13 +1742,6 @@ async function selectFile(accept: string): Promise<File> {
 
 async function readAsJson(file: File): Promise<unknown> {
   return new Response(file).json();
-}
-
-function mixedObject(value: unknown): { [key: string]: unknown } {
-  if (typeof value !== "object" || value == null || Array.isArray(value)) {
-    throw new TypeError(`Expected an object, but got: ${repr(value)}`);
-  }
-  return value as { [key: string]: unknown };
 }
 
 function toISODateString(date: Date): string {

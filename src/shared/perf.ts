@@ -2,31 +2,20 @@
 
 import {
   array,
-  autoRecord,
-  Decoder,
-  dict,
+  fieldsAuto,
   number,
-  pair,
+  record,
   string,
+  tuple,
 } from "tiny-decoders";
 
 export const MAX_PERF_ENTRIES = 9;
 
-export type Durations = Array<[string, number]>;
+export type Durations = ReturnType<typeof decodeDurations>;
+export const decodeDurations = array(tuple([string, number]));
 
-export const decodeDurations: Decoder<Durations> = array(pair(string, number));
-
-export type Stats = {
-  url: string;
-  numTotalElements: number;
-  numTrackedElements: number;
-  numVisibleElements: number;
-  numVisibleFrames: number;
-  bailed: number;
-  durations: Durations;
-};
-
-export const decodeStats: Decoder<Stats> = autoRecord({
+export type Stats = ReturnType<typeof decodeStats>;
+export const decodeStats = fieldsAuto({
   url: string,
   numTotalElements: number,
   numTrackedElements: number,
@@ -36,16 +25,9 @@ export const decodeStats: Decoder<Stats> = autoRecord({
   durations: decodeDurations,
 });
 
-export type Perf = Array<{
-  timeToFirstPaint: number;
-  timeToLastPaint: number;
-  topDurations: Durations;
-  collectStats: Array<Stats>;
-  renderDurations: Durations;
-}>;
-
-export const decodePerf: Decoder<Perf> = array(
-  autoRecord({
+export type Perf = ReturnType<typeof decodePerf>;
+export const decodePerf = array(
+  fieldsAuto({
     timeToFirstPaint: number,
     timeToLastPaint: number,
     topDurations: decodeDurations,
@@ -54,9 +36,8 @@ export const decodePerf: Decoder<Perf> = array(
   })
 );
 
-export type TabsPerf = { [tabId: string]: Perf };
-
-export const decodeTabsPerf: Decoder<TabsPerf> = dict(decodePerf);
+export type TabsPerf = ReturnType<typeof decodeTabsPerf>;
+export const decodeTabsPerf = record(decodePerf);
 
 export class TimeTracker {
   _durations: Durations = [];

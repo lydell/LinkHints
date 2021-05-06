@@ -1,56 +1,34 @@
 // @flow strict-local
 
 import {
-  autoRecord,
   boolean,
-  Decoder,
-  map,
-  pair,
+  chain,
+  fieldsAuto,
   repr,
   string,
+  stringUnion,
+  tuple,
 } from "tiny-decoders";
 
-export type KeyboardAction =
-  | "ActivateHint"
-  | "ActivateHintAlt"
-  | "Backspace"
-  | "EnterHintsMode_BackgroundTab"
-  | "EnterHintsMode_Click"
-  | "EnterHintsMode_ForegroundTab"
-  | "EnterHintsMode_ManyClick"
-  | "EnterHintsMode_ManyTab"
-  | "EnterHintsMode_Select"
-  | "Escape"
-  | "ExitHintsMode"
-  | "RefreshHints"
-  | "ReverseSelection"
-  | "RotateHintsBackward"
-  | "RotateHintsForward"
-  | "TogglePeek";
-
-export function decodeKeyboardAction(type: string): KeyboardAction {
-  switch (type) {
-    case "EnterHintsMode_Click":
-    case "EnterHintsMode_BackgroundTab":
-    case "EnterHintsMode_ForegroundTab":
-    case "EnterHintsMode_ManyClick":
-    case "EnterHintsMode_ManyTab":
-    case "EnterHintsMode_Select":
-    case "ReverseSelection":
-    case "Escape":
-    case "ActivateHint":
-    case "ActivateHintAlt":
-    case "Backspace":
-    case "RotateHintsForward":
-    case "RotateHintsBackward":
-    case "RefreshHints":
-    case "TogglePeek":
-    case "ExitHintsMode":
-      return type;
-    default:
-      throw new TypeError(`Invalid KeyboardAction: ${repr(type)}`);
-  }
-}
+export type KeyboardAction = ReturnType<typeof decodeKeyboardAction>;
+export const decodeKeyboardAction = stringUnion({
+  ActivateHint: null,
+  ActivateHintAlt: null,
+  Backspace: null,
+  EnterHintsMode_BackgroundTab: null,
+  EnterHintsMode_Click: null,
+  EnterHintsMode_ForegroundTab: null,
+  EnterHintsMode_ManyClick: null,
+  EnterHintsMode_ManyTab: null,
+  EnterHintsMode_Select: null,
+  Escape: null,
+  ExitHintsMode: null,
+  RefreshHints: null,
+  ReverseSelection: null,
+  RotateHintsBackward: null,
+  RotateHintsForward: null,
+  TogglePeek: null,
+});
 
 // Allow exiting hints mode if we ever get stuck in Prevent overtyping mode.
 export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = new Set(
@@ -81,15 +59,8 @@ export type NormalizedKeypress = {
   shift: boolean | undefined;
 };
 
-export type Shortcut = {
-  key: string;
-  alt: boolean;
-  cmd: boolean;
-  ctrl: boolean;
-  shift: boolean;
-};
-
-const decodeShortcut: Decoder<Shortcut> = autoRecord({
+export type Shortcut = ReturnType<typeof decodeShortcut>;
+const decodeShortcut = fieldsAuto({
   key: string,
   alt: boolean,
   cmd: boolean,
@@ -151,22 +122,16 @@ export function deserializeShortcut(
   );
 }
 
-export type KeyboardMapping = {
-  shortcut: Shortcut;
-  action: KeyboardAction;
-};
-
-export const decodeKeyboardMapping: Decoder<KeyboardMapping> = autoRecord({
+export type KeyboardMapping = ReturnType<typeof decodeKeyboardMapping>;
+export const decodeKeyboardMapping = fieldsAuto({
   shortcut: decodeShortcut,
-  action: map(string, decodeKeyboardAction),
+  action: decodeKeyboardAction,
 });
 
-export const decodeKeyboardMappingWithModifiers: Decoder<KeyboardMapping> = autoRecord(
-  {
-    shortcut: map(decodeShortcut, requireModifier),
-    action: map(string, decodeKeyboardAction),
-  }
-);
+export const decodeKeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>({
+  shortcut: chain(decodeShortcut, requireModifier),
+  action: decodeKeyboardAction,
+});
 
 export type KeyboardModeBackground =
   | { type: "Capture" }
@@ -201,9 +166,8 @@ export function decodeHintsMode(type: string): HintsMode {
   }
 }
 
-export type KeyPair = [string, string];
-
-export const decodeKeyPair: Decoder<KeyPair> = pair(string, string);
+export type KeyPair = ReturnType<typeof decodeKeyPair>;
+export const decodeKeyPair = tuple([string, string]);
 
 export type KeyTranslations = { [code: string]: KeyPair };
 

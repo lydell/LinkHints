@@ -1,48 +1,25 @@
 // @flow strict-local
 
-import { array, Decoder, either, map, repr, string } from "tiny-decoders";
+import { array, multi, stringUnion } from "tiny-decoders";
 
-// Remember to keep `decodeElementType` below in sync.
-export type ElementType =
-  | "clickable-event"
-  | "clickable"
-  | "label"
-  | "link"
-  | "scrollable"
-  | "selectable"
-  | "textarea";
+export type ElementType = ReturnType<typeof decodeElementType>;
+export const decodeElementType = stringUnion({
+  "clickable-event": null,
+  clickable: null,
+  label: null,
+  link: null,
+  scrollable: null,
+  selectable: null,
+  textarea: null,
+});
 
-// Remember to keep `decodeElementTypesConstants` below in sync.
-export type ElementTypes = Array<ElementType> | "selectable";
-
-export function decodeElementType(type: string): ElementType {
-  switch (type) {
-    case "clickable":
-    case "clickable-event":
-    case "label":
-    case "link":
-    case "selectable":
-    case "scrollable":
-    case "textarea":
-      return type;
-    default:
-      throw new TypeError(`Invalid ElementType: ${repr(type)}`);
-  }
-}
-
-export function decodeElementTypesConstants(type: string): ElementTypes {
-  switch (type) {
-    case "selectable":
-      return type;
-    default:
-      throw new TypeError(`Invalid ElementTypes constant: ${repr(type)}`);
-  }
-}
-
-export const decodeElementTypes: Decoder<ElementTypes> = either(
-  map(string, decodeElementTypesConstants),
-  array(map(string, decodeElementType))
-);
+export type ElementTypes = ReturnType<typeof decodeElementTypes>;
+export const decodeElementTypes = multi({
+  array: array(decodeElementType),
+  string: stringUnion({
+    selectable: null,
+  }),
+});
 
 export type Point = {
   x: number;

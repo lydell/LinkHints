@@ -1,6 +1,6 @@
 // @flow strict-local
 
-import { array, Decoder, map, repr, string } from "tiny-decoders";
+import { array, chain, Decoder, repr, string } from "tiny-decoders";
 
 import { decodeElementType, ElementType } from "./hints";
 import {
@@ -149,7 +149,7 @@ export function tweakable(
 
           case "ElementTypeSet": {
             const decoded: Set<ElementType> = decodeStringSet(
-              map(string, decodeElementType)
+              decodeElementType
             )(value);
             mapping[key] = {
               type: "ElementTypeSet",
@@ -164,7 +164,7 @@ export function tweakable(
 
           case "SelectorString": {
             // eslint-disable-next-line @typescript-eslint/no-loop-func
-            const decoded = map(string, (val) => {
+            const decoded = chain(string, (val) => {
               document.querySelector(val);
               return val;
             })(value);
@@ -244,7 +244,7 @@ export function normalizeStringArray(
 function decodeStringSet<T extends string>(
   decoder: Decoder<T>
 ): Decoder<Set<T>> {
-  return map(
+  return chain(
     array(string),
     (arr) => new Set(array(decoder)(normalizeStringArray(arr)))
   );
