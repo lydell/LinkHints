@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import minifyCSS from "minifycss";
 
 import config from "../project.config";

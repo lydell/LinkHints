@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import huffman from "n-ary-huffman";
 import { DecoderError } from "tiny-decoders";
 

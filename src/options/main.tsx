@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h, render } from "preact";
 
 import OptionsProgram from "./Program";

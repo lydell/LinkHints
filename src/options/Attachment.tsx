@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { ComponentChildren, h, JSX, VNode } from "preact";
 
 import { classlist } from "../shared/main";

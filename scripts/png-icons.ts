@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import * as spawn from "cross-spawn";
 
 import config from "../project.config";

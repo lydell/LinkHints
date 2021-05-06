@@ -1,5 +1,3 @@
-// @flow
-
 import {
   chain,
   Decoder,

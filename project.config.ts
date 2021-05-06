@@ -1,5 +1,3 @@
-// @flow strict-local
-
 const VERSION = "1.1.1";
 
 const FAVICON_SIZES = [16, 32];

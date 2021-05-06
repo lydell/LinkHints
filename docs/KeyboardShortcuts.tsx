@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h, VNode } from "preact";
 
 type Modifier = boolean | { mac: "alt" | "cmd" | "ctrl" | "shift" };

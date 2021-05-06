@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { Component, createRef, Fragment, h, Ref, VNode } from "preact";
 import {
   array,

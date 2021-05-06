@@ -1,5 +1,4 @@
 /* eslint-disable react/jsx-key */
-// @flow strict-local
 
 // NOTE: If you make changes in this file you need to save twice for the changes
 // to appear in Firefox when running `npm start` due to a hacky cache busting

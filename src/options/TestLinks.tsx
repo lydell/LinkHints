@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h, VNode } from "preact";
 import { useState } from "preact/hooks";
 

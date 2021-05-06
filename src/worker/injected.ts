@@ -6,7 +6,6 @@
 @typescript-eslint/no-unsafe-member-access,
 @typescript-eslint/no-unsafe-return,
 */
-// @flow
 
 import { makeRandomToken } from "../shared/main";
 

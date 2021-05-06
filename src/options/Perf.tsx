@@ -1,4 +1,3 @@
-// @flow strict-local
 import { Fragment, h, VNode } from "preact";
 
 import { classlist } from "../shared/main";

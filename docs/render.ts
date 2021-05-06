@@ -1,5 +1,3 @@
-// @flow
-
 import type { VNode } from "preact";
 import renderToString from "preact-render-to-string";
 

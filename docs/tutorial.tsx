@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { ComponentChildren, Fragment, h, VNode } from "preact";
 
 import config from "../project.config";

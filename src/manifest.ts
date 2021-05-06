@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import config from "../project.config";
 
 type IconsList = Array<[number, string]>;

@@ -2,8 +2,6 @@
 // Thanks to Rollup this does not blow up the bundle size.
 /* eslint-disable import/no-restricted-paths */
 
-// @flow strict-local
-
 import { h, VNode } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 

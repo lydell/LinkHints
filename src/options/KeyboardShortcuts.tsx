@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { Component, h, VNode } from "preact";
 
 import {

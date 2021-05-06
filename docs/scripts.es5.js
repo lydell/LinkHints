@@ -1,4 +1,3 @@
-// @flow strict-local
 /* global exports */
 
 function macifyKbd() {

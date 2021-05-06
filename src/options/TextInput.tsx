@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h, JSX, VNode } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 

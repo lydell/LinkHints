@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { array, chain, Decoder, DecoderError, string } from "tiny-decoders";
 
 import { ElementType } from "./hints";

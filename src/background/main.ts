@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import BackgroundProgram from "./Program";
 
 const program = new BackgroundProgram();

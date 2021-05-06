@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 

@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import jsTokens, { Token } from "js-tokens";
 import { h, VNode } from "preact";
 

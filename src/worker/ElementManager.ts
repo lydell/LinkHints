@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import type {
   ElementType,
   ElementTypes,

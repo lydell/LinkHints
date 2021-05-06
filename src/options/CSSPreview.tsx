@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { h, VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import Shadow from "preact-shadow-root";

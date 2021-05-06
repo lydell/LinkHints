@@ -1,5 +1,3 @@
-// @flow
-
 import { h, VNode } from "preact";
 
 import { shortcuts } from "./KeyboardShortcuts";

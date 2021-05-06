@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import type { JSX as PreactJSX } from "preact";
 
 export function h(

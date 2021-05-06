@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import { array, multi, stringUnion } from "tiny-decoders";
 
 export type ElementType = ReturnType<typeof ElementType>;

@@ -1,5 +1,3 @@
-// @flow strict-local
-
 export const ROOT_CLASS = "root";
 export const HINT_CLASS = "hint";
 export const HIGHLIGHTED_HINT_CLASS = "highlighted";
