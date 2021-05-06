@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
-import type { DecoderError } from "tiny-decoders";
+import { DecoderError } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {
@@ -237,7 +237,9 @@ export default class BackgroundProgram {
       await this.updateOptions({ isInitial: true });
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [error.message];
+      this.options.errors = [
+        error instanceof DecoderError ? error.format() : error.message,
+      ];
     }
 
     if (!PROD) {
@@ -2017,7 +2019,9 @@ export default class BackgroundProgram {
       await this.updateOptions();
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [error.message];
+      this.options.errors = [
+        error instanceof DecoderError ? error.format() : error.message,
+      ];
     }
   }
 
@@ -2027,7 +2031,9 @@ export default class BackgroundProgram {
       await this.updateOptions();
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [error.message];
+      this.options.errors = [
+        error instanceof DecoderError ? error.format() : error.message,
+      ];
     }
   }
 
