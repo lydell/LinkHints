@@ -1,6 +1,8 @@
 {
   "private": true,
+  "name": "build",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "run-pty % npm run watch % npm run firefox % npm run chrome",
     "firefox": "sucrase-node scripts/wait-for-manifest.ts && npm run web-ext -- run",
     "chrome": "npm run firefox -- --target chromium",

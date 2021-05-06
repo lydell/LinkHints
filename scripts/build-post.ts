@@ -63,7 +63,7 @@ async function makeSourceCodeBundle(): Promise<void> {
     "web-ext-config.js",
   ].map((file) => path.join(BASE_DIR, file));
 
-  const dirs = ["@types", "docs", "scripts", "src"];
+  const dirs = ["@types", "docs", "patches", "scripts", "src"];
 
   const asyncFiles = await Promise.all(
     dirs.map((dir) => getAllFilesInDir(dir))
