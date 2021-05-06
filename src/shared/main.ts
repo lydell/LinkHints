@@ -1,6 +1,13 @@
 // @flow
 
-import { chain, Decoder, number, repr, stringUnion } from "tiny-decoders";
+import {
+  chain,
+  Decoder,
+  DecoderError,
+  number,
+  repr,
+  stringUnion,
+} from "tiny-decoders";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -8,8 +15,8 @@ import { chain, Decoder, number, repr, stringUnion } from "tiny-decoders";
 // ElementManager might not get the same random number.
 export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
-export type LogLevel = ReturnType<typeof decodeLogLevel>;
-export const decodeLogLevel = stringUnion({
+export type LogLevel = ReturnType<typeof LogLevel>;
+export const LogLevel = stringUnion({
   error: null,
   warn: null,
   log: null,
@@ -25,7 +32,7 @@ export const LOG_LEVELS: { [key in LogLevel]: number } = {
 
 export const DEFAULT_LOG_LEVEL: LogLevel = PROD
   ? "warn"
-  : decodeLogLevel(DEFAULT_LOG_LEVEL_CONFIG);
+  : LogLevel(DEFAULT_LOG_LEVEL_CONFIG);
 
 export function log(level: LogLevel, ...args: Array<unknown>): void {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
@@ -41,7 +48,7 @@ export function log(level: LogLevel, ...args: Array<unknown>): void {
       ? "extension page"
       : window.location.href,
     "\n ",
-    ...args
+    ...args.map((arg) => (arg instanceof DecoderError ? arg.format() : arg))
   );
 }
 
@@ -573,7 +580,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
-export const decodeUnsignedInt: Decoder<number> = chain(number, (value) => {
+export const UnsignedInt: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
     throw new TypeError(
       `Expected an unsigned finite integer, but got: ${repr(value)}`
@@ -594,7 +601,7 @@ export function normalizeUnsignedInt(
   return defaulted.toString();
 }
 
-export const decodeUnsignedFloat: Decoder<number> = chain(number, (value) => {
+export const UnsignedFloat: Decoder<number> = chain(number, (value) => {
   if (!(Number.isFinite(value) && value >= 0)) {
     throw new TypeError(
       `Expected an unsigned finite float, but got: ${repr(value)}`

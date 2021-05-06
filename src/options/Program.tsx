@@ -5,6 +5,7 @@ import {
   array,
   boolean,
   chain,
+  DecoderError,
   fieldsAuto,
   multi,
   number,
@@ -33,10 +34,10 @@ import {
   addListener,
   bind,
   classlist,
-  decodeLogLevel,
   deepEqual,
   log,
   LOG_LEVELS,
+  LogLevel,
   normalizeUnsignedInt,
   Resets,
 } from "../shared/main";
@@ -1280,7 +1281,7 @@ export default class OptionsProgram extends Component<Props, State> {
                           onChange={(event) => {
                             const { value } = event.currentTarget;
                             try {
-                              const logLevel = decodeLogLevel(value);
+                              const logLevel = LogLevel(value);
                               this.saveOptions({ logLevel });
                             } catch (error) {
                               log(

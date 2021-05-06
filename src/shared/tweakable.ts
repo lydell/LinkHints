@@ -2,13 +2,13 @@
 
 import { array, chain, Decoder, repr, string } from "tiny-decoders";
 
-import { decodeElementType, ElementType } from "./hints";
+import { ElementType } from "./hints";
 import {
   addListener,
-  decodeUnsignedFloat,
-  decodeUnsignedInt,
   deepEqual,
   log,
+  UnsignedFloat,
+  UnsignedInt,
 } from "./main";
 import { DEBUG_PREFIX } from "./options";
 
@@ -118,7 +118,7 @@ export function tweakable(
 
         switch (original.type) {
           case "UnsignedInt": {
-            const decoded = decodeUnsignedInt(value);
+            const decoded = UnsignedInt(value);
             mapping[key] = {
               type: "UnsignedInt",
               value: decoded,
@@ -128,7 +128,7 @@ export function tweakable(
           }
 
           case "UnsignedFloat": {
-            const decoded = decodeUnsignedFloat(value);
+            const decoded = UnsignedFloat(value);
             mapping[key] = {
               type: "UnsignedFloat",
               value: decoded,
@@ -138,7 +138,7 @@ export function tweakable(
           }
 
           case "StringSet": {
-            const decoded = decodeStringSet(string)(value);
+            const decoded = StringSet(string)(value);
             mapping[key] = {
               type: "StringSet",
               value: decoded,
@@ -148,9 +148,7 @@ export function tweakable(
           }
 
           case "ElementTypeSet": {
-            const decoded: Set<ElementType> = decodeStringSet(
-              decodeElementType
-            )(value);
+            const decoded: Set<ElementType> = StringSet(ElementType)(value);
             mapping[key] = {
               type: "ElementTypeSet",
               value: decoded,
@@ -241,9 +239,7 @@ export function normalizeStringArray(
     .sort();
 }
 
-function decodeStringSet<T extends string>(
-  decoder: Decoder<T>
-): Decoder<Set<T>> {
+function StringSet<T extends string>(decoder: Decoder<T>): Decoder<Set<T>> {
   return chain(
     array(string),
     (arr) => new Set(array(decoder)(normalizeStringArray(arr)))

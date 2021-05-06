@@ -10,8 +10,8 @@ import {
   tuple,
 } from "tiny-decoders";
 
-export type KeyboardAction = ReturnType<typeof decodeKeyboardAction>;
-export const decodeKeyboardAction = stringUnion({
+export type KeyboardAction = ReturnType<typeof KeyboardAction>;
+export const KeyboardAction = stringUnion({
   ActivateHint: null,
   ActivateHintAlt: null,
   Backspace: null,
@@ -59,8 +59,8 @@ export type NormalizedKeypress = {
   shift: boolean | undefined;
 };
 
-export type Shortcut = ReturnType<typeof decodeShortcut>;
-const decodeShortcut = fieldsAuto({
+export type Shortcut = ReturnType<typeof Shortcut>;
+const Shortcut = fieldsAuto({
   key: string,
   alt: boolean,
   cmd: boolean,
@@ -102,7 +102,7 @@ export function serializeShortcut(shortcut: Shortcut): string {
     .join(SHORTCUT_SEPARATOR);
 }
 
-// This turns a shortcut string into an object that can be fed to `decodeShortcut`.
+// This turns a shortcut string into an object that can be fed to `Shortcut`.
 export function deserializeShortcut(
   shortcutString: string
 ): { [key: string]: unknown } {
@@ -122,15 +122,15 @@ export function deserializeShortcut(
   );
 }
 
-export type KeyboardMapping = ReturnType<typeof decodeKeyboardMapping>;
-export const decodeKeyboardMapping = fieldsAuto({
-  shortcut: decodeShortcut,
-  action: decodeKeyboardAction,
+export type KeyboardMapping = ReturnType<typeof KeyboardMapping>;
+export const KeyboardMapping = fieldsAuto({
+  shortcut: Shortcut,
+  action: KeyboardAction,
 });
 
-export const decodeKeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>({
-  shortcut: chain(decodeShortcut, requireModifier),
-  action: decodeKeyboardAction,
+export const KeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>({
+  shortcut: chain(Shortcut, requireModifier),
+  action: KeyboardAction,
 });
 
 export type KeyboardModeBackground =
@@ -144,30 +144,18 @@ export type KeyboardModeWorker =
   | "Normal"
   | "PreventOverTyping";
 
-export type HintsMode =
-  | "BackgroundTab"
-  | "Click"
-  | "ForegroundTab"
-  | "ManyClick"
-  | "ManyTab"
-  | "Select";
+export type HintsMode = ReturnType<typeof HintsMode>;
+export const HintsMode = stringUnion({
+  BackgroundTab: null,
+  Click: null,
+  ForegroundTab: null,
+  ManyClick: null,
+  ManyTab: null,
+  Select: null,
+});
 
-export function decodeHintsMode(type: string): HintsMode {
-  switch (type) {
-    case "Click":
-    case "ManyClick":
-    case "ManyTab":
-    case "BackgroundTab":
-    case "ForegroundTab":
-    case "Select":
-      return type;
-    default:
-      throw new TypeError(`Invalid HintsMode: ${repr(type)}`);
-  }
-}
-
-export type KeyPair = ReturnType<typeof decodeKeyPair>;
-export const decodeKeyPair = tuple([string, string]);
+export type KeyPair = ReturnType<typeof KeyPair>;
+export const KeyPair = tuple([string, string]);
 
 export type KeyTranslations = { [code: string]: KeyPair };
 

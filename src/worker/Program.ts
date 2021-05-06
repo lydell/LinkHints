@@ -1,5 +1,7 @@
 // @flow strict-local
 
+import type { DecoderError } from "tiny-decoders";
+
 import type {
   ElementReport,
   ElementType,
@@ -37,7 +39,7 @@ import type {
 } from "../shared/messages";
 import { TimeTracker } from "../shared/perf";
 import { selectorString, tweakable, unsignedInt } from "../shared/tweakable";
-import { decodeFrameMessage, FrameMessage } from "./decoders";
+import { FrameMessage } from "./decoders";
 import ElementManager from "./ElementManager";
 
 type CurrentElements = {
@@ -436,7 +438,7 @@ export default class WorkerProgram {
     ) {
       let message = undefined;
       try {
-        message = decodeFrameMessage(event.data);
+        message = FrameMessage(event.data);
       } catch (error) {
         log(
           "warn",

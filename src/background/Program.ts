@@ -1,7 +1,7 @@
 // @flow strict-local
 
 import huffman from "n-ary-huffman";
-import type { DecoderError } from "tiny-decoders";
+import { DecoderError } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {
@@ -59,7 +59,6 @@ import {
   unflattenOptions,
 } from "../shared/options";
 import {
-  decodeTabsPerf,
   MAX_PERF_ENTRIES,
   Perf,
   Stats,
@@ -2192,7 +2191,7 @@ export default class BackgroundProgram {
       try {
         const { perf } = await browser.storage.local.get("perf");
         if (perf != null) {
-          this.restoredTabsPerf = decodeTabsPerf(perf);
+          this.restoredTabsPerf = TabsPerf(perf);
           log(
             "log",
             "BackgroundProgram#restoreTabsPerf",

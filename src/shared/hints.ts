@@ -2,8 +2,8 @@
 
 import { array, multi, stringUnion } from "tiny-decoders";
 
-export type ElementType = ReturnType<typeof decodeElementType>;
-export const decodeElementType = stringUnion({
+export type ElementType = ReturnType<typeof ElementType>;
+export const ElementType = stringUnion({
   "clickable-event": null,
   clickable: null,
   label: null,
@@ -13,9 +13,9 @@ export const decodeElementType = stringUnion({
   textarea: null,
 });
 
-export type ElementTypes = ReturnType<typeof decodeElementTypes>;
-export const decodeElementTypes = multi({
-  array: array(decodeElementType),
+export type ElementTypes = ReturnType<typeof ElementTypes>;
+export const ElementTypes = multi({
+  array: array(ElementType),
   string: stringUnion({
     selectable: null,
   }),

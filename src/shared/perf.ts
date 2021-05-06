@@ -11,33 +11,33 @@ import {
 
 export const MAX_PERF_ENTRIES = 9;
 
-export type Durations = ReturnType<typeof decodeDurations>;
-export const decodeDurations = array(tuple([string, number]));
+export type Durations = ReturnType<typeof Durations>;
+export const Durations = array(tuple([string, number]));
 
-export type Stats = ReturnType<typeof decodeStats>;
-export const decodeStats = fieldsAuto({
+export type Stats = ReturnType<typeof Stats>;
+export const Stats = fieldsAuto({
   url: string,
   numTotalElements: number,
   numTrackedElements: number,
   numVisibleElements: number,
   numVisibleFrames: number,
   bailed: number,
-  durations: decodeDurations,
+  durations: Durations,
 });
 
-export type Perf = ReturnType<typeof decodePerf>;
-export const decodePerf = array(
+export type Perf = ReturnType<typeof Perf>;
+export const Perf = array(
   fieldsAuto({
     timeToFirstPaint: number,
     timeToLastPaint: number,
-    topDurations: decodeDurations,
-    collectStats: array(decodeStats),
-    renderDurations: decodeDurations,
+    topDurations: Durations,
+    collectStats: array(Stats),
+    renderDurations: Durations,
   })
 );
 
-export type TabsPerf = ReturnType<typeof decodeTabsPerf>;
-export const decodeTabsPerf = record(decodePerf);
+export type TabsPerf = ReturnType<typeof TabsPerf>;
+export const TabsPerf = record(Perf);
 
 export class TimeTracker {
   _durations: Durations = [];

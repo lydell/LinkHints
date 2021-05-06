@@ -13,23 +13,16 @@ import {
 } from "tiny-decoders";
 
 import {
-  decodeKeyboardMapping,
-  decodeKeyboardMappingWithModifiers,
-  decodeKeyPair,
   deserializeShortcut,
   EN_US_QWERTY_TRANSLATIONS,
   KeyboardMapping,
+  KeyboardMappingWithModifiers,
+  KeyPair,
   KeyTranslations,
   serializeShortcut,
   Shortcut,
 } from "./keyboard";
-import {
-  decodeLogLevel,
-  decodeUnsignedInt,
-  deepEqual,
-  DEFAULT_LOG_LEVEL,
-  LogLevel,
-} from "./main";
+import { deepEqual, DEFAULT_LOG_LEVEL, LogLevel, UnsignedInt } from "./main";
 
 export type OptionsData = {
   values: Options;
@@ -63,13 +56,13 @@ export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
     autoActivate: field("autoActivate", boolean, {
       mode: { default: defaults.autoActivate },
     }),
-    overTypingDuration: field("overTypingDuration", decodeUnsignedInt, {
+    overTypingDuration: field("overTypingDuration", UnsignedInt, {
       mode: { default: defaults.overTypingDuration },
     }),
     css: field("css", string, {
       mode: { default: defaults.css },
     }),
-    logLevel: field("logLevel", decodeLogLevel, {
+    logLevel: field("logLevel", LogLevel, {
       mode: { default: defaults.logLevel },
     }),
     useKeyTranslations: field("useKeyTranslations", boolean, {
@@ -77,17 +70,17 @@ export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
     }),
     keyTranslations: field(
       "keyTranslations",
-      record(decodeKeyPair, { mode: "skip" }),
+      record(KeyPair, { mode: "skip" }),
       { mode: { default: defaults.keyTranslations } }
     ),
     normalKeyboardShortcuts: field(
       "normalKeyboardShortcuts",
-      array(decodeKeyboardMappingWithModifiers, { mode: "skip" }),
+      array(KeyboardMappingWithModifiers, { mode: "skip" }),
       { mode: { default: defaults.normalKeyboardShortcuts } }
     ),
     hintsKeyboardShortcuts: field(
       "hintsKeyboardShortcuts",
-      array(decodeKeyboardMapping, { mode: "skip" }),
+      array(KeyboardMapping, { mode: "skip" }),
       { mode: { default: defaults.hintsKeyboardShortcuts } }
     ),
   }));
