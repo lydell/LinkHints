@@ -101,7 +101,7 @@ export function tweakable(
   function update(data: { [key: string]: unknown }): void {
     for (const [key, value] of Object.entries(data)) {
       try {
-        if (!{}.hasOwnProperty.call(defaults, key)) {
+        if (!Object.prototype.hasOwnProperty.call(defaults, key)) {
           throw new DecoderError({
             message: "Unknown key",
             value: DecoderError.MISSING_VALUE,
@@ -211,7 +211,7 @@ export function tweakable(
           Object.keys(changes).flatMap((fullKey) => {
             if (fullKey.startsWith(keyPrefix)) {
               const key = fullKey.slice(keyPrefix.length);
-              if ({}.hasOwnProperty.call(defaults, key)) {
+              if (Object.prototype.hasOwnProperty.call(defaults, key)) {
                 return [[key, changes[fullKey].newValue]];
               }
             }

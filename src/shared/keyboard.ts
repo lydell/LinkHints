@@ -294,7 +294,7 @@ function translateCode({
   shift: boolean;
   keyTranslations: KeyTranslations;
 }): string | undefined {
-  if ({}.hasOwnProperty.call(keyTranslations, code)) {
+  if (Object.prototype.hasOwnProperty.call(keyTranslations, code)) {
     const [unshifted, shifted] = keyTranslations[code];
     return shift ? shifted : unshifted;
   }

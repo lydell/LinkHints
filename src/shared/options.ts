@@ -388,8 +388,8 @@ export function diffOptions(
 
   for (const key of allKeys) {
     if (
-      {}.hasOwnProperty.call(defaults, key) &&
-      !{}.hasOwnProperty.call(fullOptions, key)
+      Object.prototype.hasOwnProperty.call(defaults, key) &&
+      !Object.prototype.hasOwnProperty.call(fullOptions, key)
     ) {
       // Default deleted; only set if needed.
       if (saved[key] !== null) {
@@ -397,8 +397,8 @@ export function diffOptions(
         optionsToSet[key] = null;
       }
     } else if (
-      !{}.hasOwnProperty.call(defaults, key) &&
-      {}.hasOwnProperty.call(fullOptions, key)
+      !Object.prototype.hasOwnProperty.call(defaults, key) &&
+      Object.prototype.hasOwnProperty.call(fullOptions, key)
     ) {
       // Added new; only set if needed.
       if (!deepEqual(fullOptions[key], saved[key])) {
@@ -406,12 +406,12 @@ export function diffOptions(
       }
     } else if (deepEqual(fullOptions[key], defaults[key])) {
       // Option is the same as default; remove if needed.
-      if ({}.hasOwnProperty.call(saved, key)) {
+      if (Object.prototype.hasOwnProperty.call(saved, key)) {
         keysToRemove.push(key);
       }
     } else if (
-      {}.hasOwnProperty.call(saved, key) &&
-      !{}.hasOwnProperty.call(fullOptions, key)
+      Object.prototype.hasOwnProperty.call(saved, key) &&
+      !Object.prototype.hasOwnProperty.call(fullOptions, key)
     ) {
       // Extra deleted; remove.
       keysToRemove.push(key);
@@ -440,7 +440,9 @@ export function importOptions(
     const keyErrors = Object.keys(
       unflattenOptions(flatOptions)
     ).flatMap((key) =>
-      ({}.hasOwnProperty.call(defaults, key) ? [] : `Unknown key: ${repr(key)}`)
+      Object.prototype.hasOwnProperty.call(defaults, key)
+        ? []
+        : `Unknown key: ${repr(key)}`
     );
     const updatedOptionsFlat = {
       ...flattenOptions(options),

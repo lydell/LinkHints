@@ -1537,7 +1537,9 @@ export default class OptionsProgram extends Component<Props, State> {
       const recordProps = {
         expandedPerfTabIds: optional(
           chain(array(string), (ids) =>
-            ids.filter((id) => ({}.hasOwnProperty.call(this.state.perf, id)))
+            ids.filter((id) =>
+              Object.prototype.hasOwnProperty.call(this.state.perf, id)
+            )
           ),
           []
         ),
@@ -1645,7 +1647,10 @@ function updateKeyTranslations(
   { code, key, shift }: { code: string; key: string; shift: boolean },
   keyTranslations: KeyTranslations
 ): KeyTranslations | undefined {
-  const previousPair = {}.hasOwnProperty.call(keyTranslations, code)
+  const previousPair = Object.prototype.hasOwnProperty.call(
+    keyTranslations,
+    code
+  )
     ? keyTranslations[code]
     : undefined;
 
