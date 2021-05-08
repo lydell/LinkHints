@@ -165,7 +165,6 @@ function template(
       format: "es",
     },
     treeshake: false,
-    external: (id) => !id.startsWith("."),
     plugins: [
       sucrase({
         transforms: ["typescript", "jsx"],
