@@ -503,7 +503,7 @@ export function getLabels(
 }
 
 export function classlist(
-  ...args: Array<string | Record<string, boolean>>
+  ...args: Array<Record<string, boolean> | string>
 ): string {
   return args
     .flatMap((arg) =>

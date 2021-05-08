@@ -299,13 +299,9 @@ export default class ElementManager {
     this.onFrameIntersection.bind(this)
   );
 
-  mutationObserver = new MutationObserver(
-    this.onMutation.bind(this)
-  );
+  mutationObserver = new MutationObserver(this.onMutation.bind(this));
 
-  removalObserver = new MutationObserver(
-    this.onRemoval.bind(this)
-  );
+  removalObserver = new MutationObserver(this.onRemoval.bind(this));
 
   constructor({
     onMutation,
