@@ -465,7 +465,11 @@ export function importOptions(
     return {
       options: undefined,
       successCount: 0,
-      errors: [`The file is invalid: ${error.message}`],
+      errors: [
+        `The file is invalid: ${
+          error instanceof DecoderError ? error.format() : error.message
+        }`,
+      ],
     };
   }
 }
