@@ -29,7 +29,7 @@ export const KeyboardAction = stringUnion({
 });
 
 // Allow exiting hints mode if we ever get stuck in Prevent overtyping mode.
-export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS: Set<KeyboardAction> = new Set(
+export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS = new Set<KeyboardAction>(
   ["Escape", "ExitHintsMode"]
 );
 
@@ -302,7 +302,7 @@ function translateCode({
   return undefined;
 }
 
-const MODIFIER_KEYS: Set<string> = new Set([
+const MODIFIER_KEYS = new Set<string>([
   "Alt",
   "AltGraph",
   "Control",

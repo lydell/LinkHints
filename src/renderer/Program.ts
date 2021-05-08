@@ -61,7 +61,7 @@ export default class RendererProgram {
 
   enteredText = "";
 
-  resets: Resets = new Resets();
+  resets = new Resets();
 
   shruggieElement: HTMLElement;
 

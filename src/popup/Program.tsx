@@ -11,7 +11,7 @@ const CONTAINER_ID = "container";
 export default class PopupProgram {
   debugInfo = "Debug info was never loaded.";
 
-  resets: Resets = new Resets();
+  resets = new Resets();
 
   constructor() {
     bind(this, [

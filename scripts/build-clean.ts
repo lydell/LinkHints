@@ -5,11 +5,7 @@ import config from "../project.config";
 
 const BASE_DIR = path.join(__dirname, "..");
 const DIST = path.join(BASE_DIR, config.dist);
-const FILE_EXTENSIONS_TO_REMOVE: Set<string> = new Set([
-  ".zip",
-  ".xpi",
-  ".crx",
-]);
+const FILE_EXTENSIONS_TO_REMOVE = new Set<string>([".zip", ".xpi", ".crx"]);
 
 function run(): void {
   if (!fs.existsSync(DIST)) {

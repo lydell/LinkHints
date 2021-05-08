@@ -64,7 +64,7 @@ const constants = {
   RESET_EVENT: JSON.stringify(RESET_EVENT),
 };
 
-const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
+const ATTRIBUTES_CLICKABLE = new Set<string>([
   // These are supposed to be used with a `role` attribute. In some GitHub
   // dropdowns some items only have this attribute hinting that they are
   // clickable, though.
@@ -79,7 +79,7 @@ const ATTRIBUTES_CLICKABLE: Set<string> = new Set([
   "data-image-url",
 ]);
 
-const ATTRIBUTES_NOT_CLICKABLE: Set<string> = new Set([
+const ATTRIBUTES_NOT_CLICKABLE = new Set<string>([
   // Google.
   "data-hveid",
 ]);
@@ -291,19 +291,19 @@ export default class ElementManager {
 
   resets = new Resets();
 
-  intersectionObserver: IntersectionObserver = new IntersectionObserver(
+  intersectionObserver = new IntersectionObserver(
     this.onIntersection.bind(this)
   );
 
-  frameIntersectionObserver: IntersectionObserver = new IntersectionObserver(
+  frameIntersectionObserver = new IntersectionObserver(
     this.onFrameIntersection.bind(this)
   );
 
-  mutationObserver: MutationObserver = new MutationObserver(
+  mutationObserver = new MutationObserver(
     this.onMutation.bind(this)
   );
 
-  removalObserver: MutationObserver = new MutationObserver(
+  removalObserver = new MutationObserver(
     this.onRemoval.bind(this)
   );
 
@@ -1503,7 +1503,7 @@ function makeEmptyQueue<T>(): Queue<T> {
 class Deduper {
   positionMap = new Map<string, Array<VisibleElement>>();
 
-  rejected: Set<HTMLElement> = new Set();
+  rejected = new Set<HTMLElement>();
 
   add(visibleElement: VisibleElement): void {
     const { element } = visibleElement;

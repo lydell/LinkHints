@@ -78,7 +78,7 @@ export default class WorkerProgram {
 
   resets = new Resets();
 
-  elementManager: ElementManager = new ElementManager({
+  elementManager = new ElementManager({
     onMutation: this.onMutation.bind(this),
   });
 
@@ -666,7 +666,7 @@ export default class WorkerProgram {
   }
 
   getAllNewElements(records: Array<MutationRecord>): Array<HTMLElement> {
-    const elements: Set<HTMLElement> = new Set();
+    const elements = new Set<HTMLElement>();
 
     for (const record of records) {
       for (const node of record.addedNodes) {

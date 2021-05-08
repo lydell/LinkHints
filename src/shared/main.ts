@@ -315,7 +315,7 @@ export function setStyles(
 export const NON_WHITESPACE = /\S/;
 export const LAST_NON_WHITESPACE = /\S\s*$/;
 
-export const SKIP_TEXT_ELEMENTS: Set<string> = new Set([
+export const SKIP_TEXT_ELEMENTS = new Set<string>([
   // Ignore the default text in the HTML of `<textarea>` (if any), which is not
   // updated as the user types.
   "TEXTAREA",

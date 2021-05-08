@@ -38,7 +38,7 @@ const ALL_TWEAKABLES: Array<[Record<string, TweakableValue>, TweakableMeta]> = [
   [tElementManager, tMetaElementManager],
 ];
 
-const ALL_KEYS: Set<string> = new Set(
+const ALL_KEYS = new Set<string>(
   ALL_TWEAKABLES.flatMap(([, tMeta]) =>
     Object.keys(tMeta.defaults).map(
       (key) => `${DEBUG_PREFIX}${tMeta.namespace}.${key}`

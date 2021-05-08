@@ -184,7 +184,7 @@ export default class BackgroundProgram {
 
   oneTimeWindowMessageToken: string = makeRandomToken();
 
-  resets: Resets = new Resets();
+  resets = new Resets();
 
   constructor() {
     const mac = false;
@@ -2737,7 +2737,7 @@ function mergeElements(
   updates: Array<ElementReport>,
   frameId: number
 ): Array<ElementWithHint> {
-  const updateMap: Map<number, ElementReport> = new Map(
+  const updateMap = new Map<number, ElementReport>(
     updates.map((update) => [update.index, update])
   );
 
