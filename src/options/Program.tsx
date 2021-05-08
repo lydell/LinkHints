@@ -267,8 +267,9 @@ export default class OptionsProgram extends Component<Props, State> {
               ...message.perf,
             },
           }),
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          this.savePerf
+          () => {
+            this.savePerf();
+          }
         );
         break;
     }
@@ -1184,11 +1185,9 @@ export default class OptionsProgram extends Component<Props, State> {
               summary="Performance"
               open={expandedPerf}
               onChange={(newOpen) => {
-                this.setState(
-                  { expandedPerf: newOpen },
-                  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-                  this.savePosition
-                );
+                this.setState({ expandedPerf: newOpen }, () => {
+                  this.savePosition();
+                });
               }}
             >
               <Perf
@@ -1197,8 +1196,9 @@ export default class OptionsProgram extends Component<Props, State> {
                 onExpandChange={(newExpandedPerfTabIds) => {
                   this.setState(
                     { expandedPerfTabIds: newExpandedPerfTabIds },
-                    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-                    this.savePosition
+                    () => {
+                      this.savePosition();
+                    }
                   );
                 }}
                 onReset={() => {
@@ -1212,11 +1212,9 @@ export default class OptionsProgram extends Component<Props, State> {
               summary="Debug"
               open={expandedDebug}
               onChange={(newOpen) => {
-                this.setState(
-                  { expandedDebug: newOpen },
-                  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-                  this.savePosition
-                );
+                this.setState({ expandedDebug: newOpen }, () => {
+                  this.savePosition();
+                });
               }}
             >
               <div className="Intro">
