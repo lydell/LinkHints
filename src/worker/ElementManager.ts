@@ -1949,7 +1949,7 @@ function getFirstImagePoint(
     // First try to find an image _child._ For example, <button
     // class="icon-button"><img></button>`. (This button should get the hint at
     // the image, not at the edge of the button.)
-    ...element.querySelectorAll(t.SELECTOR_IMAGE.value),
+    ...element.querySelectorAll<HTMLElement>(t.SELECTOR_IMAGE.value),
     // Then, see if the element itself is an image. For example, `<button
     // class="Icon Icon-search"></button>`. The element itself can also be an
     // `<img>` due to the `float` case in `getMeasurements`.
@@ -1966,7 +1966,7 @@ function getFirstImagePoint(
 
     if (visibleBox !== undefined) {
       const borderAndPaddingPoint = getBorderAndPaddingPoint(
-        image as HTMLElement,
+        image,
         rect,
         visibleBox
       );
