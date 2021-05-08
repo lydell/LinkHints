@@ -733,7 +733,7 @@ export default class WorkerProgram {
     });
 
     this.current = {
-      elements: elements.filter(Boolean),
+      elements,
       frames,
       viewports,
       types,

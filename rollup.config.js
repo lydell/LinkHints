@@ -83,17 +83,15 @@ const docs = [
   css(config.docs.indexCss),
   template(config.docs.tutorial),
   css(config.docs.tutorialCss),
-]
-  .filter(Boolean)
-  .map((entry) => ({
-    ...entry,
-    input: `${config.docs.src}/${entry.input}`,
-    output: {
-      ...entry.output,
-      file: `${config.docs.compiled}/${entry.output.file}`,
-      indent: false,
-    },
-  }));
+].map((entry) => ({
+  ...entry,
+  input: `${config.docs.src}/${entry.input}`,
+  output: {
+    ...entry.output,
+    file: `${config.docs.compiled}/${entry.output.file}`,
+    indent: false,
+  },
+}));
 
 module.exports = main.concat(docs);
 
@@ -140,7 +138,7 @@ function js({ input, output }) {
       resolve(),
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
-    ].filter(Boolean),
+    ].filter((plugin) => plugin !== undefined),
     onwarn: /** @type {(warning: import("rollup").RollupWarning) => never} */ (
       warning
     ) => {

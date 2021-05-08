@@ -95,7 +95,7 @@ export function serializeShortcut(shortcut: Shortcut): string {
     shortcut.shift ? "shift" : undefined,
     shortcut.key,
   ]
-    .filter(Boolean)
+    .filter((name) => name !== undefined)
     .join(SHORTCUT_SEPARATOR);
 }
 

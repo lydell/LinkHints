@@ -37,7 +37,7 @@ export default (): string =>
       scripts: [
         config.needsPolyfill ? config.polyfill.output : undefined,
         config.background.output,
-      ].filter(Boolean),
+      ].filter((script) => script !== undefined),
     },
     content_scripts: [
       {
@@ -48,7 +48,7 @@ export default (): string =>
         js: [
           config.needsPolyfill ? config.polyfill.output : undefined,
           config.worker.output,
-        ].filter(Boolean),
+        ].filter((script) => script !== undefined),
       },
       {
         matches: ["<all_urls>"],
