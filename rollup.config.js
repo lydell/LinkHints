@@ -1,3 +1,5 @@
+// @ts-check
+
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
@@ -134,29 +136,23 @@ function js({ input, output } /*: { input: string, output: string } */) {
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
     ].filter(Boolean),
-    onwarn: (warning /*: mixed */) => {
+    onwarn: /** @type {(warning: Error) => never} */ (warning) => {
       throw warning;
     },
   };
 }
 
-// `input` must be a JavaScript file containing:
-//
-//     export default data => compile(data)
-//
-// The function must return a string, and may optionally use `data`. Whatever
-// string is returned will end up in `output`.
-function template(
-  {
-    input,
-    output,
-    data,
-  } /*: {
-    input: string,
-    output: string,
-    data?: mixed,
-  } */
-) {
+/**
+ * `input` must be a JavaScript file containing:
+ *
+ *     export default data => compile(data)
+ *
+ * The function must return a string, and may optionally use `data`. Whatever
+ * string is returned will end up in `output`.
+ *
+ * @param {{input: string, output: string, data?: unknown}} options
+ */
+function template({ input, output, data }) {
   let content = undefined;
   return {
     input,
@@ -175,7 +171,7 @@ function template(
       commonjs(),
       {
         name: "template",
-        load: (id /*: string */) => {
+        load: /** @type {(id: string) => null} */ (id) => {
           if (content === undefined) {
             const dir = path.dirname(id);
             for (const key of Object.keys(require.cache)) {
@@ -197,14 +193,15 @@ function template(
   };
 }
 
-function html(
-  files /*: {
-    title: string,
-    html: string,
-    js: Array<string>,
-    css: Array<string>,
-  } */
-) {
+/**
+ * @param {{
+ *   title: string,
+ *   html: string,
+ *   js: Array<string>,
+ *   css: Array<string>,
+ * }} files
+ */
+function html(files) {
   return template({
     input: "html.tsx",
     output: files.html,
@@ -221,10 +218,12 @@ function html(
   });
 }
 
-function copy(
-  { input, output } /*: { input: string, output: string, } */,
-  transform /*: string => string */ = (string) => string
-) {
+/**
+ * @param {{input: string, output: string}} options
+ * @param {(content: string) => string} transform
+ */
+function copy({ input, output }, transform) {
+  // = (content) => content) {
   let content = "";
   return {
     input,
@@ -236,7 +235,7 @@ function copy(
     plugins: [
       {
         name: "copy",
-        load: (id /*: string */) => {
+        load: /** @type {(id: string) => string} */ (id) => {
           content = transform(fs.readFileSync(id, "utf8"));
           return "0";
         },
@@ -246,7 +245,10 @@ function copy(
   };
 }
 
-function css({ input, output } /*: { input: string, output: string, } */) {
+/**
+ * @param {{input: string, output: string}} options
+ */
+function css({ input, output }) {
   return copy({ input, output }, transformCSS);
 }
 
