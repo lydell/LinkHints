@@ -282,6 +282,15 @@ export function getViewport(): Box {
   const scrollingElement =
     document.scrollingElement ?? document.documentElement;
 
+  if (scrollingElement === null) {
+    return {
+      x: 0,
+      y: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+  }
+
   // `scrollingElement.client{Width,Height}` is the size of the viewport without
   // scrollbars (unlike `window.inner{Width,Height}` which include the
   // scrollbars). This works in both Firefox and Chrome, quirks and non-quirks

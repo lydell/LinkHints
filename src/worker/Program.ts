@@ -807,13 +807,11 @@ export default class WorkerProgram {
   // some content.
   markTutorial(): void {
     if (
-      window.location.origin + window.location.pathname === META_TUTORIAL ||
-      (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) != null)
+      (window.location.origin + window.location.pathname === META_TUTORIAL ||
+        (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) != null)) &&
+      document.documentElement !== null
     ) {
-      const { documentElement } = document;
-      if (documentElement != null) {
-        documentElement.classList.add("is-installed");
-      }
+      document.documentElement.classList.add("is-installed");
     }
   }
 

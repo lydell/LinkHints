@@ -325,11 +325,6 @@ export default class ElementManager {
   }
 
   async start(): Promise<void> {
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return;
-    }
-
     // When adding new event listeners, consider also subscribing in
     // `onRegisterSecretElement` and `setShadowRoot`.
     if (BROWSER !== "firefox") {
@@ -370,20 +365,22 @@ export default class ElementManager {
     // before the observer was running.
     await tMeta.loaded;
 
-    mutationObserve(this.mutationObserver, documentElement);
+    mutationObserve(this.mutationObserver, document);
 
     // Pick up all elements present in the initial HTML payload. Large HTML
     // pages are usually streamed in chunks. As later chunks arrive and are
     // rendered, each new element will trigger the MutationObserver.
-    const records: Array<Record> = [
-      {
-        addedNodes: [documentElement],
-        removedNodes: [],
-        attributeName: null,
-        target: documentElement,
-      },
-    ];
-    this.queueRecords(records);
+    if (document.documentElement !== null) {
+      const records: Array<Record> = [
+        {
+          addedNodes: [document.documentElement],
+          removedNodes: [],
+          attributeName: null,
+          target: document.documentElement,
+        },
+      ];
+      this.queueRecords(records);
+    }
 
     for (const frame of document.querySelectorAll("iframe, frame")) {
       this.frameIntersectionObserver.observe(frame);
@@ -449,11 +446,6 @@ export default class ElementManager {
       return;
     }
 
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return;
-    }
-
     const rawCode = replaceConstants(injected.toString());
     const code = `(${rawCode})()`;
     const script = document.createElement("script");
@@ -463,7 +455,7 @@ export default class ElementManager {
     // <bugzil.la/1446231> and <bugzil.la/1267027>.
     script.textContent = code;
 
-    documentElement.append(script);
+    (document.documentElement ?? document).append(script);
     script.remove();
   }
 
@@ -593,7 +585,7 @@ export default class ElementManager {
   //    grand-parent for some reason (even though the grand-parent is already
   //    removed from the DOM).
   // 4. This does not trigger `onMutation`, since it listens to changes inside
-  //    `documentElement`, but this happens in a detached tree.
+  //    `document`, but this happens in a detached tree.
   // 5. The queue is flushed. Running `.querySelectorAll("*")` on the
   //    grand-parent now won’t include the clickable element, leaving it behind in
   //    `this.elements` even though it has been removed.

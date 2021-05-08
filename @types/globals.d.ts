@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare type AnyFunction = (...args: Array<any>) => any;
 
@@ -47,7 +48,6 @@ declare function requestIdleCallback(
 ): IdleCallbackID;
 declare function cancelIdleCallback(idleCallbackID: IdleCallbackID): void;
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface Window {
   Element: typeof Element;
   Event: typeof Event;
@@ -59,7 +59,6 @@ interface Window {
   wrappedJSObject?: Window;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface Navigator {
   keyboard?: {
     getLayoutMap: () => Promise<{

@@ -192,10 +192,7 @@ export default class OptionsProgram extends Component<Props, State> {
       this.resets.add(addEventListener(window, "scroll", this.onScroll));
     }
 
-    const { documentElement } = document;
-    if (documentElement != null) {
-      documentElement.classList.add(BROWSER);
-    }
+    document.documentElement.classList.add(BROWSER);
 
     this.sendMessage({ type: "OptionsScriptAdded" });
   }

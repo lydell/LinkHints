@@ -359,11 +359,6 @@ export default class RendererProgram {
     elements: Array<ElementRender>,
     { mixedCase }: { mixedCase: boolean }
   ): Promise<void> {
-    const { documentElement } = document;
-    if (documentElement == null) {
-      return;
-    }
-
     const time = new TimeTracker();
 
     time.start("prepare");
@@ -373,7 +368,9 @@ export default class RendererProgram {
 
     // `style.sheet` below is only available after the container has been
     // inserted into the DOM.
-    documentElement.append(this.container.element);
+    if (document.documentElement !== null) {
+      document.documentElement.append(this.container.element);
+    }
 
     if (this.css.parsed == null) {
       // Inserting a `<style>` element is way faster than doing

@@ -657,14 +657,19 @@ export default (communicator?: {
     // and a valid child of `<html>`. I’m worried injecting some other element
     // could cause the browser to paint that, resulting in a flash of unstyled
     // content.
-    const secretElement = createElement("head");
-    const { documentElement } = document;
-    if (documentElement != null && communicator == null) {
-      apply(appendChild, documentElement, [secretElement]);
+    // A super edge case is when `document.documentElement` is missing. It’s
+    // possible to do for example `document.documentElement.remove()` and later
+    // `document.append(newRoot)`.
+    const [root, secretElement] =
+      document.documentElement === null
+        ? [document, createElement("html")]
+        : [document.documentElement, createElement("head")];
+    if (communicator == null) {
+      apply(appendChild, root, [secretElement]);
       apply(dispatchEvent, secretElement, [
         new CustomEvent2(REGISTER_SECRET_ELEMENT_EVENT),
       ]);
-      apply(removeChild, documentElement, [secretElement]);
+      apply(removeChild, root, [secretElement]);
     }
     return secretElement;
   }
