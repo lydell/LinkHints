@@ -67,7 +67,7 @@ export default function StringSetEditor({
             const { target } = event;
             if (target instanceof HTMLElement && event.key === "Enter") {
               const next = target.nextElementSibling;
-              if (next !== null && next instanceof HTMLInputElement) {
+              if (next instanceof HTMLInputElement) {
                 next.select();
               }
             }

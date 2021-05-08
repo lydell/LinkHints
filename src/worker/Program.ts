@@ -1386,9 +1386,7 @@ function firefoxPopupBlockerWorkaround({
   // any). Clicking on an element inside a link also activates the link.
   const linkElement = element.closest("a");
   const link =
-    linkElement !== null && linkElement instanceof HTMLAnchorElement
-      ? linkElement
-      : undefined;
+    linkElement instanceof HTMLAnchorElement ? linkElement : undefined;
 
   const shouldWorkaroundLinks =
     link !== undefined &&

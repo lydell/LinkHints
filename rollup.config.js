@@ -273,10 +273,10 @@ function makeGlobals() {
     META_TUTORIAL: JSON.stringify(config.meta.tutorial),
     META_VERSION: JSON.stringify(config.meta.version),
     PROD: JSON.stringify(PROD),
-    // Performance. Note: These require `x !== null && x !== undefined` in `x instanceof A`.
-    "instanceof Text": ".nodeType === 3",
-    "instanceof HTMLAnchorElement": '.nodeName === "A"',
-    "instanceof HTMLInputElement": '.nodeName === "INPUT"',
+    // Performance.
+    " instanceof Text": "?.nodeType === 3",
+    " instanceof HTMLAnchorElement": '?.nodeName === "A"',
+    " instanceof HTMLInputElement": '?.nodeName === "INPUT"',
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.
