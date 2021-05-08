@@ -17,14 +17,14 @@ export default function ButtonWithPopup({
   onOpenChange?: (isOpen: boolean) => void;
   className?: string;
 }): VNode {
-  const onChangeRef = useRef<((isOpen: boolean) => void) | undefined>();
+  const onChangeRef = useRef<typeof onOpenChange>(undefined);
   onChangeRef.current = onOpenChange;
 
   const [openState, setOpenState] = useState<boolean>(false);
 
   const open = openProp !== undefined ? openProp : openState;
 
-  const rootRef = useRef<HTMLDivElement>();
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const setOpen = useCallback(
     (newOpen: boolean) => {
@@ -45,7 +45,7 @@ export default function ButtonWithPopup({
         const { target } = event;
 
         if (
-          root !== undefined &&
+          root !== null &&
           target instanceof Node &&
           !root.contains(target) &&
           target !== document

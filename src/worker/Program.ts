@@ -1653,7 +1653,7 @@ function* getAllEventTargetsUpwards(
       // of the loop we know that `node` is never `null`.
       node = parent as Node;
     }
-  } while (node !== undefined);
+  } while (node !== null);
   yield window;
 }
 

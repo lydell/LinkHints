@@ -65,15 +65,15 @@ export default function CSSPreview({
   css: string;
   peek: boolean;
 }): VNode {
-  const containerRef = useRef<HTMLDivElement>();
-  const filterByTextRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const filterByTextRef = useRef<HTMLDivElement | null>(null);
 
   const [textRects, setTextRects] = useState<Array<Box>>([]);
 
   function updateTextRects(): void {
     const containerElement = containerRef.current;
     const filterByTextElement = filterByTextRef.current;
-    if (containerElement === undefined || filterByTextElement === undefined) {
+    if (containerElement === null || filterByTextElement === null) {
       return;
     }
 

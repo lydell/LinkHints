@@ -14,8 +14,7 @@ export function h(
       element.className = className;
     }
 
-    if (onClick !== undefined) {
-      // @ts-expect-error This must be a function. Difficult to type.
+    if (typeof onClick === "function") {
       element.onclick = onClick;
     }
 

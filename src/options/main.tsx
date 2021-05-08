@@ -3,11 +3,6 @@ import { h, render } from "preact";
 import OptionsProgram from "./Program";
 
 function start(): void {
-  const { body } = document;
-  if (body === undefined) {
-    return;
-  }
-
   render(
     <OptionsProgram
       ref={(program: OptionsProgram | null) => {
@@ -17,7 +12,7 @@ function start(): void {
         window.optionsProgram = program;
       }}
     />,
-    body
+    document.body
   );
 }
 

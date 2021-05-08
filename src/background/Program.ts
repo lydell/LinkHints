@@ -2222,9 +2222,7 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     // writing, no code does that so the hack holds.
     browser.tabs.get(tabId).then(
       (tab) => {
-        if (tab !== undefined) {
-          tabState.isPinned = tab.pinned;
-        }
+        tabState.isPinned = tab.pinned;
       },
       (error) => {
         log("error", "makeEmptyTabState", `Failed to get tab ${tabId}.`, error);

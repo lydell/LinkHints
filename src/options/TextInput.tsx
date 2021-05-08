@@ -33,12 +33,10 @@ export default function TextInput({
 
   const value = stateValue !== undefined ? stateValue : savedValue;
 
-  const saveRef = useRef<
-    ((text: string, reason: Reason) => void) | undefined
-  >();
+  const saveRef = useRef<typeof saveProp>(undefined);
   saveRef.current = saveProp;
 
-  const normalizeRef = useRef(normalize);
+  const normalizeRef = useRef<typeof normalize>(undefined);
   normalizeRef.current = normalize;
 
   const selectionStartRef = useRef<number>(0);
