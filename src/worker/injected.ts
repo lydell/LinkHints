@@ -741,9 +741,6 @@ export default (communicator?: {
         apply(replaceWith, tempElement, [element]);
         break;
       }
-
-      default:
-        logError("Unknown getOpenComposedRootNode type:", root);
     }
   }
 
