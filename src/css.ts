@@ -10,10 +10,7 @@ export default function transformCSS(code: string): string {
 function replaceColors(code: string): string {
   const { colors } = config;
   const regex = RegExp(`\\b(${Object.keys(colors).join("|")})\\b`, "g");
-  return code.replace(
-    regex,
-    (_, color) => colors[color as keyof typeof colors]
-  );
+  return code.replace(regex, (_, color: keyof typeof colors) => colors[color]);
 }
 
 function replaceIcons(code: string): string {
@@ -21,9 +18,7 @@ function replaceIcons(code: string): string {
   const regex = RegExp(`url\\((${Object.keys(icons).join("|")})\\)`, "g");
   return code.replace(
     regex,
-    (_, icon) =>
-      `url("${config.docs.root}/${config.docs.iconsDir}/${
-        icons[icon as keyof typeof icons]
-      }")`
+    (_, icon: keyof typeof icons) =>
+      `url("${config.docs.root}/${config.docs.iconsDir}/${icons[icon]}")`
   );
 }
