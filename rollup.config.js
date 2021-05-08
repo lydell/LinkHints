@@ -155,7 +155,7 @@ function js({ input, output }) {
  * The function must return a string, and may optionally use `data`. Whatever
  * string is returned will end up in `output`.
  *
- * @param {{input: string, output: string, data?: unknown}} options
+ * @param {{ input: string, output: string, data?: unknown }} options
  */
 function template({ input, output, data }) {
   /** @type {string | undefined} */
@@ -225,7 +225,7 @@ function html(files) {
 }
 
 /**
- * @param {{input: string, output: string}} options
+ * @param {{ input: string, output: string }} options
  * @param {(content: string) => string} [transform]
  */
 function copy({ input, output }, transform = (content) => content) {
@@ -252,7 +252,7 @@ function copy({ input, output }, transform = (content) => content) {
 }
 
 /**
- * @param {{input: string, output: string}} options
+ * @param {{ input: string, output: string }} options
  */
 function css({ input, output }) {
   return copy({ input, output }, transformCSS);
