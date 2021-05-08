@@ -1,0 +1,84 @@
+diff --git a/node_modules/sucrase/dist/parser/plugins/typescript.js b/node_modules/sucrase/dist/parser/plugins/typescript.js
+index fbea24d..fae69e5 100644
+--- a/node_modules/sucrase/dist/parser/plugins/typescript.js
++++ b/node_modules/sucrase/dist/parser/plugins/typescript.js
+@@ -1116,7 +1116,7 @@ function tsParseTypeArguments() {
+   } else if (!noCalls && _index.match.call(void 0, _types.TokenType.questionDot) && _index.lookaheadType.call(void 0, ) === _types.TokenType.lessThan) {
+     // If we see f?.<, then this must be an optional call with a type argument.
+     _index.next.call(void 0, );
+-    _base.state.tokens[startTokenIndex].isOptionalChainStart = true;
++    // _base.state.tokens[startTokenIndex].isOptionalChainStart = true;
+     // With f?.<T>(), the subscriptStartIndex marker is on the ?. token.
+     _base.state.tokens[_base.state.tokens.length - 1].subscriptStartIndex = startTokenIndex;
+ 
+diff --git a/node_modules/sucrase/dist/parser/traverser/expression.js b/node_modules/sucrase/dist/parser/traverser/expression.js
+index edc5bb5..5bc9586 100644
+--- a/node_modules/sucrase/dist/parser/traverser/expression.js
++++ b/node_modules/sucrase/dist/parser/traverser/expression.js
+@@ -217,10 +217,10 @@ function parseExprOp(startTokenIndex, minPrec, noIn) {
+       parseMaybeUnary();
+       // Extend the right operand of this operator if possible.
+       parseExprOp(rhsStartTokenIndex, op & _types3.TokenType.IS_RIGHT_ASSOCIATIVE ? prec - 1 : prec, noIn);
+-      if (op === _types3.TokenType.nullishCoalescing) {
+-        _base.state.tokens[startTokenIndex].numNullishCoalesceStarts++;
+-        _base.state.tokens[_base.state.tokens.length - 1].numNullishCoalesceEnds++;
+-      }
++      // if (op === _types3.TokenType.nullishCoalescing) {
++      //   _base.state.tokens[startTokenIndex].numNullishCoalesceStarts++;
++      //   _base.state.tokens[_base.state.tokens.length - 1].numNullishCoalesceEnds++;
++      // }
+       // Continue with any future operator holding this expression as the left operand.
+       parseExprOp(startTokenIndex, minPrec, noIn);
+     }
+@@ -267,9 +267,9 @@ function parseExprOp(startTokenIndex, minPrec, noIn) {
+   parseSubscripts(startTokenIndex);
+   // If there was any optional chain operation, the start token would be marked
+   // as such, so also mark the end now.
+-  if (_base.state.tokens.length > startTokenIndex && _base.state.tokens[startTokenIndex].isOptionalChainStart) {
+-    _base.state.tokens[_base.state.tokens.length - 1].isOptionalChainEnd = true;
+-  }
++  // if (_base.state.tokens.length > startTokenIndex && _base.state.tokens[startTokenIndex].isOptionalChainStart) {
++  //   _base.state.tokens[_base.state.tokens.length - 1].isOptionalChainEnd = true;
++  // }
+   return false;
+ } exports.parseExprSubscripts = parseExprSubscripts;
+ 
+@@ -311,7 +311,7 @@ function parseSubscript(startTokenIndex, noCalls, stopState) {
+     // to revisit this in the future when fully supporting bind syntax.
+     parseSubscripts(startTokenIndex, noCalls);
+   } else if (_index3.match.call(void 0, _types3.TokenType.questionDot)) {
+-    _base.state.tokens[startTokenIndex].isOptionalChainStart = true;
++    // _base.state.tokens[startTokenIndex].isOptionalChainStart = true;
+     if (noCalls && _index3.lookaheadType.call(void 0, ) === _types3.TokenType.parenL) {
+       stopState.stop = true;
+       return;
+diff --git a/node_modules/sucrase/dist/transformers/RootTransformer.js b/node_modules/sucrase/dist/transformers/RootTransformer.js
+index 57118d9..1053288 100644
+--- a/node_modules/sucrase/dist/transformers/RootTransformer.js
++++ b/node_modules/sucrase/dist/transformers/RootTransformer.js
+@@ -39,11 +39,11 @@ var _TypeScriptTransformer = require('./TypeScriptTransformer'); var _TypeScript
+     this.isImportsTransformEnabled = transforms.includes("imports");
+     this.isReactHotLoaderTransformEnabled = transforms.includes("react-hot-loader");
+ 
+-    this.transformers.push(
+-      new (0, _OptionalChainingNullishTransformer2.default)(tokenProcessor, this.nameManager),
+-    );
+-    this.transformers.push(new (0, _NumericSeparatorTransformer2.default)(tokenProcessor));
+-    this.transformers.push(new (0, _OptionalCatchBindingTransformer2.default)(tokenProcessor, this.nameManager));
++    // this.transformers.push(
++    //   new (0, _OptionalChainingNullishTransformer2.default)(tokenProcessor, this.nameManager),
++    // );
++    // this.transformers.push(new (0, _NumericSeparatorTransformer2.default)(tokenProcessor));
++    // this.transformers.push(new (0, _OptionalCatchBindingTransformer2.default)(tokenProcessor, this.nameManager));
+     if (transforms.includes("jsx")) {
+       this.transformers.push(
+         new (0, _JSXTransformer2.default)(this, tokenProcessor, importProcessor, this.nameManager, options),
+@@ -157,6 +157,8 @@ var _TypeScriptTransformer = require('./TypeScriptTransformer'); var _TypeScript
+   processToken() {
+     if (this.tokens.matches1(_types.TokenType._class)) {
+       this.processClass();
++      // Comment out the above line and uncomment the below line when addons-linter supports class fields.
++      // this.tokens.copyToken();
+       return;
+     }
+     for (const transformer of this.transformers) {

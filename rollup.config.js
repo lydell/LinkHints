@@ -1,5 +1,3 @@
-// @flow strict-local
-
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
@@ -8,17 +6,33 @@ import fs from "fs";
 import fsExtra from "fs-extra";
 import optionalRequireImport from "optional-require";
 import path from "path";
-import React from "preact";
 import prettier from "rollup-plugin-prettier";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import register from "sucrase/dist/register";
+
+const jsx = {
+  jsxPragma: "h",
+  jsxFragmentPragma: "Fragment",
+};
+
+register.addHook(".ts", {
+  transforms: ["typescript", "imports"],
+});
+
+register.addHook(".tsx", {
+  transforms: ["typescript", "jsx", "imports"],
+  ...jsx,
+});
 
 const transformCSS = require("./src/css").default;
-const config = require("./project.config");
+const config = require("./project.config").default;
 
 const optionalRequire = optionalRequireImport(require);
 const customConfig = optionalRequire("./custom.config") || {};
 
 const PROD = config.prod;
 
+/** @type {{ DEFAULT_LOG_LEVEL: string, DEFAULT_STORAGE_SYNC: unknown }} */
 const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
   ? {}
   : customConfig;
@@ -49,17 +63,19 @@ const main = [
   }),
   css(config.optionsCss),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
-]
-  .filter(Boolean)
-  .map((entry) => ({
-    ...entry,
-    input: `${config.src}/${entry.input}`,
-    output: {
-      ...entry.output,
-      file: `${config.compiled}/${entry.output.file}`,
-      indent: false,
-    },
-  }));
+].flatMap((entry) =>
+  entry === undefined
+    ? []
+    : {
+        ...entry,
+        input: `${config.src}/${entry.input}`,
+        output: {
+          ...entry.output,
+          file: `${config.compiled}/${entry.output.file}`,
+          indent: false,
+        },
+      }
+);
 
 const docs = [
   css(config.docs.sharedCss),
@@ -67,19 +83,16 @@ const docs = [
   css(config.docs.indexCss),
   template(config.docs.tutorial),
   css(config.docs.tutorialCss),
-]
-  .filter(Boolean)
-  .map((entry) => ({
-    ...entry,
-    input: `${config.docs.src}/${entry.input}`,
-    output: {
-      ...entry.output,
-      file: `${config.docs.compiled}/${entry.output.file}`,
-      indent: false,
-    },
-  }));
+].map((entry) => ({
+  ...entry,
+  input: `${config.docs.src}/${entry.input}`,
+  output: {
+    ...entry.output,
+    file: `${config.docs.compiled}/${entry.output.file}`,
+    indent: false,
+  },
+}));
 
-// $FlowIgnore: Flow wants a type annotation here, but that’s just annoying.
 module.exports = main.concat(docs);
 
 function setup() {
@@ -97,26 +110,14 @@ function setup() {
     `${config.docs.compiled}/${config.docs.iconsDir}`
   );
 
-  const { createElement } = React;
-
-  // Workarounds for preact-render-to-string unwanted props.
-  // $FlowIgnore: This is a hack.
-  React.createElement = (nodeName, props, ...children) => {
-    if (props) {
-      delete props.__source;
-      delete props.__self;
-      if (props.htmlFor != null) {
-        props.for = props.htmlFor;
-        delete props.htmlFor;
-      }
-    }
-    return createElement(nodeName, props, ...children);
-  };
-
   console.timeEnd("setup");
 }
 
-function js({ input, output } /*: { input: string, output: string } */) {
+/**
+ * @param {{ input: string, output: string }} options
+ * @returns
+ */
+function js({ input, output }) {
   return {
     input,
     output: {
@@ -129,37 +130,35 @@ function js({ input, output } /*: { input: string, output: string } */) {
       replace({ ...makeGlobals(), preventAssignment: false }),
       sucrase({
         exclude: ["node_modules/**"],
-        transforms: ["flow", "jsx"],
+        transforms: ["typescript", "jsx"],
         // Don't add `__self` and `__source` to JSX, which Preact does not support.
         production: true,
+        ...jsx,
       }),
       resolve(),
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
-    ].filter(Boolean),
-    onwarn: (warning /*: mixed */) => {
+    ].filter((plugin) => plugin !== undefined),
+    onwarn: /** @type {(warning: import("rollup").RollupWarning) => never} */ (
+      warning
+    ) => {
       throw warning;
     },
   };
 }
 
-// `input` must be a JavaScript file containing:
-//
-//     export default data => compile(data)
-//
-// The function must return a string, and may optionally use `data`. Whatever
-// string is returned will end up in `output`.
-function template(
-  {
-    input,
-    output,
-    data,
-  } /*: {
-    input: string,
-    output: string,
-    data?: mixed,
-  } */
-) {
+/**
+ * `input` must be a JavaScript file containing:
+ *
+ *     export default data => compile(data)
+ *
+ * The function must return a string, and may optionally use `data`. Whatever
+ * string is returned will end up in `output`.
+ *
+ * @param {{ input: string, output: string, data?: unknown }} options
+ */
+function template({ input, output, data }) {
+  /** @type {string | undefined} */
   let content = undefined;
   return {
     input,
@@ -168,18 +167,18 @@ function template(
       format: "es",
     },
     treeshake: false,
-    external: (id) => !id.startsWith("."),
     plugins: [
       sucrase({
-        transforms: ["flow", "jsx"],
+        transforms: ["typescript", "jsx"],
         production: true,
+        ...jsx,
       }),
       resolve(),
       commonjs(),
       {
         name: "template",
-        load: (id /*: string */) => {
-          if (content == null) {
+        load: /** @type {(id: string) => null} */ (id) => {
+          if (content === undefined) {
             const dir = path.dirname(id);
             for (const key of Object.keys(require.cache)) {
               if (key.startsWith(dir)) {
@@ -200,16 +199,17 @@ function template(
   };
 }
 
-function html(
-  files /*: {
-    title: string,
-    html: string,
-    js: Array<string>,
-    css: Array<string>,
-  } */
-) {
+/**
+ * @param {{
+ *   title: string,
+ *   html: string,
+ *   js: Array<string>,
+ *   css: Array<string>,
+ * }} files
+ */
+function html(files) {
   return template({
-    input: "html.js",
+    input: "html.tsx",
     output: files.html,
     data: {
       title: files.title,
@@ -224,10 +224,12 @@ function html(
   });
 }
 
-function copy(
-  { input, output } /*: { input: string, output: string, } */,
-  transform /*: string => string */ = (string) => string
-) {
+/**
+ * @param {{ input: string, output: string }} options
+ * @param {(content: string) => string} [transform]
+ */
+function copy({ input, output }, transform = (content) => content) {
+  // = (content) => content) {
   let content = "";
   return {
     input,
@@ -239,7 +241,7 @@ function copy(
     plugins: [
       {
         name: "copy",
-        load: (id /*: string */) => {
+        load: /** @type {(id: string) => string} */ (id) => {
           content = transform(fs.readFileSync(id, "utf8"));
           return "0";
         },
@@ -249,14 +251,17 @@ function copy(
   };
 }
 
-function css({ input, output } /*: { input: string, output: string, } */) {
+/**
+ * @param {{ input: string, output: string }} options
+ */
+function css({ input, output }) {
   return copy({ input, output }, transformCSS);
 }
 
 function makeGlobals() {
   return {
     BROWSER:
-      config.browser == null
+      config.browser === undefined
         ? `(navigator.userAgent.includes("Firefox") ? "firefox" : "chrome")`
         : JSON.stringify(config.browser),
     // Note: BUILD_ID might vary between different files.
@@ -276,10 +281,10 @@ function makeGlobals() {
     META_TUTORIAL: JSON.stringify(config.meta.tutorial),
     META_VERSION: JSON.stringify(config.meta.version),
     PROD: JSON.stringify(PROD),
-    // Performance. Note: These require `x != null` in `x instanceof A`.
-    "instanceof Text": ".nodeType === 3",
-    "instanceof HTMLAnchorElement": '.nodeName === "A"',
-    "instanceof HTMLInputElement": '.nodeName === "INPUT"',
+    // Performance.
+    " instanceof Text": "?.nodeType === 3",
+    " instanceof HTMLAnchorElement": '?.nodeName === "A"',
+    " instanceof HTMLInputElement": '?.nodeName === "INPUT"',
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.

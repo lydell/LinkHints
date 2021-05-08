@@ -1,8 +1,6 @@
-// @flow strict-local
-
 const optionalRequire = require("optional-require")(require);
 
-const config = require("./project.config");
+const config = require("./project.config").default;
 
 const customConfig = optionalRequire("./custom.config") || {};
 

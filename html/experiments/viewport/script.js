@@ -1,5 +1,3 @@
-/* eslint-disable flowtype/require-valid-file-annotation */
-
 const { documentElement, body, scrollingElement } = document;
 
 const pre = document.createElement("pre");

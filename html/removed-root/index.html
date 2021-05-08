@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>heavy dom</title>
+  </head>
+  <body>
+    <p>This page periodically changes the root element.</p>
+    <p><a href="https://example.com/">example.com link</a></p>
+    <p><a href="https://www.mozilla.org/">mozilla link</a></p>
+    <script>
+      const originalRoot = document.documentElement;
+      const timeout = 2000;
+
+      setTimeout(() => cycle(0), timeout);
+
+      function cycle(count) {
+        switch (count % 4) {
+          case 0:
+            document.documentElement.remove();
+            break;
+
+          case 1: {
+            const a = document.createElement("a");
+            a.href = "https://www.mozilla.org/";
+            a.textContent = "other mozilla link";
+            document.append(a);
+            break;
+          }
+
+          case 2:
+            document.documentElement.remove();
+            break;
+
+          case 3:
+            document.append(originalRoot);
+            break;
+        }
+
+        setTimeout(() => cycle(count + 1), timeout);
+      }
+    </script>
+  </body>
+</html>

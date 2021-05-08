@@ -104,7 +104,7 @@
       compare.onclick = () => {
         for (const [index, trustedEvent] of trusted.entries()) {
           const notTrustedEvent = notTrusted[index];
-          if (notTrustedEvent == null) {
+          if (notTrustedEvent === undefined) {
             console.log(trustedEvent, notTrustedEvent);
             continue;
           }

@@ -35,8 +35,8 @@ jobs:
       - name: Prettier
         run: npx --no-install prettier --check .
 
-      - name: Flow
-        run: npx --no-install flow check
+      - name: TypeScript
+        run: npx --no-install tsc
 
       - name: Build Chrome
         run: npm run build:chrome

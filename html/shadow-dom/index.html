@@ -70,7 +70,7 @@
         toggleClickButton.textContent = "Toggle click listener on text";
         toggleClickButton.style.marginLeft = "10px";
         toggleClickButton.onclick = () => {
-          if (p.onclick == null) {
+          if (p.onclick === null) {
             p.onclick = () => {
               console.log("Click on text!");
             };

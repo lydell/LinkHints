@@ -1,0 +1,60 @@
+import { h, VNode } from "preact";
+
+import type { Shortcut } from "../shared/keyboard";
+
+const WHITESPACE = /^\s$/;
+
+export default function KeyboardShortcut({
+  mac,
+  shortcut,
+}: {
+  mac: boolean;
+  shortcut: Partial<Shortcut>;
+}): VNode {
+  const { key = "" } = shortcut;
+  return (
+    <span className="KeyboardShortcut">
+      {shortcut.cmd === true && (
+        <kbd title={mac ? "Command" : undefined}>{mac ? "⌘" : "Cmd"}</kbd>
+      )}
+      {shortcut.ctrl === true && (
+        <kbd title={mac ? "Control" : undefined}>{mac ? "^" : "Ctrl"}</kbd>
+      )}
+      {shortcut.alt === true && (
+        <kbd title={mac ? "Option/Alt" : undefined}>{mac ? "⌥" : "Alt"}</kbd>
+      )}
+      {hasShift(shortcut) && (
+        <kbd title={mac ? "Shift" : undefined}>{mac ? "⇧" : "Shift"}</kbd>
+      )}
+      {key !== "" && (
+        <kbd>
+          {WHITESPACE.test(key)
+            ? viewKey(key)
+            : key.length === 1
+            ? key.toUpperCase()
+            : key}
+        </kbd>
+      )}
+    </span>
+  );
+}
+
+export function hasShift(shortcut: Partial<Shortcut>): boolean {
+  const { key = "" } = shortcut;
+  return key.length === 1
+    ? // For printable keys, guess that Shift is used for uppercase letters.
+      key.toLowerCase() !== key.toUpperCase() && key.toUpperCase() === key
+    : shortcut.shift ?? false;
+}
+
+export function viewKey(key: string): string {
+  if (key === " ") {
+    return "Space";
+  }
+
+  if (WHITESPACE.test(key)) {
+    return `U+${key.charCodeAt(0).toString(16).padStart(4, "0").toUpperCase()}`;
+  }
+
+  return key;
+}
