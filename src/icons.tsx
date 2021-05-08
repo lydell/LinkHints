@@ -6,7 +6,7 @@
 
 import crypto from "crypto";
 import fs from "fs";
-import fsExtra from "fs-extra";
+import path from "path";
 import { h } from "preact";
 import renderToString from "preact-render-to-string";
 
@@ -260,8 +260,8 @@ function renderTestPage(): string {
           <div class="container" style={`background-color: ${color};`}>
             {icons.svg
               .flatMap((icon, index) => [icon, icons.png[index]])
-              .map(([size, path]) => (
-                <img src={`../${path}`} width={integer(size)} />
+              .map(([size, iconPath]) => (
+                <img src={`../${iconPath}`} width={integer(size)} />
               ))}
           </div>
         ))}
@@ -290,7 +290,8 @@ function writeFileIfNeeded(filepath: string, content: string): void {
     needed = true;
   }
   if (needed) {
-    fsExtra.outputFileSync(filepath, content);
+    fs.mkdirSync(path.dirname(filepath), { recursive: true });
+    fs.writeFileSync(filepath, content);
   }
 }
 
@@ -305,9 +306,9 @@ export default (): string => {
   ];
 
   for (const [icons, options] of all) {
-    for (const [size, path] of icons) {
+    for (const [size, iconPath] of icons) {
       writeFileIfNeeded(
-        `${config.compiled}/${path}`,
+        `${config.compiled}/${iconPath}`,
         render(size, COLORS, options)
       );
     }

@@ -3,7 +3,6 @@ import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
 import sucrase from "@rollup/plugin-sucrase";
 import fs from "fs";
-import fsExtra from "fs-extra";
 import optionalRequireImport from "optional-require";
 import path from "path";
 import prettier from "rollup-plugin-prettier";
@@ -98,19 +97,39 @@ module.exports = main.concat(docs);
 function setup() {
   console.time("setup");
 
-  fsExtra.removeSync(config.compiled);
-  fsExtra.removeSync(config.docs.compiled);
+  fs.rmSync(config.compiled, { recursive: true, force: true });
+  fs.rmSync(config.docs.compiled, { recursive: true, force: true });
 
-  fsExtra.copySync(
+  copyDir(
     `${config.src}/${config.iconsDir}`,
     `${config.compiled}/${config.iconsDir}`
   );
-  fsExtra.copySync(
+  copyDir(
     `${config.docs.src}/${config.docs.iconsDir}`,
     `${config.docs.compiled}/${config.docs.iconsDir}`
   );
 
   console.timeEnd("setup");
+}
+
+/**
+ * @param {string} fromDir
+ * @param {string} toDir
+ */
+function copyDir(fromDir, toDir) {
+  fs.mkdirSync(toDir, { recursive: true });
+  for (const item of fs.readdirSync(fromDir, { withFileTypes: true })) {
+    if (item.isFile()) {
+      fs.copyFileSync(
+        path.join(fromDir, item.name),
+        path.join(toDir, item.name)
+      );
+    } else if (item.isDirectory()) {
+      copyDir(path.join(fromDir, item.name), path.join(toDir, item.name));
+    } else {
+      throw new Error(`copyDir: Neither a file nor a directory: ${item.name}`);
+    }
+  }
 }
 
 /**
