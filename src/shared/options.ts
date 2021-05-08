@@ -20,7 +20,13 @@ import {
   serializeShortcut,
   Shortcut,
 } from "./keyboard";
-import { deepEqual, DEFAULT_LOG_LEVEL, LogLevel, UnsignedInt } from "./main";
+import {
+  decode,
+  deepEqual,
+  DEFAULT_LOG_LEVEL,
+  LogLevel,
+  UnsignedInt,
+} from "./main";
 
 export type OptionsData = {
   values: Options;
@@ -449,12 +455,13 @@ export function importOptions(
       ...flatOptions,
     };
     const unflattened = unflattenOptions(updatedOptionsFlat);
-    const decoder = makeOptionsDecoder(defaults);
-    const decodeErrors: Array<DecoderError> = [];
-    const newOptions = decoder(unflattened, decodeErrors);
-    const errors = keyErrors.concat(
-      decodeErrors.map((error) => error.format())
+    const decodeErrors: Array<string> = [];
+    const newOptions = decode(
+      makeOptionsDecoder(defaults),
+      unflattened,
+      decodeErrors
     );
+    const errors = keyErrors.concat(decodeErrors);
     return {
       options: newOptions,
       successCount: Object.keys(flatOptions).length - errors.length,
@@ -465,11 +472,7 @@ export function importOptions(
     return {
       options: undefined,
       successCount: 0,
-      errors: [
-        `The file is invalid: ${
-          error instanceof DecoderError ? error.format() : error.message
-        }`,
-      ],
+      errors: [`The file is invalid: ${error.message}`],
     };
   }
 }

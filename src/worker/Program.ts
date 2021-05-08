@@ -18,6 +18,7 @@ import {
   bind,
   Box,
   CONTAINER_ID,
+  decode,
   extractText,
   getLabels,
   getTextRects,
@@ -434,7 +435,7 @@ export default class WorkerProgram {
     ) {
       let message = undefined;
       try {
-        message = FrameMessage(event.data);
+        message = decode(FrameMessage, event.data);
       } catch (error) {
         log(
           "warn",

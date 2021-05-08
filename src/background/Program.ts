@@ -1,5 +1,4 @@
 import huffman from "n-ary-huffman";
-import { DecoderError } from "tiny-decoders";
 
 import iconsChecksum from "../icons/checksum";
 import {
@@ -25,6 +24,7 @@ import {
   addListener,
   bind,
   CONTAINER_ID,
+  decode,
   isMixedCase,
   log,
   makeRandomToken,
@@ -50,7 +50,6 @@ import {
   getDefaults,
   getRawOptions,
   makeOptionsDecoder,
-  Options,
   OptionsData,
   PartialOptions,
   unflattenOptions,
@@ -234,9 +233,7 @@ export default class BackgroundProgram {
       await this.updateOptions({ isInitial: true });
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [
-        error instanceof DecoderError ? error.format() : error.message,
-      ];
+      this.options.errors = [error.message];
     }
 
     if (!PROD) {
@@ -1959,9 +1956,12 @@ export default class BackgroundProgram {
     const rawOptions = await getRawOptions();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const unflattened = unflattenOptions(defaulted);
-    const decoder = makeOptionsDecoder(defaults);
-    const decodeErrors: Array<DecoderError> = [];
-    const options: Options = decoder(unflattened, decodeErrors);
+    const decodeErrors: Array<string> = [];
+    const options = decode(
+      makeOptionsDecoder(defaults),
+      unflattened,
+      decodeErrors
+    );
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
@@ -1976,7 +1976,7 @@ export default class BackgroundProgram {
       values: options,
       defaults,
       raw: rawOptions,
-      errors: decodeErrors.map((error) => error.format()),
+      errors: decodeErrors,
       mac,
     };
 
@@ -2007,9 +2007,7 @@ export default class BackgroundProgram {
       await this.updateOptions();
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [
-        error instanceof DecoderError ? error.format() : error.message,
-      ];
+      this.options.errors = [error.message];
     }
   }
 
@@ -2019,9 +2017,7 @@ export default class BackgroundProgram {
       await this.updateOptions();
     } catch (errorAny) {
       const error = errorAny as Error;
-      this.options.errors = [
-        error instanceof DecoderError ? error.format() : error.message,
-      ];
+      this.options.errors = [error.message];
     }
   }
 
@@ -2185,7 +2181,7 @@ export default class BackgroundProgram {
       try {
         const { perf } = await browser.storage.local.get("perf");
         if (perf !== undefined) {
-          this.restoredTabsPerf = TabsPerf(perf);
+          this.restoredTabsPerf = decode(TabsPerf, perf);
           log(
             "log",
             "BackgroundProgram#restoreTabsPerf",

@@ -3,6 +3,7 @@ import { array, chain, Decoder, DecoderError, string } from "tiny-decoders";
 import { ElementType } from "./hints";
 import {
   addListener,
+  decode,
   deepEqual,
   log,
   UnsignedFloat,
@@ -120,7 +121,7 @@ export function tweakable(
 
         switch (original.type) {
           case "UnsignedInt": {
-            const decoded = UnsignedInt(value);
+            const decoded = decode(UnsignedInt, value);
             mapping[key] = {
               type: "UnsignedInt",
               value: decoded,
@@ -130,7 +131,7 @@ export function tweakable(
           }
 
           case "UnsignedFloat": {
-            const decoded = UnsignedFloat(value);
+            const decoded = decode(UnsignedFloat, value);
             mapping[key] = {
               type: "UnsignedFloat",
               value: decoded,
@@ -140,7 +141,7 @@ export function tweakable(
           }
 
           case "StringSet": {
-            const decoded = StringSet(string)(value);
+            const decoded = decode(StringSet(string), value);
             mapping[key] = {
               type: "StringSet",
               value: decoded,
@@ -150,7 +151,7 @@ export function tweakable(
           }
 
           case "ElementTypeSet": {
-            const decoded: Set<ElementType> = StringSet(ElementType)(value);
+            const decoded = decode(StringSet(ElementType), value);
             mapping[key] = {
               type: "ElementTypeSet",
               value: decoded,
@@ -178,8 +179,7 @@ export function tweakable(
         }
       } catch (errorAny) {
         const error = errorAny as Error;
-        errors[key] =
-          error instanceof DecoderError ? error.format() : error.message;
+        errors[key] = error.message;
       }
     }
   }

@@ -31,6 +31,7 @@ import {
   addListener,
   bind,
   classlist,
+  decode,
   deepEqual,
   log,
   LOG_LEVELS,
@@ -1275,7 +1276,7 @@ export default class OptionsProgram extends Component<Props, State> {
                           onChange={(event) => {
                             const { value } = event.currentTarget;
                             try {
-                              const logLevel = LogLevel(value);
+                              const logLevel = decode(LogLevel, value);
                               this.saveOptions({ logLevel });
                             } catch (error) {
                               log(
@@ -1548,8 +1549,10 @@ export default class OptionsProgram extends Component<Props, State> {
         scrollY: optional(number, 0),
       };
       const data = await browser.storage.local.get(Object.keys(recordProps));
-      const decoder = fieldsAuto(recordProps);
-      const { scrollY, expandedPerfTabIds, ...state } = decoder(data);
+      const { scrollY, expandedPerfTabIds, ...state } = decode(
+        fieldsAuto(recordProps),
+        data
+      );
       this.setState({ ...state, expandedPerfTabIds }, () => {
         window.scrollTo(0, scrollY);
       });

@@ -29,7 +29,7 @@ export const LOG_LEVELS: { [key in LogLevel]: number } = {
 
 export const DEFAULT_LOG_LEVEL: LogLevel = PROD
   ? "warn"
-  : LogLevel(DEFAULT_LOG_LEVEL_CONFIG);
+  : decode(LogLevel, DEFAULT_LOG_LEVEL_CONFIG);
 
 export function log(level: LogLevel, ...args: Array<unknown>): void {
   if (LOG_LEVELS[level] > LOG_LEVELS[log.level]) {
@@ -45,7 +45,7 @@ export function log(level: LogLevel, ...args: Array<unknown>): void {
       ? "extension page"
       : window.location.href,
     "\n ",
-    ...args.map((arg) => (arg instanceof DecoderError ? arg.format() : arg))
+    ...args
   );
 }
 
@@ -616,4 +616,23 @@ export function normalizeUnsignedFloat(
   const defaulted =
     Number.isFinite(parsed) && parsed >= 0 ? parsed : defaultValue;
   return defaulted.toString();
+}
+
+export function decode<T>(
+  decoder: Decoder<T>,
+  value: unknown,
+  errors?: Array<string>
+): T {
+  const localErrors: Array<DecoderError> = [];
+  try {
+    const result = decoder(value, localErrors);
+    if (errors !== undefined) {
+      for (const error of localErrors) {
+        errors.push(error.format());
+      }
+    }
+    return result;
+  } catch (error) {
+    throw error instanceof DecoderError ? new TypeError(error.format()) : error;
+  }
 }
