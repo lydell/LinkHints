@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
+    "checkJs": true,
     "forceConsistentCasingInFileNames": true,
     "importsNotUsedAsValues": "error",
     "isolatedModules": true,
@@ -22,5 +23,9 @@
       "DOM",
       "DOM.Iterable"
     ]
-  }
+  },
+  "exclude": [
+    "compiled*",
+    "html"
+  ]
 }

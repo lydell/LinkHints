@@ -1,5 +1,3 @@
-// @ts-check
-
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
@@ -34,6 +32,7 @@ const customConfig = optionalRequire("./custom.config") || {};
 
 const PROD = config.prod;
 
+/** @type {{ DEFAULT_LOG_LEVEL: string, DEFAULT_STORAGE_SYNC: unknown }} */
 const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
   ? {}
   : customConfig;
@@ -64,17 +63,19 @@ const main = [
   }),
   css(config.optionsCss),
   config.needsPolyfill ? copy(config.polyfill) : undefined,
-]
-  .filter(Boolean)
-  .map((entry) => ({
-    ...entry,
-    input: `${config.src}/${entry.input}`,
-    output: {
-      ...entry.output,
-      file: `${config.compiled}/${entry.output.file}`,
-      indent: false,
-    },
-  }));
+].flatMap((entry) =>
+  entry === undefined
+    ? []
+    : {
+        ...entry,
+        input: `${config.src}/${entry.input}`,
+        output: {
+          ...entry.output,
+          file: `${config.compiled}/${entry.output.file}`,
+          indent: false,
+        },
+      }
+);
 
 const docs = [
   css(config.docs.sharedCss),
@@ -114,7 +115,11 @@ function setup() {
   console.timeEnd("setup");
 }
 
-function js({ input, output } /*: { input: string, output: string } */) {
+/**
+ * @param {{ input: string, output: string }} options
+ * @returns
+ */
+function js({ input, output }) {
   return {
     input,
     output: {
@@ -136,7 +141,9 @@ function js({ input, output } /*: { input: string, output: string } */) {
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
     ].filter(Boolean),
-    onwarn: /** @type {(warning: Error) => never} */ (warning) => {
+    onwarn: /** @type {(warning: import("rollup").RollupWarning) => never} */ (
+      warning
+    ) => {
       throw warning;
     },
   };
@@ -153,6 +160,7 @@ function js({ input, output } /*: { input: string, output: string } */) {
  * @param {{input: string, output: string, data?: unknown}} options
  */
 function template({ input, output, data }) {
+  /** @type {string | undefined} */
   let content = undefined;
   return {
     input,
@@ -220,9 +228,9 @@ function html(files) {
 
 /**
  * @param {{input: string, output: string}} options
- * @param {(content: string) => string} transform
+ * @param {(content: string) => string} [transform]
  */
-function copy({ input, output }, transform) {
+function copy({ input, output }, transform = (content) => content) {
   // = (content) => content) {
   let content = "";
   return {
