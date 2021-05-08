@@ -782,7 +782,7 @@ export default class WorkerProgram {
       words.length === 0
         ? []
         : elements.flatMap((maybeItem, index) => {
-            if (maybeItem === undefined || current.indexes.includes(index)) {
+            if (maybeItem === undefined || !current.indexes.includes(index)) {
               return [];
             }
             const { element, type } = maybeItem;
