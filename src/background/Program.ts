@@ -1775,7 +1775,9 @@ export default class BackgroundProgram {
         now - sinceTimestamp >= t.MATCH_HIGHLIGHT_DURATION.value
     );
 
-    const hideDoneWaiting = (): void => {
+    const hideDoneWaiting = ({
+      refresh = false,
+    }: { refresh?: boolean } = {}): void => {
       if (doneWaiting.length > 0) {
         this.sendRendererMessage(
           {
@@ -1783,7 +1785,8 @@ export default class BackgroundProgram {
             updates: doneWaiting
               // Highlighted elements with -1 as index don’t have their own DOM
               // nodes – instead, they have highlighted a new hint with the same
-              // characters and position.
+              // characters and position. They unhighlighted using
+              // `this.refreshHintsRendering` below.
               .filter(({ element }) => element.index !== -1)
               .map(({ element }) => ({
                 type: "Hide",
@@ -1794,6 +1797,9 @@ export default class BackgroundProgram {
           },
           { tabId }
         );
+        if (refresh) {
+          this.refreshHintsRendering(tabId);
+        }
       }
     };
 
@@ -1813,8 +1819,7 @@ export default class BackgroundProgram {
         break;
 
       case "Hinting": {
-        hideDoneWaiting();
-        this.refreshHintsRendering(tabId);
+        hideDoneWaiting({ refresh: true });
         break;
       }
     }
