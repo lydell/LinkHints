@@ -305,7 +305,7 @@ export function getViewport(): Box {
 
 export function setStyles(
   element: HTMLElement,
-  styles: { [key: string]: string }
+  styles: Record<string, string>
 ): void {
   for (const [property, value] of Object.entries(styles)) {
     element.style.setProperty(property, value, "important");
@@ -503,7 +503,7 @@ export function getLabels(
 }
 
 export function classlist(
-  ...args: Array<string | { [key: string]: boolean }>
+  ...args: Array<string | Record<string, boolean>>
 ): string {
   return args
     .flatMap((arg) =>

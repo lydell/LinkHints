@@ -43,13 +43,13 @@ export type TweakableValue =
   | UnsignedFloat
   | UnsignedInt;
 
-export type TweakableMapping = { [key: string]: TweakableValue };
+export type TweakableMapping = Record<string, TweakableValue>;
 
 export type TweakableMeta = {
   namespace: string;
   defaults: TweakableMapping;
-  changed: { [key: string]: boolean };
-  errors: { [key: string]: string | undefined };
+  changed: Record<string, boolean>;
+  errors: Record<string, string | undefined>;
   loaded: Promise<void>;
   unlisten: () => void;
 };
@@ -96,10 +96,10 @@ export function tweakable(
   const prefix = "tweakable";
   const keyPrefix = `${DEBUG_PREFIX}${namespace}.`;
   const defaults = { ...mapping };
-  const changed: { [key: string]: boolean } = {};
-  const errors: { [key: string]: string | undefined } = {};
+  const changed: Record<string, boolean> = {};
+  const errors: Record<string, string | undefined> = {};
 
-  function update(data: { [key: string]: unknown }): void {
+  function update(data: Record<string, unknown>): void {
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!Object.prototype.hasOwnProperty.call(defaults, key)) {

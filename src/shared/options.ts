@@ -50,7 +50,7 @@ export type Options = {
 
 export type PartialOptions = Partial<Options>;
 
-export type FlatOptions = { [key: string]: unknown };
+export type FlatOptions = Record<string, unknown>;
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
   return fields((field) => ({

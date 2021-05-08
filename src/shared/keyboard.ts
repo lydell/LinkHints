@@ -102,7 +102,7 @@ export function serializeShortcut(shortcut: Shortcut): string {
 // This turns a shortcut string into an object that can be fed to `Shortcut`.
 export function deserializeShortcut(
   shortcutString: string
-): { [key: string]: unknown } {
+): Record<string, unknown> {
   const parts = shortcutString.split(SHORTCUT_SEPARATOR);
   const lastIndex = parts.length - 1;
   return parts.reduce(
@@ -154,7 +154,7 @@ export const HintsMode = stringUnion({
 export type KeyPair = ReturnType<typeof KeyPair>;
 export const KeyPair = tuple([string, string]);
 
-export type KeyTranslations = { [code: string]: KeyPair };
+export type KeyTranslations = Record<string, KeyPair>;
 
 export const EN_US_QWERTY_TRANSLATIONS: KeyTranslations = {
   Backquote: ["`", "~"],

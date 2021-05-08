@@ -2404,7 +2404,7 @@ async function openNewTabs(tabId: number, urls: Array<string>): Promise<void> {
 
 type IconType = "disabled" | "normal";
 
-function getIcons(type: IconType): { [key: string]: string } {
+function getIcons(type: IconType): Record<string, string> {
   const manifest = browser.runtime.getManifest();
   return Object.fromEntries(
     Object.entries(manifest.browser_action?.default_icon ?? {}).flatMap(

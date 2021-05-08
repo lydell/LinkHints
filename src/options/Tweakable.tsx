@@ -278,7 +278,7 @@ export function hasChangedTweakable(): boolean {
   );
 }
 
-export function getTweakableExport(): { [key: string]: unknown } {
+export function getTweakableExport(): Record<string, unknown> {
   return Object.fromEntries(
     ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
       Object.keys(tMeta.defaults).flatMap(
@@ -299,11 +299,11 @@ export function getTweakableExport(): { [key: string]: unknown } {
   );
 }
 
-export function partitionTweakable(data: {
-  [key: string]: unknown;
-}): [{ [key: string]: unknown }, { [key: string]: unknown }] {
-  const tweakableData: { [key: string]: unknown } = {};
-  const otherData: { [key: string]: unknown } = {};
+export function partitionTweakable(
+  data: Record<string, unknown>
+): [Record<string, unknown>, Record<string, unknown>] {
+  const tweakableData: Record<string, unknown> = {};
+  const otherData: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
     if (ALL_KEYS.has(key)) {
@@ -316,9 +316,9 @@ export function partitionTweakable(data: {
   return [tweakableData, otherData];
 }
 
-export async function saveTweakable(data: {
-  [key: string]: unknown;
-}): Promise<void> {
+export async function saveTweakable(
+  data: Record<string, unknown>
+): Promise<void> {
   const [tweakableData] = partitionTweakable(data);
   return browser.storage.sync.set(tweakableData);
 }

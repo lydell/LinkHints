@@ -840,7 +840,7 @@ function getHintPosition({
   hintMeasurements: HintMeasurements;
   viewport: Box;
 }): {
-  styles: { [key: string]: string };
+  styles: Record<string, string>;
   maybeOutsideHorizontally: boolean;
 } {
   const width = Math.ceil(
