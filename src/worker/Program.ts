@@ -166,7 +166,7 @@ export default class WorkerProgram {
 
       case "StartFindElements": {
         const { oneTimeWindowMessageToken } = this;
-        if (oneTimeWindowMessageToken == null) {
+        if (oneTimeWindowMessageToken === undefined) {
           log("error", "missing oneTimeWindowMessageToken", message);
           break;
         }
@@ -181,7 +181,7 @@ export default class WorkerProgram {
 
       case "UpdateElements": {
         const { current, oneTimeWindowMessageToken } = this;
-        if (current == null) {
+        if (current === undefined) {
           return;
         }
 
@@ -196,7 +196,7 @@ export default class WorkerProgram {
 
       case "GetTextRects": {
         const { current } = this;
-        if (current == null) {
+        if (current === undefined) {
           return;
         }
 
@@ -227,7 +227,7 @@ export default class WorkerProgram {
 
       case "FocusElement": {
         const elementData = this.getElement(message.index);
-        if (elementData == null) {
+        if (elementData === undefined) {
           log("error", "FocusElement: Missing element", message, this.current);
           return;
         }
@@ -235,7 +235,7 @@ export default class WorkerProgram {
         const { element } = elementData;
         const activeElement = this.elementManager.getActiveElement(document);
         const textInputIsFocused =
-          activeElement != null && isTextInput(activeElement);
+          activeElement !== undefined && isTextInput(activeElement);
 
         // Allow opening links in new tabs without losing focus from a text
         // input.
@@ -249,7 +249,7 @@ export default class WorkerProgram {
       case "ClickElement": {
         const elementData = this.getElement(message.index);
 
-        if (elementData == null) {
+        if (elementData === undefined) {
           log("error", "ClickElement: Missing element", message, this.current);
           return;
         }
@@ -275,7 +275,7 @@ export default class WorkerProgram {
 
       case "SelectElement": {
         const elementData = this.getElement(message.index);
-        if (elementData == null) {
+        if (elementData === undefined) {
           log("error", "SelectElement: Missing element", message, this.current);
           return;
         }
@@ -321,8 +321,8 @@ export default class WorkerProgram {
           }
 
           // Try to select the text of the element, or the element itself.
-          const selection: Selection | null = window.getSelection();
-          if (selection != null) {
+          const selection = window.getSelection();
+          if (selection !== null) {
             // Firefox won’t select text inside a ShadowRoot without this timeout.
             setTimeout(() => {
               const range = selectNodeContents(element);
@@ -337,7 +337,7 @@ export default class WorkerProgram {
 
       case "CopyElement": {
         const elementData = this.getElement(message.index);
-        if (elementData == null) {
+        if (elementData === undefined) {
           log("error", "CopyElement: Missing element", message, this.current);
           return;
         }
@@ -400,19 +400,19 @@ export default class WorkerProgram {
 
       case "Escape": {
         const activeElement = this.elementManager.getActiveElement(document);
-        if (activeElement != null) {
+        if (activeElement !== undefined) {
           activeElement.blur();
         }
-        const selection: Selection | null = window.getSelection();
-        if (selection != null) {
+        const selection = window.getSelection();
+        if (selection !== null) {
           selection.removeAllRanges();
         }
         break;
       }
 
       case "ReverseSelection": {
-        const selection: Selection | null = window.getSelection();
-        if (selection != null) {
+        const selection = window.getSelection();
+        if (selection !== null) {
           reverseSelection(selection);
         }
         break;
@@ -424,9 +424,9 @@ export default class WorkerProgram {
     const { oneTimeWindowMessageToken } = this;
 
     if (
-      oneTimeWindowMessageToken != null &&
-      event.data != null &&
+      oneTimeWindowMessageToken !== undefined &&
       typeof event.data === "object" &&
+      event.data !== null &&
       !Array.isArray(event.data) &&
       (event.data as Record<string, unknown>).token ===
         oneTimeWindowMessageToken &&
@@ -461,7 +461,7 @@ export default class WorkerProgram {
 
         case "UpdateElements": {
           const { current } = this;
-          if (current == null) {
+          if (current === undefined) {
             return;
           }
 
@@ -505,13 +505,13 @@ export default class WorkerProgram {
         keypress.alt === shortcut.alt &&
         keypress.cmd === shortcut.cmd &&
         keypress.ctrl === shortcut.ctrl &&
-        (keypress.shift == null || keypress.shift === shortcut.shift)
+        (keypress.shift === undefined || keypress.shift === shortcut.shift)
       );
     });
 
     const suppress =
       // If we matched one of our keyboard shortcuts, always suppress.
-      match != null ||
+      match !== undefined ||
       // Just after activating a hint, suppress everything for a short while.
       this.keyboardMode === "PreventOverTyping" ||
       // When capturing keypresses in the Options UI, always suppress.
@@ -578,7 +578,7 @@ export default class WorkerProgram {
           keypress,
         });
       }
-    } else if (match != null) {
+    } else if (match !== undefined) {
       this.sendMessage({
         type: "KeyboardShortcutMatched",
         action: match.action,
@@ -601,7 +601,7 @@ export default class WorkerProgram {
       return;
     }
 
-    if (this.suppressNextKeyup != null) {
+    if (this.suppressNextKeyup !== undefined) {
       const { key, code } = this.suppressNextKeyup;
       if (event.key === key && event.code === code) {
         log("log", prefix, "suppressing event", {
@@ -617,7 +617,7 @@ export default class WorkerProgram {
 
   onMutation(records: Array<MutationRecord>): void {
     const { current } = this;
-    if (current == null) {
+    if (current === undefined) {
       return;
     }
 
@@ -683,7 +683,9 @@ export default class WorkerProgram {
   }
 
   getElement(index: number): VisibleElement | undefined {
-    return this.current == null ? undefined : this.current.elements[index];
+    return this.current === undefined
+      ? undefined
+      : this.current.elements[index];
   }
 
   reportVisibleElements(
@@ -698,7 +700,7 @@ export default class WorkerProgram {
       number
     ] = this.elementManager.getVisibleElements(types, viewports, time);
     const elements = elementsWithNulls.flatMap((elementData) =>
-      elementData == null ? [] : elementData
+      elementData === undefined ? [] : elementData
     );
 
     time.start("frames");
@@ -758,12 +760,12 @@ export default class WorkerProgram {
 
     const { words } = current;
 
-    if (oneTimeWindowMessageToken != null) {
+    if (oneTimeWindowMessageToken !== undefined) {
       for (const frame of current.frames) {
         // Removing an iframe from the DOM nukes its page (this will be detected
         // by the port disconnecting). Re-inserting it causes the page to be
         // loaded anew.
-        if (frame.contentWindow != null) {
+        if (frame.contentWindow !== null) {
           const message: FrameMessage = {
             type: "UpdateElements",
             token: oneTimeWindowMessageToken,
@@ -808,7 +810,7 @@ export default class WorkerProgram {
   markTutorial(): void {
     if (
       (window.location.origin + window.location.pathname === META_TUTORIAL ||
-        (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) != null)) &&
+        (!PROD && document.querySelector(`.${META_SLUG}Tutorial`) !== null)) &&
       document.documentElement !== null
     ) {
       document.documentElement.classList.add("is-installed");
@@ -870,9 +872,9 @@ export default class WorkerProgram {
     );
 
     if (BROWSER === "firefox") {
-      if (cleanup != null) {
+      if (cleanup !== undefined) {
         const result = cleanup();
-        if (result.pagePreventedDefault != null) {
+        if (result.pagePreventedDefault !== undefined) {
           defaultPrevented = result.pagePreventedDefault;
         }
         this.sendMessage({
@@ -938,7 +940,7 @@ function focusElement(element: HTMLElement): void {
       mutationObserver.disconnect();
 
       if (!tabIndexChanged) {
-        if (tabIndexAttr == null) {
+        if (tabIndexAttr === null) {
           element.removeAttribute("tabindex");
         } else {
           element.setAttribute("tabindex", tabIndexAttr);
@@ -1032,7 +1034,7 @@ function isFocusable(element: HTMLElement): boolean {
 
   const attrValue = element.getAttribute("tabindex");
 
-  if (attrValue == null) {
+  if (attrValue === null) {
     return false;
   }
 
@@ -1054,7 +1056,7 @@ function isTextInput(element: HTMLElement): boolean {
     // `<input type="unknown">`, etc), but not for `<input type="email">` and
     // `<input type="number">` for some reason.
     (element instanceof HTMLInputElement &&
-      (element.selectionStart != null ||
+      (element.selectionStart !== null ||
         element.type === "email" ||
         element.type === "number"))
   );
@@ -1063,7 +1065,7 @@ function isTextInput(element: HTMLElement): boolean {
 function reverseSelection(selection: Selection): void {
   const direction = getSelectionDirection(selection);
 
-  if (direction == null) {
+  if (direction === undefined) {
     return;
   }
 
@@ -1086,7 +1088,7 @@ function getSelectionDirection(selection: Selection): boolean | undefined {
 
   const { anchorNode, focusNode } = selection;
 
-  if (anchorNode == null || focusNode == null) {
+  if (anchorNode === null || focusNode === null) {
     return undefined;
   }
 
@@ -1104,13 +1106,13 @@ function selectNodeContents(element: HTMLElement): Range {
   let end = undefined;
 
   for (const textNode of walkTextNodes(element)) {
-    if (start == null) {
+    if (start === undefined) {
       const index = textNode.data.search(NON_WHITESPACE);
       if (index >= 0) {
         start = { textNode, index };
       }
     }
-    if (start != null) {
+    if (start !== undefined) {
       const index = textNode.data.search(LAST_NON_WHITESPACE);
       if (index >= 0) {
         end = { textNode, index: index + 1 };
@@ -1119,7 +1121,7 @@ function selectNodeContents(element: HTMLElement): Range {
   }
 
   let method = undefined;
-  if (start != null && end != null) {
+  if (start !== undefined && end !== undefined) {
     method = "text nodes";
     range.setStart(start.textNode, start.index);
     range.setEnd(end.textNode, end.index);
@@ -1158,7 +1160,7 @@ function suppressEvent(event: Event): void {
     const accesskeyMap = new Map<HTMLElement, string>();
     for (const element of elements) {
       const accesskey = element.getAttribute("accesskey");
-      if (accesskey != null) {
+      if (accesskey !== null) {
         accesskeyMap.set(element, accesskey);
         element.removeAttribute("accesskey");
       }
@@ -1178,7 +1180,7 @@ function makeElementReports(
   const startTime = Date.now();
 
   const elementReports = elements.flatMap((elementData, index) =>
-    elementData != null
+    elementData !== undefined
       ? visibleElementToElementReport(elementData, {
           index,
           textContent: Date.now() - startTime > maxDuration,
@@ -1269,7 +1271,7 @@ function extractTextHelper(element: HTMLElement, type: ElementType): string {
   // for filtering. For buttons with a label, use both the button text and the
   // label text.
   const labels = getLabels(element);
-  if (labels != null) {
+  if (labels !== undefined) {
     return normalizeWhitespace(
       [extractText(element)]
         .concat(Array.from(labels, (label) => extractText(label)))
@@ -1304,7 +1306,7 @@ export function getTextRectsHelper({
 
   // See `extractTextHelper`.
   const labels = getLabels(element);
-  if (labels != null) {
+  if (labels !== undefined) {
     return [element].concat(Array.from(labels)).flatMap((element2) =>
       getTextRects({
         element: element2,
@@ -1383,16 +1385,16 @@ function firefoxPopupBlockerWorkaround({
   // any). Clicking on an element inside a link also activates the link.
   const linkElement = element.closest("a");
   const link =
-    linkElement != null && linkElement instanceof HTMLAnchorElement
+    linkElement !== null && linkElement instanceof HTMLAnchorElement
       ? linkElement
       : undefined;
 
   const shouldWorkaroundLinks =
-    link != null &&
+    link !== undefined &&
     (link.target.toLowerCase() === "_blank" ||
       (isPinned && link.hostname !== window.location.hostname));
 
-  if (shouldWorkaroundLinks && link != null) {
+  if (shouldWorkaroundLinks && link !== undefined) {
     // Default to opening this link in a new tab.
     linkUrl = link.href;
 
@@ -1625,7 +1627,7 @@ function firefoxPopupBlockerWorkaround({
         ? defaultPrevented === "ByPage"
         : undefined,
       urlsToOpenInNewTabs:
-        linkUrl != null
+        linkUrl !== undefined
           ? [linkUrl, ...urlsToOpenInNewTabs]
           : urlsToOpenInNewTabs,
     };
@@ -1650,7 +1652,7 @@ function* getAllEventTargetsUpwards(
       // of the loop we know that `node` is never `null`.
       node = parent as Node;
     }
-  } while (node != null);
+  } while (node !== undefined);
   yield window;
 }
 

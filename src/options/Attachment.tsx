@@ -13,15 +13,15 @@ export default function Attachment({
     contents?: VNode;
     children: ComponentChildren;
   }): VNode {
-  const Tag = label != null ? "label" : "span";
+  const Tag = label !== undefined ? "label" : "span";
   return (
     <Tag {...restProps} className="Attachment">
       <span
         className={classlist("Attachment-content", {
-          TinyLabel: label != null,
+          TinyLabel: label !== undefined,
         })}
       >
-        {label != null ? label : contents}
+        {label !== undefined ? label : contents}
       </span>
       {children}
     </Tag>

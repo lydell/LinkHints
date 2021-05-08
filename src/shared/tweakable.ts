@@ -113,7 +113,7 @@ export function tweakable(
         errors[key] = undefined;
         changed[key] = false;
 
-        if (value == null) {
+        if (value === undefined) {
           mapping[key] = original;
           continue;
         }

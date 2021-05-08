@@ -125,7 +125,7 @@
         const text = `Link ${counter}: ${
           getFeaturesString(options) || "(regular)"
         }`;
-        if (makeChildren != null) {
+        if (makeChildren !== undefined) {
           makeChildren(a, text);
         } else {
           a.textContent = text;
@@ -195,7 +195,7 @@
               target.onclick = (event) =>
                 event.target === element
                   ? fn(event)
-                  : previous != null
+                  : previous !== null
                   ? previous(event)
                   : undefined;
             }
@@ -221,7 +221,7 @@
 
       function getFeaturesString(options) {
         return Object.entries(options)
-          .filter(([, value]) => value != null)
+          .filter(([, value]) => value !== undefined)
           .map(([key, { at, how }]) => `${key}=${at}/${how}`)
           .join(" | ");
       }

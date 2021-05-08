@@ -26,7 +26,7 @@ export default function Field({
   onReset?: () => void;
 }): VNode {
   const reset =
-    onReset != null && changed ? (
+    onReset !== undefined && changed ? (
       <button
         type="button"
         className="Field-resetButton TextSmall"
@@ -61,7 +61,7 @@ export default function Field({
         {render({ id })}
       </div>
 
-      {description != null && (
+      {description !== undefined && (
         <div className="Field-description TextSmall">{description}</div>
       )}
     </div>

@@ -30,7 +30,7 @@ export function parseCSS(css: string): Array<Rule> {
     (match, string, _quote, comment, url) => {
       // Escape characters inside strings and unquoted urls that make other
       // parsing harder. Hacky, but simple. And good enough.
-      if (string != null || url != null) {
+      if (string !== undefined || url !== undefined) {
         return match.replace(
           annoyingCharsRegex,
           (char) => `\\${char.charCodeAt(0).toString(16)} `
@@ -38,7 +38,7 @@ export function parseCSS(css: string): Array<Rule> {
       }
 
       // Remove comments.
-      if (comment != null) {
+      if (comment !== undefined) {
         return "";
       }
 
@@ -50,7 +50,7 @@ export function parseCSS(css: string): Array<Rule> {
   let match = undefined;
   ruleRegex.lastIndex = 0;
 
-  while ((match = ruleRegex.exec(normalized)) != null) {
+  while ((match = ruleRegex.exec(normalized)) !== null) {
     const [, rawSelector, declarationsString] = match;
     const selector = rawSelector.trim();
 
@@ -74,7 +74,7 @@ function parseDeclarations(declarationsString: string): Array<Declaration> {
   return declarationsString.split(";").flatMap((declString) => {
     const match = declRegex.exec(declString);
 
-    if (match == null) {
+    if (match === null) {
       return [];
     }
 
@@ -82,7 +82,7 @@ function parseDeclarations(declarationsString: string): Array<Declaration> {
     return {
       property,
       value: value.trim(),
-      important: important != null,
+      important: important !== undefined,
     };
   });
 }

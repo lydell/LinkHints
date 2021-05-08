@@ -73,7 +73,7 @@ export default function CSSPreview({
   function updateTextRects(): void {
     const containerElement = containerRef.current;
     const filterByTextElement = filterByTextRef.current;
-    if (containerElement == null || filterByTextElement == null) {
+    if (containerElement === undefined || filterByTextElement === undefined) {
       return;
     }
 

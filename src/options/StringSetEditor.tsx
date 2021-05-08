@@ -20,14 +20,14 @@ export default function StringSetEditor({
     undefined
   );
 
-  const value = stateValue != null ? stateValue : Array.from(savedValue);
+  const value = stateValue !== undefined ? stateValue : Array.from(savedValue);
   const endsWithBlank =
     value.length > 0 && value[value.length - 1].trim() === "";
 
   useLayoutEffect(
     () =>
       // Normalize on blur, but not when moving to the next field.
-      !hasFocus && stateValue != null
+      !hasFocus && stateValue !== undefined
         ? timeout(0, () => {
             setStateValue(undefined);
           })
@@ -67,7 +67,7 @@ export default function StringSetEditor({
             const { target } = event;
             if (target instanceof HTMLElement && event.key === "Enter") {
               const next = target.nextElementSibling;
-              if (next != null && next instanceof HTMLInputElement) {
+              if (next !== null && next instanceof HTMLInputElement) {
                 next.select();
               }
             }

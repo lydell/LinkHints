@@ -229,7 +229,11 @@ export default class RendererProgram {
         const changedCSS = this.css.text !== newCSS;
         this.css.text = newCSS;
         log.level = message.logLevel;
-        if (BROWSER === "firefox" && this.css.parsed != null && changedCSS) {
+        if (
+          BROWSER === "firefox" &&
+          this.css.parsed !== undefined &&
+          changedCSS
+        ) {
           this.css.parsed = parseCSS(this.css.text);
         }
         break;
@@ -372,7 +376,7 @@ export default class RendererProgram {
       document.documentElement.append(this.container.element);
     }
 
-    if (this.css.parsed == null) {
+    if (this.css.parsed === undefined) {
       // Inserting a `<style>` element is way faster than doing
       // `element.style.setProperty()` on every element.
       const style = document.createElement("style");
@@ -388,7 +392,7 @@ export default class RendererProgram {
       // here (it causes no CSP warning in the console, but no styles are
       // applied). The only workaround I could find was manually parsing and
       // applying the CSS.
-      if (BROWSER === "firefox" && style.sheet == null) {
+      if (BROWSER === "firefox" && style.sheet === null) {
         log("log", "RendererProgram#render", "parsing CSS due to CSP");
         this.css.parsed = parseCSS(this.css.text);
       }
@@ -509,7 +513,7 @@ export default class RendererProgram {
     for (const update of updates) {
       const child = this.hints[update.index];
 
-      if (child == null) {
+      if (child === undefined) {
         log("error", "RendererProgram#updateHints: missing child", update);
         continue;
       }
@@ -694,7 +698,7 @@ export default class RendererProgram {
 
   unrenderTextRects(frameId?: number): void {
     const selector =
-      frameId == null
+      frameId === undefined
         ? `.${TEXT_RECT_CLASS}`
         : `.${TEXT_RECT_CLASS}[data-frame-id="${frameId}"]`;
     for (const element of this.container.root.querySelectorAll(selector)) {
@@ -705,7 +709,7 @@ export default class RendererProgram {
   // It’s important to use `setStyles` instead of `.style.foo =` in this file,
   // since `applyStyles` could override inline styles otherwise.
   maybeApplyStyles(element: HTMLElement): void {
-    if (BROWSER === "firefox" && this.css.parsed != null) {
+    if (BROWSER === "firefox" && this.css.parsed !== undefined) {
       applyStyles(element, this.css.parsed);
     }
   }
@@ -754,7 +758,7 @@ function wrapMessage(message: FromRenderer): ToBackground {
 }
 
 function emptyNode(node: Node): void {
-  while (node.firstChild != null) {
+  while (node.firstChild !== null) {
     node.removeChild(node.firstChild);
   }
 }

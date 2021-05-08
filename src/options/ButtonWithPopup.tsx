@@ -22,16 +22,16 @@ export default function ButtonWithPopup({
 
   const [openState, setOpenState] = useState<boolean>(false);
 
-  const open = openProp != null ? openProp : openState;
+  const open = openProp !== undefined ? openProp : openState;
 
   const rootRef = useRef<HTMLDivElement>();
 
   const setOpen = useCallback(
     (newOpen: boolean) => {
-      if (openProp == null) {
+      if (openProp === undefined) {
         setOpenState(newOpen);
       }
-      if (onChangeRef.current != null) {
+      if (onChangeRef.current !== undefined) {
         onChangeRef.current(newOpen);
       }
     },
@@ -45,7 +45,7 @@ export default function ButtonWithPopup({
         const { target } = event;
 
         if (
-          root != null &&
+          root !== undefined &&
           target instanceof Node &&
           !root.contains(target) &&
           target !== document

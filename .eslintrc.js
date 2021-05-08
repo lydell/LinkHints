@@ -78,7 +78,7 @@ module.exports = {
     "simple-import-sort/imports": warn,
     "use-isnan": error,
     curly: warn,
-    eqeqeq: [warn, "always", { null: "ignore" }],
+    eqeqeq: warn,
     yoda: warn,
     "import/no-cycle": error,
     "import/extensions": [warn, { ts: "never", config: "always" }],

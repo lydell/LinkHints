@@ -239,7 +239,7 @@ export default class OptionsProgram extends Component<Props, State> {
             errors: errorsHidden ? [] : message.options.errors,
           },
           customChars:
-            state.options == null
+            state.options === undefined
               ? message.options.values.chars
               : state.customChars,
         }));
@@ -283,7 +283,7 @@ export default class OptionsProgram extends Component<Props, State> {
   saveOptions(partialOptions: PartialOptions): void {
     this.setState((state) => ({
       options:
-        state.options == null
+        state.options === undefined
           ? undefined
           : {
               ...state.options,
@@ -304,7 +304,7 @@ export default class OptionsProgram extends Component<Props, State> {
   resetOptions(): void {
     this.setState((state) => ({
       options:
-        state.options == null
+        state.options === undefined
           ? undefined
           : {
               ...state.options,
@@ -320,7 +320,7 @@ export default class OptionsProgram extends Component<Props, State> {
 
   async importOptions(): Promise<void> {
     const { options: optionsData } = this.state;
-    if (optionsData == null) {
+    if (optionsData === undefined) {
       return;
     }
     const { values: options, defaults } = optionsData;
@@ -342,7 +342,7 @@ export default class OptionsProgram extends Component<Props, State> {
           errors,
         },
       });
-      if (newOptions != null) {
+      if (newOptions !== undefined) {
         this.saveOptions(newOptions);
       }
       await saveTweakable(tweakableData);
@@ -363,7 +363,7 @@ export default class OptionsProgram extends Component<Props, State> {
     const tweakableExport = getTweakableExport();
 
     const data = {
-      ...(optionsData != null ? optionsData.raw : {}),
+      ...(optionsData !== undefined ? optionsData.raw : {}),
       ...tweakableExport,
     };
 
@@ -397,7 +397,7 @@ export default class OptionsProgram extends Component<Props, State> {
       localStorageCleared,
     } = this.state;
 
-    if (optionsData == null) {
+    if (optionsData === undefined) {
       return null;
     }
 
@@ -622,7 +622,7 @@ export default class OptionsProgram extends Component<Props, State> {
                   layout you have enabled. Switch to your main layout and type
                   in the textarea to translate such <em>codes</em> to actual
                   keys.{" "}
-                  {getLayoutMap != null && (
+                  {getLayoutMap !== undefined && (
                     <>
                       The “Detect” button below can do some of the translation
                       for you.
@@ -754,15 +754,15 @@ export default class OptionsProgram extends Component<Props, State> {
                           const normalizedKeypress = normalizeKeypress({
                             keypress,
                             keyTranslations:
-                              keyTranslations != null
+                              keyTranslations !== undefined
                                 ? keyTranslations
                                 : options.keyTranslations,
                           });
                           const finalKey =
-                            normalizedKeypress.printableKey != null
+                            normalizedKeypress.printableKey !== undefined
                               ? normalizedKeypress.printableKey
                               : normalizedKeypress.key;
-                          if (keyTranslations != null) {
+                          if (keyTranslations !== undefined) {
                             this.saveOptions({ keyTranslations });
                           }
                           this.setState(
@@ -783,7 +783,7 @@ export default class OptionsProgram extends Component<Props, State> {
                         onKeyUp={(event: KeyboardEvent) => {
                           const capslock = event.getModifierState("CapsLock");
                           if (
-                            lastKeypress != null &&
+                            lastKeypress !== undefined &&
                             capslock !== lastKeypress.capslock
                           ) {
                             this.setState({
@@ -800,7 +800,7 @@ export default class OptionsProgram extends Component<Props, State> {
                       />
                     </Attachment>
 
-                    {lastKeypress != null && (
+                    {lastKeypress !== undefined && (
                       <div>
                         <p className="TinyLabel">Last received keypress data</p>
 
@@ -857,12 +857,12 @@ export default class OptionsProgram extends Component<Props, State> {
                           Key translations
                         </span>
 
-                        {getLayoutMap != null && (
+                        {getLayoutMap !== undefined && (
                           <ButtonWithPopup
                             buttonContent="Detect"
                             popupContent={() => (
                               <div style={{ width: 320 }}>
-                                {keyboardDetect == null ? (
+                                {keyboardDetect === undefined ? (
                                   <div className="SpacedVertical">
                                     <p>
                                       Your browser allows detecting{" "}
@@ -928,7 +928,7 @@ export default class OptionsProgram extends Component<Props, State> {
                               this.saveOptions({
                                 keyTranslations: defaults.keyTranslations,
                               });
-                              if (this.keysTableRef.current != null) {
+                              if (this.keysTableRef.current !== null) {
                                 this.keysTableRef.current.scrollTop = 0;
                               }
                             }}
@@ -1250,7 +1250,7 @@ export default class OptionsProgram extends Component<Props, State> {
                           >
                             Clear
                           </button>
-                          {localStorageCleared != null && (
+                          {localStorageCleared !== undefined && (
                             <p>
                               Last cleared:{" "}
                               {localStorageCleared.toLocaleString()}
@@ -1392,7 +1392,7 @@ export default class OptionsProgram extends Component<Props, State> {
                     </button>
                     <div className="SpacedVertical" style={{ flex: "1 1 50%" }}>
                       <ButtonWithPopup
-                        open={importData.successCount != null}
+                        open={importData.successCount !== undefined}
                         buttonContent="Import"
                         popupContent={() => (
                           <div style={{ whiteSpace: "nowrap" }}>
@@ -1472,7 +1472,7 @@ export default class OptionsProgram extends Component<Props, State> {
     const element = document.getElementById(id);
     const keysTable = this.keysTableRef.current;
 
-    if (keysTable == null || element == null) {
+    if (keysTable === null || element === null) {
       return;
     }
 
@@ -1556,7 +1556,7 @@ export default class OptionsProgram extends Component<Props, State> {
 
   async detectKeyboard(): Promise<void> {
     try {
-      if (getLayoutMap == null) {
+      if (getLayoutMap === undefined) {
         throw new Error(
           "Your browser does not support detecting your keyboard layout after all."
         );
@@ -1565,7 +1565,7 @@ export default class OptionsProgram extends Component<Props, State> {
       const layoutMap = await getLayoutMap();
 
       const { options: optionsData } = this.state;
-      if (optionsData == null) {
+      if (optionsData === undefined) {
         throw new Error("Failed to save key translations.");
       }
 
@@ -1580,7 +1580,7 @@ export default class OptionsProgram extends Component<Props, State> {
         .map((code): [UpdateStatus, string, KeyPair] => {
           const pair = keyTranslations[code];
           const key = layoutMap.get(code);
-          if (key == null) {
+          if (key === undefined) {
             return ["NotUpdated", code, pair];
           }
           if (isShiftable(key)) {
@@ -1597,7 +1597,7 @@ export default class OptionsProgram extends Component<Props, State> {
           newCodes.flatMap(
             (code): Array<[UpdateStatus, string, KeyPair]> => {
               const key = layoutMap.get(code);
-              return key == null
+              return key === undefined
                 ? []
                 : isShiftable(key)
                 ? [["FullyUpdated", code, [key, key.toUpperCase()]]]
@@ -1650,7 +1650,8 @@ function updateKeyTranslations(
     : undefined;
 
   const newPair = updatePair({ key, shift }, previousPair);
-  const changed = previousPair == null || !deepEqual(newPair, previousPair);
+  const changed =
+    previousPair === undefined || !deepEqual(newPair, previousPair);
   return changed ? { ...keyTranslations, [code]: newPair } : undefined;
 }
 
@@ -1661,7 +1662,7 @@ function updatePair(
   if (!shift && key.length === 1 && key.toLowerCase() !== key.toUpperCase()) {
     return [key, key.toUpperCase()];
   }
-  if (previousPair != null) {
+  if (previousPair !== undefined) {
     const [unshifted, shifted] = previousPair;
     return shift ? [unshifted, key] : [key, shifted];
   }
@@ -1687,7 +1688,7 @@ function ActivateHighlightedKey({
 }): VNode {
   const first = mappings.find((mapping) => mapping.action === "ActivateHint");
 
-  if (first != null) {
+  if (first !== undefined) {
     return <KeyboardShortcut mac={mac} shortcut={first.shortcut} />;
   }
 
@@ -1696,7 +1697,7 @@ function ActivateHighlightedKey({
   );
 
   const fallback =
-    firstDefault != null ? firstDefault.shortcut : { key: "error" };
+    firstDefault !== undefined ? firstDefault.shortcut : { key: "error" };
 
   return (
     <span>

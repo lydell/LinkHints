@@ -474,7 +474,7 @@ function Demo({
     highlighted?: boolean;
     children: string;
   }): VNode | null {
-    return filterByText && hint2 == null ? null : (
+    return filterByText && hint2 === undefined ? null : (
       <span
         className={`hint ${filterByText && highlighted ? "highlighted" : ""}`}
         data-text={filterByText ? hint2 : children}

@@ -70,7 +70,7 @@ function minifyJS(js: string): string {
               result +
                 (state.multiline
                   ? "\n"
-                  : previousToken != null && previousToken.type !== token.type
+                  : previousToken !== undefined && previousToken.type !== token.type
                   ? ""
                   : " ") +
                 token.value,

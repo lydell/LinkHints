@@ -388,7 +388,7 @@ export default class ElementManager {
   }
 
   stop(): void {
-    if (this.idleCallbackId != null) {
+    if (this.idleCallbackId !== undefined) {
       cancelIdleCallback(this.idleCallbackId);
     }
 
@@ -485,7 +485,7 @@ export default class ElementManager {
       yield child as HTMLElement;
 
       const root = this.shadowRoots.get(child);
-      if (root != null) {
+      if (root !== undefined) {
         yield* this.getAllElements(root.shadowRoot);
       }
     }
@@ -493,11 +493,11 @@ export default class ElementManager {
 
   getActiveElement(node: Document | ShadowRoot): HTMLElement | undefined {
     const { activeElement } = node;
-    if (activeElement == null) {
+    if (activeElement === null) {
       return undefined;
     }
     const root = this.shadowRoots.get(activeElement);
-    if (root != null) {
+    if (root !== undefined) {
       return this.getActiveElement(root.shadowRoot);
     }
     return activeElement as HTMLElement;
@@ -527,7 +527,7 @@ export default class ElementManager {
   }
 
   requestIdleCallback(): void {
-    if (this.idleCallbackId == null) {
+    if (this.idleCallbackId === undefined) {
       this.idleCallbackId = requestIdleCallback((deadline) => {
         this.idleCallbackId = undefined;
         this.flushQueue(deadline);
@@ -622,7 +622,7 @@ export default class ElementManager {
     const target = getTarget(event);
     if (target instanceof HTMLElement) {
       const { shadowRoot } = target;
-      if (shadowRoot != null) {
+      if (shadowRoot !== null) {
         log("log", "ElementManager#onOpenShadowRootCreated", shadowRoot);
         this.onInjectedMessage({ type: "ShadowRootCreated", shadowRoot });
       }
@@ -814,7 +814,7 @@ export default class ElementManager {
 
     const type =
       mutationType === "removed" ? undefined : this.getElementType(element);
-    if (type == null) {
+    if (type === undefined) {
       if (mutationType !== "added") {
         this.elements.delete(element);
         // Removing an element from the DOM also triggers the
@@ -859,7 +859,7 @@ export default class ElementManager {
 
     if (mutationType === "added") {
       const root = this.shadowRoots.get(element);
-      if (root != null) {
+      if (root !== undefined) {
         if (!root.active) {
           // If an element has been removed and then re-inserted again, set up
           // tracking of its shadow root again (if any). However, when
@@ -868,7 +868,7 @@ export default class ElementManager {
           // root is already active, there’s no need to do it again.
           this.setShadowRoot(root.shadowRoot);
         }
-      } else if (element.shadowRoot != null) {
+      } else if (element.shadowRoot !== null) {
         // Just after the extension is installed or updated, we might have
         // missed a bunch of `.attachShadow` calls. Luckily, we can still get
         // _open_ shadow roots through the `.shadowRoot` property.
@@ -876,7 +876,7 @@ export default class ElementManager {
       }
     } else if (mutationType === "removed") {
       const root = this.shadowRoots.get(element);
-      if (root != null) {
+      if (root !== undefined) {
         this.deactivateShadowRoot(root);
       }
     }
@@ -938,7 +938,7 @@ export default class ElementManager {
                 const element = record.addedNodes[item.addedNodeIndex];
                 let { children } = item;
 
-                if (children == null && element instanceof HTMLElement) {
+                if (children === undefined && element instanceof HTMLElement) {
                   // When a streaming HTML chunk arrives, _all_ elements in it
                   // will produce its own MutationRecord, even nested elements.
                   // Parent elements come first. Since we do a
@@ -981,7 +981,7 @@ export default class ElementManager {
                   }
                 }
 
-                if (children != null && children.length > 0) {
+                if (children !== undefined && children.length > 0) {
                   const startChildIndex = item.childIndex;
                   for (; item.childIndex < children.length; item.childIndex++) {
                     if (
@@ -1020,7 +1020,7 @@ export default class ElementManager {
               const element = record.removedNodes[item.removedNodeIndex];
               let { children } = item;
 
-              if (children == null && element instanceof HTMLElement) {
+              if (children === undefined && element instanceof HTMLElement) {
                 children = element.querySelectorAll("*");
                 item.children = children;
                 this.addOrRemoveElement("removed", element);
@@ -1031,7 +1031,7 @@ export default class ElementManager {
                 }
               }
 
-              if (children != null && children.length > 0) {
+              if (children !== undefined && children.length > 0) {
                 const startChildIndex = item.childIndex;
                 for (; item.childIndex < children.length; item.childIndex++) {
                   if (
@@ -1057,7 +1057,7 @@ export default class ElementManager {
             item.addedNodeIndex = 0;
             item.removedNodeIndex = 0;
 
-            if (!item.removalsOnly && record.attributeName != null) {
+            if (!item.removalsOnly && record.attributeName !== null) {
               const element = record.target;
               if (element instanceof HTMLElement) {
                 this.addOrRemoveElement("changed", element);
@@ -1115,7 +1115,7 @@ export default class ElementManager {
   ): [Array<VisibleElement | undefined>, number] {
     const startTime = Date.now();
 
-    const isUpdate = passedCandidates != null;
+    const isUpdate = passedCandidates !== undefined;
     const prefix = `ElementManager#getVisibleElements${
       isUpdate ? " (update)" : ""
     }`;
@@ -1143,7 +1143,7 @@ export default class ElementManager {
     this.onIntersection(this.intersectionObserver.takeRecords());
 
     const candidates =
-      passedCandidates != null
+      passedCandidates !== undefined
         ? passedCandidates
         : types === "selectable"
         ? this.getAllElements(document)
@@ -1176,7 +1176,7 @@ export default class ElementManager {
             ? this.getElementTypeSelectable(element)
             : this.elements.get(element);
 
-        if (type == null) {
+        if (type === undefined) {
           return {
             isRejected: true,
             debug: {
@@ -1202,7 +1202,7 @@ export default class ElementManager {
         if (
           type === "label" &&
           element instanceof HTMLLabelElement &&
-          element.control == null
+          element.control === null
         ) {
           return {
             isRejected: true,
@@ -1288,7 +1288,7 @@ export default class ElementManager {
       if (
         // Needed on reddit.com. There's a Google Ads iframe where
         // `contentWindow` is null.
-        element.contentWindow == null
+        element.contentWindow === null
       ) {
         return [];
       }
@@ -1299,7 +1299,7 @@ export default class ElementManager {
       // small. Not sure what they do. But not visiting those saves around ~80ms
       // on my machine.
       if (
-        box == null ||
+        box === undefined ||
         box.width < t.MIN_SIZE_FRAME.value ||
         box.height < t.MIN_SIZE_FRAME.value
       ) {
@@ -1359,7 +1359,7 @@ export default class ElementManager {
         // the below types.
         // Note: For SVG elements, `.contentEditable` is `undefined`.
         if (
-          element.contentEditable != null &&
+          element.contentEditable !== undefined &&
           !t.VALUES_NON_CONTENTEDITABLE.value.has(element.contentEditable)
         ) {
           return "textarea";
@@ -1385,7 +1385,7 @@ export default class ElementManager {
         }
 
         const role = element.getAttribute("role");
-        if (role != null && t.ROLES_CLICKABLE.value.has(role)) {
+        if (role !== null && t.ROLES_CLICKABLE.value.has(role)) {
           return "clickable";
         }
 
@@ -1510,7 +1510,7 @@ class Deduper {
 
     // Exclude `<label>` elements whose associated control has a hint.
     const labels = getLabels(element);
-    if (labels != null) {
+    if (labels !== undefined) {
       for (const label of labels) {
         this.rejected.add(label);
       }
@@ -1519,7 +1519,7 @@ class Deduper {
     const key = hintPositionKey(visibleElement.measurements);
     const elements = this.positionMap.get(key);
 
-    if (elements == null) {
+    if (elements === undefined) {
       this.positionMap.set(key, [visibleElement]);
       return;
     }
@@ -1694,7 +1694,7 @@ function getMeasurements(
   });
 
   time.start("measurements:noNonCoveredPoint");
-  if (nonCoveredPoint == null) {
+  if (nonCoveredPoint === undefined) {
     // Putting a large `<input type="file">` inside a smaller wrapper element
     // with `overflow: hidden;` seems to be a common pattern, used both on
     // addons.mozilla.org and <https://blueimp.github.io/jQuery-File-Upload/>.
@@ -1748,7 +1748,7 @@ function getMeasurements(
   }
 
   time.start("measurements:end");
-  const { x, y } = nonCoveredPoint == null ? hintPoint : nonCoveredPoint;
+  const { x, y } = nonCoveredPoint === undefined ? hintPoint : nonCoveredPoint;
 
   // Where to place the hint and the weight of the element.
   return {
@@ -1831,7 +1831,7 @@ function getSingleRectPoint({
       range,
     });
 
-    if (textPoint != null) {
+    if (textPoint !== undefined) {
       return {
         ...textPoint,
         debug: `getSingleRectPoint textPoint: ${textPoint.debug}`,
@@ -1844,7 +1844,7 @@ function getSingleRectPoint({
   time.start("getSingleRectPoint:imagePoint");
   const imagePoint = getFirstImagePoint(element, viewports);
   if (
-    imagePoint != null &&
+    imagePoint !== undefined &&
     // For images that are taller than the element, allow the point to be
     // outside the rects. It's common to find `p > a > img` where the `<a>` is
     // just a regular inline element with the `<img>` sticking out the top.
@@ -1922,7 +1922,7 @@ function getMultiRectPoint({
     preferTextStart: true,
     range,
   });
-  if (textPoint != null) {
+  if (textPoint !== undefined) {
     return {
       ...textPoint,
       debug: `getMultiRectPoint textPoint: ${textPoint.debug}`,
@@ -1964,7 +1964,7 @@ function getFirstImagePoint(
     const rect = image.getBoundingClientRect();
     const visibleBox = getVisibleBox(rect, viewports);
 
-    if (visibleBox != null) {
+    if (visibleBox !== undefined) {
       const borderAndPaddingPoint = getBorderAndPaddingPoint(
         image as HTMLElement,
         rect,
@@ -2023,7 +2023,7 @@ function getNonCoveredPoint(
   const elementAtPoint = getElementFromPoint(element, x, y);
 
   // (x, y) is off-screen.
-  if (elementAtPoint == null) {
+  if (elementAtPoint === undefined) {
     return undefined;
   }
 
@@ -2040,7 +2040,7 @@ function getNonCoveredPoint(
   const parent =
     element instanceof HTMLElement &&
     elementAtPoint instanceof SVGElement &&
-    elementAtPoint.ownerSVGElement != null
+    elementAtPoint.ownerSVGElement !== null
       ? elementAtPoint.ownerSVGElement
       : elementAtPoint;
   const rect = parent.getBoundingClientRect();
@@ -2077,7 +2077,7 @@ function getNonCoveredPoint(
   if (newX > x && newX <= maxX) {
     const elementAtPoint2 = getElementFromPoint(element, newX, y);
 
-    if (elementAtPoint2 != null && element.contains(elementAtPoint2)) {
+    if (elementAtPoint2 !== undefined && element.contains(elementAtPoint2)) {
       return { x: newX, y };
     }
   }
@@ -2188,7 +2188,7 @@ function getBestNonEmptyTextPoint({
   ) {
     const imagePoint = getFirstImagePoint(element, viewports);
     if (
-      imagePoint != null &&
+      imagePoint !== undefined &&
       // The image is further to the left than the text.
       imagePoint.point.x < leftMostRect.left &&
       // The image is on the same line as the text.

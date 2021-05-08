@@ -110,7 +110,9 @@ function getGitCommit(): string {
     encoding: "utf-8",
   });
 
-  if (result.error != null) {
+  // The type annotation says `.error` is optional, but it seems to be set to
+  // `null` on success.
+  if (result.error !== null && result.error !== undefined) {
     throw result.error;
   }
 

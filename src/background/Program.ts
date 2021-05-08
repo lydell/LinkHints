@@ -369,13 +369,11 @@ export default class BackgroundProgram {
     const info = makeMessageInfo(sender);
 
     const tabStateRaw =
-      info == null ? undefined : this.tabState.get(info.tabId);
+      info === undefined ? undefined : this.tabState.get(info.tabId);
     const tabState =
-      tabStateRaw == null
-        ? makeEmptyTabState(info != null ? info.tabId : undefined)
-        : tabStateRaw;
+      tabStateRaw === undefined ? makeEmptyTabState(info?.tabId) : tabStateRaw;
 
-    if (info != null && tabStateRaw == null) {
+    if (info !== undefined && tabStateRaw === undefined) {
       const { [info.tabId.toString()]: perf = [] } = this.restoredTabsPerf;
       tabState.perf = perf;
       this.tabState.set(info.tabId, tabState);
@@ -383,13 +381,13 @@ export default class BackgroundProgram {
 
     switch (message.type) {
       case "FromWorker":
-        if (info != null) {
+        if (info !== undefined) {
           this.onWorkerMessage(message.message, info, tabState);
         }
         break;
 
       case "FromRenderer":
-        if (info != null) {
+        if (info !== undefined) {
           this.onRendererMessage(message.message, info, tabState);
         }
         break;
@@ -399,7 +397,7 @@ export default class BackgroundProgram {
         break;
 
       case "FromOptions":
-        if (info != null) {
+        if (info !== undefined) {
           this.onOptionsMessage(message.message, info, tabState);
         }
         break;
@@ -408,8 +406,8 @@ export default class BackgroundProgram {
 
   onConnect(port: browser.runtime.Port): void {
     port.onDisconnect.addListener(({ sender }) => {
-      const info = sender == null ? undefined : makeMessageInfo(sender);
-      if (info != null) {
+      const info = sender === undefined ? undefined : makeMessageInfo(sender);
+      if (info !== undefined) {
         // A frame was removed. If in hints mode, hide all hints for elements in
         // that frame.
         this.hideElements(info);
@@ -698,7 +696,7 @@ export default class BackgroundProgram {
 
   handleHintInput(tabId: number, timestamp: number, input: HintInput): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -708,13 +706,13 @@ export default class BackgroundProgram {
     }
 
     // Ignore unknown/non-text keys.
-    if (input.type === "Input" && input.keypress.printableKey == null) {
+    if (input.type === "Input" && input.keypress.printableKey === undefined) {
       return;
     }
 
     const isHintKey =
       (input.type === "Input" &&
-        input.keypress.printableKey != null &&
+        input.keypress.printableKey !== undefined &&
         this.options.values.chars.includes(input.keypress.printableKey)) ||
       (input.type === "Backspace" && hintsState.enteredChars !== "");
 
@@ -762,7 +760,7 @@ export default class BackgroundProgram {
     // happen if your entered text matches two links and then the link you
     // were after is removed.
     const [match, preventOverTyping] =
-      input.type === "Backspace" || actualMatch == null
+      input.type === "Backspace" || actualMatch === undefined
         ? [undefined, false]
         : [actualMatch.elementWithHint, actualMatch.autoActivated];
 
@@ -773,7 +771,7 @@ export default class BackgroundProgram {
 
     const now = Date.now();
     const highlighted =
-      match != null
+      match !== undefined
         ? allElementsWithHints
             .filter((element) => element.hint === match.hint)
             .map((element) => ({ sinceTimestamp: now, element }))
@@ -792,7 +790,7 @@ export default class BackgroundProgram {
     });
 
     const shouldContinue =
-      match == null
+      match === undefined
         ? true
         : this.handleHintMatch({
             tabId,
@@ -828,7 +826,7 @@ export default class BackgroundProgram {
       { tabId }
     );
 
-    if (match != null) {
+    if (match !== undefined) {
       tabState.hintsState = {
         type: "Idle",
         highlighted: hintsState.highlighted,
@@ -863,7 +861,7 @@ export default class BackgroundProgram {
     timestamp: number;
   }): boolean {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return true;
     }
 
@@ -875,7 +873,7 @@ export default class BackgroundProgram {
     const { url } = match;
 
     const mode: HintsMode =
-      url != null && alt && hintsState.mode !== "Select"
+      url !== undefined && alt && hintsState.mode !== "Select"
         ? "ForegroundTab"
         : hintsState.mode;
 
@@ -945,7 +943,7 @@ export default class BackgroundProgram {
       }
 
       case "ManyTab": {
-        if (url == null) {
+        if (url === undefined) {
           log(
             "error",
             "Cannot open background tab (many) due to missing URL",
@@ -1010,7 +1008,7 @@ export default class BackgroundProgram {
       }
 
       case "BackgroundTab":
-        if (url == null) {
+        if (url === undefined) {
           log("error", "Cannot open background tab due to missing URL", match);
           return true;
         }
@@ -1024,7 +1022,7 @@ export default class BackgroundProgram {
         return true;
 
       case "ForegroundTab":
-        if (url == null) {
+        if (url === undefined) {
           log("error", "Cannot open foreground tab due to missing URL", match);
           return true;
         }
@@ -1059,7 +1057,7 @@ export default class BackgroundProgram {
 
   refreshHintsRendering(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1148,7 +1146,7 @@ export default class BackgroundProgram {
 
   maybeStartHinting(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1279,7 +1277,7 @@ export default class BackgroundProgram {
 
   updateElements(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1328,7 +1326,7 @@ export default class BackgroundProgram {
 
   hideElements(info: MessageInfo): void {
     const tabState = this.tabState.get(info.tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1476,7 +1474,7 @@ export default class BackgroundProgram {
         this.sendPopupMessage({
           type: "Init",
           logLevel: log.level,
-          isEnabled: tabState != null,
+          isEnabled: tabState !== undefined,
         });
         break;
       }
@@ -1602,7 +1600,7 @@ export default class BackgroundProgram {
 
       case "RefreshHints": {
         const tabState = this.tabState.get(info.tabId);
-        if (tabState == null) {
+        if (tabState === undefined) {
           return;
         }
 
@@ -1623,7 +1621,7 @@ export default class BackgroundProgram {
 
       case "TogglePeek": {
         const tabState = this.tabState.get(info.tabId);
-        if (tabState == null) {
+        if (tabState === undefined) {
           return;
         }
 
@@ -1686,7 +1684,7 @@ export default class BackgroundProgram {
     mode: HintsMode;
   }): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1738,7 +1736,7 @@ export default class BackgroundProgram {
     sendMessages?: boolean;
   }): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1767,7 +1765,7 @@ export default class BackgroundProgram {
 
   unhighlightHints(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1827,7 +1825,7 @@ export default class BackgroundProgram {
 
   stopPreventOvertyping(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1859,17 +1857,17 @@ export default class BackgroundProgram {
     tabId: number,
     changeInfo: browser.tabs._OnUpdatedChangeInfo
   ): void {
-    if (changeInfo.status != null) {
+    if (changeInfo.status !== undefined) {
       this.updateIcon(tabId);
     }
 
     const tabState = this.tabState.get(tabId);
-    if (tabState != null && changeInfo.status === "loading") {
+    if (tabState !== undefined && changeInfo.status === "loading") {
       tabState.isOptionsPage = false;
       this.updateOptionsPageData();
     }
 
-    if (tabState != null && changeInfo.pinned != null) {
+    if (tabState !== undefined && changeInfo.pinned !== undefined) {
       tabState.isPinned = changeInfo.pinned;
       this.sendWorkerMessage(this.makeWorkerState(tabState), {
         tabId,
@@ -1884,7 +1882,7 @@ export default class BackgroundProgram {
 
   deleteTabState(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1904,7 +1902,7 @@ export default class BackgroundProgram {
     // In Chrome the below check fails for the extension options page, so check
     // for the options page explicitly.
     const tabState = this.tabState.get(tabId);
-    let enabled = tabState != null ? tabState.isOptionsPage : false;
+    let enabled = tabState !== undefined ? tabState.isOptionsPage : false;
 
     // Check if we’re allowed to execute content scripts on this page.
     if (!enabled) {
@@ -1927,7 +1925,7 @@ export default class BackgroundProgram {
 
   updateBadge(tabId: number): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -1947,7 +1945,7 @@ export default class BackgroundProgram {
         const defaultStorageSync = DEFAULT_STORAGE_SYNC;
         if (
           typeof defaultStorageSync === "object" &&
-          defaultStorageSync != null
+          defaultStorageSync !== null
         ) {
           await browser.storage.sync.clear();
           await browser.storage.sync.set(defaultStorageSync);
@@ -2114,7 +2112,7 @@ export default class BackgroundProgram {
     preventOverTyping: boolean;
   }): void {
     const tabState = this.tabState.get(tabId);
-    if (tabState == null) {
+    if (tabState === undefined) {
       return;
     }
 
@@ -2186,7 +2184,7 @@ export default class BackgroundProgram {
     if (!PROD) {
       try {
         const { perf } = await browser.storage.local.get("perf");
-        if (perf != null) {
+        if (perf !== undefined) {
           this.restoredTabsPerf = TabsPerf(perf);
           log(
             "log",
@@ -2218,7 +2216,7 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     isPinned: false,
   };
 
-  if (tabId != null) {
+  if (tabId !== undefined) {
     // This is a really ugly hack. `makeEmptyTabState` is used within
     // `BackgroundProgram#onMessage`. As mentioned over there, that method must
     // _not_ be async. So instead of waiting for `browser.tabs.get` (returning a
@@ -2228,7 +2226,7 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     // writing, no code does that so the hack holds.
     browser.tabs.get(tabId).then(
       (tab) => {
-        if (tab != null) {
+        if (tab !== undefined) {
           tabState.isPinned = tab.pinned;
         }
       },
@@ -2312,7 +2310,7 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   // anyway. Also don’t combine if the elements themselves have click listeners.
   // Some sites use `<a>` as buttons with click listeners but still include an
   // href for some reason.
-  return url != null && !url.includes("#") && !hasClickListener;
+  return url !== undefined && !url.includes("#") && !hasClickListener;
 }
 
 async function runContentScripts(
@@ -2487,9 +2485,9 @@ function combineByHref(
 
   for (const element of elements) {
     const url = getCombiningUrl(mode, element);
-    if (url != null) {
+    if (url !== undefined) {
       const previous = map.get(url);
-      if (previous != null) {
+      if (previous !== undefined) {
         previous.push(element);
       } else {
         map.set(url, [element]);
@@ -2580,7 +2578,7 @@ function updateChars(chars: string, input: HintInput): string {
   switch (input.type) {
     case "Input": {
       const key = input.keypress.printableKey;
-      return key != null ? `${chars}${key}` : chars;
+      return key !== undefined ? `${chars}${key}` : chars;
     }
     case "ActivateHint":
       return chars;
@@ -2671,7 +2669,7 @@ function updateHints({
       (element, index): HintUpdate => {
         const matches = element.hint.startsWith(enteredChars);
         const isHighlighted =
-          (match != null && element.hint === match.hint) ||
+          (match !== undefined && element.hint === match.hint) ||
           element.hint === highlightedHint ||
           highlightedKeys.has(elementKey(element));
 
@@ -2686,7 +2684,7 @@ function updateHints({
               highlighted: isHighlighted,
               hidden: element.hidden || !matches,
             }
-          : matches && (match == null || isHighlighted)
+          : matches && (match === undefined || isHighlighted)
           ? {
               // Update the hint (which can change based on text filtering),
               // which part of the hint has been matched and whether it
@@ -2724,7 +2722,7 @@ function updateHints({
     elementsWithHints,
     allElementsWithHints,
     match:
-      match == null
+      match === undefined
         ? undefined
         : {
             elementWithHint: match,
@@ -2751,7 +2749,7 @@ function mergeElements(
 
     const update = updateMap.get(element.frame.index);
 
-    if (update == null) {
+    if (update === undefined) {
       return { ...element, hidden: true };
     }
 

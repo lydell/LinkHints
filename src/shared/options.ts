@@ -95,7 +95,7 @@ function validateChars(chars: string): string {
   }
 
   const match = /(.)(?=.*\1)/.exec(chars);
-  if (match != null) {
+  if (match !== null) {
     throw new DecoderError({
       message: `Expected chars not to contain duplicate characters, but got ${repr(
         match[1]
@@ -314,7 +314,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
   const options: FlatOptions = {};
 
   function set(parent: string, key: string, value: unknown): void {
-    if (!(typeof options[parent] === "object" && options[parent] != null)) {
+    if (!(typeof options[parent] === "object" && options[parent] !== null)) {
       options[parent] = {};
     }
     if (value !== null) {

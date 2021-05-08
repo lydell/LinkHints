@@ -4,7 +4,7 @@ function macifyKbd() {
   if (/mac|iPhone|iPad|iPod/i.test(window.navigator.platform)) {
     [].forEach.call(document.querySelectorAll("kbd"), function (kbd) {
       var mac = kbd.getAttribute("data-mac");
-      var text = mac != null ? mac : kbd.textContent;
+      var text = mac !== null ? mac : kbd.textContent;
       switch (text) {
         case "Cmd":
           kbd.textContent = "⌘";
@@ -40,7 +40,7 @@ function observeQuickLinks() {
         var a = document.querySelector(
           '[data-quick="' + entry.target.id + '"]'
         );
-        if (a != null) {
+        if (a !== null) {
           a.classList.toggle("is-visible", entry.isIntersecting);
         }
       });
@@ -60,7 +60,7 @@ function autoCloseDetails() {
       target instanceof HTMLElement &&
       (target.nodeName === "SUMMARY" ||
         (target.nodeName === "A" &&
-          target.parentElement != null &&
+          target.parentElement !== null &&
           target.parentElement.classList.contains("Pagination")))
     ) {
       [].forEach.call(document.querySelectorAll("details"), function (details) {

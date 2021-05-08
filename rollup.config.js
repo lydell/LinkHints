@@ -177,7 +177,7 @@ function template(
       {
         name: "template",
         load: (id /*: string */) => {
-          if (content == null) {
+          if (content === undefined) {
             const dir = path.dirname(id);
             for (const key of Object.keys(require.cache)) {
               if (key.startsWith(dir)) {
@@ -254,7 +254,7 @@ function css({ input, output } /*: { input: string, output: string, } */) {
 function makeGlobals() {
   return {
     BROWSER:
-      config.browser == null
+      config.browser === undefined
         ? `(navigator.userAgent.includes("Firefox") ? "firefox" : "chrome")`
         : JSON.stringify(config.browser),
     // Note: BUILD_ID might vary between different files.
@@ -274,7 +274,7 @@ function makeGlobals() {
     META_TUTORIAL: JSON.stringify(config.meta.tutorial),
     META_VERSION: JSON.stringify(config.meta.version),
     PROD: JSON.stringify(PROD),
-    // Performance. Note: These require `x != null` in `x instanceof A`.
+    // Performance. Note: These require `x !== null && x !== undefined` in `x instanceof A`.
     "instanceof Text": ".nodeType === 3",
     "instanceof HTMLAnchorElement": '.nodeName === "A"',
     "instanceof HTMLInputElement": '.nodeName === "INPUT"',

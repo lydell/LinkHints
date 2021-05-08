@@ -74,7 +74,10 @@ export default class KeyboardShortcuts extends Component<Props, State> {
         prevProps.capturedKeypressWithTimestamp
       )
     ) {
-      if (capturedKeypressWithTimestamp == null || addingAction == null) {
+      if (
+        capturedKeypressWithTimestamp === undefined ||
+        addingAction === undefined
+      ) {
         this.setState({ shortcutError: undefined });
         return;
       }
@@ -87,7 +90,8 @@ export default class KeyboardShortcuts extends Component<Props, State> {
         alt: capturedKeypress.alt,
         cmd: capturedKeypress.cmd,
         ctrl: capturedKeypress.ctrl,
-        shift: capturedKeypress.shift == null ? false : capturedKeypress.shift,
+        shift:
+          capturedKeypress.shift === undefined ? false : capturedKeypress.shift,
       };
 
       const confirm = (newShortcutError: {
@@ -144,7 +148,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
       const conflictingMapping = mappings.find((mapping) =>
         deepEqual(mapping.shortcut, shortcut)
       );
-      if (conflictingMapping != null) {
+      if (conflictingMapping !== undefined) {
         if (conflictingMapping.action === addingAction) {
           this.setState({
             addingAction: undefined,
@@ -181,7 +185,7 @@ export default class KeyboardShortcuts extends Component<Props, State> {
       if (
         mac &&
         shortcut.alt &&
-        capturedKeypress.printableKey != null &&
+        capturedKeypress.printableKey !== undefined &&
         !(mode === "Normal" && useKeyTranslations && hasOtherModifier) &&
         !(mode === "Hints" && useKeyTranslations)
       ) {

@@ -123,7 +123,7 @@ function TweakableField({
     label: `${namespace}: ${name}`,
     changed,
     description:
-      error != null ? (
+      error !== undefined ? (
         <div className="Error SpacedVertical">
           <p>
             There was an error with the saved value. Using default instead.{" "}
@@ -262,7 +262,7 @@ function TweakableField({
 
 async function save(key: string, value: unknown): Promise<void> {
   try {
-    if (value == null) {
+    if (value === undefined) {
       await browser.storage.sync.remove(key);
     } else {
       await browser.storage.sync.set({ [key]: value });

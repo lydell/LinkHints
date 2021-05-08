@@ -232,7 +232,7 @@ export function normalizeKeypress({
     shift: keypress.shift,
     keyTranslations,
   });
-  const key = translated != null ? translated : keypress.key;
+  const key = translated !== undefined ? translated : keypress.key;
 
   // Printable and non-printable are handled slightly differently.
   const isChar = key.length === 1;
@@ -243,7 +243,7 @@ export function normalizeKeypress({
 
   // Capslock is handled differently based on whether the key comes from
   // `keyTranslations`.
-  const wasTranslated = translated != null;
+  const wasTranslated = translated !== undefined;
 
   return {
     key: isSpace

@@ -169,7 +169,7 @@ export default (communicator?: {
       // `f = { [name]: function(){} }[name]` is a way of creating a dynamically
       // named function (where `f.name === name`).
       const fn =
-        hook == null
+        hook === undefined
           ? {
               [originalFn.name](...args: Array<any>): any {
                 // In the cases where no hook is provided we just want to make sure
@@ -190,7 +190,7 @@ export default (communicator?: {
                 }
 
                 let prehookData = undefined;
-                if (prehook != null) {
+                if (prehook !== undefined) {
                   try {
                     prehookData = prehook(this, ...wrappedArgs);
                   } catch (errorAny) {
@@ -214,7 +214,8 @@ export default (communicator?: {
                   } catch (errorAny) {
                     const error = errorAny as Error | null | undefined;
                     if (
-                      error != null &&
+                      error !== null &&
+                      error !== undefined &&
                       error.name === "TypeError" &&
                       error.message === "can't access dead object"
                     ) {
@@ -236,7 +237,10 @@ export default (communicator?: {
                     this,
                     ...wrappedArgs
                   );
-                  if (result != null && typeof result.then === "function") {
+                  if (
+                    result !== undefined &&
+                    typeof result.then === "function"
+                  ) {
                     result.then(undefined, (error: Error) => {
                       logHookError(error, obj, name);
                     });
@@ -343,7 +347,7 @@ export default (communicator?: {
     idleCallbackId: IdleCallbackID | undefined = undefined;
 
     reset(): void {
-      if (this.idleCallbackId != null) {
+      if (this.idleCallbackId !== undefined) {
         cancelIdleCallback(this.idleCallbackId);
       }
 
@@ -358,7 +362,7 @@ export default (communicator?: {
       this.requestIdleCallback();
 
       if (numItems === 1 && this.sendQueue.items.length === 0) {
-        if (communicator != null) {
+        if (communicator !== undefined) {
           communicator.onInjectedMessage({ type: "Queue", hasQueue: true });
         } else {
           sendWindowEvent(QUEUE_EVENT, true);
@@ -367,7 +371,7 @@ export default (communicator?: {
     }
 
     requestIdleCallback(): void {
-      if (this.idleCallbackId == null) {
+      if (this.idleCallbackId === undefined) {
         this.idleCallbackId = requestIdleCallback((deadline) => {
           this.idleCallbackId = undefined;
           this.flushQueue(deadline);
@@ -382,7 +386,7 @@ export default (communicator?: {
       const hasQueue =
         this.queue.items.length > 0 || this.sendQueue.items.length > 0;
       if (hadQueue && !hasQueue) {
-        if (communicator != null) {
+        if (communicator !== undefined) {
           communicator.onInjectedMessage({ type: "Queue", hasQueue: false });
         } else {
           sendWindowEvent(QUEUE_EVENT, false);
@@ -486,7 +490,7 @@ export default (communicator?: {
 
         const item = this.sendQueue.items[this.sendQueue.index];
 
-        if (communicator != null) {
+        if (communicator !== undefined) {
           communicator.onInjectedMessage({
             type: "ClickableChanged",
             target: item.element,
@@ -506,7 +510,7 @@ export default (communicator?: {
       const optionsByListener = this.clickListenersByElement.get(element);
 
       // No previous click listeners.
-      if (optionsByListener == null) {
+      if (optionsByListener === undefined) {
         this.clickListenersByElement.set(
           element,
           new Map([[listener, new Set([optionsString])]])
@@ -523,7 +527,7 @@ export default (communicator?: {
       const optionsSet = optionsByListener.get(listener);
 
       // New listener function.
-      if (optionsSet == null) {
+      if (optionsSet === undefined) {
         optionsByListener.set(listener, new Set([optionsString]));
         return false;
       }
@@ -548,7 +552,7 @@ export default (communicator?: {
       const optionsByListener = this.clickListenersByElement.get(element);
 
       // The element has no click listeners.
-      if (optionsByListener == null) {
+      if (optionsByListener === undefined) {
         // If the element was created and given a listener in another frame and
         // then was inserted in another frame, the element might actually have
         // had a listener after all that was now removed. In Chrome this is
@@ -560,7 +564,7 @@ export default (communicator?: {
       const optionsSet = optionsByListener.get(listener);
 
       // The element has click listeners, but not with `listener` as a callback.
-      if (optionsSet == null) {
+      if (optionsSet === undefined) {
         return false;
       }
 
@@ -630,9 +634,9 @@ export default (communicator?: {
 
   function stringifyOptions(eventName: string, options: unknown): string {
     const normalized =
-      options === null || typeof options !== "object"
-        ? { capture: Boolean(options) }
-        : (options as Record<string, unknown>);
+      typeof options === "object" && options !== null
+        ? (options as Record<string, unknown>)
+        : { capture: Boolean(options) };
     const optionsString = optionNames
       .map((name) => Boolean(normalized[name]).toString())
       .join(",");
@@ -664,7 +668,7 @@ export default (communicator?: {
       document.documentElement === null
         ? [document, createElement("html")]
         : [document.documentElement, createElement("head")];
-    if (communicator == null) {
+    if (communicator === undefined) {
       apply(appendChild, root, [secretElement]);
       apply(dispatchEvent, secretElement, [
         new CustomEvent2(REGISTER_SECRET_ELEMENT_EVENT),
@@ -775,7 +779,7 @@ export default (communicator?: {
         element instanceof HTMLElement2 &&
         (typeof listener === "function" ||
           (typeof listener === "object" &&
-            listener != null &&
+            listener !== null &&
             typeof (listener as EventListenerObject).handleEvent ===
               "function"))
       )
@@ -787,7 +791,7 @@ export default (communicator?: {
     // removal of the listener when it has triggered.
     if (
       typeof options === "object" &&
-      options != null &&
+      options !== null &&
       Boolean((options as AddEventListenerOptions).once)
     ) {
       apply(addEventListener, element, [
@@ -822,7 +826,7 @@ export default (communicator?: {
         element instanceof HTMLElement2 &&
         (typeof listener === "function" ||
           (typeof listener === "object" &&
-            listener != null &&
+            listener !== null &&
             typeof (listener as EventListenerObject).handleEvent ===
               "function"))
       )
@@ -857,7 +861,7 @@ export default (communicator?: {
   }: {
     prehookData: QueueItem | undefined;
   }): void {
-    if (prehookData != null) {
+    if (prehookData !== undefined) {
       clickListenerTracker.queueItem(prehookData);
     }
   }
@@ -867,7 +871,7 @@ export default (communicator?: {
   }: {
     returnValue: ShadowRoot;
   }): void {
-    if (communicator != null) {
+    if (communicator !== undefined) {
       communicator.onInjectedMessage({
         type: "ShadowRootCreated",
         shadowRoot,
@@ -918,7 +922,7 @@ export default (communicator?: {
     }
 
     // ElementManager removes listeners itself on reset.
-    if (communicator == null) {
+    if (communicator === undefined) {
       document.removeEventListener(FLUSH_EVENT, onFlush, true);
       document.removeEventListener(RESET_EVENT, onReset, true);
     }

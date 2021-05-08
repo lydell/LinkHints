@@ -22,7 +22,7 @@ export default ({
         ))}
       </head>
       <body>
-        {polyfill != null && <script src={polyfill} />}
+        {polyfill !== undefined && <script src={polyfill} />}
         {js.map((src) => (
           <script key={src} src={src} />
         ))}

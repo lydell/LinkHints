@@ -26,12 +26,12 @@ export default function TextInput({
   }): VNode {
   // `as "input"` is there because I could not figure out how to make `onInput` type-check otherwise.
   const Tag = textarea ? ("textarea" as "input") : "input";
-  const readonly = saveProp == null;
+  const readonly = saveProp === undefined;
 
   const [focused, setFocused] = useState<boolean>(false);
   const [stateValue, setStateValue] = useState<string | undefined>(undefined);
 
-  const value = stateValue != null ? stateValue : savedValue;
+  const value = stateValue !== undefined ? stateValue : savedValue;
 
   const saveRef = useRef<
     ((text: string, reason: Reason) => void) | undefined
@@ -47,7 +47,7 @@ export default function TextInput({
 
   function storeSelection(): void {
     const element = rootRef.current;
-    if (element != null) {
+    if (element !== null) {
       selectionStartRef.current = element.selectionStart;
       selectionEndRef.current = element.selectionEnd;
     }
@@ -55,7 +55,7 @@ export default function TextInput({
 
   function restoreSelection(): void {
     const element = rootRef.current;
-    if (element != null) {
+    if (element !== null) {
       element.selectionStart = selectionStartRef.current;
       element.selectionEnd = selectionEndRef.current;
     }
@@ -84,7 +84,7 @@ export default function TextInput({
       focused && !readonly
         ? timeout(SAVE_TIMEOUT, () => {
             const save = saveRef.current;
-            if (save != null) {
+            if (save !== undefined) {
               const normalizedValue = normalizeRef.current(value);
               if (normalizedValue !== savedValue) {
                 save(normalizedValue, "input");
@@ -114,7 +114,7 @@ export default function TextInput({
       }}
       onKeyDown={(event: KeyboardEvent) => {
         storeSelection();
-        if (onKeyDown != null) {
+        if (onKeyDown !== undefined) {
           onKeyDown(event);
         }
       }}
@@ -132,7 +132,7 @@ export default function TextInput({
 
         // Save on blur.
         const normalizedValue = normalize(value);
-        if (normalizedValue !== savedValue && saveProp != null) {
+        if (normalizedValue !== savedValue && saveProp !== undefined) {
           saveProp(normalizedValue, "blur");
         }
       }}

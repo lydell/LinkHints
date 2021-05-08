@@ -4,7 +4,7 @@ import OptionsProgram from "./Program";
 
 function start(): void {
   const { body } = document;
-  if (body == null) {
+  if (body === undefined) {
     return;
   }
 

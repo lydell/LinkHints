@@ -248,7 +248,7 @@ function durationsToRows(
     heading: label,
     values: allDurations.map((durations) => {
       const match = durations.find(([label2]) => label2 === label);
-      return match != null ? formatDuration(match[1]) : "-";
+      return match !== undefined ? formatDuration(match[1]) : "-";
     }),
   }));
 }
@@ -266,7 +266,7 @@ function statsToRows(
   return Array.from(urls, (url) => {
     const allData = allStats.map((stats) => {
       const match = stats.find(({ url: url2 }) => url2 === url);
-      return match != null
+      return match !== undefined
         ? {
             numTotalElements: match.numTotalElements.toString(),
             numTrackedElements: match.numTrackedElements.toString(),

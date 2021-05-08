@@ -125,7 +125,7 @@ export function bind(
           if (shouldCatch) {
             try {
               const result = method.apply(object, args);
-              if (result != null && typeof result.then === "function") {
+              if (result !== undefined && typeof result.then === "function") {
                 result.then(undefined, (error) => {
                   log("error", prefix, error, ...args);
                 });
@@ -167,7 +167,7 @@ export function addListener<Listener, Options>(
   listener: Listener,
   options?: Options
 ): () => void {
-  if (options == null) {
+  if (options === undefined) {
     target.addListener(listener);
   } else {
     target.addListener(listener, options);
@@ -345,7 +345,7 @@ function shouldSkipElementText(element: HTMLElement): boolean {
     // Shadow hosts _can_ have text that is never displayed. Ideally we should
     // catch closed shadow roots as well, but it’s unclear if it’s worth the
     // trouble.
-    element.shadowRoot != null
+    element.shadowRoot !== null
   );
 }
 
@@ -386,7 +386,7 @@ export function extractText(element: HTMLElement): string {
   }
   const onlyChild =
     element.childNodes.length === 1 ? element.childNodes[0] : undefined;
-  return onlyChild != null && onlyChild instanceof Text
+  return onlyChild !== undefined && onlyChild instanceof Text
     ? onlyChild.data
     : // This line is sufficient by itself. The above is just a performance
       // optimization for a common case (a single text node child).
@@ -449,7 +449,7 @@ export function getTextRects({
     const rects = range.getClientRects();
     return Array.from(rects, (rect) => {
       const box = getVisibleBox(rect, viewports);
-      if (box == null) {
+      if (box === undefined) {
         return [];
       }
       if (!checkElementAtPoint) {
@@ -460,7 +460,7 @@ export function getTextRects({
         Math.round(box.x + box.width / 2 - offsetX),
         Math.round(box.y + box.height / 2 - offsetY)
       );
-      return elementAtPoint != null && element.contains(elementAtPoint)
+      return elementAtPoint !== undefined && element.contains(elementAtPoint)
         ? box
         : [];
     }).flat();
@@ -546,9 +546,9 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 
   if (
     typeof a === "object" &&
-    a != null &&
+    a !== null &&
     typeof b === "object" &&
-    b != null
+    b !== null
   ) {
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);

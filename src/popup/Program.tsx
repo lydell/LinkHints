@@ -72,7 +72,7 @@ export default class PopupProgram {
   render({ isEnabled }: { isEnabled: boolean }): void {
     const previous = document.getElementById(CONTAINER_ID);
 
-    if (previous != null) {
+    if (previous !== null) {
       previous.remove();
     }
 
@@ -80,7 +80,7 @@ export default class PopupProgram {
 
     function showError(error: Error | undefined): void {
       errorElement.textContent =
-        error != null ? error.message : "An unknown error ocurred.";
+        error !== undefined ? error.message : "An unknown error ocurred.";
     }
 
     const container = (
@@ -139,9 +139,7 @@ export default class PopupProgram {
       </div>
     );
 
-    if (document.body != null) {
-      document.body.append(container);
-    }
+    document.body.append(container);
   }
 }
 
@@ -162,14 +160,17 @@ async function getDebugInfo(): Promise<string> {
   ] = await Promise.all([
     typeof browser.runtime.getBrowserInfo === "function"
       ? browser.runtime.getBrowserInfo()
-      : null,
+      : undefined,
     browser.runtime.getPlatformInfo(),
     browser.storage.sync.get(),
     browser.storage.local.get(),
-    navigator.keyboard != null ? navigator.keyboard.getLayoutMap() : null,
+    navigator.keyboard !== undefined
+      ? navigator.keyboard.getLayoutMap()
+      : undefined,
   ]);
 
-  const layout = layoutMap != null ? Object.fromEntries(layoutMap) : null;
+  const layout =
+    layoutMap !== undefined ? Object.fromEntries(layoutMap) : undefined;
 
   const info = JSON.stringify(
     {

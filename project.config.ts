@@ -46,11 +46,11 @@ export default {
     webExtBaseName: `link_hints-${VERSION}`,
     geckoId: "linkhints@lydell.github.io",
   },
-  prod: currentBrowser != null,
+  prod: currentBrowser !== undefined,
   browser: currentBrowser,
   src: "src",
   compiled: "compiled",
-  dist: currentBrowser == null ? "dist" : `dist-${currentBrowser}`,
+  dist: currentBrowser === undefined ? "dist" : `dist-${currentBrowser}`,
   webextIgnoreFiles: [
     "icons/*.!(svg)",
     ...browserSpecificIgnores(currentBrowser),
@@ -107,7 +107,7 @@ export default {
   docs: {
     src: "docs",
     compiled: "compiled-docs",
-    root: currentBrowser == null ? "." : "/LinkHints",
+    root: currentBrowser === undefined ? "." : "/LinkHints",
     icons: {
       keycap: "keycap.svg",
       icon: "icon.svg",

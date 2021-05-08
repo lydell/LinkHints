@@ -7,28 +7,28 @@ export function h(
 ): HTMLElement {
   const element = document.createElement(tag);
 
-  if (props != null) {
+  if (props !== null && props !== undefined) {
     const { className, onClick, ...rest } = props;
 
-    if (className != null) {
+    if (className !== undefined) {
       element.className = className;
     }
 
-    if (onClick != null) {
+    if (onClick !== undefined) {
       // @ts-expect-error This must be a function. Difficult to type.
       element.onclick = onClick;
     }
 
     for (const key of Object.keys(rest)) {
       const value = rest[key];
-      if (value != null) {
+      if (value !== undefined) {
         element.setAttribute(key, value);
       }
     }
   }
 
   for (const child of children) {
-    if (child != null && typeof child !== "boolean") {
+    if (child !== null && child !== undefined && typeof child !== "boolean") {
       element.append(
         typeof child === "string" ? document.createTextNode(child) : child
       );
