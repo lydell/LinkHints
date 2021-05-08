@@ -2694,7 +2694,7 @@ function updateHints({
               matchedChars: enteredChars,
               restChars: element.hint.slice(enteredChars.length),
               highlighted: isHighlighted,
-              hidden: element.hidden || !matches,
+              hidden: element.hidden,
             }
           : {
               // Hide hints that don’t match the entered hint chars.
