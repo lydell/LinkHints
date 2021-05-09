@@ -511,10 +511,8 @@ export default class WorkerProgram {
   // (at least for now) the extension shortcuts always do their thing (making it
   // impossible to trigger a site shortcut using the same keys).
   onKeydown(event: KeyboardEvent): void {
-    const prefix = "WorkerProgram#onKeydown";
-
     if (!event.isTrusted) {
-      log("log", prefix, "ignoring untrusted event", event);
+      log("log", "WorkerProgram#onKeydown", "ignoring untrusted event", event);
       return;
     }
 
@@ -577,7 +575,7 @@ export default class WorkerProgram {
         key: event.key,
         code: event.code,
       };
-      log("log", prefix, "suppressing event", {
+      log("log", "WorkerProgram#onKeydown", "suppressing event", {
         key: event.key,
         code: event.code,
         event,
@@ -619,17 +617,15 @@ export default class WorkerProgram {
   }
 
   onKeyup(event: KeyboardEvent): void {
-    const prefix = "WorkerProgram#onKeyup";
-
     if (!event.isTrusted) {
-      log("log", prefix, "ignoring untrusted event", event);
+      log("log", "WorkerProgram#onKeyup", "ignoring untrusted event", event);
       return;
     }
 
     if (this.suppressNextKeyup !== undefined) {
       const { key, code } = this.suppressNextKeyup;
       if (event.key === key && event.code === code) {
-        log("log", prefix, "suppressing event", {
+        log("log", "WorkerProgram#onKeyup", "suppressing event", {
           event,
           keyboardMode: this.keyboardMode,
           suppressNextKeyup: this.suppressNextKeyup,

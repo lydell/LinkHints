@@ -1402,19 +1402,17 @@ export default class BackgroundProgram {
       return;
     }
 
-    const prefix = "BackgroundProgram#hideElements";
-
     if (info.frameId === TOP_FRAME_ID) {
       log(
         "log",
-        prefix,
+        "BackgroundProgram#hideElements",
         "Skipping because this should not happen for the top frame.",
         info
       );
       return;
     }
 
-    log("log", prefix, info);
+    log("log", "BackgroundProgram#hideElements", info);
 
     for (const element of hintsState.elementsWithHints) {
       if (element.frame.id === info.frameId) {
