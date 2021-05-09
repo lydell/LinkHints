@@ -393,9 +393,12 @@ export default class WorkerProgram {
             : // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
               normalizeWhitespace(extractText(element)) || element.outerHTML;
 
-        navigator.clipboard.writeText(text).catch((error) => {
-          log("error", "CopyElement: Failed to copy", message, text, error);
-        });
+        fireAndForget(
+          navigator.clipboard.writeText(text),
+          "WorkerProgram#onMessage->CopyElement->clipboard.writeText",
+          message,
+          text
+        );
 
         flashElement(element);
 

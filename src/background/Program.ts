@@ -1484,24 +1484,19 @@ export default class BackgroundProgram {
         // In Chrome, 255 ids have the same specificity as >=256 (for Firefox,
         // it’s 1023). One can increase the specificity even more by adding
         // classes, but I don’t think it’s worth the trouble.
-        browser.tabs
-          .insertCSS(info.tabId, {
+        fireAndForget(
+          browser.tabs.insertCSS(info.tabId, {
             code: `${`#${CONTAINER_ID}`.repeat(
               255
             )} { display: block !important; }`,
             cssOrigin: "user",
             runAt: "document_start",
-          })
-          .catch((error) => {
-            log(
-              "error",
-              "BackgroundProgram#onRendererMessage",
-              "Failed to insert adblock workaround CSS",
-              error,
-              info,
-              message
-            );
-          });
+          }),
+          "BackgroundProgram#onRendererMessage",
+          "Failed to insert adblock workaround CSS",
+          message,
+          info
+        );
         break;
 
       case "Rendered": {
