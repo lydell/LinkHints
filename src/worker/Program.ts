@@ -1424,11 +1424,11 @@ function firefoxPopupBlockerWorkaround({
 
     const override = (
       method: "preventDefault" | "stopImmediatePropagation",
-      fn: (original: AnyFunction) => AnyFunction
+      fn: (original: () => void) => () => void
     ): (() => void) => {
       const { prototype } = wrappedJSObject.Event;
       const original = prototype[method];
-      exportFunction(fn(original as AnyFunction), prototype, {
+      exportFunction(fn(original), prototype, {
         defineAs: method,
       });
       return () => {
@@ -1537,10 +1537,11 @@ function firefoxPopupBlockerWorkaround({
       override(
         "stopImmediatePropagation",
         (originalStopImmediatePropagation) =>
-          function stopImmediatePropagation(this: Event): unknown {
+          function stopImmediatePropagation(this: Event): void {
             // We’re already done – just skip remaining listeners.
             if (defaultPrevented !== "NotPrevented") {
-              return originalStopImmediatePropagation.call(this);
+              originalStopImmediatePropagation.call(this);
+              return;
             }
 
             log("log", prefix, "page stopImmediatePropagation", this);
@@ -1550,7 +1551,8 @@ function firefoxPopupBlockerWorkaround({
             if (this.defaultPrevented) {
               log("log", prefix, "page preventDefault", this);
               onPagePreventDefault();
-              return originalStopImmediatePropagation.call(this);
+              originalStopImmediatePropagation.call(this);
+              return;
             }
 
             // Otherwise, this is the last chance to prevent default, to make
@@ -1572,7 +1574,7 @@ function firefoxPopupBlockerWorkaround({
               override(
                 "preventDefault",
                 (originalPreventDefault) =>
-                  function preventDefault(this: Event): unknown {
+                  function preventDefault(this: Event): void {
                     log(
                       "log",
                       prefix,
@@ -1580,12 +1582,12 @@ function firefoxPopupBlockerWorkaround({
                       this
                     );
                     onPagePreventDefault();
-                    return originalPreventDefault.call(this);
+                    originalPreventDefault.call(this);
                   }
               )
             );
 
-            return originalStopImmediatePropagation.call(this);
+            originalStopImmediatePropagation.call(this);
           }
       )
     );

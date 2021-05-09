@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare type AnyFunction = (...args: Array<any>) => any;
 
 declare type Browser = "chrome" | "firefox";
 
@@ -26,11 +24,11 @@ declare const META_VERSION: string;
 
 declare const PROD: boolean;
 
-declare function exportFunction(
-  fn: AnyFunction,
+declare function exportFunction<T, F extends (...args: Array<never>) => T>(
+  fn: F,
   obj: unknown,
   options?: { defineAs: string }
-): AnyFunction;
+): F;
 
 declare function XPCNativeWrapper<T>(x: T): T;
 

@@ -114,6 +114,8 @@ export default (communicator?: {
     consoleLogError(`[${META_SLUG}]`, ...args);
   }
 
+  type AnyFunction = (...args: Array<never>) => void;
+
   type Deadline = { timeRemaining: () => number };
 
   const infiniteDeadline: Deadline = {

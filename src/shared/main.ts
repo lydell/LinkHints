@@ -64,7 +64,7 @@ function formatDate(date: Date): string {
 }
 
 /* eslint-disable no-console */
-function getLogMethod(level: LogLevel): AnyFunction {
+function getLogMethod(level: LogLevel): typeof console.log {
   switch (level) {
     case "error":
       return console.error;
