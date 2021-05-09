@@ -377,7 +377,7 @@ export default class OptionsProgram extends Component<Props, State> {
     };
 
     saveFile(
-      JSON.stringify(data, undefined, 2),
+      `${JSON.stringify(data, undefined, 2)}\n`,
       `${META_SLUG}-options-${toISODateString(new Date())}.json`,
       "application/json"
     );
