@@ -1,12 +1,3 @@
-/* eslint-disable
-@typescript-eslint/no-explicit-any,
-@typescript-eslint/no-unsafe-argument,
-@typescript-eslint/no-unsafe-assignment,
-@typescript-eslint/no-unsafe-call,
-@typescript-eslint/no-unsafe-member-access,
-@typescript-eslint/no-unsafe-return,
-*/
-
 import { makeRandomToken } from "../shared/main";
 
 // This file is injected as a regular script in all pages and overrides
@@ -152,15 +143,17 @@ export default (communicator?: {
     //
     // `hook` is run _after_ the original function. If you need to do something
     // _before_ the original function is called, use a `prehook`.
-    hookInto<T>(
-      obj: any,
+    hookInto<T, U>(
+      passedObj: unknown,
       name: string,
       hook?: (
-        data: { returnValue: any; prehookData: T | undefined },
-        ...args: Array<any>
-      ) => any,
-      prehook?: (...args: Array<any>) => T | undefined
+        data: { returnValue: U; prehookData: T | undefined },
+        thisArg: unknown,
+        ...args: Array<never>
+      ) => unknown,
+      prehook?: (thisArg: unknown, ...args: Array<never>) => T | undefined
     ): void {
+      const obj = passedObj as Record<string, unknown>;
       const descriptor = Reflect.getOwnPropertyDescriptor(
         obj,
         name
@@ -175,7 +168,7 @@ export default (communicator?: {
       const fn =
         hook === undefined
           ? {
-              [originalFn.name](...args: Array<any>): any {
+              [originalFn.name](...args: Array<never>): unknown {
                 // In the cases where no hook is provided we just want to make sure
                 // that the method (such as `toString`) is called with the
                 // _original_ function, not the overriding function.
@@ -187,7 +180,7 @@ export default (communicator?: {
               },
             }[originalFn.name]
           : {
-              [originalFn.name](...args: Array<any>): any {
+              [originalFn.name](...args: Array<never>): unknown {
                 let wrappedArgs = args;
                 if (BROWSER === "firefox") {
                   wrappedArgs = args.map((arg) => XPCNativeWrapper(arg));
@@ -214,7 +207,7 @@ export default (communicator?: {
                   try {
                     returnValue = XPCNativeWrapper(
                       apply(originalFn, this, args)
-                    );
+                    ) as U;
                   } catch (errorAny) {
                     const error = errorAny as Error | null | undefined;
                     if (
@@ -228,7 +221,7 @@ export default (communicator?: {
                     throw error as Error;
                   }
                 } else {
-                  returnValue = apply(originalFn, this, args);
+                  returnValue = apply(originalFn, this, args) as U;
                 }
 
                 // In case there's a mistake in `hook` it shouldn't cause the entire
@@ -242,14 +235,20 @@ export default (communicator?: {
                     ...wrappedArgs
                   );
                   if (
-                    result !== undefined &&
-                    typeof result.then === "function"
+                    typeof result === "object" &&
+                    result !== null &&
+                    typeof (result as Record<string, unknown>).then ===
+                      "function"
                   ) {
-                    result.then(undefined, (error: Error) => {
-                      logHookError(error, obj, name);
-                    });
+                    (result as PromiseLike<unknown>).then(
+                      undefined,
+                      (error: Error) => {
+                        logHookError(error, obj, name);
+                      }
+                    );
                   }
-                } catch (error) {
+                } catch (errorAny) {
+                  const error = errorAny as Error;
                   logHookError(error, obj, name);
                 }
 
@@ -260,7 +259,7 @@ export default (communicator?: {
       // Make sure that `.length` is correct. This has to be done _after_
       // `exportFunction`.
       const setLength = (target: unknown): void => {
-        Reflect.defineProperty(target as any, "length", {
+        Reflect.defineProperty(target as Record<string, unknown>, "length", {
           ...Reflect.getOwnPropertyDescriptor(Function.prototype, "length"),
           value: originalFn.length,
         });
@@ -307,11 +306,10 @@ export default (communicator?: {
     }
   }
 
-  function logHookError(error: Error, obj: any, name: string): void {
+  function logHookError(error: Error, obj: unknown, name: string): void {
     logError(`Failed to run hook for ${name} on`, obj, error);
   }
 
-  type ClickListenersByElement = Map<HTMLElement, OptionsByListener>;
   type OptionsByListener = Map<unknown, OptionsSet>;
   type OptionsSet = Set<string>;
 
@@ -342,7 +340,7 @@ export default (communicator?: {
   };
 
   class ClickListenerTracker {
-    clickListenersByElement: ClickListenersByElement = new Map();
+    clickListenersByElement = new Map<HTMLElement, OptionsByListener>();
 
     queue: Queue<QueueItem> = makeEmptyQueue();
 
@@ -355,7 +353,7 @@ export default (communicator?: {
         cancelIdleCallback(this.idleCallbackId);
       }
 
-      this.clickListenersByElement = new Map();
+      this.clickListenersByElement = new Map<HTMLElement, OptionsByListener>();
       this.queue = makeEmptyQueue();
       this.sendQueue = makeEmptyQueue();
       this.idleCallbackId = undefined;
@@ -653,7 +651,7 @@ export default (communicator?: {
     );
   }
 
-  function sendWindowEvent(eventName: string, detail: any): void {
+  function sendWindowEvent(eventName: string, detail: unknown): void {
     apply(dispatchEvent, window, [new CustomEvent2(eventName, { detail })]);
   }
 
@@ -690,7 +688,7 @@ export default (communicator?: {
   function sendElementEvent(
     eventName: string,
     element: Element,
-    detail: any = undefined,
+    detail: unknown = undefined,
     root: OpenComposedRootNode = getOpenComposedRootNode(element)
   ): void {
     const send = (): void => {
@@ -754,7 +752,9 @@ export default (communicator?: {
     | { type: "Element"; element: Element };
 
   function getOpenComposedRootNode(element: Element): OpenComposedRootNode {
-    const root = apply(getRootNode, element, []);
+    const root = apply(getRootNode, element, []) as ReturnType<
+      typeof getRootNode
+    >;
     return root === element
       ? { type: "Element", element }
       : root instanceof ShadowRoot2
