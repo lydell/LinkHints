@@ -93,7 +93,6 @@ export function tweakable(
   namespace: string,
   mapping: TweakableMapping
 ): TweakableMeta {
-  const prefix = "tweakable";
   const keyPrefix = `${DEBUG_PREFIX}${namespace}.`;
   const defaults = { ...mapping };
   const changed: Record<string, boolean> = {};
@@ -196,7 +195,7 @@ export function tweakable(
       update(data);
     })
     .catch((error: Error) => {
-      log("error", prefix, "First load failed.", {
+      log("error", "tweakable", "First load failed.", {
         namespace,
         mapping,
         error,
@@ -220,7 +219,8 @@ export function tweakable(
         );
         update(data);
       }
-    }
+    },
+    "tweakable storage.onChanged listener"
   );
 
   return {

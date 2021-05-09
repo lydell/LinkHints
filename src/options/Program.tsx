@@ -29,10 +29,10 @@ import {
 import {
   addEventListener,
   addListener,
-  bind,
   classlist,
   decode,
   deepEqual,
+  fireAndForget,
   log,
   LOG_LEVELS,
   LogLevel,
@@ -170,27 +170,26 @@ export default class OptionsProgram extends Component<Props, State> {
     localStorageCleared: undefined,
   };
 
-  constructor(props: Props) {
-    super(props);
-
-    bind(this, [
-      [this.onMessage, { catch: true }],
-      [this.onScroll, { catch: true }],
-      [this.resetLocalStorage, { catch: true }],
-      [this.restorePosition, { catch: true }],
-      [this.savePerf, { catch: true }],
-      [this.savePosition, { catch: true }],
-      [this.sendMessage, { catch: true }],
-      [this.start, { log: true, catch: true }],
-      [this.stop, { log: true, catch: true }],
-    ]);
-  }
-
   start(): void {
-    this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+    log("log", "OptionsProgram#start");
+
+    this.resets.add(
+      addListener(
+        browser.runtime.onMessage,
+        this.onMessage.bind(this),
+        "OptionsProgram#onMessage"
+      )
+    );
 
     if (!PROD) {
-      this.resets.add(addEventListener(window, "scroll", this.onScroll));
+      this.resets.add(
+        addEventListener(
+          window,
+          "scroll",
+          this.onScroll.bind(this),
+          "OptionsProgram#onScroll"
+        )
+      );
     }
 
     document.documentElement.classList.add(BROWSER);
@@ -199,6 +198,7 @@ export default class OptionsProgram extends Component<Props, State> {
   }
 
   stop(): void {
+    log("log", "OptionsProgram#stop");
     this.resets.reset();
   }
 
@@ -210,9 +210,13 @@ export default class OptionsProgram extends Component<Props, State> {
     this.stop();
   }
 
-  async sendMessage(message: FromOptions): Promise<void> {
+  sendMessage(message: FromOptions): void {
     log("log", "OptionsProgram#sendMessage", message.type, message, this);
-    await browser.runtime.sendMessage(wrapMessage(message));
+    fireAndForget(
+      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
+      "OptionsProgram#sendMessage",
+      message
+    );
   }
 
   onMessage(wrappedMessage: FromBackground): void {
@@ -268,7 +272,10 @@ export default class OptionsProgram extends Component<Props, State> {
             },
           }),
           () => {
-            this.savePerf();
+            fireAndForget(
+              this.savePerf(),
+              "OptionsProgram#onMessage->savePerf"
+            );
           }
         );
         break;
@@ -874,7 +881,10 @@ export default class OptionsProgram extends Component<Props, State> {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        this.detectKeyboard();
+                                        fireAndForget(
+                                          this.detectKeyboard(),
+                                          "OptionsProgram#render->detectKeyboard"
+                                        );
                                       }}
                                     >
                                       Detect keyboard layout
@@ -1244,7 +1254,10 @@ export default class OptionsProgram extends Component<Props, State> {
                           <button
                             type="button"
                             onClick={() => {
-                              this.resetLocalStorage();
+                              fireAndForget(
+                                this.resetLocalStorage(),
+                                "OptionsProgram#render->resetLocalStorage"
+                              );
                             }}
                           >
                             Clear
@@ -1404,7 +1417,10 @@ export default class OptionsProgram extends Component<Props, State> {
                         )}
                         onOpenChange={(open) => {
                           if (open) {
-                            this.importOptions();
+                            fireAndForget(
+                              this.importOptions(),
+                              "OptionsProgram#render->importOptions"
+                            );
                           } else {
                             this.setState({
                               importData: {
@@ -1508,22 +1524,28 @@ export default class OptionsProgram extends Component<Props, State> {
     );
   }
 
-  async onScroll(): Promise<void> {
+  onScroll(): void {
     if (!PROD) {
       if (this.hasRestoredPosition) {
-        await browser.storage.local.set({ scrollY: window.scrollY });
+        fireAndForget(
+          browser.storage.local.set({ scrollY: window.scrollY }),
+          "OptionsProgram#onScroll->storage.local.set"
+        );
       }
     }
   }
 
-  async savePosition(): Promise<void> {
+  savePosition(): void {
     if (!PROD) {
       const { expandedPerfTabIds, expandedPerf, expandedDebug } = this.state;
-      await browser.storage.local.set({
-        expandedPerfTabIds,
-        expandedPerf,
-        expandedDebug,
-      });
+      fireAndForget(
+        browser.storage.local.set({
+          expandedPerfTabIds,
+          expandedPerf,
+          expandedDebug,
+        }),
+        "OptionsProgram#savePosition->storage.local.set"
+      );
     }
   }
 

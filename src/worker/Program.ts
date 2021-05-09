@@ -15,11 +15,11 @@ import {
 import {
   addEventListener,
   addListener,
-  bind,
   Box,
   CONTAINER_ID,
   decode,
   extractText,
+  fireAndForget,
   getLabels,
   getTextRects,
   getViewport,
@@ -82,29 +82,45 @@ export default class WorkerProgram {
     onMutation: this.onMutation.bind(this),
   });
 
-  constructor() {
-    bind(this, [
-      [this.onKeydown, { catch: true }],
-      [this.onKeyup, { catch: true }],
-      [this.onMessage, { catch: true }],
-      [this.onWindowMessage, { catch: true }],
-      [this.onPageHide, { catch: true }],
-      [this.onPageShow, { catch: true }],
-      [this.reportVisibleElements, { catch: true }],
-      [this.sendMessage, { catch: true }],
-      [this.start, { catch: true }],
-      [this.stop, { log: true, catch: true }],
-    ]);
-  }
-
   async start(): Promise<void> {
     this.resets.add(
-      addListener(browser.runtime.onMessage, this.onMessage),
-      addEventListener(window, "keydown", this.onKeydown, { passive: false }),
-      addEventListener(window, "keyup", this.onKeyup, { passive: false }),
-      addEventListener(window, "message", this.onWindowMessage),
-      addEventListener(window, "pagehide", this.onPageHide),
-      addEventListener(window, "pageshow", this.onPageShow)
+      addListener(
+        browser.runtime.onMessage,
+        this.onMessage.bind(this),
+        "WorkerProgram#onMessage"
+      ),
+      addEventListener(
+        window,
+        "keydown",
+        this.onKeydown.bind(this),
+        "WorkerProgram#onKeydown",
+        { passive: false }
+      ),
+      addEventListener(
+        window,
+        "keyup",
+        this.onKeyup.bind(this),
+        "WorkerProgram#onKeyup",
+        { passive: false }
+      ),
+      addEventListener(
+        window,
+        "message",
+        this.onWindowMessage.bind(this),
+        "WorkerProgram#onWindowMessage"
+      ),
+      addEventListener(
+        window,
+        "pagehide",
+        this.onPageHide.bind(this),
+        "WorkerProgram#onPageHide"
+      ),
+      addEventListener(
+        window,
+        "pageshow",
+        this.onPageShow.bind(this),
+        "WorkerProgram#onPageShow"
+      )
     );
     await this.elementManager.start();
 
@@ -124,15 +140,20 @@ export default class WorkerProgram {
   }
 
   stop(): void {
+    log("log", "WorkerProgram#stop");
     this.resets.reset();
     this.elementManager.stop();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
   }
 
-  async sendMessage(message: FromWorker): Promise<void> {
+  sendMessage(message: FromWorker): void {
     log("log", "WorkerProgram#sendMessage", message.type, message, this);
-    await browser.runtime.sendMessage(wrapMessage(message));
+    fireAndForget(
+      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
+      "WorkerProgram#sendMessage",
+      message
+    );
   }
 
   onMessage(wrappedMessage: FromBackground): void {
@@ -822,7 +843,11 @@ export default class WorkerProgram {
     if (element instanceof HTMLMediaElement) {
       element.focus();
       if (element.paused) {
-        element.play();
+        fireAndForget(
+          element.play(),
+          "WorkerProgram#clickElement->play",
+          element
+        );
       } else {
         element.pause();
       }
@@ -1495,6 +1520,7 @@ function firefoxPopupBlockerWorkaround({
                 defaultPrevented = "ByUs";
               }
             },
+            "firefoxPopupBlockerWorkaround click listener",
             { capture, passive: false }
           )
         );
@@ -1570,6 +1596,7 @@ function firefoxPopupBlockerWorkaround({
   // Temporarily override `window.open`. (If the page has overridden
   // `window.open` to something completely different, this breaks down a little.
   // Hopefully that’s rare.)
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const originalOpen = wrappedJSObject.open;
   exportFunction(
     function open(

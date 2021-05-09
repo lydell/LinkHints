@@ -81,99 +81,67 @@ function getLogMethod(level: LogLevel): AnyFunction {
 }
 /* eslint-enable no-console */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Method = (...args: Array<any>) => Promise<void> | void;
-
-/*
-Binds class methods to the instance, so you can do `foo(this.method)` instead
-of `foo(this.method.bind(this))`.
-
-Optionally enable auto-logging and/or auto-catching plus logging of errors.
-Only works with methods returning `void` or `Promise<void>` for now.
-
-Example:
-
-    class Example {
-      constructor() {
-        bind(this, [this.method1, [this.method2, { log: true, catch: true }]]);
-      }
-      method1() {}
-      method2() {}
-    }
-*/
-export function bind(
-  object: unknown,
-  methods: Array<Method | [Method, { log?: boolean; catch?: boolean }]>
-): void {
-  for (const item of methods) {
-    const [method, options] = Array.isArray(item) ? item : [item, {}];
-    const { log: shouldLog = false, catch: shouldCatch = false } = options;
-
-    Object.defineProperty(object, method.name, {
-      writable: true,
-      enumerable: false,
-      configurable: true,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      value: Object.defineProperty(
-        (...args: Array<unknown>) => {
-          const prefix = `${
-            (object as { constructor: AnyFunction }).constructor.name
-          }#${method.name}`;
-          if (shouldLog) {
-            log("log", prefix, ...args);
-          }
-          if (shouldCatch) {
-            try {
-              const result = method.apply(object, args);
-              if (result !== undefined && typeof result.then === "function") {
-                result.then(undefined, (error) => {
-                  log("error", prefix, error, ...args);
-                });
-              }
-              return result;
-            } catch (error) {
-              log("error", prefix, error, ...args);
-            }
-          } else {
-            method.apply(object, args);
-          }
-          return undefined;
-        },
-        "name",
-        { value: method.name }
-      ),
-    });
-  }
-}
-
-export function addEventListener(
+export function addEventListener<
+  EventName extends string,
+  EventType extends Event
+>(
   target: EventTarget,
-  eventName: string,
-  listener: AnyFunction,
+  eventName: EventName,
+  listener: (event: EventType) => void,
+  name: string,
   options: { capture?: boolean; passive?: boolean } = {}
 ): () => void {
+  const wrappedListener = (event: EventType): void => {
+    try {
+      listener(event);
+    } catch (error) {
+      log("error", name, error, event);
+    }
+  };
   const fullOptions = { capture: true, passive: true, ...options };
-  target.addEventListener(eventName, listener, fullOptions);
+  target.addEventListener(
+    eventName,
+    // @ts-expect-error This is fine. I have no idea how to fix.
+    wrappedListener,
+    fullOptions
+  );
   return () => {
-    target.removeEventListener(eventName, listener, fullOptions);
+    target.removeEventListener(
+      eventName,
+      // @ts-expect-error This is fine. I have no idea how to fix.
+      wrappedListener,
+      fullOptions
+    );
   };
 }
 
-export function addListener<Listener, Options>(
+export function addListener<
+  Listener extends (...args: Array<never>) => void,
+  Options
+>(
   target: {
     addListener: (listener: Listener, options?: Options) => void;
     removeListener: (listener: Listener) => void;
   },
   listener: Listener,
+  name: string,
   options?: Options
 ): () => void {
+  // @ts-expect-error This is fine. I have no idea how to fix.
+  const wrappedListener: Listener = (...args) => {
+    try {
+      listener(...args);
+    } catch (error) {
+      log("error", name, error, ...args);
+    }
+  };
   if (options === undefined) {
-    target.addListener(listener);
+    target.addListener(wrappedListener);
   } else {
-    target.addListener(listener, options);
+    target.addListener(wrappedListener, options);
   }
   return () => {
-    target.removeListener(listener);
+    target.removeListener(wrappedListener);
   };
 }
 
@@ -635,4 +603,14 @@ export function decode<T>(
   } catch (error) {
     throw error instanceof DecoderError ? new TypeError(error.format()) : error;
   }
+}
+
+export function fireAndForget(
+  promise: Promise<void>,
+  name: string,
+  ...args: Array<unknown>
+): void {
+  promise.catch((error) => {
+    log("error", name, error, ...args);
+  });
 }

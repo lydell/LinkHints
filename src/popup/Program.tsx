@@ -1,4 +1,4 @@
-import { addListener, bind, log, Resets } from "../shared/main";
+import { addListener, fireAndForget, log, Resets } from "../shared/main";
 import type {
   FromBackground,
   FromPopup,
@@ -13,17 +13,16 @@ export default class PopupProgram {
 
   resets = new Resets();
 
-  constructor() {
-    bind(this, [
-      [this.onMessage, { catch: true }],
-      [this.sendMessage, { catch: true }],
-      [this.start, { log: true, catch: true }],
-      [this.stop, { log: true, catch: true }],
-    ]);
-  }
-
   async start(): Promise<void> {
-    this.resets.add(addListener(browser.runtime.onMessage, this.onMessage));
+    log("log", "PopupProgram#start");
+
+    this.resets.add(
+      addListener(
+        browser.runtime.onMessage,
+        this.onMessage.bind(this),
+        "PopupProgram#onMessage"
+      )
+    );
 
     this.sendMessage({ type: "PopupScriptAdded" });
 
@@ -36,12 +35,17 @@ export default class PopupProgram {
   }
 
   stop(): void {
+    log("log", "PopupProgram#stop");
     this.resets.reset();
   }
 
-  async sendMessage(message: FromPopup): Promise<void> {
+  sendMessage(message: FromPopup): void {
     log("log", "PopupProgram#sendMessage", message.type, message, this);
-    await browser.runtime.sendMessage(wrapMessage(message));
+    fireAndForget(
+      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
+      "PopupProgram#sendMessage",
+      message
+    );
   }
 
   // Technically, `ToWorker` and `ToRenderer` messages (which are part of

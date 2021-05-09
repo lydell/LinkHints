@@ -24,9 +24,9 @@ import type {
 import {
   addEventListener,
   addListener,
-  bind,
   Box,
   CONTAINER_ID,
+  fireAndForget,
   getViewport,
   log,
   partition,
@@ -88,17 +88,6 @@ export default class RendererProgram {
   };
 
   constructor() {
-    bind(this, [
-      [this.onMessage, { catch: true }],
-      [this.sendMessage, { catch: true }],
-      [this.start, { catch: true }],
-      [this.stop, { log: true, catch: true }],
-      [this.render, { catch: true }],
-      this.onIntersection,
-      this.onPageShow,
-      this.onResize,
-    ]);
-
     this.shruggieElement = createHintElement(SHRUGGIE);
     this.shruggieElement.classList.add(SHRUGGIE_CLASS);
     setStyles(this.shruggieElement, {
@@ -142,10 +131,13 @@ export default class RendererProgram {
       root,
       shadowRoot,
       resets: new Resets(),
-      intersectionObserver: new IntersectionObserver(this.onIntersection, {
-        // Make sure the container stays within the viewport.
-        threshold: 1,
-      }),
+      intersectionObserver: new IntersectionObserver(
+        this.onIntersection.bind(this),
+        {
+          // Make sure the container stays within the viewport.
+          threshold: 1,
+        }
+      ),
     };
   }
 
@@ -156,8 +148,17 @@ export default class RendererProgram {
     this.unrender();
 
     this.resets.add(
-      addListener(browser.runtime.onMessage, this.onMessage),
-      addEventListener(window, "pageshow", this.onPageShow)
+      addListener(
+        browser.runtime.onMessage,
+        this.onMessage.bind(this),
+        "RendererProgram#onMessage"
+      ),
+      addEventListener(
+        window,
+        "pageshow",
+        this.onPageShow.bind(this),
+        "RendererProgram#onPageShow"
+      )
     );
 
     try {
@@ -198,13 +199,18 @@ export default class RendererProgram {
   }
 
   stop(): void {
+    log("log", "RendererProgram#stop");
     this.resets.reset();
     this.unrender();
   }
 
-  async sendMessage(message: FromRenderer): Promise<void> {
+  sendMessage(message: FromRenderer): void {
     log("log", "RendererProgram#sendMessage", message.type, message, this);
-    await browser.runtime.sendMessage(wrapMessage(message));
+    fireAndForget(
+      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
+      "RendererProgram#sendMessage",
+      message
+    );
   }
 
   onMessage(wrappedMessage: FromBackground): void {
@@ -240,7 +246,11 @@ export default class RendererProgram {
       }
 
       case "Render":
-        this.render(message.elements, { mixedCase: message.mixedCase });
+        fireAndForget(
+          this.render(message.elements, { mixedCase: message.mixedCase }),
+          "RendererProgram#onMessage->render",
+          message
+        );
         break;
 
       case "UpdateHints":
@@ -275,14 +285,22 @@ export default class RendererProgram {
     const entry = entries[0];
     if (entry.intersectionRatio !== 1) {
       requestAnimationFrame(() => {
-        this.updateContainer(
-          // `entry.rootBounds` is supposed to be the viewport size, but I've
-          // noticed it being way larger in Chrome sometimes, so calculate it
-          // manually there.
-          BROWSER === "chrome"
-            ? getViewport()
-            : entry.rootBounds ?? getViewport()
-        );
+        try {
+          this.updateContainer(
+            // `entry.rootBounds` is supposed to be the viewport size, but I've
+            // noticed it being way larger in Chrome sometimes, so calculate it
+            // manually there.
+            BROWSER === "chrome"
+              ? getViewport()
+              : entry.rootBounds ?? getViewport()
+          );
+        } catch (error) {
+          log(
+            "error",
+            "RendererProgram#onIntersection->updateContainer",
+            entry
+          );
+        }
       });
     }
   }
@@ -404,8 +422,18 @@ export default class RendererProgram {
     this.updateHintSize();
     this.container.intersectionObserver.observe(this.container.element);
     this.container.resets.add(
-      addEventListener(window, "resize", this.onResize),
-      addEventListener(window, "underflow", this.onResize)
+      addEventListener(
+        window,
+        "resize",
+        this.onResize.bind(this),
+        "RendererProgram#onResize"
+      ),
+      addEventListener(
+        window,
+        "underflow",
+        this.onResize.bind(this),
+        "RendererProgram#onResize"
+      )
     );
 
     if (elements.length === 0) {

@@ -102,11 +102,13 @@ export default (communicator?: {
   // Don't use the usual `log` function here, too keep this file small.
   const { error: consoleLogError, log: consoleLog } = console;
   const createElement = document.createElement.bind(document);
+  /* eslint-disable @typescript-eslint/unbound-method */
   const { appendChild, removeChild, getRootNode } = Node.prototype;
   const { replaceWith } = Element.prototype;
   const { addEventListener, dispatchEvent } = EventTarget.prototype;
   const { apply } = Reflect;
   const { get: mapGet } = Map.prototype;
+  /* eslint-enable @typescript-eslint/unbound-method */
 
   function logError(...args: Array<unknown>): void {
     consoleLogError(`[${META_SLUG}]`, ...args);

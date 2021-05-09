@@ -1,8 +1,9 @@
+import { fireAndForget } from "../shared/main";
 import BackgroundProgram from "./Program";
 
 const program = new BackgroundProgram();
 
-program.start();
+fireAndForget(program.start(), "main->BackgroundProgram#start");
 
 // Attach the instance to the background page's `window` for debugging. This
 // means one can type `program` in the console opened from `about:debugging` or

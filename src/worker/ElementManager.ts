@@ -7,7 +7,6 @@ import type {
 } from "../shared/hints";
 import {
   addEventListener,
-  bind,
   Box,
   getElementFromPoint,
   getElementsFromPoint,
@@ -309,15 +308,6 @@ export default class ElementManager {
     onMutation: (records: Array<MutationRecord>) => unknown;
   }) {
     this.onMutationExternal = onMutation;
-
-    bind(this, [
-      this.onClickableChanged,
-      this.onInjectedQueue,
-      this.onOverflowChange,
-      this.onOpenShadowRootCreated,
-      this.onClosedShadowRootCreated,
-      this.onRegisterSecretElement,
-    ]);
   }
 
   async start(): Promise<void> {
@@ -328,29 +318,49 @@ export default class ElementManager {
         addEventListener(
           window,
           CLICKABLE_CHANGED_EVENT,
-          this.onClickableChanged
+          this.onClickableChanged.bind(this),
+          "ElementManager#onClickableChanged"
         ),
-        addEventListener(window, QUEUE_EVENT, this.onInjectedQueue),
+        addEventListener(
+          window,
+          QUEUE_EVENT,
+          this.onInjectedQueue.bind(this),
+          "ElementManager#onInjectedQueue"
+        ),
         addEventListener(
           window,
           OPEN_SHADOW_ROOT_CREATED_EVENT,
-          this.onOpenShadowRootCreated
+          this.onOpenShadowRootCreated.bind(this),
+          "ElementManager#onOpenShadowRootCreated"
         ),
         addEventListener(
           window,
           CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
-          this.onClosedShadowRootCreated
+          this.onClosedShadowRootCreated.bind(this),
+          "ElementManager#onClosedShadowRootCreated"
         ),
         addEventListener(
           window,
           REGISTER_SECRET_ELEMENT_EVENT,
-          this.onRegisterSecretElement
+          this.onRegisterSecretElement.bind(this),
+          "ElementManager#onRegisterSecretElement"
         )
       );
     }
+
     this.resets.add(
-      addEventListener(window, "overflow", this.onOverflowChange),
-      addEventListener(window, "underflow", this.onOverflowChange)
+      addEventListener(
+        window,
+        "overflow",
+        this.onOverflowChange.bind(this),
+        "ElementManager#onOverflowChange"
+      ),
+      addEventListener(
+        window,
+        "underflow",
+        this.onOverflowChange.bind(this),
+        "ElementManager#onOverflowChange"
+      )
     );
 
     this.injectScript();
@@ -667,17 +677,20 @@ export default class ElementManager {
         addEventListener(
           target,
           CLICKABLE_CHANGED_EVENT,
-          this.onClickableChanged
+          this.onClickableChanged.bind(this),
+          "ElementManager#onClickableChanged"
         ),
         addEventListener(
           target,
           OPEN_SHADOW_ROOT_CREATED_EVENT,
-          this.onOpenShadowRootCreated
+          this.onOpenShadowRootCreated.bind(this),
+          "ElementManager#onOpenShadowRootCreated"
         ),
         addEventListener(
           target,
           CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
-          this.onClosedShadowRootCreated
+          this.onClosedShadowRootCreated.bind(this),
+          "ElementManager#onClosedShadowRootCreated"
         )
       );
     }
@@ -730,8 +743,18 @@ export default class ElementManager {
     mutationObserve(mutationObserver, shadowRoot);
 
     resets.add(
-      addEventListener(shadowRoot, "overflow", this.onOverflowChange),
-      addEventListener(shadowRoot, "underflow", this.onOverflowChange)
+      addEventListener(
+        shadowRoot,
+        "overflow",
+        this.onOverflowChange.bind(this),
+        "ElementManager#onOverflowChange"
+      ),
+      addEventListener(
+        shadowRoot,
+        "underflow",
+        this.onOverflowChange.bind(this),
+        "ElementManager#onOverflowChange"
+      )
     );
 
     this.shadowRoots.set(shadowRoot.host, {

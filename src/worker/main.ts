@@ -1,4 +1,5 @@
+import { fireAndForget } from "../shared/main";
 import WorkerProgram from "./Program";
 
 const program = new WorkerProgram();
-program.start();
+fireAndForget(program.start(), "main->WorkerProgram#start");

@@ -22,9 +22,9 @@ import {
 } from "../shared/keyboard";
 import {
   addListener,
-  bind,
   CONTAINER_ID,
   decode,
+  fireAndForget,
   isMixedCase,
   log,
   makeRandomToken,
@@ -196,34 +196,6 @@ export default class BackgroundProgram {
       errors: [],
       mac,
     };
-
-    bind(this, [
-      [this.maybeOpenTutorial, { catch: true }],
-      [this.maybeReopenOptions, { catch: true }],
-      [this.onKeyboardShortcut, { catch: true }],
-      [this.onMessage, { catch: true }],
-      [this.onOptionsMessage, { log: true, catch: true }],
-      [this.onPopupMessage, { log: true, catch: true }],
-      [this.onRendererMessage, { log: true, catch: true }],
-      [this.onTimeout, { catch: true }],
-      [this.onWorkerMessage, { log: true, catch: true }],
-      [this.openNewTab, { catch: true }],
-      [this.sendBackgroundMessage, { log: true, catch: true }],
-      [this.sendContentMessage, { catch: true }],
-      [this.sendPopupMessage, { log: true, catch: true }],
-      [this.sendRendererMessage, { log: true, catch: true }],
-      [this.sendWorkerMessage, { log: true, catch: true }],
-      [this.start, { catch: true }],
-      [this.stop, { log: true, catch: true }],
-      [this.updateIcon, { catch: true }],
-      [this.updateOptions, { catch: true }],
-      [this.updateOptionsPageData, { catch: true }],
-      this.onConnect,
-      this.onTabActivated,
-      this.onTabCreated,
-      this.onTabUpdated,
-      this.onTabRemoved,
-    ]);
   }
 
   async start(): Promise<void> {
@@ -243,29 +215,64 @@ export default class BackgroundProgram {
     const tabs = await browser.tabs.query({});
 
     this.resets.add(
-      addListener(browser.runtime.onMessage, this.onMessage),
-      addListener(browser.runtime.onConnect, this.onConnect),
-      addListener(browser.tabs.onActivated, this.onTabActivated),
-      addListener(browser.tabs.onCreated, this.onTabCreated),
+      addListener(
+        browser.runtime.onMessage,
+        this.onMessage.bind(this),
+        "BackgroundProgram#onMessage"
+      ),
+      addListener(
+        browser.runtime.onConnect,
+        this.onConnect.bind(this),
+        "BackgroundProgram#onConnect"
+      ),
+      addListener(
+        browser.tabs.onActivated,
+        this.onTabActivated.bind(this),
+        "BackgroundProgram#onTabActivated"
+      ),
+      addListener(
+        browser.tabs.onCreated,
+        this.onTabCreated.bind(this),
+        "BackgroundProgram#onTabCreated"
+      ),
       addListener(
         browser.tabs.onUpdated,
-        this.onTabUpdated,
+        this.onTabUpdated.bind(this),
+        "BackgroundProgram#onTabUpdated",
         // Chrome doesn’t support filters.
         BROWSER === "firefox" ? { properties: ["status", "pinned"] } : undefined
       ),
-      addListener(browser.tabs.onRemoved, this.onTabRemoved)
+      addListener(
+        browser.tabs.onRemoved,
+        this.onTabRemoved.bind(this),
+        "BackgroundProgram#onTabRemoved"
+      )
     );
 
     for (const tab of tabs) {
       if (tab.id !== undefined) {
-        this.updateIcon(tab.id);
+        fireAndForget(
+          this.updateIcon(tab.id),
+          "BackgroundProgram#start->updateIcon",
+          tab
+        );
       }
     }
 
-    browser.browserAction.setBadgeBackgroundColor({ color: COLOR_BADGE });
+    fireAndForget(
+      browser.browserAction.setBadgeBackgroundColor({ color: COLOR_BADGE }),
+      "BackgroundProgram#start->setBadgeBackgroundColor"
+    );
 
-    this.maybeOpenTutorial();
-    this.maybeReopenOptions();
+    fireAndForget(
+      this.maybeOpenTutorial(),
+      "BackgroundProgram#start->maybeOpenTutorial"
+    );
+
+    fireAndForget(
+      this.maybeReopenOptions(),
+      "BackgroundProgram#start->maybeReopenOptions"
+    );
 
     // Firefox automatically loads content scripts into existing tabs, while
     // Chrome only automatically loads content scripts into _new_ tabs.
@@ -279,41 +286,56 @@ export default class BackgroundProgram {
   }
 
   stop(): void {
+    log("log", "BackgroundProgram#stop");
     this.resets.reset();
   }
 
-  async sendWorkerMessage(
+  sendWorkerMessage(
     message: ToWorker,
-    { tabId, frameId }: { tabId: number; frameId: number | "all_frames" }
-  ): Promise<void> {
-    await this.sendContentMessage(
-      { type: "ToWorker", message },
-      { tabId, frameId }
+    recipient: { tabId: number; frameId: number | "all_frames" }
+  ): void {
+    log("log", "BackgroundProgram#sendWorkerMessage", message, recipient);
+    fireAndForget(
+      this.sendContentMessage({ type: "ToWorker", message }, recipient),
+      "BackgroundProgram#sendWorkerMessage",
+      message,
+      recipient
     );
   }
 
-  async sendRendererMessage(
-    message: ToRenderer,
-    { tabId }: { tabId: number }
-  ): Promise<void> {
-    await this.sendContentMessage(
-      { type: "ToRenderer", message },
-      { tabId, frameId: TOP_FRAME_ID }
+  sendRendererMessage(message: ToRenderer, { tabId }: { tabId: number }): void {
+    const recipient = { tabId, frameId: TOP_FRAME_ID };
+    log("log", "BackgroundProgram#sendRendererMessage", message, recipient);
+    fireAndForget(
+      this.sendContentMessage({ type: "ToRenderer", message }, recipient),
+      "BackgroundProgram#sendRendererMessage",
+      message,
+      recipient
     );
   }
 
-  async sendPopupMessage(message: ToPopup): Promise<void> {
-    await this.sendBackgroundMessage({ type: "ToPopup", message });
+  sendPopupMessage(message: ToPopup): void {
+    log("log", "BackgroundProgram#sendPopupMessage", message);
+    fireAndForget(
+      this.sendBackgroundMessage({ type: "ToPopup", message }),
+      "BackgroundProgram#sendPopupMessage",
+      message
+    );
   }
 
-  async sendOptionsMessage(message: ToOptions): Promise<void> {
+  sendOptionsMessage(message: ToOptions): void {
     const optionsTabOpen = Array.from(this.tabState).some(
       ([, tabState]) => tabState.isOptionsPage
     );
     // Trying to send a message to Options when no Options tab is open results
     // in "errors" being logged to the console.
     if (optionsTabOpen) {
-      await this.sendBackgroundMessage({ type: "ToOptions", message });
+      log("log", "BackgroundProgram#sendOptionsMessage", message);
+      fireAndForget(
+        this.sendBackgroundMessage({ type: "ToOptions", message }),
+        "BackgroundProgram#sendOptionsMessage",
+        message
+      );
     }
   }
 
@@ -379,23 +401,53 @@ export default class BackgroundProgram {
     switch (message.type) {
       case "FromWorker":
         if (info !== undefined) {
-          this.onWorkerMessage(message.message, info, tabState);
+          try {
+            this.onWorkerMessage(message.message, info, tabState);
+          } catch (error) {
+            log(
+              "error",
+              "BackgroundProgram#onWorkerMessage",
+              error,
+              message.message,
+              info
+            );
+          }
         }
         break;
 
       case "FromRenderer":
         if (info !== undefined) {
-          this.onRendererMessage(message.message, info, tabState);
+          try {
+            this.onRendererMessage(message.message, info, tabState);
+          } catch (error) {
+            log(
+              "error",
+              "BackgroundProgram#onRendererMessage",
+              error,
+              message.message,
+              info
+            );
+          }
         }
         break;
 
       case "FromPopup":
-        this.onPopupMessage(message.message);
+        fireAndForget(
+          this.onPopupMessage(message.message),
+          "BackgroundProgram#onPopupMessage",
+          message.message,
+          info
+        );
         break;
 
       case "FromOptions":
         if (info !== undefined) {
-          this.onOptionsMessage(message.message, info, tabState);
+          fireAndForget(
+            this.onOptionsMessage(message.message, info, tabState),
+            "BackgroundProgram#onOptionsMessage",
+            message.message,
+            info
+          );
         }
         break;
     }
@@ -417,6 +469,8 @@ export default class BackgroundProgram {
     info: MessageInfo,
     tabState: TabState
   ): void {
+    log("log", "BackgroundProgram#onWorkerMessage", message, info);
+
     switch (message.type) {
       case "WorkerScriptAdded":
         this.sendWorkerMessage(
@@ -631,7 +685,12 @@ export default class BackgroundProgram {
 
       case "OpenNewTabs":
         if (BROWSER === "firefox") {
-          openNewTabs(info.tabId, message.urls);
+          fireAndForget(
+            openNewTabs(info.tabId, message.urls),
+            "BackgroundProgram#onWorkerMessage->openNewTabs",
+            message,
+            info
+          );
         }
 
         break;
@@ -648,7 +707,11 @@ export default class BackgroundProgram {
   // is very tricky to keep track of.
   setTimeout(tabId: number, duration: number): void {
     setTimeout(() => {
-      this.onTimeout(tabId);
+      try {
+        this.onTimeout(tabId);
+      } catch (error) {
+        log("error", "BackgroundProgram#onTimeout", error, tabId);
+      }
     }, duration);
   }
 
@@ -1091,7 +1154,7 @@ export default class BackgroundProgram {
     this.updateBadge(tabId);
   }
 
-  async openNewTab({
+  openNewTab({
     url,
     elementIndex,
     tabId,
@@ -1103,7 +1166,7 @@ export default class BackgroundProgram {
     tabId: number;
     frameId: number;
     foreground: boolean;
-  }): Promise<void> {
+  }): void {
     this.sendWorkerMessage(
       {
         type: "FocusElement",
@@ -1133,11 +1196,17 @@ export default class BackgroundProgram {
         { tabId, frameId: TOP_FRAME_ID }
       );
     } else {
-      await browser.tabs.create({
-        active: foreground,
-        url,
-        openerTabId: tabId,
-      });
+      fireAndForget(
+        browser.tabs
+          .create({
+            active: foreground,
+            url,
+            openerTabId: tabId,
+          })
+          .then(() => undefined),
+        "BackgroundProgram#openNewTab",
+        url
+      );
     }
   }
 
@@ -1395,6 +1464,8 @@ export default class BackgroundProgram {
     info: MessageInfo,
     tabState: TabState
   ): void {
+    log("log", "BackgroundProgram#onRendererMessage", message, info);
+
     switch (message.type) {
       case "RendererScriptAdded":
         this.sendRendererMessage(
@@ -1463,6 +1534,8 @@ export default class BackgroundProgram {
   }
 
   async onPopupMessage(message: FromPopup): Promise<void> {
+    log("log", "BackgroundProgram#log", message);
+
     switch (message.type) {
       case "PopupScriptAdded": {
         const tab = await getCurrentTab();
@@ -1483,6 +1556,8 @@ export default class BackgroundProgram {
     info: MessageInfo,
     tabState: TabState
   ): Promise<void> {
+    log("log", "BackgroundProgram#onOptionsMessage", message, info);
+
     switch (message.type) {
       case "OptionsScriptAdded": {
         tabState.isOptionsPage = true;
@@ -1847,7 +1922,11 @@ export default class BackgroundProgram {
 
   onTabCreated(tab: browser.tabs.Tab): void {
     if (tab.id !== undefined) {
-      this.updateIcon(tab.id);
+      fireAndForget(
+        this.updateIcon(tab.id),
+        "BackgroundProgram#onTabCreated->updateIcon",
+        tab
+      );
     }
   }
 
@@ -1860,7 +1939,11 @@ export default class BackgroundProgram {
     changeInfo: browser.tabs._OnUpdatedChangeInfo
   ): void {
     if (changeInfo.status !== undefined) {
-      this.updateIcon(tabId);
+      fireAndForget(
+        this.updateIcon(tabId),
+        "BackgroundProgram#onTabUpdated->updateIcon",
+        tabId
+      );
     }
 
     const tabState = this.tabState.get(tabId);
@@ -1933,10 +2016,13 @@ export default class BackgroundProgram {
 
     const { hintsState } = tabState;
 
-    browser.browserAction.setBadgeText({
-      text: getBadgeText(hintsState),
-      tabId,
-    });
+    fireAndForget(
+      browser.browserAction.setBadgeText({
+        text: getBadgeText(hintsState),
+        tabId,
+      }),
+      "BackgroundProgram#updateBadge->setBadgeText"
+    );
   }
 
   async updateOptions({
@@ -2131,28 +2217,31 @@ export default class BackgroundProgram {
     });
   }
 
-  async updateOptionsPageData(): Promise<void> {
+  updateOptionsPageData(): void {
     if (!PROD) {
-      const optionsTabState = Array.from(this.tabState).filter(
-        ([, tabState]) => tabState.isOptionsPage
-      );
-      let isActive = false;
-      for (const [tabId] of optionsTabState) {
-        try {
-          const tab = await browser.tabs.get(tabId);
-          if (tab.active) {
-            isActive = true;
-            break;
+      const run = async (): Promise<void> => {
+        const optionsTabState = Array.from(this.tabState).filter(
+          ([, tabState]) => tabState.isOptionsPage
+        );
+        let isActive = false;
+        for (const [tabId] of optionsTabState) {
+          try {
+            const tab = await browser.tabs.get(tabId);
+            if (tab.active) {
+              isActive = true;
+              break;
+            }
+          } catch {
+            // Tab was not found. Try the next one.
           }
-        } catch {
-          // Tab was not found. Try the next one.
         }
-      }
-      if (optionsTabState.length > 0) {
-        browser.storage.local.set({ optionsPage: isActive });
-      } else {
-        browser.storage.local.remove("optionsPage");
-      }
+        if (optionsTabState.length > 0) {
+          await browser.storage.local.set({ optionsPage: isActive });
+        } else {
+          await browser.storage.local.remove("optionsPage");
+        }
+      };
+      fireAndForget(run(), "BackgroundProgram#updateOptionsPageData");
     }
   }
 
@@ -2384,21 +2473,17 @@ async function getCurrentTab(): Promise<browser.tabs.Tab> {
 
 // Open a bunch of tabs, and then focus the first of them.
 async function openNewTabs(tabId: number, urls: Array<string>): Promise<void> {
-  try {
-    const newTabs = await Promise.all(
-      urls.map((url) =>
-        browser.tabs.create({
-          active: urls.length === 1,
-          url,
-          openerTabId: tabId,
-        })
-      )
-    );
-    if (newTabs.length >= 2 && newTabs[0].id !== undefined) {
-      await browser.tabs.update(newTabs[0].id, { active: true });
-    }
-  } catch (error) {
-    log("error", "openNewTabs", "Failed to open new tabs:", error, urls);
+  const newTabs = await Promise.all(
+    urls.map((url) =>
+      browser.tabs.create({
+        active: urls.length === 1,
+        url,
+        openerTabId: tabId,
+      })
+    )
+  );
+  if (newTabs.length >= 2 && newTabs[0].id !== undefined) {
+    await browser.tabs.update(newTabs[0].id, { active: true });
   }
 }
 

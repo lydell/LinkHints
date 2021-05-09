@@ -56,8 +56,18 @@ export default function ButtonWithPopup({
 
       const resets = new Resets();
       resets.add(
-        addEventListener(window, "focus", closeIfOutside),
-        addEventListener(window, "click", closeIfOutside)
+        addEventListener(
+          window,
+          "focus",
+          closeIfOutside,
+          "ButtonWithPopup closeIfOutside"
+        ),
+        addEventListener(
+          window,
+          "click",
+          closeIfOutside,
+          "ButtonWithPopup closeIfOutside"
+        )
       );
 
       return () => {

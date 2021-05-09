@@ -12,7 +12,7 @@ import {
 import { t as tRenderer, tMeta as tMetaRenderer } from "../renderer/Program";
 import {
   addListener,
-  log,
+  fireAndForget,
   normalizeUnsignedFloat,
   normalizeUnsignedInt,
 } from "../shared/main";
@@ -58,16 +58,20 @@ export default function Tweakable({
 
   useEffect(
     () =>
-      addListener(browser.storage.onChanged, (changes, areaName) => {
-        if (areaName === "sync") {
-          const didUpdate = Object.keys(changes).some((key) =>
-            ALL_KEYS.has(key)
-          );
-          if (didUpdate) {
-            onUpdateRef.current();
+      addListener(
+        browser.storage.onChanged,
+        (changes, areaName) => {
+          if (areaName === "sync") {
+            const didUpdate = Object.keys(changes).some((key) =>
+              ALL_KEYS.has(key)
+            );
+            if (didUpdate) {
+              onUpdateRef.current();
+            }
           }
-        }
-      }),
+        },
+        "Tweakable storage.onChanged listener"
+      ),
     []
   );
 
@@ -260,16 +264,14 @@ function TweakableField({
   );
 }
 
-async function save(key: string, value: unknown): Promise<void> {
-  try {
-    if (value === undefined) {
-      await browser.storage.sync.remove(key);
-    } else {
-      await browser.storage.sync.set({ [key]: value });
-    }
-  } catch (error) {
-    log("error", "TweakableField", "Failed to save.", error);
-  }
+function save(key: string, value: unknown): void {
+  fireAndForget(
+    value === undefined
+      ? browser.storage.sync.remove(key)
+      : browser.storage.sync.set({ [key]: value }),
+    "TweakableField save",
+    { key, value }
+  );
 }
 
 export function hasChangedTweakable(): boolean {

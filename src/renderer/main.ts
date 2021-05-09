@@ -1,4 +1,5 @@
+import { fireAndForget } from "../shared/main";
 import RendererProgram from "./Program";
 
 const program = new RendererProgram();
-program.start();
+fireAndForget(program.start(), "main->RendererProgram#start");
