@@ -253,9 +253,7 @@ function durationsToRows(
   }));
 }
 
-function statsToRows(
-  allStats: Array<Array<Stats>>
-): Array<{
+function statsToRows(allStats: Array<Array<Stats>>): Array<{
   title: string;
   data: Array<{ heading: string; values: Array<string> }>;
 }> {

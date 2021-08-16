@@ -339,11 +339,11 @@ export default class OptionsProgram extends Component<Props, State> {
       const [tweakableData, otherData] = partitionTweakable(
         multi({ object: (x) => x })(data)
       );
-      const { options: newOptions, successCount, errors } = importOptions(
-        otherData,
-        options,
-        defaults
-      );
+      const {
+        options: newOptions,
+        successCount,
+        errors,
+      } = importOptions(otherData, options, defaults);
       this.setState({
         importData: {
           successCount,
@@ -973,10 +973,8 @@ export default class OptionsProgram extends Component<Props, State> {
                           {Object.keys(options.keyTranslations)
                             .sort()
                             .map((code) => {
-                              const [
-                                unshifted,
-                                shifted,
-                              ] = options.keyTranslations[code];
+                              const [unshifted, shifted] =
+                                options.keyTranslations[code];
                               const {
                                 [code]: [defaultUnshifted, defaultShifted] = [
                                   undefined,
@@ -1619,16 +1617,14 @@ export default class OptionsProgram extends Component<Props, State> {
             : ["PartiallyUpdated", code, [key, "?"]];
         })
         .concat(
-          newCodes.flatMap(
-            (code): Array<[UpdateStatus, string, KeyPair]> => {
-              const key = layoutMap.get(code);
-              return key === undefined
-                ? []
-                : isShiftable(key)
-                ? [["FullyUpdated", code, [key, key.toUpperCase()]]]
-                : [["PartiallyUpdated", code, [key, "?"]]];
-            }
-          )
+          newCodes.flatMap((code): Array<[UpdateStatus, string, KeyPair]> => {
+            const key = layoutMap.get(code);
+            return key === undefined
+              ? []
+              : isShiftable(key)
+              ? [["FullyUpdated", code, [key, key.toUpperCase()]]]
+              : [["PartiallyUpdated", code, [key, "?"]]];
+          })
         );
 
       function count(updateStatus: UpdateStatus): number {

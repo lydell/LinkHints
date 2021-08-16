@@ -769,15 +769,13 @@ export default class WorkerProgram {
     current: CurrentElements;
     oneTimeWindowMessageToken: string | undefined;
   }): void {
-    const [elements, timeLeft]: [
-      Array<VisibleElement | undefined>,
-      number
-    ] = this.elementManager.getVisibleElements(
-      current.types,
-      current.viewports,
-      new TimeTracker(),
-      current.elements.map(({ element }) => element)
-    );
+    const [elements, timeLeft]: [Array<VisibleElement | undefined>, number] =
+      this.elementManager.getVisibleElements(
+        current.types,
+        current.viewports,
+        new TimeTracker(),
+        current.elements.map(({ element }) => element)
+      );
 
     const { words } = current;
 

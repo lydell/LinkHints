@@ -52,7 +52,7 @@
     "optional-require": "1.1.7",
     "patch-package": "6.4.7",
     "preact-render-to-string": "5.1.19",
-    "prettier": "2.2.1",
+    "prettier": "2.3.2",
     "readdirp": "3.6.0",
     "rollup": "2.56.2",
     "rollup-plugin-prettier": "2.1.0",

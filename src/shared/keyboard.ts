@@ -29,9 +29,8 @@ export const KeyboardAction = stringUnion({
 });
 
 // Allow exiting hints mode if we ever get stuck in Prevent overtyping mode.
-export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS = new Set<KeyboardAction>(
-  ["Escape", "ExitHintsMode"]
-);
+export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS =
+  new Set<KeyboardAction>(["Escape", "ExitHintsMode"]);
 
 // Raw values from a `KeyboardEvent` that we care about.
 export type Keypress = {

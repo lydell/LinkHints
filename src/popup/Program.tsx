@@ -155,23 +155,18 @@ function wrapMessage(message: FromPopup): ToBackground {
 }
 
 async function getDebugInfo(): Promise<string> {
-  const [
-    browserInfo,
-    platformInfo,
-    storageSync,
-    storageLocal,
-    layoutMap,
-  ] = await Promise.all([
-    typeof browser.runtime.getBrowserInfo === "function"
-      ? browser.runtime.getBrowserInfo()
-      : undefined,
-    browser.runtime.getPlatformInfo(),
-    browser.storage.sync.get(),
-    browser.storage.local.get(),
-    navigator.keyboard !== undefined
-      ? navigator.keyboard.getLayoutMap()
-      : undefined,
-  ]);
+  const [browserInfo, platformInfo, storageSync, storageLocal, layoutMap] =
+    await Promise.all([
+      typeof browser.runtime.getBrowserInfo === "function"
+        ? browser.runtime.getBrowserInfo()
+        : undefined,
+      browser.runtime.getPlatformInfo(),
+      browser.storage.sync.get(),
+      browser.storage.local.get(),
+      navigator.keyboard !== undefined
+        ? navigator.keyboard.getLayoutMap()
+        : undefined,
+    ]);
 
   const layout =
     layoutMap !== undefined ? Object.fromEntries(layoutMap) : undefined;

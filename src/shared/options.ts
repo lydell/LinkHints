@@ -443,12 +443,11 @@ export function importOptions(
   errors: Array<string>;
 } {
   try {
-    const keyErrors = Object.keys(
-      unflattenOptions(flatOptions)
-    ).flatMap((key) =>
-      Object.prototype.hasOwnProperty.call(defaults, key)
-        ? []
-        : `Unknown key: ${repr(key)}`
+    const keyErrors = Object.keys(unflattenOptions(flatOptions)).flatMap(
+      (key) =>
+        Object.prototype.hasOwnProperty.call(defaults, key)
+          ? []
+          : `Unknown key: ${repr(key)}`
     );
     const updatedOptionsFlat = {
       ...flattenOptions(options),

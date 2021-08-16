@@ -283,20 +283,18 @@ export function hasChangedTweakable(): boolean {
 export function getTweakableExport(): Record<string, unknown> {
   return Object.fromEntries(
     ALL_TWEAKABLES.flatMap(([t, tMeta]) =>
-      Object.keys(tMeta.defaults).flatMap(
-        (key): Array<[string, unknown]> => {
-          const { value } = t[key];
-          const { [key]: changed = false } = tMeta.changed;
-          return changed
-            ? [
-                [
-                  `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
-                  value instanceof Set ? Array.from(value) : value,
-                ],
-              ]
-            : [];
-        }
-      )
+      Object.keys(tMeta.defaults).flatMap((key): Array<[string, unknown]> => {
+        const { value } = t[key];
+        const { [key]: changed = false } = tMeta.changed;
+        return changed
+          ? [
+              [
+                `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
+                value instanceof Set ? Array.from(value) : value,
+              ],
+            ]
+          : [];
+      })
     )
   );
 }

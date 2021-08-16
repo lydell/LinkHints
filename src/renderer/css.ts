@@ -16,7 +16,8 @@ export type Declaration = {
 };
 
 // Mostly copied from <https://github.com/lydell/css-tokens>.
-const stringsAndCommentsAndUrlsRegex = /((['"])(?:(?!\2)[^\\]|\\[\s\S])*\2?)|(\/\*(?:[^*]|\*(?!\/))*(?:\*\/)?)|(url\(\s*[^"'()\s]+\s*\))/g;
+const stringsAndCommentsAndUrlsRegex =
+  /((['"])(?:(?!\2)[^\\]|\\[\s\S])*\2?)|(\/\*(?:[^*]|\*(?!\/))*(?:\*\/)?)|(url\(\s*[^"'()\s]+\s*\))/g;
 
 const annoyingCharsRegex = /[{};]/g;
 

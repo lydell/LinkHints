@@ -1262,11 +1262,9 @@ export default class BackgroundProgram {
       hintsState.highlighted.map(({ element }) => elementKey(element))
     );
 
-    const [
-      alreadyHighlighted,
-      extraHighlighted,
-    ] = partition(hintsState.highlighted, ({ element }) =>
-      elementKeys.has(elementKey(element))
+    const [alreadyHighlighted, extraHighlighted] = partition(
+      hintsState.highlighted,
+      ({ element }) => elementKeys.has(elementKey(element))
     );
 
     const updateIndex = (
@@ -2742,46 +2740,44 @@ function updateHints({
   );
 
   const updates: Array<HintUpdate> = elementsWithHintsAndMaybeHidden
-    .map(
-      (element, index): HintUpdate => {
-        const matches = element.hint.startsWith(enteredChars);
-        const isHighlighted =
-          (match !== undefined && element.hint === match.hint) ||
-          element.hint === highlightedHint ||
-          highlightedKeys.has(elementKey(element));
+    .map((element, index): HintUpdate => {
+      const matches = element.hint.startsWith(enteredChars);
+      const isHighlighted =
+        (match !== undefined && element.hint === match.hint) ||
+        element.hint === highlightedHint ||
+        highlightedKeys.has(elementKey(element));
 
-        return updateMeasurements
-          ? {
-              // Update the position of the hint.
-              type: "UpdatePosition",
-              index: element.index,
-              order: index,
-              hint: element.hint,
-              hintMeasurements: element.hintMeasurements,
-              highlighted: isHighlighted,
-              hidden: element.hidden || !matches,
-            }
-          : matches && (match === undefined || isHighlighted)
-          ? {
-              // Update the hint (which can change based on text filtering),
-              // which part of the hint has been matched and whether it
-              // should be marked as highlighted/matched.
-              type: "UpdateContent",
-              index: element.index,
-              order: index,
-              matchedChars: enteredChars,
-              restChars: element.hint.slice(enteredChars.length),
-              highlighted: isHighlighted,
-              hidden: element.hidden,
-            }
-          : {
-              // Hide hints that don’t match the entered hint chars.
-              type: "Hide",
-              index: element.index,
-              hidden: true,
-            };
-      }
-    )
+      return updateMeasurements
+        ? {
+            // Update the position of the hint.
+            type: "UpdatePosition",
+            index: element.index,
+            order: index,
+            hint: element.hint,
+            hintMeasurements: element.hintMeasurements,
+            highlighted: isHighlighted,
+            hidden: element.hidden || !matches,
+          }
+        : matches && (match === undefined || isHighlighted)
+        ? {
+            // Update the hint (which can change based on text filtering),
+            // which part of the hint has been matched and whether it
+            // should be marked as highlighted/matched.
+            type: "UpdateContent",
+            index: element.index,
+            order: index,
+            matchedChars: enteredChars,
+            restChars: element.hint.slice(enteredChars.length),
+            highlighted: isHighlighted,
+            hidden: element.hidden,
+          }
+        : {
+            // Hide hints that don’t match the entered hint chars.
+            type: "Hide",
+            index: element.index,
+            hidden: true,
+          };
+    })
     .concat(
       nonMatching.map((element) => ({
         // Hide hints for elements filtered by text.
@@ -2791,9 +2787,8 @@ function updateHints({
       }))
     );
 
-  const allElementsWithHints = elementsWithHintsAndMaybeHidden.concat(
-    nonMatching
-  );
+  const allElementsWithHints =
+    elementsWithHintsAndMaybeHidden.concat(nonMatching);
 
   return {
     elementsWithHints,
