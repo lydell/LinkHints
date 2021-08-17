@@ -24,7 +24,7 @@ export default function ButtonWithPopup({
 
   const open = openProp !== undefined ? openProp : openState;
 
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const setOpen = useCallback(
     (newOpen: boolean) => {

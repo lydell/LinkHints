@@ -36,12 +36,12 @@ export default function TextInput({
   const saveRef = useRef<typeof saveProp>(undefined);
   saveRef.current = saveProp;
 
-  const normalizeRef = useRef<typeof normalize>(undefined);
+  const normalizeRef = useRef<typeof normalize>();
   normalizeRef.current = normalize;
 
   const selectionStartRef = useRef<number>(0);
   const selectionEndRef = useRef<number>(0);
-  const rootRef = useRef<(HTMLInputElement & HTMLTextAreaElement) | null>(null);
+  const rootRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
   function storeSelection(): void {
     const element = rootRef.current;
@@ -82,7 +82,7 @@ export default function TextInput({
       focused && !readonly
         ? timeout(SAVE_TIMEOUT, () => {
             const save = saveRef.current;
-            if (save !== undefined) {
+            if (save !== undefined && normalizeRef.current !== undefined) {
               const normalizedValue = normalizeRef.current(value);
               if (normalizedValue !== savedValue) {
                 save(normalizedValue, "input");

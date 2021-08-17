@@ -307,7 +307,7 @@ function makeGlobals() {
     // Silence the “Unsafe assignment to innerHTML” warning from `web-ext lint`.
     // This piece of code comes from Preact. Note that this disables the
     // `dangerouslySetInnerHTML` feature.
-    "n.innerHTML": "n.__disabled__innerHTML",
+    "l.innerHTML": "l.__disabled__innerHTML",
     // Hacks to make `preact-shadow-root` work with Preact 10.
     "this.base&&this.base.parentNode": "this.__P",
     "o.children[0],": "o.children,",

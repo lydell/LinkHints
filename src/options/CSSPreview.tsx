@@ -65,8 +65,8 @@ export default function CSSPreview({
   css: string;
   peek: boolean;
 }): VNode {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const filterByTextRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const filterByTextRef = useRef<HTMLDivElement>(null);
 
   const [textRects, setTextRects] = useState<Array<Box>>([]);
 
