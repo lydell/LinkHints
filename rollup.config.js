@@ -68,11 +68,14 @@ const main = [
     : {
         ...entry,
         input: `${config.src}/${entry.input}`,
-        output: {
-          ...entry.output,
-          file: `${config.compiled}/${entry.output.file}`,
-          indent: false,
-        },
+        output:
+          typeof entry.output === "object" && !Array.isArray(entry.output)
+            ? {
+                ...entry.output,
+                file: `${config.compiled}/${entry.output.file}`,
+                indent: false,
+              }
+            : entry.output,
       }
 );
 
@@ -85,15 +88,23 @@ const docs = [
 ].map((entry) => ({
   ...entry,
   input: `${config.docs.src}/${entry.input}`,
-  output: {
-    ...entry.output,
-    file: `${config.docs.compiled}/${entry.output.file}`,
-    indent: false,
-  },
+  output:
+    typeof entry.output === "object" && !Array.isArray(entry.output)
+      ? {
+          ...entry.output,
+          file: `${config.docs.compiled}/${entry.output.file}`,
+          indent: false,
+        }
+      : entry.output,
 }));
 
-module.exports = main.concat(docs);
+/** * @type {Array<import("rollup").RollupOptions>} */
+const all = main.concat(docs);
+module.exports = all;
 
+/**
+ * @returns {void}
+ */
 function setup() {
   console.time("setup");
 
@@ -115,6 +126,7 @@ function setup() {
 /**
  * @param {string} fromDir
  * @param {string} toDir
+ * @returns {void}
  */
 function copyDir(fromDir, toDir) {
   fs.mkdirSync(toDir, { recursive: true });
@@ -134,7 +146,7 @@ function copyDir(fromDir, toDir) {
 
 /**
  * @param {{ input: string, output: string }} options
- * @returns
+ * @returns {import("rollup").RollupOptions}
  */
 function js({ input, output }) {
   return {
@@ -158,9 +170,7 @@ function js({ input, output }) {
       commonjs(),
       PROD ? prettier({ parser: "babel" }) : undefined,
     ].filter((plugin) => plugin !== undefined),
-    onwarn: /** @type {(warning: import("rollup").RollupWarning) => never} */ (
-      warning
-    ) => {
+    onwarn: (warning) => {
       throw warning;
     },
   };
@@ -175,6 +185,7 @@ function js({ input, output }) {
  * string is returned will end up in `output`.
  *
  * @param {{ input: string, output: string, data?: unknown }} options
+ * @returns {import("rollup").RollupOptions}
  */
 function template({ input, output, data }) {
   /** @type {string | undefined} */
@@ -196,7 +207,7 @@ function template({ input, output, data }) {
       commonjs(),
       {
         name: "template",
-        load: /** @type {(id: string) => null} */ (id) => {
+        load: (id) => {
           if (content === undefined) {
             const dir = path.dirname(id);
             for (const key of Object.keys(require.cache)) {
@@ -225,6 +236,7 @@ function template({ input, output, data }) {
  *   js: Array<string>,
  *   css: Array<string>,
  * }} files
+ * @returns {import("rollup").RollupOptions}
  */
 function html(files) {
   return template({
@@ -246,9 +258,9 @@ function html(files) {
 /**
  * @param {{ input: string, output: string }} options
  * @param {(content: string) => string} [transform]
+ * @returns {import("rollup").RollupOptions}
  */
 function copy({ input, output }, transform = (content) => content) {
-  // = (content) => content) {
   let content = "";
   return {
     input,
@@ -260,7 +272,7 @@ function copy({ input, output }, transform = (content) => content) {
     plugins: [
       {
         name: "copy",
-        load: /** @type {(id: string) => string} */ (id) => {
+        load: (id) => {
           content = transform(fs.readFileSync(id, "utf8"));
           return "0";
         },
@@ -272,11 +284,15 @@ function copy({ input, output }, transform = (content) => content) {
 
 /**
  * @param {{ input: string, output: string }} options
+ * @returns {import("rollup").RollupOptions}
  */
 function css({ input, output }) {
   return copy({ input, output }, transformCSS);
 }
 
+/**
+ * @returns {Record<string, string>}
+ */
 function makeGlobals() {
   return {
     BROWSER:
