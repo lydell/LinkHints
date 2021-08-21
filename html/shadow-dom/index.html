@@ -10,11 +10,34 @@
     </style>
   </head>
   <body>
-    <p style="margin: 20px">
-      <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=988575"
-        >Real-world shadow DOM heavy site</a
-      >
-    </p>
+    <div style="margin: 20px">
+      <p>
+        <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=988575"
+          >Real-world shadow DOM heavy site</a
+        >
+      </p>
+      <div style="display: flex; gap: 20px">
+        <host-element>
+          <template shadowroot="open">
+            <a href="https://example.com/open"
+              >Link inside declarative open shadom DOM</a
+            >
+            <host-element>
+              <template shadowroot="open">
+                <a href="https://example.com/open2">Nested shadow DOM</a>
+              </template>
+            </host-element>
+          </template>
+        </host-element>
+        <host-element>
+          <template shadowroot="closed">
+            <a href="https://example.com/closed"
+              >Link inside declarative closed shadom DOM (not detectable)</a
+            >
+          </template>
+        </host-element>
+      </div>
+    </div>
     <div id="container"></div>
     <script>
       let addCounter = 0;
