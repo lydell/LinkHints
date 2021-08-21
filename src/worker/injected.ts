@@ -632,17 +632,15 @@ export default (communicator?: {
     }
   }
 
-  const optionNames: Array<string> = ["capture", "once", "passive"];
-
   function stringifyOptions(eventName: string, options: unknown): string {
     const normalized =
       typeof options === "object" && options !== null
         ? (options as Record<string, unknown>)
         : { capture: Boolean(options) };
-    const optionsString = optionNames
-      .map((name) => Boolean(normalized[name]).toString())
-      .join(",");
-    return `${eventName}:${optionsString}`;
+    // Only the value of the `capture` option (regardless of how it was set) matters:
+    // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener#matching_event_listeners_for_removal
+    const capture = Boolean(normalized.capture).toString();
+    return `${eventName}:${capture}`;
   }
 
   function hasClickListenerProp(element: HTMLElement): boolean {
