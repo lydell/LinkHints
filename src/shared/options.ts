@@ -53,41 +53,46 @@ export type PartialOptions = Partial<Options>;
 export type FlatOptions = Record<string, unknown>;
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
-  return fields((field) => ({
-    chars: field("chars", chain(string, validateChars), {
-      mode: { default: defaults.chars },
+  return fields(
+    (field) => ({
+      chars: field("chars", chain(string, validateChars), {
+        mode: { default: defaults.chars },
+      }),
+      autoActivate: field("autoActivate", boolean, {
+        mode: { default: defaults.autoActivate },
+      }),
+      overTypingDuration: field("overTypingDuration", UnsignedInt, {
+        mode: { default: defaults.overTypingDuration },
+      }),
+      css: field("css", string, {
+        mode: { default: defaults.css },
+      }),
+      logLevel: field("logLevel", LogLevel, {
+        mode: { default: defaults.logLevel },
+      }),
+      useKeyTranslations: field("useKeyTranslations", boolean, {
+        mode: { default: defaults.useKeyTranslations },
+      }),
+      keyTranslations: field(
+        "keyTranslations",
+        record(KeyPair, { mode: "skip" }),
+        { mode: { default: defaults.keyTranslations } }
+      ),
+      normalKeyboardShortcuts: field(
+        "normalKeyboardShortcuts",
+        array(KeyboardMappingWithModifiers, { mode: "skip" }),
+        { mode: { default: defaults.normalKeyboardShortcuts } }
+      ),
+      hintsKeyboardShortcuts: field(
+        "hintsKeyboardShortcuts",
+        array(KeyboardMapping, { mode: "skip" }),
+        { mode: { default: defaults.hintsKeyboardShortcuts } }
+      ),
     }),
-    autoActivate: field("autoActivate", boolean, {
-      mode: { default: defaults.autoActivate },
-    }),
-    overTypingDuration: field("overTypingDuration", UnsignedInt, {
-      mode: { default: defaults.overTypingDuration },
-    }),
-    css: field("css", string, {
-      mode: { default: defaults.css },
-    }),
-    logLevel: field("logLevel", LogLevel, {
-      mode: { default: defaults.logLevel },
-    }),
-    useKeyTranslations: field("useKeyTranslations", boolean, {
-      mode: { default: defaults.useKeyTranslations },
-    }),
-    keyTranslations: field(
-      "keyTranslations",
-      record(KeyPair, { mode: "skip" }),
-      { mode: { default: defaults.keyTranslations } }
-    ),
-    normalKeyboardShortcuts: field(
-      "normalKeyboardShortcuts",
-      array(KeyboardMappingWithModifiers, { mode: "skip" }),
-      { mode: { default: defaults.normalKeyboardShortcuts } }
-    ),
-    hintsKeyboardShortcuts: field(
-      "hintsKeyboardShortcuts",
-      array(KeyboardMapping, { mode: "skip" }),
-      { mode: { default: defaults.hintsKeyboardShortcuts } }
-    ),
-  }));
+    {
+      exact: "push",
+    }
+  );
 }
 
 const MIN_CHARS = 2;
@@ -315,28 +320,54 @@ function flattenKeyboardMappings(
 const PREFIX_REGEX = /([^.]+)\.([^]*)/;
 
 // This takes a flat object and turns it into an object that can be fed to
-// `makeOptionsDecoder`.
-export function unflattenOptions(object: FlatOptions): FlatOptions {
+// `makeOptionsDecoder`. It also returns a map where you can lookup the `.path`
+// of a `DecoderError` to get the original key in the flat object.
+export function unflattenOptions(
+  object: FlatOptions
+): [FlatOptions, Map<string, Array<number | string>>] {
   const options: FlatOptions = {};
+  const map = new Map<string, Array<number | string>>();
 
-  function set(parent: string, key: string, value: unknown): void {
+  function set(
+    parent: string,
+    fullKey: string,
+    key: string,
+    value: unknown
+  ): void {
     if (!(typeof options[parent] === "object" && options[parent] !== null)) {
       options[parent] = {};
     }
     if (value !== null) {
       (options[parent] as FlatOptions)[key] = value;
+      map.set(JSON.stringify([parent, key]), [fullKey]);
+      if (Array.isArray(value)) {
+        for (let index = 0; index < value.length; index++) {
+          map.set(JSON.stringify([parent, key, index]), [fullKey, index]);
+        }
+      } else if (typeof value === "object" && value !== null) {
+        for (const subKey of Object.keys(value)) {
+          map.set(JSON.stringify([parent, key, subKey]), [fullKey, subKey]);
+        }
+      }
     }
   }
 
-  function pushShortcut(parent: string, key: string, value: unknown): void {
+  function pushShortcut(
+    parent: string,
+    fullKey: string,
+    key: string,
+    value: unknown
+  ): void {
     if (!Array.isArray(options[parent])) {
       options[parent] = [];
     }
     if (value !== null) {
-      (options[parent] as Array<unknown>).push({
+      const length = (options[parent] as Array<unknown>).push({
         shortcut: deserializeShortcut(key),
         action: value,
       });
+      map.set(JSON.stringify([parent, length - 1, "shortcut"]), [fullKey]);
+      map.set(JSON.stringify([parent, length - 1, "action"]), [fullKey]);
     }
   }
 
@@ -346,15 +377,15 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
 
     switch (start) {
       case "keys":
-        set("keyTranslations", rest, item);
+        set("keyTranslations", key, rest, item);
         break;
 
       case "normal":
-        pushShortcut("normalKeyboardShortcuts", rest, item);
+        pushShortcut("normalKeyboardShortcuts", key, rest, item);
         break;
 
       case "hints":
-        pushShortcut("hintsKeyboardShortcuts", rest, item);
+        pushShortcut("hintsKeyboardShortcuts", key, rest, item);
         break;
 
       default:
@@ -362,7 +393,7 @@ export function unflattenOptions(object: FlatOptions): FlatOptions {
     }
   }
 
-  return options;
+  return [options, map];
 }
 
 export const DEBUG_PREFIX = "debug.";
@@ -443,24 +474,18 @@ export function importOptions(
   errors: Array<string>;
 } {
   try {
-    const keyErrors = Object.keys(unflattenOptions(flatOptions)).flatMap(
-      (key) =>
-        Object.prototype.hasOwnProperty.call(defaults, key)
-          ? []
-          : `Unknown key: ${repr(key)}`
-    );
     const updatedOptionsFlat = {
       ...flattenOptions(options),
       ...flatOptions,
     };
-    const unflattened = unflattenOptions(updatedOptionsFlat);
-    const decodeErrors: Array<string> = [];
+    const [unflattened, map] = unflattenOptions(updatedOptionsFlat);
+    const errors: Array<string> = [];
     const newOptions = decode(
       makeOptionsDecoder(defaults),
       unflattened,
-      decodeErrors
+      errors,
+      map
     );
-    const errors = keyErrors.concat(decodeErrors);
     return {
       options: newOptions,
       successCount: Object.keys(flatOptions).length - errors.length,

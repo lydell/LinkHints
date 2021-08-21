@@ -589,19 +589,32 @@ export function normalizeUnsignedFloat(
 export function decode<T>(
   decoder: Decoder<T>,
   value: unknown,
-  errors?: Array<string>
+  errors?: Array<string>,
+  map?: Map<string, Array<number | string>>
 ): T {
   const localErrors: Array<DecoderError> = [];
   try {
     const result = decoder(value, localErrors);
     if (errors !== undefined) {
       for (const error of localErrors) {
+        const originalPath = map?.get(JSON.stringify(error.path));
+        if (originalPath !== undefined) {
+          error.path = originalPath;
+        }
         errors.push(error.format());
       }
     }
     return result;
   } catch (error) {
-    throw error instanceof DecoderError ? new TypeError(error.format()) : error;
+    if (error instanceof DecoderError) {
+      const originalPath = map?.get(JSON.stringify(error.path));
+      if (originalPath !== undefined) {
+        error.path = originalPath;
+      }
+      throw new TypeError(error.format());
+    } else {
+      throw error;
+    }
   }
 }
 

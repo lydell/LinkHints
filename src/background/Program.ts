@@ -2037,12 +2037,13 @@ export default class BackgroundProgram {
     const defaults = getDefaults({ mac });
     const rawOptions = await getRawOptions();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
-    const unflattened = unflattenOptions(defaulted);
+    const [unflattened, map] = unflattenOptions(defaulted);
     const decodeErrors: Array<string> = [];
     const options = decode(
       makeOptionsDecoder(defaults),
       unflattened,
-      decodeErrors
+      decodeErrors,
+      map
     );
 
     log("log", "BackgroundProgram#updateOptions", {
