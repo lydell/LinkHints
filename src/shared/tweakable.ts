@@ -36,8 +36,14 @@ type SelectorString = {
   value: string;
 };
 
+type Regex = {
+  type: "Regex";
+  value: RegExp;
+};
+
 export type TweakableValue =
   | ElementTypeSet
+  | Regex
   | SelectorString
   | StringSet
   | UnsignedFloat
@@ -85,6 +91,13 @@ export function elementTypeSet(value: Set<ElementType>): ElementTypeSet {
 export function selectorString(value: string): SelectorString {
   return {
     type: "SelectorString",
+    value,
+  };
+}
+
+export function regex(value: RegExp): Regex {
+  return {
+    type: "Regex",
     value,
   };
 }
@@ -173,6 +186,16 @@ export function tweakable(
               value: decoded,
             };
             changed[key] = decoded !== original.value;
+            break;
+          }
+
+          case "Regex": {
+            const decoded = chain(string, (val) => new RegExp(val, "u"))(value);
+            mapping[key] = {
+              type: "Regex",
+              value: decoded,
+            };
+            changed[key] = decoded.source !== original.value.source;
             break;
           }
         }

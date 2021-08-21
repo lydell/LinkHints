@@ -249,6 +249,30 @@ function TweakableField({
         );
       }
       break;
+
+    case "Regex":
+      if (defaultValue.type === "Regex") {
+        return (
+          <Field
+            {...fieldProps}
+            render={({ id }) => (
+              <TextInput
+                id={id}
+                style={{ width: "100%" }}
+                savedValue={value.value.source}
+                normalize={(newValue) => {
+                  const trimmed = newValue.trim();
+                  return trimmed === "" ? defaultValue.value.source : trimmed;
+                }}
+                save={(newValue) => {
+                  save(fullKey, newValue);
+                }}
+              />
+            )}
+          />
+        );
+      }
+      break;
   }
 
   return (

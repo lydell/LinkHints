@@ -23,6 +23,7 @@ import {
 import type { Durations, Stats, TimeTracker } from "../shared/perf";
 import {
   elementTypeSet,
+  regex,
   selectorString,
   stringSet,
   tweakable,
@@ -191,6 +192,7 @@ export const t = {
 
   ATTRIBUTES_MUTATION: stringSet(
     new Set([
+      "class",
       "contenteditable",
       "disabled",
       "href",
@@ -206,6 +208,10 @@ export const t = {
   SELECTOR_IMAGE: selectorString(
     "img, svg, [class*='icon' i], [class~='fa'], [class^='fa-'], [class*=' fa-']"
   ),
+
+  // `cm-` and `ͼ` are from CodeMirror. https://codemirror.net/6/
+  // `mtk` is from the Monaco editor. https://www.typescriptlang.org/play
+  REGEX_CLICKABLE_CLASS: regex(/\bcm-|ͼ|\bmtk/u),
 };
 
 export const tMeta = tweakable("ElementManager", t);
@@ -1408,6 +1414,10 @@ export default class ElementManager {
           return "clickable";
         }
 
+        if (t.REGEX_CLICKABLE_CLASS.value.test(element.className)) {
+          return "clickable";
+        }
+
         // "clickable-event" matched in the next `if` is the lowest quality and
         // has the biggest risk of false positives. Make sure that some of them
         // don’t get hints.
@@ -2241,9 +2251,8 @@ function isWithin(point: Point, box: Box): boolean {
 }
 
 function replaceConstants(code: string): string {
-  const regex = RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g");
   return code.replace(
-    regex,
+    RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g"),
     (name) => constants[name as keyof typeof constants]
   );
 }
