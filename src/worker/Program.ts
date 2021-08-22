@@ -46,7 +46,21 @@ type CurrentElements = {
   types: ElementTypes;
   indexes: Array<number>;
   words: Array<string>;
+  waitId: WaitId;
 };
+
+type WaitId =
+  | {
+      tag: "NotWaiting";
+    }
+  | {
+      tag: "RequestAnimationFrame";
+      id: number;
+    }
+  | {
+      tag: "RequestIdleCallback";
+      id: IdleCallbackID;
+    };
 
 export const t = {
   // How long a copied element should be selected.
@@ -55,6 +69,7 @@ export const t = {
   FLASH_COPIED_ELEMENT_NO_INVERT_SELECTOR: selectorString(
     "img, audio, video, object, embed, iframe, frame, input, textarea, select, progress, meter, canvas"
   ),
+  HINTS_REFRESH_IDLE_CALLBACK_TIMEOUT: unsignedInt(100), // ms
 };
 
 export const tMeta = tweakable("Worker", t);
@@ -145,10 +160,11 @@ export default class WorkerProgram {
     this.elementManager.stop();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
+    this.clearCurrent();
   }
 
   sendMessage(message: FromWorker): void {
-    log("log", "WorkerProgram#sendMessage", message.type, message, this);
+    log("log", "WorkerProgram#sendMessage", message.type, message);
     fireAndForget(
       browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
       "WorkerProgram#sendMessage",
@@ -169,7 +185,7 @@ export default class WorkerProgram {
 
     const { message } = wrappedMessage;
 
-    log("log", "WorkerProgram#onMessage", message.type, message, this);
+    log("log", "WorkerProgram#onMessage", message.type, message);
 
     switch (message.type) {
       case "StateSync":
@@ -182,22 +198,54 @@ export default class WorkerProgram {
         this.mac = message.mac;
 
         if (message.clearElements) {
-          this.current = undefined;
+          this.clearCurrent();
         }
         break;
 
       case "StartFindElements": {
-        const { oneTimeWindowMessageToken } = this;
-        if (oneTimeWindowMessageToken === undefined) {
-          log("error", "missing oneTimeWindowMessageToken", message);
-          break;
+        const run = (types: ElementTypes): void => {
+          const { oneTimeWindowMessageToken } = this;
+          if (oneTimeWindowMessageToken === undefined) {
+            log("error", "missing oneTimeWindowMessageToken", message);
+            return;
+          }
+          const viewport = getViewport();
+          this.reportVisibleElements(
+            types,
+            [viewport],
+            oneTimeWindowMessageToken
+          );
+        };
+
+        if (this.current === undefined) {
+          run(message.types);
+        } else {
+          this.current.types = message.types;
+          switch (this.current.waitId.tag) {
+            case "NotWaiting": {
+              const id1 = requestAnimationFrame(() => {
+                if (this.current !== undefined) {
+                  const id2 = requestIdleCallback(
+                    () => {
+                      if (this.current !== undefined) {
+                        this.current.waitId = { tag: "NotWaiting" };
+                        run(this.current.types);
+                      }
+                    },
+                    { timeout: t.HINTS_REFRESH_IDLE_CALLBACK_TIMEOUT.value }
+                  );
+                  this.current.waitId = { tag: "RequestIdleCallback", id: id2 };
+                }
+              });
+              this.current.waitId = { tag: "RequestAnimationFrame", id: id1 };
+              break;
+            }
+
+            case "RequestAnimationFrame":
+            case "RequestIdleCallback":
+              break;
+          }
         }
-        const viewport = getViewport();
-        this.reportVisibleElements(
-          message.types,
-          [viewport],
-          oneTimeWindowMessageToken
-        );
         break;
       }
 
@@ -759,6 +807,7 @@ export default class WorkerProgram {
       types,
       indexes: [],
       words: [],
+      waitId: { tag: "NotWaiting" },
     };
   }
 
@@ -912,6 +961,25 @@ export default class WorkerProgram {
     }
 
     return defaultPrevented;
+  }
+
+  clearCurrent(): void {
+    if (this.current !== undefined) {
+      const { waitId } = this.current;
+      switch (waitId.tag) {
+        case "NotWaiting":
+          break;
+
+        case "RequestAnimationFrame":
+          cancelAnimationFrame(waitId.id);
+          break;
+
+        case "RequestIdleCallback":
+          cancelIdleCallback(waitId.id);
+          break;
+      }
+      this.current = undefined;
+    }
   }
 }
 
@@ -1568,12 +1636,12 @@ function firefoxPopupBlockerWorkaround({
               return;
             }
 
-            log("log", prefix, "page stopImmediatePropagation", this);
+            log("log", prefix, "page stopImmediatePropagation");
 
             // If the page has already prevented the default action itself,
             // things are easy. Not much more to do.
             if (this.defaultPrevented) {
-              log("log", prefix, "page preventDefault", this);
+              log("log", prefix, "page preventDefault");
               onPagePreventDefault();
               originalStopImmediatePropagation.call(this);
               return;

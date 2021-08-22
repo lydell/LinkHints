@@ -977,14 +977,23 @@ export default class BackgroundProgram {
           }
         );
 
+        // Highlight the matched hints immediately, but hide others when the
+        // highlight duration is over. Likely, the same hints will appear again
+        // when the “next” hints mode is started. This reduces flicker.
         this.sendRendererMessage(
           {
             type: "UpdateHints",
-            updates,
+            updates: updates.filter((update) => update.type !== "Hide"),
             enteredText: hintsState.enteredText,
           },
           { tabId }
         );
+
+        // In case the “next” hints mode takes longer than the highlight
+        // duration, remove the shruggie. It might flicker by otherwise, and we
+        // don’t need it, just like we don’t show it when entering hints mode
+        // initially.
+        this.sendRendererMessage({ type: "RemoveShruggie" }, { tabId });
 
         this.updateWorkerStateAfterHintActivation({
           tabId,
@@ -1834,6 +1843,10 @@ export default class BackgroundProgram {
 
     const { hintsState } = tabState;
 
+    if (hintsState.highlighted.length === 0) {
+      return;
+    }
+
     const now = Date.now();
     const [doneWaiting, stillWaiting] = partition(
       hintsState.highlighted,
@@ -1873,15 +1886,12 @@ export default class BackgroundProgram {
 
     switch (hintsState.type) {
       case "Idle":
+      case "Collecting":
         if (stillWaiting.length === 0) {
           this.sendRendererMessage({ type: "Unrender" }, { tabId });
         } else {
           hideDoneWaiting();
         }
-        break;
-
-      case "Collecting":
-        hideDoneWaiting();
         break;
 
       case "Hinting": {
@@ -2170,7 +2180,7 @@ export default class BackgroundProgram {
         }
       : {
           type: "StateSync",
-          clearElements: true,
+          clearElements: hintsState.type === "Idle",
           keyboardShortcuts: getKeyboardShortcuts(
             this.options.values.normalKeyboardShortcuts
           ),

@@ -204,7 +204,7 @@ export default class RendererProgram {
   }
 
   sendMessage(message: FromRenderer): void {
-    log("log", "RendererProgram#sendMessage", message.type, message, this);
+    log("log", "RendererProgram#sendMessage", message.type, message);
     fireAndForget(
       browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
       "RendererProgram#sendMessage",
@@ -226,7 +226,7 @@ export default class RendererProgram {
 
     const { message } = wrappedMessage;
 
-    log("log", "RendererProgram#onMessage", message.type, message, this);
+    log("log", "RendererProgram#onMessage", message.type, message);
 
     switch (message.type) {
       case "StateSync": {
@@ -254,6 +254,10 @@ export default class RendererProgram {
 
       case "UpdateHints":
         this.updateHints(message.updates, message.enteredText);
+        break;
+
+      case "RemoveShruggie":
+        this.shruggieElement.remove();
         break;
 
       case "RotateHints":

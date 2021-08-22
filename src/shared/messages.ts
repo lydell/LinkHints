@@ -172,6 +172,9 @@ export type ToRenderer =
       type: "Peek";
     }
   | {
+      type: "RemoveShruggie";
+    }
+  | {
       type: "Render";
       elements: Array<ElementRender>;
       mixedCase: boolean;
