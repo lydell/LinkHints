@@ -34,6 +34,40 @@
       link({ preventDefault: { at: "window", how: "capture" } });
       link({ preventDefault: { at: "element", how: "bubble" } });
       link({ preventDefault: { at: "window", how: "bubble" } });
+      link({}, (a, text, p) => {
+        a.textContent = text += " but triggers a click on this link:";
+        p.append(a);
+        const otherA = document.createElement("a");
+        otherA.textContent = "Clicks: 0";
+        otherA.href = "#should-not-appear";
+        p.append(document.createTextNode(" "));
+        p.append(otherA);
+        otherA.addEventListener("click", (event) => {
+          event.stopImmediatePropagation();
+          event.preventDefault();
+          otherA.textContent = otherA.textContent.replace(
+            /\d+/,
+            (match) => Number(match) + 1
+          );
+        });
+        a.addEventListener("click", () => {
+          otherA.click();
+        });
+      });
+      link({}, (a, text, p) => {
+        a.textContent = text += " but triggers a click on this button:";
+        p.append(a);
+        const button = document.createElement("button");
+        button.textContent = "window.open";
+        p.append(document.createTextNode(" "));
+        p.append(button);
+        button.addEventListener("click", (event) => {
+          window.open("https://example.com/button");
+        });
+        a.addEventListener("click", () => {
+          button.click();
+        });
+      });
 
       br();
 
@@ -80,24 +114,29 @@
 
       br();
 
-      link({ stopPropagation: { at: "window", how: "capture" } }, (a, text) => {
-        const button = document.createElement("button");
-        button.textContent = text;
-        a.append(button);
-      });
+      link(
+        { stopPropagation: { at: "window", how: "capture" } },
+        (a, text, p) => {
+          const button = document.createElement("button");
+          button.textContent = text;
+          a.append(button);
+          p.append(a);
+        }
+      );
       link(
         { stopPropagation: { at: "element", how: "capture" } },
-        (a, text) => {
+        (a, text, p) => {
           const button = document.createElement("button");
           button.textContent = text;
           const span = document.createElement("span");
           span.append(button);
           a.append(span);
+          p.append(a);
         }
       );
       link(
         { stopPropagation: { at: "element", how: "capture" } },
-        (a, text) => {
+        (a, text, p) => {
           const button = document.createElement("button");
           button.textContent = text + " | with preventDefault on button";
           button.onclick = (event) => {
@@ -106,10 +145,11 @@
           const span = document.createElement("span");
           span.append(button);
           a.append(span);
+          p.append(a);
         }
       );
 
-      function link(options, makeChildren = undefined) {
+      function link(options, handleDom = undefined) {
         const {
           preventDefault,
           returnValue,
@@ -125,10 +165,11 @@
         const text = `Link ${counter}: ${
           getFeaturesString(options) || "(regular)"
         }`;
-        if (makeChildren !== undefined) {
-          makeChildren(a, text);
+        if (handleDom !== undefined) {
+          handleDom(a, text, p);
         } else {
           a.textContent = text;
+          p.append(a);
         }
 
         if (preventDefault) {
@@ -165,7 +206,6 @@
           });
         }
 
-        p.append(a);
         container.append(p);
         counter++;
       }

@@ -851,15 +851,6 @@ export default class WorkerProgram {
       return false;
     }
 
-    let cleanup = undefined;
-
-    if (BROWSER === "firefox") {
-      cleanup = firefoxPopupBlockerWorkaround({
-        element,
-        isPinned: this.isPinned,
-      });
-    }
-
     const targetElement = getTargetElement(element);
 
     const rect = targetElement.getBoundingClientRect();
@@ -876,6 +867,25 @@ export default class WorkerProgram {
       clientY: Math.round(rect.top + rect.height / 2),
     };
 
+    // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
+    // requires the full mousedown+mouseup+click event sequence.
+    const mousedownEvent = new MouseEvent("mousedown", {
+      ...options,
+      buttons: 1,
+    });
+    const mouseupEvent = new MouseEvent("mouseup", options);
+    const clickEvent = new MouseEvent("click", options);
+
+    let cleanup = undefined;
+
+    if (BROWSER === "firefox") {
+      cleanup = firefoxPopupBlockerWorkaround({
+        element,
+        isPinned: this.isPinned,
+        ourClickEvent: clickEvent,
+      });
+    }
+
     // When clicking a link for real the focus happens between the mousedown and
     // the mouseup, but moving this line between those two `.dispatchEvent` calls
     // below causes dropdowns in gmail not to be triggered anymore.
@@ -884,15 +894,9 @@ export default class WorkerProgram {
     // the target element might be a span or div.
     element.focus();
 
-    // Just calling `.click()` isn’t enough to open dropdowns in gmail. That
-    // requires the full mousedown+mouseup+click event sequence.
-    targetElement.dispatchEvent(
-      new MouseEvent("mousedown", { ...options, buttons: 1 })
-    );
-    targetElement.dispatchEvent(new MouseEvent("mouseup", options));
-    let defaultPrevented = !targetElement.dispatchEvent(
-      new MouseEvent("click", options)
-    );
+    targetElement.dispatchEvent(mousedownEvent);
+    targetElement.dispatchEvent(mouseupEvent);
+    let defaultPrevented = !targetElement.dispatchEvent(clickEvent);
 
     if (BROWSER === "firefox") {
       if (cleanup !== undefined) {
@@ -1375,9 +1379,11 @@ function getUrlWithTarget(link: HTMLAnchorElement): string {
 function firefoxPopupBlockerWorkaround({
   element,
   isPinned,
+  ourClickEvent,
 }: {
   element: HTMLElement;
   isPinned: boolean;
+  ourClickEvent: MouseEvent;
 }): () => {
   pagePreventedDefault: boolean | undefined;
   urlsToOpenInNewTabs: Array<string>;
@@ -1466,6 +1472,17 @@ function firefoxPopupBlockerWorkaround({
             "click",
             // eslint-disable-next-line @typescript-eslint/no-loop-func
             (event: Event) => {
+              if (event !== ourClickEvent) {
+                log(
+                  "log",
+                  prefix,
+                  "ignoring click event triggered by page while handling our click event",
+                  event,
+                  target
+                );
+                return;
+              }
+
               // We’re already done – just skip remaining listeners.
               if (defaultPrevented !== "NotPrevented") {
                 return;
@@ -1535,6 +1552,16 @@ function firefoxPopupBlockerWorkaround({
         "stopImmediatePropagation",
         (originalStopImmediatePropagation) =>
           function stopImmediatePropagation(this: Event): void {
+            if (this !== ourClickEvent) {
+              log(
+                "log",
+                prefix,
+                "ignoring stopImmediatePropagation for event triggered by page while handling our click event",
+                this
+              );
+              return;
+            }
+
             // We’re already done – just skip remaining listeners.
             if (defaultPrevented !== "NotPrevented") {
               originalStopImmediatePropagation.call(this);
@@ -1572,6 +1599,15 @@ function firefoxPopupBlockerWorkaround({
                 "preventDefault",
                 (originalPreventDefault) =>
                   function preventDefault(this: Event): void {
+                    if (this !== ourClickEvent) {
+                      log(
+                        "log",
+                        prefix,
+                        "ignoring preventDefault for event triggered by page while handling our click event",
+                        this
+                      );
+                      return;
+                    }
                     log(
                       "log",
                       prefix,
@@ -1595,6 +1631,11 @@ function firefoxPopupBlockerWorkaround({
   // Temporarily override `window.open`. (If the page has overridden
   // `window.open` to something completely different, this breaks down a little.
   // Hopefully that’s rare.)
+  // Note: The thing we triggered a click event on might call `window.open()`.
+  // Right, that’s what we’re after. But it could just as well trigger a click
+  // event on _another_ button that in turn calls `window.open()`. What should
+  // happen then? That’s actually allowed (not blocked)! I think since the
+  // `window.open()` happens synchronously within a trusted click, it’s ok.
   // eslint-disable-next-line @typescript-eslint/unbound-method
   const originalOpen = wrappedJSObject.open;
   exportFunction(
