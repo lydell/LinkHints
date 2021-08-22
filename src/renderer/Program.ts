@@ -29,7 +29,6 @@ import {
   fireAndForget,
   getViewport,
   log,
-  partition,
   Resets,
   setStyles,
 } from "../shared/main";
@@ -652,20 +651,14 @@ export default class RendererProgram {
     const stacks = getStacks(this.hints, this.rects);
     for (const stack of stacks) {
       if (stack.length >= 2) {
-        // Hidden hints are rotated separately.
-        const groups = partition(stack, (element) =>
-          element.classList.contains(HIDDEN_CLASS)
+        // All `z-index`:es are unique, so there’s no need for a stable sort.
+        stack.sort(
+          (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
         );
-        for (const group of groups) {
-          // All `z-index`:es are unique, so there’s no need for a stable sort.
-          group.sort(
-            (a, b) => (Number(a.style.zIndex) - Number(b.style.zIndex)) * sign
-          );
-          const [first, ...rest] = group.map((element) => element.style.zIndex);
-          const zIndexes = [...rest, first];
-          for (const [index, element] of group.entries()) {
-            setStyles(element, { "z-index": zIndexes[index] });
-          }
+        const [first, ...rest] = stack.map((element) => element.style.zIndex);
+        const zIndexes = [...rest, first];
+        for (const [index, element] of stack.entries()) {
+          setStyles(element, { "z-index": zIndexes[index] });
         }
       }
     }
@@ -826,6 +819,15 @@ function getStackFor(
   let index = 0;
   while (index < elements.length) {
     const nextElement = elements[index];
+
+    // Stacks contain only hidden or only shown elements.
+    if (
+      element.classList.contains(HIDDEN_CLASS) !==
+      nextElement.classList.contains(HIDDEN_CLASS)
+    ) {
+      index += 1;
+      continue;
+    }
 
     // In practice, `rects` will already contain all rects needed (since all
     // hint elements are run through `moveInsideViewport`), so
