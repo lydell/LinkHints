@@ -162,6 +162,7 @@ function js({ input, output }) {
       sucrase({
         exclude: ["node_modules/**"],
         transforms: ["typescript", "jsx"],
+        disableESTransforms: true,
         // Don't add `__self` and `__source` to JSX, which Preact does not support.
         production: true,
         ...jsx,
@@ -200,6 +201,7 @@ function template({ input, output, data }) {
     plugins: [
       sucrase({
         transforms: ["typescript", "jsx"],
+        disableESTransforms: true,
         production: true,
         ...jsx,
       }),
@@ -220,7 +222,7 @@ function template({ input, output, data }) {
           return null;
         },
         renderChunk: () => {
-          const chunk = { code: content, map: undefined };
+          const chunk = { code: content ?? "", map: undefined };
           content = undefined;
           return chunk;
         },

@@ -92,7 +92,7 @@ function makeSourceCodeReadme(): string {
   return `
 Steps to reproduce this build:
 
-1. Install [Node.js] 14 with npm 6.
+1. Install [Node.js] 16 with npm 7.
 2. Run \`npm ci\`.
 3. Run \`npm run build:firefox\`.
 4. Output is now available in \`dist-firefox/\`.

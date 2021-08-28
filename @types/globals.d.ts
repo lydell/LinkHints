@@ -67,3 +67,8 @@ interface Navigator {
     }>;
   };
 }
+
+interface ShadowRoot {
+  elementFromPoint: Document["elementFromPoint"];
+  elementsFromPoint: Document["elementsFromPoint"];
+}

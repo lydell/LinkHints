@@ -1,0 +1,12 @@
+diff --git a/node_modules/@rollup/plugin-sucrase/dist/index.js b/node_modules/@rollup/plugin-sucrase/dist/index.js
+index 4720ed3..55d7a97 100644
+--- a/node_modules/@rollup/plugin-sucrase/dist/index.js
++++ b/node_modules/@rollup/plugin-sucrase/dist/index.js
+@@ -40,6 +40,7 @@ module.exports = function sucrase(opts = {}) {
+         enableLegacyTypeScriptModuleInterop: opts.enableLegacyTypeScriptModuleInterop,
+         enableLegacyBabel5ModuleInterop: opts.enableLegacyBabel5ModuleInterop,
+         production: opts.production,
++        disableESTransforms: opts.disableESTransforms,
+         filePath: id,
+         sourceMapOptions: {
+           compiledFilename: id
