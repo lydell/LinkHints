@@ -565,7 +565,7 @@ export default class RendererProgram {
             `${update.matchedChars}${zeroWidthSpace}${update.restChars}`;
 
           if (needsTextUpdate) {
-            emptyNode(child);
+            child.replaceChildren();
           }
 
           const hasMatchedChars = update.matchedChars !== "";
@@ -708,8 +708,8 @@ export default class RendererProgram {
     this.container.root.classList.remove(PEEK_CLASS);
     this.maybeApplyStyles(this.shruggieElement);
     this.setStatus("");
-    emptyNode(this.container.root);
-    emptyNode(this.container.shadowRoot);
+    this.container.root.replaceChildren();
+    this.container.shadowRoot.replaceChildren();
     this.container.resets.reset();
     this.container.intersectionObserver.disconnect();
 
@@ -780,12 +780,6 @@ function wrapMessage(message: FromRenderer): ToBackground {
     type: "FromRenderer",
     message,
   };
-}
-
-function emptyNode(node: Node): void {
-  while (node.firstChild !== null) {
-    node.removeChild(node.firstChild);
-  }
 }
 
 function createHintElement(hint: string): HTMLElement {
