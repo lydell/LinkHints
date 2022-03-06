@@ -163,100 +163,90 @@ export default (communicator?: {
 
       const { fnMap } = this;
 
-      // `f = { [name]: function(){} }[name]` is a way of creating a dynamically
-      // named function (where `f.name === name`).
-      const fn =
+      const fn = dynamicallyNamedFunction(
+        originalFn.name,
         hook === undefined
-          ? {
-              [originalFn.name](...args: Array<never>): unknown {
-                // In the cases where no hook is provided we just want to make sure
-                // that the method (such as `toString`) is called with the
-                // _original_ function, not the overriding function.
-                return apply(
-                  originalFn,
-                  apply(mapGet, fnMap, [this]) ?? this,
-                  args
-                );
-              },
-            }[originalFn.name]
-          : {
-              [originalFn.name](...args: Array<never>): unknown {
-                let wrappedArgs = args;
-                if (BROWSER === "firefox") {
-                  wrappedArgs = args.map((arg) => XPCNativeWrapper(arg));
-                }
+          ? (that: unknown, ...args: Array<never>): unknown =>
+              // In the cases where no hook is provided we just want to make sure that
+              // the method (such as `toString`) is called with the _original_ function,
+              // not the overriding function.
+              apply(originalFn, apply(mapGet, fnMap, [that]) ?? that, args)
+          : (that: unknown, ...args: Array<never>): unknown => {
+              let wrappedArgs = args;
+              if (BROWSER === "firefox") {
+                wrappedArgs = args.map((arg) => XPCNativeWrapper(arg));
+              }
 
-                let prehookData = undefined;
-                if (prehook !== undefined) {
-                  try {
-                    prehookData = prehook(this, ...wrappedArgs);
-                  } catch (errorAny) {
-                    const error = errorAny as Error;
-                    logHookError(error, obj, name);
-                  }
-                }
-
-                // Since Firefox does not support running cleanups when an
-                // extension is disabled/updated (<bugzil.la/1223425>), hooks
-                // from the previous version will still be around (until the
-                // page is reloaded). `apply(originalFn, this, args)` fails with
-                // "can't access dead object" for the old hooks will fail, so
-                // ignore that error and abort those hooks.
-                let returnValue = undefined;
-                if (BROWSER === "firefox") {
-                  try {
-                    returnValue = XPCNativeWrapper(
-                      apply(originalFn, this, args)
-                    ) as U;
-                  } catch (errorAny) {
-                    const error = errorAny as Error | null | undefined;
-                    if (
-                      error !== null &&
-                      error !== undefined &&
-                      error.name === "TypeError" &&
-                      error.message === "can't access dead object"
-                    ) {
-                      return undefined;
-                    }
-                    throw error as Error;
-                  }
-                } else {
-                  returnValue = apply(originalFn, this, args) as U;
-                }
-
-                // In case there's a mistake in `hook` it shouldn't cause the entire
-                // overridden method to fail and potentially break the whole page.
+              let prehookData = undefined;
+              if (prehook !== undefined) {
                 try {
-                  // Remember that `hook` can be called with _anything,_ because the
-                  // user can pass invalid arguments and use `.call`.
-                  const result = hook(
-                    { returnValue, prehookData },
-                    this,
-                    ...wrappedArgs
-                  );
-                  if (
-                    typeof result === "object" &&
-                    result !== null &&
-                    typeof (result as Record<string, unknown>).then ===
-                      "function"
-                  ) {
-                    (result as PromiseLike<unknown>).then(
-                      undefined,
-                      // .catch does not exist on `PromiseLike`.
-                      // eslint-disable-next-line no-restricted-syntax
-                      (error: Error) => {
-                        logHookError(error, obj, name);
-                      }
-                    );
-                  }
+                  prehookData = prehook(that, ...wrappedArgs);
                 } catch (errorAny) {
                   const error = errorAny as Error;
                   logHookError(error, obj, name);
                 }
+              }
 
-                return returnValue;
-              },
-            }[originalFn.name];
+              // Since Firefox does not support running cleanups when an
+              // extension is disabled/updated (<bugzil.la/1223425>), hooks
+              // from the previous version will still be around (until the
+              // page is reloaded). `apply(originalFn, this, args)` fails with
+              // "can't access dead object" for the old hooks will fail, so
+              // ignore that error and abort those hooks.
+              let returnValue = undefined;
+              if (BROWSER === "firefox") {
+                try {
+                  returnValue = XPCNativeWrapper(
+                    apply(originalFn, that, args)
+                  ) as U;
+                } catch (errorAny) {
+                  const error = errorAny as Error | null | undefined;
+                  if (
+                    error !== null &&
+                    error !== undefined &&
+                    error.name === "TypeError" &&
+                    error.message === "can't access dead object"
+                  ) {
+                    return undefined;
+                  }
+                  throw error as Error;
+                }
+              } else {
+                returnValue = apply(originalFn, that, args) as U;
+              }
+
+              // In case there's a mistake in `hook` it shouldn't cause the entire
+              // overridden method to fail and potentially break the whole page.
+              try {
+                // Remember that `hook` can be called with _anything,_ because the
+                // user can pass invalid arguments and use `.call`.
+                const result = hook(
+                  { returnValue, prehookData },
+                  that,
+                  ...wrappedArgs
+                );
+                if (
+                  typeof result === "object" &&
+                  result !== null &&
+                  typeof (result as Record<string, unknown>).then === "function"
+                ) {
+                  (result as PromiseLike<unknown>).then(
+                    undefined,
+                    // .catch does not exist on `PromiseLike`.
+                    // eslint-disable-next-line no-restricted-syntax
+                    (error: Error) => {
+                      logHookError(error, obj, name);
+                    }
+                  );
+                }
+              } catch (errorAny) {
+                const error = errorAny as Error;
+                logHookError(error, obj, name);
+              }
+
+              return returnValue;
+            }
+      );
 
       // Make sure that `.length` is correct. This has to be done _after_
       // `exportFunction`.
@@ -306,6 +296,23 @@ export default (communicator?: {
         this.hookInto(win.Function.prototype, "toString");
       }
     }
+  }
+
+  // `f = { [name]: function(){} }[name]` is a way of creating a dynamically
+  // named function (where `f.name === name`).
+  function dynamicallyNamedFunction(
+    n: string,
+    f: (that: unknown, ...args: Array<never>) => unknown
+  ): (...args: Array<never>) => unknown {
+    return {
+      // Despite our best efforts, it’s still possible to detect our injection
+      // in Chrome by using an iframe. So keep this function as short and vague
+      // as possible. Keep it on one line to not leak the indentation. Include
+      // the standard “native code” stuff in an attempt to work with naive
+      // string matching code.
+      // prettier-ignore
+      [n](...a: Array<never>): unknown { "function () { [native code] }"; return f(this, ...a); },
+    }[n];
   }
 
   function logHookError(error: Error, obj: unknown, name: string): void {

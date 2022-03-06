@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>detect monkey patch</title>
+  </head>
+  <body>
+    <pre id="pre"></pre>
+    <script>
+      pre.textContent = [
+        [EventTarget.prototype, "addEventListener"],
+        [EventTarget.prototype, "removeEventListener"],
+        [HTMLElement.prototype, "onclick"],
+        [HTMLElement.prototype, "onmousedown"],
+        [Function.prototype, "toString"],
+        [Element.prototype, "attachShadow"],
+      ]
+        .map(([prototype, prop]) => {
+          console.log("foo", prototype, prop);
+          const descriptor = Reflect.getOwnPropertyDescriptor(prototype, prop);
+          const f = descriptor["value" in descriptor ? "value" : "set"];
+          return [
+            ["case", `${prototype.constructor.name}.prototype.${prop}`],
+            [".name", f.name],
+            [".length", f.length],
+            [".toString()", f.toString()],
+            [
+              "Function.prototype.toString.call()",
+              Function.prototype.toString.call(f),
+            ],
+            ["iframe toString trick", iframeToString(f)],
+            ["descriptor", JSON.stringify(descriptor, null, 2)],
+          ]
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("\n");
+        })
+        .join("\n\n----\n\n");
+
+      function iframeToString(f) {
+        const iframe = document.createElement("iframe");
+        document.head.append(iframe);
+        const string = iframe.contentWindow.Function.prototype.toString.call(f);
+        iframe.remove();
+        return string;
+      }
+    </script>
+  </body>
+</html>
