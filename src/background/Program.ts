@@ -2316,14 +2316,14 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     // that code trying to access `tabState.isPinned` right after
     // `makeEmptyTabState` might get the wrong value. At the time of this
     // writing, no code does that so the hack holds.
-    browser.tabs.get(tabId).then(
-      (tab) => {
+    browser.tabs
+      .get(tabId)
+      .then((tab) => {
         tabState.isPinned = tab.pinned;
-      },
-      (error) => {
+      })
+      .catch((error) => {
         log("error", "makeEmptyTabState", `Failed to get tab ${tabId}.`, error);
-      }
-    );
+      });
   }
 
   return tabState;

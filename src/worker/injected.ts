@@ -242,6 +242,8 @@ export default (communicator?: {
                   ) {
                     (result as PromiseLike<unknown>).then(
                       undefined,
+                      // .catch does not exist on `PromiseLike`.
+                      // eslint-disable-next-line no-restricted-syntax
                       (error: Error) => {
                         logHookError(error, obj, name);
                       }

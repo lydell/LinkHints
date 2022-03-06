@@ -52,12 +52,12 @@ type State = {
 };
 
 export default class KeyboardShortcuts extends Component<Props, State> {
-  state: State = {
+  override state: State = {
     addingAction: undefined,
     shortcutError: undefined,
   };
 
-  componentDidUpdate(prevProps: Props): void {
+  override componentDidUpdate(prevProps: Props): void {
     const {
       capturedKeypressWithTimestamp,
       mode,

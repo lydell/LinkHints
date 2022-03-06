@@ -47,6 +47,11 @@ module.exports = {
         message:
           "The comma operator is confusing and a common mistake. Don’t use it!",
       },
+      {
+        selector: `CallExpression[callee.property.name="then"] > :nth-child(2)`,
+        message:
+          "Use .then(onSuccess).catch(onError) instead of .then(onSuccess, onError)",
+      },
     ],
     "no-self-compare": error,
     "no-sparse-arrays": error,
@@ -183,6 +188,8 @@ module.exports = {
         "@typescript-eslint/no-unsafe-member-access": error,
         "@typescript-eslint/no-unsafe-return": error,
         "@typescript-eslint/no-unused-expressions": error,
+        "@typescript-eslint/no-unused-vars": error,
+        "@typescript-eslint/no-useless-empty-export": warn,
         "@typescript-eslint/no-var-requires": error,
         "@typescript-eslint/prefer-as-const": warn,
         "@typescript-eslint/prefer-for-of": warn,

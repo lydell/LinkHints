@@ -111,14 +111,15 @@ export default class PopupProgram {
           <button
             type="button"
             className="browser-style"
-            onClick={async () => {
-              try {
-                await browser.runtime.openOptionsPage();
-                window.close();
-              } catch (errorAny) {
-                const error = errorAny as Error;
-                showError(error);
-              }
+            onClick={() => {
+              browser.runtime
+                .openOptionsPage()
+                .then(() => {
+                  window.close();
+                })
+                .catch((error: Error) => {
+                  showError(error);
+                });
             }}
           >
             Options
@@ -127,14 +128,15 @@ export default class PopupProgram {
           <button
             type="button"
             className="browser-style"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(this.debugInfo);
-                window.close();
-              } catch (errorAny) {
-                const error = errorAny as Error;
-                showError(error);
-              }
+            onClick={() => {
+              navigator.clipboard
+                .writeText(this.debugInfo)
+                .then(() => {
+                  window.close();
+                })
+                .catch((error: Error) => {
+                  showError(error);
+                });
             }}
           >
             Copy debug info

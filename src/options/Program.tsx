@@ -145,7 +145,7 @@ export default class OptionsProgram extends Component<Props, State> {
 
   hasRestoredPosition = false;
 
-  state: State = {
+  override state: State = {
     options: undefined,
     hasSaved: false,
     customChars: "",
@@ -202,11 +202,11 @@ export default class OptionsProgram extends Component<Props, State> {
     this.resets.reset();
   }
 
-  componentDidMount(): void {
+  override componentDidMount(): void {
     this.start();
   }
 
-  componentWillUnmount(): void {
+  override componentWillUnmount(): void {
     this.stop();
   }
 
@@ -1003,7 +1003,8 @@ export default class OptionsProgram extends Component<Props, State> {
                                       disabled={keyTranslationsInput.testOnly}
                                       onClick={() => {
                                         const {
-                                          [code]: removed,
+                                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                          [code]: _removed,
                                           ...newKeyTranslations
                                         } = options.keyTranslations;
                                         this.saveOptions({
