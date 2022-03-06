@@ -1106,7 +1106,7 @@ function getTargetElement(element: HTMLElement): HTMLElement {
 }
 
 // https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-integers
-const TABINDEX = /^\s*([+-]\d+)\s*$/;
+const TABINDEX = /^\s*([+-]?\d+)\s*$/;
 
 // Returns whether `element.focus()` will do anything or not.
 function isFocusable(element: HTMLElement): boolean {
