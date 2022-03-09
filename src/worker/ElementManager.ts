@@ -1354,18 +1354,18 @@ export default class ElementManager {
       return undefined;
     }
 
-    switch (element.nodeName) {
-      case "A":
+    switch (element.localName) {
+      case "a":
         return element instanceof HTMLAnchorElement
           ? getLinkElementType(element)
           : undefined;
-      case "BUTTON":
-      case "SELECT":
-      case "SUMMARY":
-      case "AUDIO":
-      case "VIDEO":
+      case "button":
+      case "select":
+      case "summary":
+      case "audio":
+      case "video":
         return "clickable";
-      case "INPUT":
+      case "input":
         return element instanceof HTMLInputElement && element.type !== "hidden"
           ? "clickable"
           : undefined;
@@ -1373,9 +1373,9 @@ export default class ElementManager {
       // around their search inputs, whose hints end up below the hint of the
       // input. It feels like `<form>`s are never relevant to click, so exclude
       // them.
-      case "FORM":
+      case "form":
         return undefined;
-      case "TEXTAREA":
+      case "textarea":
         return "textarea";
       default: {
         const document = element.ownerDocument;
@@ -1441,7 +1441,7 @@ export default class ElementManager {
 
         // Match `<label>` elements last so that labels without controls but
         // with click listeners are matched as clickable.
-        if (element.nodeName === "LABEL") {
+        if (element.localName === "label") {
           return "label";
         }
 
@@ -1458,7 +1458,7 @@ export default class ElementManager {
       return undefined;
     }
 
-    switch (element.nodeName) {
+    switch (element.localName) {
       // Always consider the following elements as selectable, regardless of their
       // children, since they have special context menu items. A
       // `<canvas><p>fallback</p></canvas>` could be considered a wrapper element
@@ -1467,25 +1467,25 @@ export default class ElementManager {
       // give frames hints during regular click hints mode for that reason, but
       // unfortunately for example Twitter uses iframes for many of its little
       // widgets/embeds which would result in many unnecessary/confusing hints.
-      case "A":
-      case "AUDIO":
-      case "BUTTON":
-      case "SELECT":
-      case "TEXTAREA":
-      case "VIDEO":
+      case "a":
+      case "audio":
+      case "button":
+      case "select":
+      case "textarea":
+      case "video":
         return "clickable";
-      case "INPUT":
+      case "input":
         return element instanceof HTMLInputElement && element.type !== "hidden"
           ? "clickable"
           : undefined;
-      case "CANVAS":
-      case "EMBED":
-      case "FRAME":
-      case "IFRAME":
-      case "IMG":
-      case "OBJECT":
-      case "PRE":
-      case "svg": // SVG `.nodeName` is actually lowercase.
+      case "canvas":
+      case "embed":
+      case "frame":
+      case "iframe":
+      case "img":
+      case "object":
+      case "pre":
+      case "svg":
         return "selectable";
       default: {
         // If an element has no child _elements_ (but possibly child text nodes),
@@ -1757,7 +1757,7 @@ function getMeasurements(
     // <https://codemirror.net/demo/complete.html>
     if (
       !(
-        element.nodeName === "TEXTAREA" &&
+        element.localName === "textarea" &&
         // Use `element.clientWidth` instead of `pointBox.width` because the
         // latter includes the width of the borders of the textarea, which are
         // unreliable.
@@ -1850,7 +1850,7 @@ function getSingleRectPoint({
   // will fail. An example is the signup form at <https://www.facebook.com/>.
   // Also, ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
   time.start("getSingleRectPoint:textPoint");
-  if (!SKIP_TEXT_ELEMENTS.has(element.nodeName)) {
+  if (!SKIP_TEXT_ELEMENTS.has(element.localName)) {
     const textPoint = getBestNonEmptyTextPoint({
       element,
       elementRect: rect,
@@ -1903,7 +1903,7 @@ function getSingleRectPoint({
   // nearer the placeholder in `<input>` elements and nearer the text in `<input
   // type="button">` and `<select>`.
   time.start("getSingleRectPoint:borderAndPaddingPoint");
-  if (element.nodeName === "INPUT" || element.nodeName === "SELECT") {
+  if (element.localName === "input" || element.localName === "select") {
     const borderAndPaddingPoint = getBorderAndPaddingPoint(
       element,
       rect,
@@ -1912,7 +1912,7 @@ function getSingleRectPoint({
     if (isAcceptable(borderAndPaddingPoint)) {
       return {
         ...borderAndPaddingPoint,
-        debug: `getSingleRectPoint borderAndPaddingPoint (nodeName: ${element.nodeName}): ${borderAndPaddingPoint.debug}`,
+        debug: `getSingleRectPoint borderAndPaddingPoint (localName: ${element.localName}): ${borderAndPaddingPoint.debug}`,
       };
     }
   }

@@ -286,30 +286,30 @@ export const LAST_NON_WHITESPACE = /\S\s*$/;
 export const SKIP_TEXT_ELEMENTS = new Set<string>([
   // Ignore the default text in the HTML of `<textarea>` (if any), which is not
   // updated as the user types.
-  "TEXTAREA",
+  "textarea",
   // Ignore the text of `<option>`s inside `<select>` and `<datalist>`, most
   // of which are not visible.
-  "SELECT",
-  "DATALIST",
+  "select",
+  "datalist",
   // Ignore fallback content inside `<canvas>`, `<audio>` and `<video>`.
-  "CANVAS",
-  "AUDIO",
-  "VIDEO",
+  "canvas",
+  "audio",
+  "video",
   // Google has `<style>` elements inside some `<div>`s with click listeners.
-  "STYLE",
+  "style",
   // If we ignore `<style>` we could just as well ignore `<script>` too.
-  "SCRIPT",
+  "script",
   // Finally, ignore the two elements with the most text of all. They aren’t
   // useful and cause performance issues.
-  "HTML",
-  "BODY",
+  "html",
+  "body",
 ]);
 
 function shouldSkipElementText(element: HTMLElement): boolean {
   return (
-    // Checking `.nodeName` is ~3x faster than `instanceof` in the link monster
+    // Checking `.localName` is ~3x faster than `instanceof` in the link monster
     // demo.
-    SKIP_TEXT_ELEMENTS.has(element.nodeName) ||
+    SKIP_TEXT_ELEMENTS.has(element.localName) ||
     // Shadow hosts _can_ have text that is never displayed. Ideally we should
     // catch closed shadow roots as well, but it’s unclear if it’s worth the
     // trouble.

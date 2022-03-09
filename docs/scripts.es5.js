@@ -61,8 +61,8 @@ function autoCloseDetails() {
     var target = event.target;
     if (
       target instanceof HTMLElement &&
-      (target.nodeName === "SUMMARY" ||
-        (target.nodeName === "A" &&
+      (target.localName === "summary" ||
+        (target.localName === "a" &&
           target.parentElement !== null &&
           target.parentElement.classList.contains("Pagination")))
     ) {
