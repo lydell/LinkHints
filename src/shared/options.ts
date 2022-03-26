@@ -5,6 +5,7 @@ import {
   Decoder,
   DecoderError,
   fields,
+  optional,
   record,
   repr,
   string,
@@ -53,46 +54,41 @@ export type PartialOptions = Partial<Options>;
 export type FlatOptions = Record<string, unknown>;
 
 export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
-  return fields(
-    (field) => ({
-      chars: field("chars", chain(string, validateChars), {
-        mode: { default: defaults.chars },
-      }),
-      autoActivate: field("autoActivate", boolean, {
-        mode: { default: defaults.autoActivate },
-      }),
-      overTypingDuration: field("overTypingDuration", UnsignedInt, {
-        mode: { default: defaults.overTypingDuration },
-      }),
-      css: field("css", string, {
-        mode: { default: defaults.css },
-      }),
-      logLevel: field("logLevel", LogLevel, {
-        mode: { default: defaults.logLevel },
-      }),
-      useKeyTranslations: field("useKeyTranslations", boolean, {
-        mode: { default: defaults.useKeyTranslations },
-      }),
-      keyTranslations: field(
-        "keyTranslations",
-        record(KeyPair, { mode: "skip" }),
-        { mode: { default: defaults.keyTranslations } }
-      ),
-      normalKeyboardShortcuts: field(
-        "normalKeyboardShortcuts",
-        array(KeyboardMappingWithModifiers, { mode: "skip" }),
-        { mode: { default: defaults.normalKeyboardShortcuts } }
-      ),
-      hintsKeyboardShortcuts: field(
-        "hintsKeyboardShortcuts",
-        array(KeyboardMapping, { mode: "skip" }),
-        { mode: { default: defaults.hintsKeyboardShortcuts } }
-      ),
-    }),
-    {
-      exact: "push",
-    }
-  );
+  return fields((field) => ({
+    chars: field(
+      "chars",
+      optional(chain(string, validateChars), defaults.chars)
+    ),
+    autoActivate: field(
+      "autoActivate",
+      optional(boolean, defaults.autoActivate)
+    ),
+    overTypingDuration: field(
+      "overTypingDuration",
+      optional(UnsignedInt, defaults.overTypingDuration)
+    ),
+    css: field("css", optional(string, defaults.css)),
+    logLevel: field("logLevel", optional(LogLevel, defaults.logLevel)),
+    useKeyTranslations: field(
+      "useKeyTranslations",
+      optional(boolean, defaults.useKeyTranslations)
+    ),
+    keyTranslations: field(
+      "keyTranslations",
+      optional(record(KeyPair), defaults.keyTranslations)
+    ),
+    normalKeyboardShortcuts: field(
+      "normalKeyboardShortcuts",
+      optional(
+        array(KeyboardMappingWithModifiers),
+        defaults.normalKeyboardShortcuts
+      )
+    ),
+    hintsKeyboardShortcuts: field(
+      "hintsKeyboardShortcuts",
+      optional(array(KeyboardMapping), defaults.hintsKeyboardShortcuts)
+    ),
+  }));
 }
 
 const MIN_CHARS = 2;
@@ -479,17 +475,11 @@ export function importOptions(
       ...flatOptions,
     };
     const [unflattened, map] = unflattenOptions(updatedOptionsFlat);
-    const errors: Array<string> = [];
-    const newOptions = decode(
-      makeOptionsDecoder(defaults),
-      unflattened,
-      errors,
-      map
-    );
+    const newOptions = decode(makeOptionsDecoder(defaults), unflattened, map);
     return {
       options: newOptions,
-      successCount: Object.keys(flatOptions).length - errors.length,
-      errors,
+      successCount: Object.keys(flatOptions).length,
+      errors: [],
     };
   } catch (errorAny) {
     const error = errorAny as Error;

@@ -57,16 +57,13 @@ export type NormalizedKeypress = {
 };
 
 export type Shortcut = ReturnType<typeof Shortcut>;
-const Shortcut = fieldsAuto(
-  {
-    key: string,
-    alt: boolean,
-    cmd: boolean,
-    ctrl: boolean,
-    shift: boolean,
-  },
-  { exact: "push" }
-);
+const Shortcut = fieldsAuto({
+  key: string,
+  alt: boolean,
+  cmd: boolean,
+  ctrl: boolean,
+  shift: boolean,
+});
 
 const EMPTY_SHORTCUT: Shortcut = {
   key: "",
@@ -122,21 +119,15 @@ export function deserializeShortcut(
 }
 
 export type KeyboardMapping = ReturnType<typeof KeyboardMapping>;
-export const KeyboardMapping = fieldsAuto(
-  {
-    shortcut: Shortcut,
-    action: KeyboardAction,
-  },
-  { exact: "push" }
-);
+export const KeyboardMapping = fieldsAuto({
+  shortcut: Shortcut,
+  action: KeyboardAction,
+});
 
-export const KeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>(
-  {
-    shortcut: chain(Shortcut, requireModifier),
-    action: KeyboardAction,
-  },
-  { exact: "push" }
-);
+export const KeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>({
+  shortcut: chain(Shortcut, requireModifier),
+  action: KeyboardAction,
+});
 
 export type KeyboardModeBackground =
   | { type: "Capture" }
