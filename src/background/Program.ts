@@ -49,7 +49,7 @@ import {
   flattenOptions,
   getDefaults,
   getRawOptions,
-  makeOptionsDecoder,
+  Options,
   OptionsData,
   PartialOptions,
   unflattenOptions,
@@ -2048,7 +2048,7 @@ export default class BackgroundProgram {
     const rawOptions = await getRawOptions();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const [unflattened, map] = unflattenOptions(defaulted);
-    const options = decode(makeOptionsDecoder(defaults), unflattened, map);
+    const options = decode(Options, unflattened, map);
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,

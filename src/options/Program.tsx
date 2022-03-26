@@ -332,7 +332,7 @@ export default class OptionsProgram extends Component<Props, State> {
     if (optionsData === undefined) {
       return;
     }
-    const { values: options, defaults } = optionsData;
+    const { values: options } = optionsData;
     try {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
@@ -343,7 +343,7 @@ export default class OptionsProgram extends Component<Props, State> {
         options: newOptions,
         successCount,
         errors,
-      } = importOptions(otherData, options, defaults);
+      } = importOptions(otherData, options);
       this.setState({
         importData: {
           successCount,

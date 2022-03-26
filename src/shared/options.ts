@@ -2,10 +2,8 @@ import {
   array,
   boolean,
   chain,
-  Decoder,
   DecoderError,
-  fields,
-  optional,
+  fieldsAuto,
   record,
   repr,
   string,
@@ -37,59 +35,23 @@ export type OptionsData = {
   mac: boolean;
 };
 
-export type Options = {
-  chars: string;
-  autoActivate: boolean;
-  overTypingDuration: number;
-  css: string;
-  logLevel: LogLevel;
-  useKeyTranslations: boolean;
-  keyTranslations: KeyTranslations;
-  normalKeyboardShortcuts: Array<KeyboardMapping>;
-  hintsKeyboardShortcuts: Array<KeyboardMapping>;
-};
+export type Options = ReturnType<typeof Options>;
 
 export type PartialOptions = Partial<Options>;
 
 export type FlatOptions = Record<string, unknown>;
 
-export function makeOptionsDecoder(defaults: Options): Decoder<Options> {
-  return fields((field) => ({
-    chars: field(
-      "chars",
-      optional(chain(string, validateChars), defaults.chars)
-    ),
-    autoActivate: field(
-      "autoActivate",
-      optional(boolean, defaults.autoActivate)
-    ),
-    overTypingDuration: field(
-      "overTypingDuration",
-      optional(UnsignedInt, defaults.overTypingDuration)
-    ),
-    css: field("css", optional(string, defaults.css)),
-    logLevel: field("logLevel", optional(LogLevel, defaults.logLevel)),
-    useKeyTranslations: field(
-      "useKeyTranslations",
-      optional(boolean, defaults.useKeyTranslations)
-    ),
-    keyTranslations: field(
-      "keyTranslations",
-      optional(record(KeyPair), defaults.keyTranslations)
-    ),
-    normalKeyboardShortcuts: field(
-      "normalKeyboardShortcuts",
-      optional(
-        array(KeyboardMappingWithModifiers),
-        defaults.normalKeyboardShortcuts
-      )
-    ),
-    hintsKeyboardShortcuts: field(
-      "hintsKeyboardShortcuts",
-      optional(array(KeyboardMapping), defaults.hintsKeyboardShortcuts)
-    ),
-  }));
-}
+export const Options = fieldsAuto({
+  chars: chain(string, validateChars),
+  autoActivate: boolean,
+  overTypingDuration: UnsignedInt,
+  css: string,
+  logLevel: LogLevel,
+  useKeyTranslations: boolean,
+  keyTranslations: record(KeyPair),
+  normalKeyboardShortcuts: array(KeyboardMappingWithModifiers),
+  hintsKeyboardShortcuts: array(KeyboardMapping),
+});
 
 const MIN_CHARS = 2;
 
@@ -462,8 +424,7 @@ export function diffOptions(
 
 export function importOptions(
   flatOptions: FlatOptions,
-  options: Options,
-  defaults: Options
+  options: Options
 ): {
   options: Options | undefined;
   successCount: number;
@@ -475,7 +436,7 @@ export function importOptions(
       ...flatOptions,
     };
     const [unflattened, map] = unflattenOptions(updatedOptionsFlat);
-    const newOptions = decode(makeOptionsDecoder(defaults), unflattened, map);
+    const newOptions = decode(Options, unflattened, map);
     return {
       options: newOptions,
       successCount: Object.keys(flatOptions).length,
