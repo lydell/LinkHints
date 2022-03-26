@@ -53,7 +53,16 @@ export default (): string =>
       {
         matches: ["<all_urls>"],
         run_at: "document_start",
-        js: [config.renderer.output],
+        js: [
+          // We need to put the polyfill both here and above, because Chrome
+          // does not seem to guarantee the content scripts to run in order.
+          // Each `js` array runs in order, but not the `content_scripts` array
+          // it seems. See: https://github.com/lydell/LinkHints/issues/51
+          // It’s a tiny bit wasteful to load the polyfill twice in the top
+          // frame, but it’s not so bad.
+          config.needsPolyfill ? config.polyfill.output : undefined,
+          config.renderer.output,
+        ].filter((script) => script !== undefined),
       },
     ],
   });
