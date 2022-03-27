@@ -21,8 +21,6 @@ export default (): string =>
       "<all_urls>",
       // Needed to store options.
       "storage",
-      // Needed to copy to the clipboard.
-      "clipboardWrite",
     ],
     browser_action: {
       browser_style: true,

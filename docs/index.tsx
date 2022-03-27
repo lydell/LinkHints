@@ -191,11 +191,6 @@ const SECTIONS = [
             data anywhere.
           </li>
           <li>
-            Writing to the clipboard: Link Hints lets you copy elements using
-            hints and needs permission to do so. Note: Link Hints cannot{" "}
-            <em>read</em> your clipboard.
-          </li>
-          <li>
             Storage: Link Hints needs to be able to save your options. (This one
             might not appear in the installation UI, but most extensions use
             it.)
