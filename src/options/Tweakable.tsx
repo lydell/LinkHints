@@ -142,6 +142,29 @@ function TweakableField({
   };
 
   switch (value.type) {
+    case "Bool":
+      if (defaultValue.type === "Bool") {
+        return (
+          <Field
+            {...fieldProps}
+            render={({ id }) => (
+              <label className="Spaced Spaced--center">
+                <input
+                  type="checkbox"
+                  id={id}
+                  checked={value.value}
+                  onChange={(event) => {
+                    save(fullKey, event.currentTarget.checked);
+                  }}
+                />
+                <span>Enabled</span>
+              </label>
+            )}
+          />
+        );
+      }
+      break;
+
     case "UnsignedInt":
       if (defaultValue.type === "UnsignedInt") {
         return (

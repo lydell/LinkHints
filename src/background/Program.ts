@@ -61,7 +61,7 @@ import {
   TabsPerf,
   TimeTracker,
 } from "../shared/perf";
-import { tweakable, unsignedInt } from "../shared/tweakable";
+import { bool, tweakable, unsignedInt } from "../shared/tweakable";
 
 type MessageInfo = {
   tabId: number;
@@ -171,6 +171,11 @@ export const t = {
 
   // How long a matched/activated hint should show as highlighted.
   MATCH_HIGHLIGHT_DURATION: unsignedInt(200), // ms
+
+  // For people with tiling window managers who exclusively use windows rather
+  // than tabs. This changes basically everything that deals with tabs to
+  // instead deal with windows.
+  PREFER_WINDOWS: bool(false),
 };
 
 export const tMeta = tweakable("Background", t);
@@ -686,7 +691,9 @@ export default class BackgroundProgram {
       case "OpenNewTabs":
         if (BROWSER === "firefox") {
           fireAndForget(
-            openNewTabs(info.tabId, message.urls),
+            t.PREFER_WINDOWS.value
+              ? openNewWindows(message.urls)
+              : openNewTabs(info.tabId, message.urls),
             "BackgroundProgram#onWorkerMessage->openNewTabs",
             message,
             info
@@ -1195,7 +1202,18 @@ export default class BackgroundProgram {
     // downside of using the fake ctrl-click method in Chrome. In fact, there’s
     // even an upside to the ctrl-click method: The HTTP Referer header is sent,
     // just as if you had clicked the link for real. See: <bugzil.la/1615860>.
-    if (BROWSER === "chrome") {
+    if (t.PREFER_WINDOWS.value) {
+      fireAndForget(
+        browser.windows
+          .create({
+            focused: foreground,
+            url,
+          })
+          .then(() => undefined),
+        "BackgroundProgram#openNewTab (PREFER_WINDOWS)",
+        url
+      );
+    } else if (BROWSER === "chrome") {
       this.sendWorkerMessage(
         {
           type: "OpenNewTab",
@@ -2244,10 +2262,17 @@ export default class BackgroundProgram {
   async maybeOpenTutorial(): Promise<void> {
     const { tutorialShown } = await browser.storage.local.get("tutorialShown");
     if (tutorialShown !== true) {
-      await browser.tabs.create({
-        active: true,
-        url: META_TUTORIAL,
-      });
+      if (t.PREFER_WINDOWS.value) {
+        await browser.windows.create({
+          focused: true,
+          url: META_TUTORIAL,
+        });
+      } else {
+        await browser.tabs.create({
+          active: true,
+          url: META_TUTORIAL,
+        });
+      }
       await browser.storage.local.set({ tutorialShown: true });
     }
   }
@@ -2480,6 +2505,21 @@ async function openNewTabs(tabId: number, urls: Array<string>): Promise<void> {
   );
   if (newTabs.length >= 2 && newTabs[0].id !== undefined) {
     await browser.tabs.update(newTabs[0].id, { active: true });
+  }
+}
+
+// Open a bunch of windows, and then focus the first of them.
+async function openNewWindows(urls: Array<string>): Promise<void> {
+  const newWindows = await Promise.all(
+    urls.map((url) =>
+      browser.windows.create({
+        focused: urls.length === 1,
+        url,
+      })
+    )
+  );
+  if (newWindows.length >= 2 && newWindows[0].id !== undefined) {
+    await browser.windows.update(newWindows[0].id, { focused: true });
   }
 }
 

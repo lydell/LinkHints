@@ -1,4 +1,11 @@
-import { array, chain, Decoder, DecoderError, string } from "tiny-decoders";
+import {
+  array,
+  boolean,
+  chain,
+  Decoder,
+  DecoderError,
+  string,
+} from "tiny-decoders";
 
 import { ElementType } from "./hints";
 import {
@@ -10,6 +17,11 @@ import {
   UnsignedInt,
 } from "./main";
 import { DEBUG_PREFIX } from "./options";
+
+type Bool = {
+  type: "Bool";
+  value: boolean;
+};
 
 type UnsignedInt = {
   type: "UnsignedInt";
@@ -42,6 +54,7 @@ type Regex = {
 };
 
 export type TweakableValue =
+  | Bool
   | ElementTypeSet
   | Regex
   | SelectorString
@@ -59,6 +72,13 @@ export type TweakableMeta = {
   loaded: Promise<void>;
   unlisten: () => void;
 };
+
+export function bool(value: boolean): Bool {
+  return {
+    type: "Bool",
+    value,
+  };
+}
 
 export function unsignedInt(value: number): UnsignedInt {
   return {
@@ -132,6 +152,16 @@ export function tweakable(
         }
 
         switch (original.type) {
+          case "Bool": {
+            const decoded = decode(boolean, value);
+            mapping[key] = {
+              type: "Bool",
+              value: decoded,
+            };
+            changed[key] = decoded !== original.value;
+            break;
+          }
+
           case "UnsignedInt": {
             const decoded = decode(UnsignedInt, value);
             mapping[key] = {
