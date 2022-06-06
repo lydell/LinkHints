@@ -1,4 +1,4 @@
-const VERSION = "1.2.3";
+const VERSION = "1.3.0";
 
 const FAVICON_SIZES = [16, 32];
 const ICON_SIZES = [...FAVICON_SIZES, 48, 64, 96, 128, 256];
