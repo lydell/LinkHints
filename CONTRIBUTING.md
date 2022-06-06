@@ -88,9 +88,9 @@ npm run watch
 
 It is recommended to set up [TypeScript], [ESLint] and [Prettier] integrations in your editor. You can also run these tools from the command line:
 
-- `npm run tsc`
-- `npm run eslint`
-- `npm run prettier`
+- `npx tsc`
+- `npx eslint . --fix`
+- `npx prettier . --write`
 
 See `package.json` for details and additional scripts.
 
