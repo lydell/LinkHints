@@ -87,6 +87,8 @@ const CSS_SUGGESTIONS = [
   { name: "Vimium", value: SUGGESTION_VIMIUM },
 ];
 
+// Handle disabled Keyboard API in Brave.
+// See: https://github.com/brave/brave-core/pull/10935
 const getLayoutMap =
   navigator.keyboard !== undefined && navigator.keyboard !== null
     ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
