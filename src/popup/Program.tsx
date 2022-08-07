@@ -167,8 +167,6 @@ async function getDebugInfo(): Promise<string> {
       browser.runtime.getPlatformInfo(),
       browser.storage.sync.get(),
       browser.storage.local.get(),
-      // Handle disabled Keyboard API in Brave.
-      // See: https://github.com/brave/brave-core/pull/10935
       navigator.keyboard !== undefined && navigator.keyboard !== null
         ? navigator.keyboard.getLayoutMap()
         : undefined,
