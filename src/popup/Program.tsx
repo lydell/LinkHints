@@ -167,7 +167,7 @@ async function getDebugInfo(): Promise<string> {
       browser.runtime.getPlatformInfo(),
       browser.storage.sync.get(),
       browser.storage.local.get(),
-      navigator.keyboard !== undefined
+      navigator.keyboard !== undefined && navigator.keyboard !== null
         ? navigator.keyboard.getLayoutMap()
         : undefined,
     ]);

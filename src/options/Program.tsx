@@ -88,7 +88,7 @@ const CSS_SUGGESTIONS = [
 ];
 
 const getLayoutMap =
-  navigator.keyboard !== undefined
+  navigator.keyboard !== undefined && navigator.keyboard !== null
     ? navigator.keyboard.getLayoutMap.bind(navigator.keyboard)
     : undefined;
 

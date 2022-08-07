@@ -65,7 +65,8 @@ interface Navigator {
       get: (key: string) => string | undefined;
       size: number;
     }>;
-  };
+    // Brave Browser sets `navigator.keyboard` to null: https://github.com/brave/brave-core/pull/10935
+  } | null;
 }
 
 interface ShadowRoot {
