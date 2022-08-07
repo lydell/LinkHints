@@ -301,7 +301,8 @@ export default class RendererProgram {
           log(
             "error",
             "RendererProgram#onIntersection->updateContainer",
-            entry
+            entry,
+            error
           );
         }
       });
