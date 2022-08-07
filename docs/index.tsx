@@ -42,9 +42,20 @@ const SECTIONS = [
       <>
         <p>Here are some features that Link Hints won’t implement.</p>
         <ul>
-          <li>Vim-like keyboard shortcuts.</li>
+          <li>
+            Vim-like or{" "}
+            <a href={`${config.meta.issues}15#issuecomment-621264520`}>
+              single-key keyboard shortcuts
+            </a>
+            .
+          </li>
           <li>Custom actions.</li>
           <li>Scrolling.</li>
+          <li>
+            <a href={`${config.meta.issues}57#issuecomment-1188693114`}>
+              Always-shown hints.
+            </a>
+          </li>
         </ul>
         <p>
           I’d like to focus on link hinting and do it really well. That’s
