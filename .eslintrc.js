@@ -23,6 +23,7 @@ module.exports = {
     "no-caller": error,
     "no-case-declarations": error,
     "no-compare-neg-zero": error,
+    "no-constant-binary-expression": error,
     "no-constant-condition": error,
     "no-debugger": warn,
     "no-dupe-else-if": error,
@@ -129,6 +130,9 @@ module.exports = {
         sourceType: "module",
         tsconfigRootDir: __dirname,
         project: ["./tsconfig.json"],
+        ecmaFeatures: {
+          jsx: true,
+        },
       },
       rules: {
         "@typescript-eslint/adjacent-overload-signatures": warn,
@@ -136,6 +140,7 @@ module.exports = {
         "@typescript-eslint/await-thenable": error,
         "@typescript-eslint/ban-ts-comment": error,
         "@typescript-eslint/ban-types": error,
+        "@typescript-eslint/consistent-generic-constructors": warn,
         "@typescript-eslint/consistent-type-assertions": [
           error,
           {
@@ -188,7 +193,10 @@ module.exports = {
         "@typescript-eslint/no-unsafe-member-access": error,
         "@typescript-eslint/no-unsafe-return": error,
         "@typescript-eslint/no-unused-expressions": error,
-        "@typescript-eslint/no-unused-vars": error,
+        "@typescript-eslint/no-unused-vars": [
+          error,
+          { args: "all", argsIgnorePattern: "^_", caughtErrors: "all" },
+        ],
         "@typescript-eslint/no-useless-empty-export": warn,
         "@typescript-eslint/no-var-requires": error,
         "@typescript-eslint/prefer-as-const": warn,
@@ -292,7 +300,7 @@ module.exports = {
       },
     },
     react: {
-      version: "16.10",
+      version: "18.2",
     },
   },
 };
