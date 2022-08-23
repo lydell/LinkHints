@@ -1404,7 +1404,7 @@ export default class ElementManager {
         }
 
         // `<html>` and `<body>` might have click listeners or role attributes
-        // etc. but we never want hints for them.
+        // etc., but we never want hints for them.
         if (element === document.documentElement || element === document.body) {
           return undefined;
         }

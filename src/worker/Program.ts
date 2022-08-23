@@ -360,10 +360,10 @@ export default class WorkerProgram {
         ) {
           // Focus and, if possible, select the text inside. There are two cases
           // here: "Text input" (`<textarea>`, `<input type="text">`, `<input
-          // type="search">`, `<input type="unknown">`, etc) style elements
+          // type="search">`, `<input type="unknown">`, etc.) style elements
           // technically only need `.select()`, but it doesn't hurt calling
           // `.focus()` first. For all other types (`<input type="checkbox">`,
-          // `<input type="color">`, etc) `.select()` seems to be a no-op, so
+          // `<input type="color">`, etc.) `.select()` seems to be a no-op, so
           // `.focus()` is strictly needed but calling `.select()` also doesn't
           // hurt.
           element.focus();
@@ -1112,7 +1112,7 @@ const TABINDEX = /^\s*([+-]?\d+)\s*$/;
 function isFocusable(element: HTMLElement): boolean {
   const propValue = element.tabIndex;
 
-  // `<a>`, `<button>`, etc. are natively focusable (`.tabIndex === 0`).
+  // `<a>`, `<button>`, etc., are natively focusable (`.tabIndex === 0`).
   // `.tabIndex` can also be set if the HTML contains a valid `tabindex`
   // attribute.
   // `-1` means either that the element isn't focusable, or that
@@ -1148,7 +1148,7 @@ function isTextInput(element: HTMLElement): boolean {
     element instanceof HTMLTextAreaElement ||
     // `.selectionStart` is set to a number for all `<input>` types that you can
     // type regular text into (`<input type="text">`, `<input type="search">`,
-    // `<input type="unknown">`, etc), but not for `<input type="email">` and
+    // `<input type="unknown">`, etc.), but not for `<input type="email">` and
     // `<input type="number">` for some reason.
     (element instanceof HTMLInputElement &&
       (element.selectionStart !== null ||
@@ -1362,7 +1362,7 @@ function extractTextHelper(element: HTMLElement, type: ElementType): string {
     return "";
   }
 
-  // For text inputs, textareas, checkboxes, selects, etc, use their label text
+  // For text inputs, textareas, checkboxes, selects, etc., use their label text
   // for filtering. For buttons with a label, use both the button text and the
   // label text.
   const labels = getLabels(element);
