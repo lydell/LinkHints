@@ -643,7 +643,7 @@ export default class BackgroundProgram {
 
       // When clicking a link using the extension that causes a page load (no
       // `.preventDefault()`, no internal fragment identifier, no `javascript:`
-      // protocol, etc), exit hints mode. This is especially nice for the
+      // protocol, etc.), exit hints mode. This is especially nice for the
       // "ManyClick" mode since it makes the hints go away immediately when
       // clicking the link rather than after a little while when the "pagehide"
       // event has fired.
