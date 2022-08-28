@@ -10,9 +10,10 @@
     "build:helper": "npm run compile && sucrase-node scripts/build-clean.ts && npm run web-ext -- build && sucrase-node scripts/build-post.ts",
     "build:chrome": "cross-env BROWSER=chrome npm run build:helper",
     "build:firefox": "cross-env BROWSER=firefox npm run build:helper && cross-env BROWSER=firefox npm run web-ext -- lint",
+    "build:all": "npm run build:chrome && npm run build:firefox",
     "png-icons": "sucrase-node scripts/png-icons.ts",
     "web-ext": "sucrase-node node_modules/.bin/web-ext",
-    "test": "eslint . --report-unused-disable-directives && prettier --check . && tsc && npm run build:chrome && npm run build:firefox"
+    "test": "run-pty --auto-exit % npm run build:all % eslint . --report-unused-disable-directives % prettier --check . % tsc"
   },
   "dependencies": {
     "n-ary-huffman": "4.0.0",

@@ -29,20 +29,8 @@ jobs:
         if: steps.cache-node_modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: ESLint
-        run: npx eslint . --report-unused-disable-directives
-
-      - name: Prettier
-        run: npx prettier --check .
-
-      - name: TypeScript
-        run: npx tsc
-
-      - name: Build Chrome
-        run: npm run build:chrome
-
-      - name: Build Firefox
-        run: npm run build:firefox
+      - name: npm test
+        run: npm test
 
       - name: gh-pages
         if: github.ref == 'refs/heads/main'
