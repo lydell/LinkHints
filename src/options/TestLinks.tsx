@@ -51,7 +51,7 @@ export default function TestLinks(): VNode {
       <p className="TestLinks-pagination Spaced">
         <TestLink text="Previous" />
         {Array.from({ length: 12 }, (_, index) => (
-          <TestLink text={(index + 1).toString()} />
+          <TestLink key={index} text={(index + 1).toString()} />
         ))}
         <TestLink text="Next" />
       </p>

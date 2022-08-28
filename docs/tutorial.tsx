@@ -385,7 +385,9 @@ function Pagination(): VNode {
   return (
     <p className="Pagination">
       {Array.from({ length: 12 }, (_, index) => (
-        <a tabIndex={-1}>{index + 1}</a>
+        <a key={index} tabIndex={-1}>
+          {index + 1}
+        </a>
       ))}
     </p>
   );

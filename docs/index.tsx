@@ -380,18 +380,21 @@ function Keyboard(): VNode {
   return (
     <div className="Keyboard">
       <div>
-        {Array.from({ length: 12 }, () => (
-          <div />
+        {Array.from({ length: 12 }, (_, index) => (
+          <div key={index} />
         ))}
       </div>
       <div>
         {Array.from({ length: 11 }, (_, index) => (
-          <div className={index === 6 ? "Keyboard-icon" : undefined} />
+          <div
+            key={index}
+            className={index === 6 ? "Keyboard-icon" : undefined}
+          />
         ))}
       </div>
       <div>
-        {Array.from({ length: 10 }, () => (
-          <div />
+        {Array.from({ length: 10 }, (_, index) => (
+          <div key={index} />
         ))}
       </div>
     </div>
