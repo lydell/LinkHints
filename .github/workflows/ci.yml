@@ -6,8 +6,17 @@ on:
       - "main"
   pull_request:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
 
     steps:
@@ -32,10 +41,17 @@ jobs:
       - name: npm test
         run: npm test
 
-      - name: gh-pages
-        if: github.ref == 'refs/heads/main'
-        uses: JamesIves/github-pages-deploy-action@4.1.1
+      - name: Setup Pages
+        # if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v2
+
+      - name: Upload artifact
+        # if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v1
         with:
-          branch: gh-pages
-          folder: compiled-docs
-          single-commit: true
+          path: compiled-docs
+
+      - name: Deploy to GitHub Pages
+        # if: github.ref == 'refs/heads/main'
+        id: deployment
+        uses: actions/deploy-pages@v1
