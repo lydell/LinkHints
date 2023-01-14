@@ -22,7 +22,7 @@ export default function ButtonWithPopup({
 
   const [openState, setOpenState] = useState<boolean>(false);
 
-  const open = openProp !== undefined ? openProp : openState;
+  const open = openProp !== undefined ? (openProp as boolean) : openState;
 
   const rootRef = useRef<HTMLDivElement>(null);
 
