@@ -1563,19 +1563,20 @@ export default class OptionsProgram extends Component<Props, State> {
                 Object.prototype.hasOwnProperty.call(this.state.perf, id)
               ),
             encoder: (ids) => ids,
-          }),
-          []
+          })
         ),
-        expandedPerf: optional(boolean, false),
-        expandedDebug: optional(boolean, false),
-        scrollY: optional(number, 0),
+        expandedPerf: optional(boolean),
+        expandedDebug: optional(boolean),
+        scrollY: optional(number),
       };
       const data = await browser.storage.local.get(Object.keys(recordProps));
-      const { scrollY, expandedPerfTabIds, ...state } = decode(
-        fields(recordProps),
-        data
-      );
-      this.setState({ ...state, expandedPerfTabIds }, () => {
+      const {
+        expandedPerfTabIds = [],
+        expandedPerf = false,
+        expandedDebug = false,
+        scrollY = 0,
+      } = decode(fields(recordProps), data);
+      this.setState({ expandedPerfTabIds, expandedPerf, expandedDebug }, () => {
         window.scrollTo(0, scrollY);
       });
     }

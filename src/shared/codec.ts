@@ -239,14 +239,14 @@ export function fields<Mapping extends FieldsMapping, EncodedFieldValueUnion>(
         const {
           decoder,
           encodedFieldName: field = key,
-          optional = false,
+          optional: isOptional = false,
         } = mapping[key];
         if (field === "__proto__") {
           continue;
         }
         try {
           const decoded: unknown = decoder(object[field]);
-          if (!optional || decoded !== undefined) {
+          if (!isOptional || decoded !== undefined) {
             result[key] = decoded;
           }
         } catch (error) {
@@ -278,13 +278,13 @@ export function fields<Mapping extends FieldsMapping, EncodedFieldValueUnion>(
         const {
           encoder,
           encodedFieldName: field = key,
-          optional = false,
+          optional: isOptional = false,
         } = mapping[key];
         if (field === "__proto__") {
           continue;
         }
         const value = object[key as keyof InferFields<Mapping>];
-        if (!optional || value !== undefined) {
+        if (!isOptional || value !== undefined) {
           result[field] = encoder(value) as EncodedFieldValueUnion;
         }
       }
@@ -702,43 +702,19 @@ const personCodec: Codec<Person, Record<string, unknown>> = fields({
 });
 
 export function optional<Decoded, Encoded, Options extends CodecOptions>(
-  decoder: Codec<Decoded, Encoded, Options>
+  codec: Codec<Decoded, Encoded, Options>
 ): Codec<
   Decoded | undefined,
   Encoded | undefined,
   MergeOptions<Options, { optional: true }>
->;
-
-export function optional<
-  Decoded,
-  Encoded,
-  Options extends CodecOptions,
-  Default
->(
-  codec: Codec<Decoded, Encoded, Options>,
-  defaultValue: Default
-): Codec<Decoded | Default, Encoded | undefined, Options>;
-
-export function optional<
-  Decoded,
-  Encoded,
-  Options extends CodecOptions,
-  Default = undefined
->(
-  codec: Codec<Decoded, Encoded, Options>,
-  defaultValue?: Default
-): Codec<
-  Decoded | Default,
-  Encoded | undefined,
-  MergeOptions<Options, { optional?: true }>
 > {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     ...codec,
-    ...(defaultValue === undefined ? { optional: true } : {}),
-    decoder: function optionalDecoder(value) {
+    optional: true,
+    decoder: function undefinedOrDecoder(value) {
       if (value === undefined) {
-        return defaultValue as Decoded | Default;
+        return undefined;
       }
       try {
         return codec.decoder(value);
@@ -750,77 +726,37 @@ export function optional<
         throw newError;
       }
     },
-    encoder: function optionalEncoder(value) {
-      return value === defaultValue
-        ? undefined
-        : codec.encoder(value as Decoded);
+    encoder: function undefinedOrEncoder(value) {
+      return value === undefined ? undefined : codec.encoder(value);
     },
   } as Codec<
-    Decoded | Default,
+    Decoded | undefined,
     Encoded | undefined,
-    MergeOptions<Options, { optional?: true }>
+    MergeOptions<Options, { optional: true }>
   >;
 }
 
-type t = Infer<typeof t>;
-const t = fields({
-  t1: string,
-  t2: optional(string),
-  t3: optional(string, 1),
-  t4: optional(string, null),
-  t5: optional(string, undefined),
-  t6: optional(string, Math.random() > 0.5 ? 1 : undefined),
-});
-
-function cool<T>(def: T): Codec<{ m: T | string }> {
-  return fields({ m: optional(string, def) });
-}
-
-void cool;
-void t;
-
 export function nullable<Decoded, Encoded, Options extends CodecOptions>(
-  decoder: Codec<Decoded, Encoded, Options>
-): Codec<Decoded | null, Encoded | null, Options>;
-
-export function nullable<
-  Decoded,
-  Encoded,
-  Default,
-  Options extends CodecOptions
->(
-  codec: Codec<Decoded, Encoded, Options>,
-  defaultValue: Default
-): Codec<Decoded | Default, Encoded | null, Options>;
-
-export function nullable<
-  Decoded,
-  Encoded,
-  Options extends CodecOptions,
-  Default = null
->(
-  codec: Codec<Decoded, Encoded, Options>,
-  ...rest: Array<unknown>
-): Codec<Decoded | Default, Encoded | null, Options> {
-  const defaultValue = rest.length === 0 ? null : rest[0];
+  codec: Codec<Decoded, Encoded, Options>
+): Codec<Decoded | null, Encoded | null, Options> {
   return {
     ...codec,
-    decoder: function nullableDecoder(value) {
+    decoder: function nullOrDecoder(value) {
       if (value === null) {
-        return defaultValue as Decoded | Default;
+        return null;
       }
       try {
         return codec.decoder(value);
       } catch (error) {
         const newError = DecoderError.at(error);
         if (newError.path.length === 0) {
-          newError.nullable = true;
+          newError.optional = true;
         }
         throw newError;
       }
     },
-    encoder: function nullableEncoder(value) {
-      return value === defaultValue ? null : codec.encoder(value as Decoded);
+    encoder: function nullOrEncoder(value) {
+      return value === null ? null : codec.encoder(value);
     },
   };
 }
