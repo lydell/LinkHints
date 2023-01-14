@@ -10,10 +10,7 @@ module.exports = {
     startUrl: ["about:debugging#/runtime/this-firefox"],
     pref: [
       // Allow accessing about:config without the warning screen.
-      "general.warnOnAboutConfig=false",
-      // Hide info/hint/intro bars/popups.
-      "browser.urlbar.timesBeforeHidingSuggestionsHint=0",
-      "browser.contentblocking.introCount=20",
+      "browser.aboutConfig.showWarning=false",
     ],
   },
   sign: {},
