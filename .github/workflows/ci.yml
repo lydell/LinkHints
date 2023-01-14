@@ -42,16 +42,16 @@ jobs:
         run: npm test
 
       - name: Setup Pages
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v2
 
       - name: Upload artifact
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v1
         with:
           path: compiled-docs
 
       - name: Deploy to GitHub Pages
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v1
