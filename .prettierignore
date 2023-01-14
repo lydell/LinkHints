@@ -4,3 +4,4 @@
 /compiled/
 /compiled-docs/
 *.json
+/rollup.config-*.js
