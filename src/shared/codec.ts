@@ -230,6 +230,7 @@ export function fields<Mapping extends FieldsMapping, EncodedFieldValueUnion>(
     decoder: function fieldsDecoder(value) {
       const object = unknownRecord(value);
       const keys = Object.keys(mapping);
+      const knownFields = new Set<string>();
       const result: Record<string, unknown> = {};
 
       for (const key of keys) {
@@ -244,6 +245,14 @@ export function fields<Mapping extends FieldsMapping, EncodedFieldValueUnion>(
         if (field === "__proto__") {
           continue;
         }
+        knownFields.add(field);
+        if (!(field in object) && !isOptional) {
+          throw new DecoderError({
+            tag: "missing field",
+            field,
+            got: object,
+          });
+        }
         try {
           const decoded: unknown = decoder(object[field]);
           if (!isOptional || decoded !== undefined) {
@@ -256,12 +265,12 @@ export function fields<Mapping extends FieldsMapping, EncodedFieldValueUnion>(
 
       if (exact === "throw") {
         const unknownFields = Object.keys(object).filter(
-          (key) => !Object.prototype.hasOwnProperty.call(mapping, key)
+          (key) => !knownFields.has(key)
         );
         if (unknownFields.length > 0) {
           throw new DecoderError({
             tag: "exact fields",
-            knownFields: keys,
+            knownFields: Array.from(knownFields),
             got: unknownFields,
           });
         }
@@ -820,6 +829,11 @@ export type DecoderErrorVariant =
       got: Array<string>;
     }
   | {
+      tag: "missing field";
+      field: string;
+      got: Record<string, unknown>;
+    }
+  | {
       tag: "tuple size";
       expected: number;
       got: number;
@@ -855,7 +869,7 @@ export type DecoderErrorVariant =
 
 function formatDecoderErrorVariant(
   variant: DecoderErrorVariant,
-  options?: ReprOptions
+  options: ReprOptions = {}
 ): string {
   const formatGot = (value: unknown): string => {
     const formatted = repr(value, options);
@@ -868,6 +882,9 @@ function formatDecoderErrorVariant(
     strings.length === 0
       ? "(none)"
       : strings.map((s) => JSON.stringify(s)).join(", ");
+
+  const untrustedStringList = (strings: Array<string>): string =>
+    formatGot(strings).replace(/^\[|\]$/g, "");
 
   const got = (message: string, value: unknown): string =>
     value === DecoderError.MISSING_VALUE
@@ -901,13 +918,24 @@ function formatDecoderErrorVariant(
         variant.knownVariants
       )}\nGot: ${formatGot(variant.got)}`;
 
+    case "missing field": {
+      const { maxObjectChildren = MAX_OBJECT_CHILDREN_DEFAULT } = options;
+      const keys = Object.keys(variant.got);
+      return `Expected a field called: ${JSON.stringify(
+        variant.field
+      )}\nGot: ${formatGot(variant.got)}${
+        keys.length > maxObjectChildren
+          ? `\nMore fields: ${untrustedStringList(
+              keys.slice(maxObjectChildren)
+            )}`
+          : ""
+      }`;
+    }
+
     case "exact fields":
       return `Expected only these fields: ${stringList(
         variant.knownFields
-      )}\nFound extra fields: ${formatGot(variant.got).replace(
-        /^\[|\]$/g,
-        ""
-      )}`;
+      )}\nFound extra fields: ${untrustedStringList(variant.got)}`;
 
     case "tuple size":
       return `Expected ${variant.expected} items\nGot: ${variant.got}`;
@@ -990,6 +1018,8 @@ export class DecoderError extends TypeError {
   }
 }
 
+const MAX_OBJECT_CHILDREN_DEFAULT = 3;
+
 export type ReprOptions = {
   recurse?: boolean;
   maxArrayChildren?: number;
@@ -1004,7 +1034,7 @@ export function repr(
   {
     recurse = true,
     maxArrayChildren = 5,
-    maxObjectChildren = 3,
+    maxObjectChildren = MAX_OBJECT_CHILDREN_DEFAULT,
     maxLength = 100,
     recurseMaxLength = 20,
     sensitive = false,
