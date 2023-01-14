@@ -564,6 +564,23 @@ export default class WorkerProgram {
       return;
     }
 
+    // When in a form input field, you can get suggestions on what you have
+    // entered before. When accepting such a suggestion by pressing Enter,
+    // Chrome triggers a keydown event with `.isTrusted === true`, and many
+    // properties/methods like `.key` and `.getModifierState` missing.
+    // Ignore such events. Here are some people with the same problem:
+    // https://github.com/Shopify/quilt/issues/1606
+    // https://github.com/igrigorik/videospeed/issues/250
+    if (typeof event.getModifierState !== "function") {
+      log(
+        "log",
+        "WorkerProgram#onKeydown",
+        "ignoring Chrome Autofill keydown event",
+        event
+      );
+      return;
+    }
+
     const keypress = normalizeKeypress({
       keypress: keyboardEventToKeypress(event),
       keyTranslations: this.keyTranslations,
