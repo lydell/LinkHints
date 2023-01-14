@@ -1882,7 +1882,7 @@ export default class BackgroundProgram {
             updates: doneWaiting
               // Highlighted elements with -1 as index don’t have their own DOM
               // nodes – instead, they have highlighted a new hint with the same
-              // characters and position. They unhighlighted using
+              // characters and position. They are unhighlighted using
               // `this.refreshHintsRendering` below.
               .filter(({ element }) => element.index !== -1)
               .map(({ element }) => ({
@@ -2658,6 +2658,7 @@ function assignHints(
         // the order naturally, but if you scroll _up_ to the same list the
         // IntersectionObserver fires in a different order, so it’s important
         // not to rely on that to get consistent hints.
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         comparePositions(a.hintMeasurements, b.hintMeasurements) ||
         // `hintsState.elementsWithHints` changes order as
         // `hintsState.enteredText` come and go. Sort on `.index` if all other
