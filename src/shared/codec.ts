@@ -76,6 +76,11 @@ function identity<T>(value: T): T {
   return value;
 }
 
+export const unknown: Codec<unknown> = {
+  decoder: identity,
+  encoder: identity,
+};
+
 export const boolean: Codec<boolean, boolean> = {
   decoder: function booleanDecoder(value) {
     if (typeof value !== "boolean") {

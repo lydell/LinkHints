@@ -5,10 +5,11 @@ import {
   boolean,
   chain,
   fields,
-  multi,
   number,
   optional,
+  record,
   string,
+  unknown,
 } from "../shared/codec";
 import {
   CSS,
@@ -337,7 +338,7 @@ export default class OptionsProgram extends Component<Props, State> {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
       const [tweakableData, otherData] = partitionTweakable(
-        multi(["object"]).decoder(data).value
+        record(unknown).decoder(data)
       );
       const {
         options: newOptions,
