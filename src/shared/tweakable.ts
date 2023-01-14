@@ -1,12 +1,4 @@
-import {
-  array,
-  boolean,
-  chain,
-  Decoder,
-  DecoderError,
-  string,
-} from "tiny-decoders";
-
+import { array, boolean, chain, Codec, DecoderError, string } from "./codec";
 import { ElementType } from "./hints";
 import {
   addListener,
@@ -206,11 +198,17 @@ export function tweakable(
           }
 
           case "SelectorString": {
-            // eslint-disable-next-line @typescript-eslint/no-loop-func
-            const decoded = chain(string, (val) => {
-              document.querySelector(val);
-              return val;
-            })(value);
+            const decoded = decode(
+              chain(string, {
+                // eslint-disable-next-line @typescript-eslint/no-loop-func
+                decoder(val) {
+                  document.querySelector(val);
+                  return val;
+                },
+                encoder: (val) => val,
+              }),
+              value
+            );
             mapping[key] = {
               type: "SelectorString",
               value: decoded,
@@ -220,7 +218,13 @@ export function tweakable(
           }
 
           case "Regex": {
-            const decoded = chain(string, (val) => new RegExp(val, "u"))(value);
+            const decoded = decode(
+              chain(string, {
+                decoder: (val) => new RegExp(val, "u"),
+                encoder: (val) => val.source,
+              }),
+              value
+            );
             mapping[key] = {
               type: "Regex",
               value: decoded,
@@ -295,11 +299,13 @@ export function normalizeStringArray(
     .sort();
 }
 
-function StringSet<T extends string>(decoder: Decoder<T>): Decoder<Set<T>> {
-  return chain(
-    array(string),
-    (arr) => new Set(array(decoder)(normalizeStringArray(arr)))
-  );
+function StringSet<Decoded extends string>(
+  codec: Codec<Decoded, string>
+): Codec<Set<Decoded>, Array<string>> {
+  return chain(array(string), {
+    decoder: (arr) => new Set(array(codec).decoder(normalizeStringArray(arr))),
+    encoder: (set) => array(codec).encoder(Array.from(set)),
+  });
 }
 
 function equalStringSets(a: Set<string>, b: Set<string>): boolean {

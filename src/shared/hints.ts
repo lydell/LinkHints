@@ -1,22 +1,30 @@
-import { array, multi, stringUnion } from "tiny-decoders";
+import { array, chain, Infer, multi, stringUnion } from "./codec";
 
-export type ElementType = ReturnType<typeof ElementType>;
-export const ElementType = stringUnion({
-  "clickable-event": null,
-  clickable: null,
-  label: null,
-  link: null,
-  scrollable: null,
-  selectable: null,
-  textarea: null,
-});
+export type ElementType = Infer<typeof ElementType>;
+export const ElementType = stringUnion([
+  "clickable-event",
+  "clickable",
+  "label",
+  "link",
+  "scrollable",
+  "selectable",
+  "textarea",
+]);
 
-export type ElementTypes = ReturnType<typeof ElementTypes>;
-export const ElementTypes = multi({
-  array: array(ElementType),
-  string: stringUnion({
-    selectable: null,
-  }),
+export type ElementTypes = Infer<typeof ElementTypes>;
+export const ElementTypes = chain(multi(["array", "string"]), {
+  decoder(value) {
+    switch (value.type) {
+      case "array":
+        return array(ElementType).decoder(value.value);
+      case "string":
+        return stringUnion(["selectable"]).decoder(value.value);
+    }
+  },
+  encoder: (value) =>
+    Array.isArray(value)
+      ? { type: "array" as const, value: array(ElementType).encoder(value) }
+      : { type: "string" as const, value },
 });
 
 export type Point = {

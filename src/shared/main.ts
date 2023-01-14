@@ -1,10 +1,12 @@
 import {
   chain,
-  Decoder,
+  Codec,
   DecoderError,
+  Infer,
   number,
+  parseUnknown,
   stringUnion,
-} from "tiny-decoders";
+} from "./codec";
 
 // It's tempting to put a random number or something in the ID, but in case
 // something goes wrong and a rogue container is left behind it's always
@@ -12,13 +14,8 @@ import {
 // ElementManager might not get the same random number.
 export const CONTAINER_ID = `__${META_SLUG}WebExt`;
 
-export type LogLevel = ReturnType<typeof LogLevel>;
-export const LogLevel = stringUnion({
-  error: null,
-  warn: null,
-  log: null,
-  debug: null,
-});
+export type LogLevel = Infer<typeof LogLevel>;
+export const LogLevel = stringUnion(["error", "warn", "log", "debug"]);
 
 export const LOG_LEVELS: { [key in LogLevel]: number } = {
   error: 0,
@@ -544,14 +541,17 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
-export const UnsignedInt: Decoder<number> = chain(number, (value) => {
-  if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
-    throw new DecoderError({
-      message: `Expected an unsigned finite integer`,
-      value,
-    });
-  }
-  return value;
+export const UnsignedInt: Codec<number> = chain(number, {
+  decoder(value) {
+    if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
+      throw new DecoderError({
+        message: `Expected an unsigned finite integer`,
+        value,
+      });
+    }
+    return value;
+  },
+  encoder: (value) => value,
 });
 
 export function normalizeUnsignedInt(
@@ -566,14 +566,17 @@ export function normalizeUnsignedInt(
   return defaulted.toString();
 }
 
-export const UnsignedFloat: Decoder<number> = chain(number, (value) => {
-  if (!(Number.isFinite(value) && value >= 0)) {
-    throw new DecoderError({
-      message: "Expected an unsigned finite float",
-      value,
-    });
-  }
-  return value;
+export const UnsignedFloat: Codec<number> = chain(number, {
+  decoder(value) {
+    if (!(Number.isFinite(value) && value >= 0)) {
+      throw new DecoderError({
+        message: "Expected an unsigned finite float",
+        value,
+      });
+    }
+    return value;
+  },
+  encoder: (value) => value,
 });
 
 export function normalizeUnsignedFloat(
@@ -587,22 +590,19 @@ export function normalizeUnsignedFloat(
 }
 
 export function decode<T>(
-  decoder: Decoder<T>,
+  codec: Codec<T>,
   value: unknown,
   map?: Map<string, Array<number | string>>
 ): T {
-  try {
-    return decoder(value);
-  } catch (error) {
-    if (error instanceof DecoderError) {
-      const originalPath = map?.get(JSON.stringify(error.path));
-      if (originalPath !== undefined) {
-        error.path = originalPath;
-      }
-      throw new TypeError(error.format());
-    } else {
-      throw error;
+  const parsed = parseUnknown(codec, value);
+  if (parsed instanceof DecoderError) {
+    const originalPath = map?.get(JSON.stringify(parsed.path));
+    if (originalPath !== undefined) {
+      parsed.path = originalPath;
     }
+    throw new TypeError(parsed.format());
+  } else {
+    return parsed;
   }
 }
 

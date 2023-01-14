@@ -1,10 +1,17 @@
-import { array, Decoder, fieldsAuto, fieldsUnion, number } from "tiny-decoders";
-
+import {
+  array,
+  chain,
+  Codec,
+  fields,
+  fieldsUnion,
+  Infer,
+  number,
+} from "../shared/codec";
 import { ElementTypes } from "../shared/hints";
 import { Box, UnsignedFloat } from "../shared/main";
 
-const Viewports: Decoder<Array<Box>> = array(
-  fieldsAuto<Box>({
+const Viewports: Codec<Array<Box>> = array(
+  fields({
     // A viewport of a frame can be partially off-screen.
     x: number,
     y: number,
@@ -13,17 +20,21 @@ const Viewports: Decoder<Array<Box>> = array(
   })
 );
 
-export type FrameMessage = ReturnType<typeof FrameMessage>;
-export const FrameMessage = fieldsUnion("type", {
-  FindElements: fieldsAuto({
-    type: () => "FindElements" as const,
-    token: () => "",
-    types: ElementTypes,
-    viewports: Viewports,
-  }),
-  UpdateElements: fieldsAuto({
-    type: () => "UpdateElements" as const,
-    token: () => "",
-    viewports: Viewports,
-  }),
-});
+export type FrameMessage = Infer<typeof FrameMessage>;
+export const FrameMessage = chain(
+  fieldsUnion("type", (type) => [
+    {
+      type: type("FindElements"),
+      types: ElementTypes,
+      viewports: Viewports,
+    },
+    {
+      type: type("UpdateElements"),
+      viewports: Viewports,
+    },
+  ]),
+  {
+    decoder: (value) => ({ ...value, token: "" }),
+    encoder: ({ token: _, ...value }) => value,
+  }
+);

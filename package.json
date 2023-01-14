@@ -19,7 +19,6 @@
     "n-ary-huffman": "4.0.0",
     "preact": "10.11.3",
     "preact-shadow-root": "1.0.2",
-    "tiny-decoders": "7.0.1",
     "webextension-polyfill": "0.10.0"
   },
   "devDependencies": {

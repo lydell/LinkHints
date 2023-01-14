@@ -2,31 +2,32 @@ import {
   boolean,
   chain,
   DecoderError,
-  fieldsAuto,
+  fields,
+  Infer,
   string,
   stringUnion,
   tuple,
-} from "tiny-decoders";
+} from "./codec";
 
-export type KeyboardAction = ReturnType<typeof KeyboardAction>;
-export const KeyboardAction = stringUnion({
-  ActivateHint: null,
-  ActivateHintAlt: null,
-  Backspace: null,
-  EnterHintsMode_BackgroundTab: null,
-  EnterHintsMode_Click: null,
-  EnterHintsMode_ForegroundTab: null,
-  EnterHintsMode_ManyClick: null,
-  EnterHintsMode_ManyTab: null,
-  EnterHintsMode_Select: null,
-  Escape: null,
-  ExitHintsMode: null,
-  RefreshHints: null,
-  ReverseSelection: null,
-  RotateHintsBackward: null,
-  RotateHintsForward: null,
-  TogglePeek: null,
-});
+export type KeyboardAction = Infer<typeof KeyboardAction>;
+export const KeyboardAction = stringUnion([
+  "ActivateHint",
+  "ActivateHintAlt",
+  "Backspace",
+  "EnterHintsMode_BackgroundTab",
+  "EnterHintsMode_Click",
+  "EnterHintsMode_ForegroundTab",
+  "EnterHintsMode_ManyClick",
+  "EnterHintsMode_ManyTab",
+  "EnterHintsMode_Select",
+  "Escape",
+  "ExitHintsMode",
+  "RefreshHints",
+  "ReverseSelection",
+  "RotateHintsBackward",
+  "RotateHintsForward",
+  "TogglePeek",
+]);
 
 // Allow exiting hints mode if we ever get stuck in Prevent overtyping mode.
 export const PREVENT_OVERTYPING_ALLOWED_KEYBOARD_ACTIONS =
@@ -56,8 +57,8 @@ export type NormalizedKeypress = {
   shift: boolean | undefined;
 };
 
-export type Shortcut = ReturnType<typeof Shortcut>;
-const Shortcut = fieldsAuto({
+export type Shortcut = Infer<typeof Shortcut>;
+const Shortcut = fields({
   key: string,
   alt: boolean,
   cmd: boolean,
@@ -118,14 +119,17 @@ export function deserializeShortcut(
   );
 }
 
-export type KeyboardMapping = ReturnType<typeof KeyboardMapping>;
-export const KeyboardMapping = fieldsAuto({
+export type KeyboardMapping = Infer<typeof KeyboardMapping>;
+export const KeyboardMapping = fields({
   shortcut: Shortcut,
   action: KeyboardAction,
 });
 
-export const KeyboardMappingWithModifiers = fieldsAuto<KeyboardMapping>({
-  shortcut: chain(Shortcut, requireModifier),
+export const KeyboardMappingWithModifiers = fields({
+  shortcut: chain(Shortcut, {
+    decoder: requireModifier,
+    encoder: (shortcut) => shortcut,
+  }),
   action: KeyboardAction,
 });
 
@@ -140,17 +144,17 @@ export type KeyboardModeWorker =
   | "Normal"
   | "PreventOverTyping";
 
-export type HintsMode = ReturnType<typeof HintsMode>;
-export const HintsMode = stringUnion({
-  BackgroundTab: null,
-  Click: null,
-  ForegroundTab: null,
-  ManyClick: null,
-  ManyTab: null,
-  Select: null,
-});
+export type HintsMode = Infer<typeof HintsMode>;
+export const HintsMode = stringUnion([
+  "BackgroundTab",
+  "Click",
+  "ForegroundTab",
+  "ManyClick",
+  "ManyTab",
+  "Select",
+]);
 
-export type KeyPair = ReturnType<typeof KeyPair>;
+export type KeyPair = Infer<typeof KeyPair>;
 export const KeyPair = tuple([string, string]);
 
 export type KeyTranslations = Record<string, KeyPair>;

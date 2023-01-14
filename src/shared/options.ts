@@ -3,12 +3,12 @@ import {
   boolean,
   chain,
   DecoderError,
-  fieldsAuto,
+  fields,
+  Infer,
   record,
   repr,
   string,
-} from "tiny-decoders";
-
+} from "./codec";
 import {
   deserializeShortcut,
   EN_US_QWERTY_TRANSLATIONS,
@@ -35,14 +35,14 @@ export type OptionsData = {
   mac: boolean;
 };
 
-export type Options = ReturnType<typeof Options>;
+export type Options = Infer<typeof Options>;
 
 export type PartialOptions = Partial<Options>;
 
 export type FlatOptions = Record<string, unknown>;
 
-export const Options = fieldsAuto({
-  chars: chain(string, validateChars),
+export const Options = fields({
+  chars: chain(string, { decoder: validateChars, encoder: (chars) => chars }),
   autoActivate: boolean,
   overTypingDuration: UnsignedInt,
   css: string,

@@ -1,19 +1,12 @@
-import {
-  array,
-  fieldsAuto,
-  number,
-  record,
-  string,
-  tuple,
-} from "tiny-decoders";
+import { array, fields, Infer, number, record, string, tuple } from "./codec";
 
 export const MAX_PERF_ENTRIES = 9;
 
-export type Durations = ReturnType<typeof Durations>;
+export type Durations = Infer<typeof Durations>;
 export const Durations = array(tuple([string, number]));
 
-export type Stats = ReturnType<typeof Stats>;
-export const Stats = fieldsAuto({
+export type Stats = Infer<typeof Stats>;
+export const Stats = fields({
   url: string,
   numTotalElements: number,
   numTrackedElements: number,
@@ -23,9 +16,9 @@ export const Stats = fieldsAuto({
   durations: Durations,
 });
 
-export type Perf = ReturnType<typeof Perf>;
+export type Perf = Infer<typeof Perf>;
 export const Perf = array(
-  fieldsAuto({
+  fields({
     timeToFirstPaint: number,
     timeToLastPaint: number,
     topDurations: Durations,
@@ -34,7 +27,7 @@ export const Perf = array(
   })
 );
 
-export type TabsPerf = ReturnType<typeof TabsPerf>;
+export type TabsPerf = Infer<typeof TabsPerf>;
 export const TabsPerf = record(Perf);
 
 export class TimeTracker {

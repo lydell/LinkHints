@@ -1,15 +1,15 @@
 import { Component, createRef, Fragment, h, Ref, VNode } from "preact";
+
 import {
   array,
   boolean,
   chain,
-  fieldsAuto,
+  fields,
   multi,
   number,
   optional,
   string,
-} from "tiny-decoders";
-
+} from "../shared/codec";
 import {
   CSS,
   MAX_Z_INDEX,
@@ -337,7 +337,7 @@ export default class OptionsProgram extends Component<Props, State> {
       const file = await selectFile("application/json");
       const data = await readAsJson(file);
       const [tweakableData, otherData] = partitionTweakable(
-        multi({ object: (x) => x })(data)
+        multi(["object"]).decoder(data).value
       );
       const {
         options: newOptions,
@@ -1556,11 +1556,13 @@ export default class OptionsProgram extends Component<Props, State> {
       this.hasRestoredPosition = true;
       const recordProps = {
         expandedPerfTabIds: optional(
-          chain(array(string), (ids) =>
-            ids.filter((id) =>
-              Object.prototype.hasOwnProperty.call(this.state.perf, id)
-            )
-          ),
+          chain(array(string), {
+            decoder: (ids) =>
+              ids.filter((id) =>
+                Object.prototype.hasOwnProperty.call(this.state.perf, id)
+              ),
+            encoder: (ids) => ids,
+          }),
           []
         ),
         expandedPerf: optional(boolean, false),
@@ -1569,10 +1571,11 @@ export default class OptionsProgram extends Component<Props, State> {
       };
       const data = await browser.storage.local.get(Object.keys(recordProps));
       const { scrollY, expandedPerfTabIds, ...state } = decode(
-        fieldsAuto(recordProps),
+        fields(recordProps),
         data
       );
       this.setState({ ...state, expandedPerfTabIds }, () => {
+        // @ts-expect-error: TODO fix the inference here!
         window.scrollTo(0, scrollY);
       });
     }
