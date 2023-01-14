@@ -15,7 +15,7 @@ import { makeRandomToken } from "../shared/main";
 
 // To make things even more complicated, in Firefox the `export default`
 // function is actually executed rather than inserted as an inline script. This
-// is to work around Firefox’s CSP limiations. As a bonus, Firefox can
+// is to work around Firefox’s CSP limitations. As a bonus, Firefox can
 // communicate with this file directly (via the `communicator` parameter) rather
 // than via very clever usage of DOM events. This works in Firefox due to
 // `.wrappedJSObject`, `exportFunction` and `XPCNativeWrapper`.
@@ -105,7 +105,7 @@ export default (communicator?: {
     consoleLogError(`[${META_SLUG}]`, ...args);
   }
 
-  type AnyFunction = (...args: Array<never>) => void;
+  type AnyFunction = (...args: Array<never>) => unknown;
 
   type Deadline = { timeRemaining: () => number };
 
@@ -759,9 +759,7 @@ export default (communicator?: {
     | { type: "Element"; element: Element };
 
   function getOpenComposedRootNode(element: Element): OpenComposedRootNode {
-    const root = apply(getRootNode, element, []) as ReturnType<
-      typeof getRootNode
-    >;
+    const root = apply(getRootNode, element, []);
     return root === element
       ? { type: "Element", element }
       : root instanceof ShadowRoot2
