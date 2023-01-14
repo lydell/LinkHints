@@ -1575,7 +1575,6 @@ export default class OptionsProgram extends Component<Props, State> {
         data
       );
       this.setState({ ...state, expandedPerfTabIds }, () => {
-        // @ts-expect-error: TODO fix the inference here!
         window.scrollTo(0, scrollY);
       });
     }

@@ -712,11 +712,7 @@ export function optional<
 >(
   codec: Codec<Decoded, Encoded, Options>,
   defaultValue: Default
-): Codec<
-  Decoded | Default,
-  Encoded | undefined,
-  MergeOptions<Options, { optional: true }>
->;
+): Codec<Decoded | Default, Encoded | undefined, Options>;
 
 export function optional<
   Decoded,
@@ -729,12 +725,12 @@ export function optional<
 ): Codec<
   Decoded | Default,
   Encoded | undefined,
-  MergeOptions<Options, { optional: true }>
+  MergeOptions<Options, { optional?: true }>
 > {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     ...codec,
-    optional: true,
+    ...(defaultValue === undefined ? { optional: true } : {}),
     decoder: function optionalDecoder(value) {
       if (value === undefined) {
         return defaultValue as Decoded | Default;
@@ -757,9 +753,26 @@ export function optional<
   } as Codec<
     Decoded | Default,
     Encoded | undefined,
-    MergeOptions<Options, { optional: true }>
+    MergeOptions<Options, { optional?: true }>
   >;
 }
+
+type t = Infer<typeof t>;
+const t = fields({
+  t1: string,
+  t2: optional(string),
+  t3: optional(string, 1),
+  t4: optional(string, null),
+  t5: optional(string, undefined),
+  t6: optional(string, Math.random() > 0.5 ? 1 : undefined),
+});
+
+function cool<T>(def: T): Codec<{ m: T | string }> {
+  return fields({ m: optional(string, def) });
+}
+
+void cool;
+void t;
 
 export function nullable<Decoded, Encoded, Options extends CodecOptions>(
   decoder: Codec<Decoded, Encoded, Options>
