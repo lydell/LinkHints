@@ -3,8 +3,8 @@ import { Component, createRef, Fragment, h, Ref, VNode } from "preact";
 import {
   array,
   boolean,
-  chain,
   fields,
+  map,
   number,
   optional,
   record,
@@ -1557,7 +1557,7 @@ export default class OptionsProgram extends Component<Props, State> {
       this.hasRestoredPosition = true;
       const recordProps = {
         expandedPerfTabIds: optional(
-          chain(array(string), {
+          map(array(string), {
             decoder: (ids) =>
               ids.filter((id) =>
                 Object.prototype.hasOwnProperty.call(this.state.perf, id)

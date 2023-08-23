@@ -1,10 +1,10 @@
 import {
-  chain,
   Codec,
   DecoderError,
+  flatMap,
+  formatAll,
   Infer,
   number,
-  parseUnknown,
   stringUnion,
 } from "./codec";
 
@@ -541,16 +541,21 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
-export const UnsignedInt: Codec<number> = chain(number, {
-  decoder(value) {
-    if (!(Number.isFinite(value) && value >= 0 && Number.isInteger(value))) {
-      throw new DecoderError({
-        message: `Expected an unsigned finite integer`,
-        value,
-      });
-    }
-    return value;
-  },
+export const UnsignedInt: Codec<number> = flatMap(number, {
+  decoder: (value) =>
+    Number.isFinite(value) && value >= 0 && Number.isInteger(value)
+      ? { tag: "Valid", value }
+      : {
+          tag: "DecoderError",
+          errors: [
+            {
+              tag: "custom",
+              message: `Expected an unsigned finite integer`,
+              got: value,
+              path: [],
+            },
+          ],
+        },
   encoder: (value) => value,
 });
 
@@ -566,16 +571,21 @@ export function normalizeUnsignedInt(
   return defaulted.toString();
 }
 
-export const UnsignedFloat: Codec<number> = chain(number, {
-  decoder(value) {
-    if (!(Number.isFinite(value) && value >= 0)) {
-      throw new DecoderError({
-        message: "Expected an unsigned finite float",
-        value,
-      });
-    }
-    return value;
-  },
+export const UnsignedFloat: Codec<number> = flatMap(number, {
+  decoder: (value) =>
+    Number.isFinite(value) && value >= 0
+      ? { tag: "Valid", value }
+      : {
+          tag: "DecoderError",
+          errors: [
+            {
+              tag: "custom",
+              message: "Expected an unsigned finite float",
+              got: value,
+              path: [],
+            },
+          ],
+        },
   encoder: (value) => value,
 });
 
@@ -594,15 +604,19 @@ export function decode<T>(
   value: unknown,
   map?: Map<string, Array<number | string>>
 ): T {
-  const parsed = parseUnknown(codec, value);
-  if (parsed instanceof DecoderError) {
-    const originalPath = map?.get(JSON.stringify(parsed.path));
-    if (originalPath !== undefined) {
-      parsed.path = originalPath;
+  const parsed = codec.decoder(value);
+  switch (parsed.tag) {
+    case "DecoderError": {
+      const errors = parsed.errors.map((error) => {
+        const originalPath = map?.get(JSON.stringify(error.path));
+        return originalPath === undefined
+          ? error
+          : { ...error, path: originalPath };
+      }) as [DecoderError, ...Array<DecoderError>];
+      throw new TypeError(formatAll(errors));
     }
-    throw new TypeError(parsed.format());
-  } else {
-    return parsed;
+    case "Valid":
+      return parsed.value;
   }
 }
 

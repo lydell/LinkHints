@@ -1,11 +1,12 @@
 import {
   array,
-  chain,
   Codec,
   fields,
   fieldsUnion,
   Infer,
+  map,
   number,
+  tag,
 } from "../shared/codec";
 import { ElementTypes } from "../shared/hints";
 import { Box, UnsignedFloat } from "../shared/main";
@@ -21,15 +22,15 @@ const Viewports: Codec<Array<Box>> = array(
 );
 
 export type FrameMessage = Infer<typeof FrameMessage>;
-export const FrameMessage = chain(
-  fieldsUnion("type", (type) => [
+export const FrameMessage = map(
+  fieldsUnion("type", [
     {
-      type: type("FindElements"),
+      type: tag("FindElements"),
       types: ElementTypes,
       viewports: Viewports,
     },
     {
-      type: type("UpdateElements"),
+      type: tag("UpdateElements"),
       viewports: Viewports,
     },
   ]),

@@ -1,4 +1,4 @@
-import { array, boolean, chain, Codec, DecoderError, string } from "./codec";
+import { array, boolean, Codec, flatMap, string } from "./codec";
 import { ElementType } from "./hints";
 import {
   addListener,
@@ -127,11 +127,7 @@ export function tweakable(
     for (const [key, value] of Object.entries(data)) {
       try {
         if (!Object.prototype.hasOwnProperty.call(defaults, key)) {
-          throw new DecoderError({
-            message: "Unknown key",
-            value: DecoderError.MISSING_VALUE,
-            key,
-          });
+          throw new Error(`Unknown key: ${JSON.stringify(key)}`);
         }
 
         const original: TweakableValue = defaults[key];
@@ -199,11 +195,28 @@ export function tweakable(
 
           case "SelectorString": {
             const decoded = decode(
-              chain(string, {
+              flatMap(string, {
                 // eslint-disable-next-line @typescript-eslint/no-loop-func
                 decoder(val) {
-                  document.querySelector(val);
-                  return val;
+                  try {
+                    document.querySelector(val);
+                    return { tag: "Valid", value: val };
+                  } catch (error) {
+                    return {
+                      tag: "DecoderError",
+                      errors: [
+                        {
+                          tag: "custom",
+                          message:
+                            error instanceof Error
+                              ? error.message
+                              : String(error),
+                          got: val,
+                          path: [],
+                        },
+                      ],
+                    };
+                  }
                 },
                 encoder: (val) => val,
               }),
@@ -219,8 +232,27 @@ export function tweakable(
 
           case "Regex": {
             const decoded = decode(
-              chain(string, {
-                decoder: (val) => new RegExp(val, "u"),
+              flatMap(string, {
+                decoder: (val) => {
+                  try {
+                    return { tag: "Valid", value: new RegExp(val, "u") };
+                  } catch (error) {
+                    return {
+                      tag: "DecoderError",
+                      errors: [
+                        {
+                          tag: "custom",
+                          message:
+                            error instanceof Error
+                              ? error.message
+                              : String(error),
+                          got: val,
+                          path: [],
+                        },
+                      ],
+                    };
+                  }
+                },
                 encoder: (val) => val.source,
               }),
               value
@@ -302,8 +334,16 @@ export function normalizeStringArray(
 function StringSet<Decoded extends string>(
   codec: Codec<Decoded, string>
 ): Codec<Set<Decoded>, Array<string>> {
-  return chain(array(string), {
-    decoder: (arr) => new Set(array(codec).decoder(normalizeStringArray(arr))),
+  return flatMap(array(string), {
+    decoder: (arr) => {
+      const decoderResult = array(codec).decoder(normalizeStringArray(arr));
+      switch (decoderResult.tag) {
+        case "DecoderError":
+          return decoderResult;
+        case "Valid":
+          return { tag: "Valid", value: new Set(decoderResult.value) };
+      }
+    },
     encoder: (set) => array(codec).encoder(Array.from(set)),
   });
 }

@@ -1,9 +1,9 @@
 import {
   array,
   boolean,
-  chain,
-  DecoderError,
+  DecoderResult,
   fields,
+  flatMap,
   Infer,
   record,
   repr,
@@ -42,7 +42,7 @@ export type PartialOptions = Partial<Options>;
 export type FlatOptions = Record<string, unknown>;
 
 export const Options = fields({
-  chars: chain(string, { decoder: validateChars, encoder: (chars) => chars }),
+  chars: flatMap(string, { decoder: validateChars, encoder: (chars) => chars }),
   autoActivate: boolean,
   overTypingDuration: UnsignedInt,
   css: string,
@@ -55,32 +55,53 @@ export const Options = fields({
 
 const MIN_CHARS = 2;
 
-function validateChars(chars: string): string {
+function validateChars(chars: string): DecoderResult<string> {
   if (/\s/.test(chars)) {
-    throw new DecoderError({
-      message: "Expected chars not to contain whitespace",
-      value: chars,
-    });
+    return {
+      tag: "DecoderError",
+      errors: [
+        {
+          tag: "custom",
+          message: "Expected chars not to contain whitespace",
+          got: chars,
+          path: [],
+        },
+      ],
+    };
   }
 
   const match = /(.)(?=.*\1)/.exec(chars);
   if (match !== null) {
-    throw new DecoderError({
-      message: `Expected chars not to contain duplicate characters, but got ${repr(
-        match[1]
-      )} more than once.`,
-      value: DecoderError.MISSING_VALUE,
-    });
+    return {
+      tag: "DecoderError",
+      errors: [
+        {
+          tag: "custom",
+          message: `Expected chars not to contain duplicate characters, but got ${repr(
+            match[1]
+          )} more than once.`,
+          got: chars,
+          path: [],
+        },
+      ],
+    };
   }
 
   if (chars.length < MIN_CHARS) {
-    throw new DecoderError({
-      message: `Expected at least ${repr(MIN_CHARS)} chars`,
-      value: chars.length,
-    });
+    return {
+      tag: "DecoderError",
+      errors: [
+        {
+          tag: "custom",
+          message: `Expected at least ${repr(MIN_CHARS)} chars`,
+          got: chars.length,
+          path: [],
+        },
+      ],
+    };
   }
 
-  return chars;
+  return { tag: "Valid", value: chars };
 }
 
 export function normalizeChars(chars: string, defaultValue: string): string {

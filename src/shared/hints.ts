@@ -1,4 +1,11 @@
-import { array, chain, Infer, multi, stringUnion } from "./codec";
+import {
+  array,
+  DecoderResult,
+  flatMap,
+  Infer,
+  multi,
+  stringUnion,
+} from "./codec";
 
 export type ElementType = Infer<typeof ElementType>;
 export const ElementType = stringUnion([
@@ -12,8 +19,8 @@ export const ElementType = stringUnion([
 ]);
 
 export type ElementTypes = Infer<typeof ElementTypes>;
-export const ElementTypes = chain(multi(["array", "string"]), {
-  decoder(value) {
+export const ElementTypes = flatMap(multi(["array", "string"]), {
+  decoder(value): DecoderResult<Array<ElementType> | "selectable"> {
     switch (value.type) {
       case "array":
         return array(ElementType).decoder(value.value);

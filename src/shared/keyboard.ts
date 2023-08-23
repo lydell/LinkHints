@@ -1,8 +1,8 @@
 import {
   boolean,
-  chain,
-  DecoderError,
+  DecoderResult,
   fields,
+  flatMap,
   Infer,
   string,
   stringUnion,
@@ -74,15 +74,21 @@ const EMPTY_SHORTCUT: Shortcut = {
   shift: false,
 };
 
-function requireModifier(shortcut: Shortcut): Shortcut {
+function requireModifier(shortcut: Shortcut): DecoderResult<Shortcut> {
   const { key, alt, cmd, ctrl, shift } = shortcut;
-  if (!(alt || cmd || ctrl || (shift && key.length > 1))) {
-    throw new DecoderError({
-      message: "Expected Shortcut to use a least one modifier",
-      value: shortcut,
-    });
-  }
-  return shortcut;
+  return alt || cmd || ctrl || (shift && key.length > 1)
+    ? { tag: "Valid", value: shortcut }
+    : {
+        tag: "DecoderError",
+        errors: [
+          {
+            tag: "custom",
+            message: "Expected Shortcut to use a least one modifier",
+            got: shortcut,
+            path: [],
+          },
+        ],
+      };
 }
 
 const SHORTCUT_SEPARATOR = "-";
@@ -126,7 +132,7 @@ export const KeyboardMapping = fields({
 });
 
 export const KeyboardMappingWithModifiers = fields({
-  shortcut: chain(Shortcut, {
+  shortcut: flatMap(Shortcut, {
     decoder: requireModifier,
     encoder: (shortcut) => shortcut,
   }),
