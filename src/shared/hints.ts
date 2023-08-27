@@ -5,6 +5,7 @@ import {
   Infer,
   multi,
   stringUnion,
+  tag,
 } from "./codec";
 
 export type ElementType = Infer<typeof ElementType>;
@@ -25,7 +26,7 @@ export const ElementTypes = flatMap(multi(["array", "string"]), {
       case "array":
         return array(ElementType).decoder(value.value);
       case "string":
-        return stringUnion(["selectable"]).decoder(value.value);
+        return tag("selectable").decoder(value.value);
     }
   },
   encoder: (value) =>
