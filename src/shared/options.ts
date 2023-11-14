@@ -33,6 +33,7 @@ export type OptionsData = {
   raw: FlatOptions;
   errors: Array<string>;
   mac: boolean;
+  chromiumVariant: string;
 };
 
 export type Options = ReturnType<typeof Options>;

@@ -129,6 +129,7 @@ export type ToWorker =
       type: "OpenNewTab";
       url: string;
       foreground: boolean;
+      chromiumVariant: string;
     }
   | {
       type: "ReverseSelection";

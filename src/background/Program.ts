@@ -193,6 +193,7 @@ export default class BackgroundProgram {
 
   constructor() {
     const mac = false;
+    const chromiumVariant = "";
     const defaults = getDefaults({ mac });
     this.options = {
       defaults,
@@ -200,6 +201,7 @@ export default class BackgroundProgram {
       raw: {},
       errors: [],
       mac,
+      chromiumVariant,
     };
   }
 
@@ -1219,6 +1221,7 @@ export default class BackgroundProgram {
           type: "OpenNewTab",
           url,
           foreground,
+          chromiumVariant: this.options.chromiumVariant,
         },
         { tabId, frameId: TOP_FRAME_ID }
       );
@@ -2064,6 +2067,7 @@ export default class BackgroundProgram {
     const mac = info.os === "mac";
     const defaults = getDefaults({ mac });
     const rawOptions = await getRawOptions();
+    const chromiumVariant = await this.getChromiumVariant();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const [unflattened, map] = unflattenOptions(defaulted);
     const options = decode(Options, unflattened, map);
@@ -2083,9 +2087,21 @@ export default class BackgroundProgram {
       raw: rawOptions,
       errors: [],
       mac,
+      chromiumVariant,
     };
 
     log.level = options.logLevel;
+  }
+
+  async getChromiumVariant(): Promise<string> {
+    if (BROWSER !== "chrome") {
+      return "";
+    }
+    const tabs = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    return tabs?.[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
   }
 
   async saveOptions(partialOptions: PartialOptions): Promise<void> {

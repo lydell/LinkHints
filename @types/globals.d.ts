@@ -69,6 +69,14 @@ interface Navigator {
   } | null;
 }
 
+// We have to extend the WebExtension definition of Tab to include the optional vivExtData key so
+// that we can check for it to identify the Vivaldi browser.
+declare namespace browser.tabs {
+  export interface Tab {
+    vivExtData?: typeof Object | undefined;
+  }
+}
+
 interface ShadowRoot {
   elementFromPoint: Document["elementFromPoint"];
   elementsFromPoint: Document["elementsFromPoint"];

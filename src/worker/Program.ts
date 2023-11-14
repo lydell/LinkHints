@@ -458,12 +458,13 @@ export default class WorkerProgram {
       // This technique does not seem to work in Firefox, but it's not needed
       // there anyway (see background/Program.ts).
       case "OpenNewTab": {
-        const { url, foreground } = message;
+        const { url, foreground, chromiumVariant } = message;
         const link = document.createElement("a");
+        const ctrlKey = chromiumVariant !== "vivaldi";
         link.href = url;
         link.dispatchEvent(
           new MouseEvent("click", {
-            ctrlKey: true,
+            ctrlKey,
             metaKey: true,
             shiftKey: foreground,
           })
