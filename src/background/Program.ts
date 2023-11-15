@@ -2067,10 +2067,10 @@ export default class BackgroundProgram {
     const mac = info.os === "mac";
     const defaults = getDefaults({ mac });
     const rawOptions = await getRawOptions();
-    const chromiumVariant = await this.getChromiumVariant();
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const [unflattened, map] = unflattenOptions(defaulted);
     const options = decode(Options, unflattened, map);
+    const chromiumVariant = await getChromiumVariant();
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
@@ -2091,17 +2091,6 @@ export default class BackgroundProgram {
     };
 
     log.level = options.logLevel;
-  }
-
-  async getChromiumVariant(): Promise<string> {
-    if (BROWSER !== "chrome") {
-      return "";
-    }
-    const tabs = await browser.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    return tabs?.[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
   }
 
   async saveOptions(partialOptions: PartialOptions): Promise<void> {
@@ -2329,6 +2318,17 @@ export default class BackgroundProgram {
       }
     }
   }
+}
+
+async function getChromiumVariant(): Promise<string> {
+  if (BROWSER !== "chrome") {
+    return "";
+  }
+  const tabs = await browser.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+  return tabs?.[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
 }
 
 function makeEmptyTabState(tabId: number | undefined): TabState {
