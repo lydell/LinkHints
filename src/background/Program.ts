@@ -33,6 +33,7 @@ import {
   splitEnteredText,
 } from "../shared/main";
 import type {
+  ChromiumVariant,
   FromBackground,
   FromOptions,
   FromPopup,
@@ -45,7 +46,6 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
-  ChromiumVariant,
   diffOptions,
   flattenOptions,
   getDefaults,
@@ -194,7 +194,6 @@ export default class BackgroundProgram {
 
   constructor() {
     const mac = false;
-    const chromiumVariant = "";
     const defaults = getDefaults({ mac });
     this.options = {
       defaults,
@@ -202,7 +201,6 @@ export default class BackgroundProgram {
       raw: {},
       errors: [],
       mac,
-      chromiumVariant,
     };
   }
 
@@ -1217,15 +1215,21 @@ export default class BackgroundProgram {
         url
       );
     } else if (BROWSER === "chrome") {
-      this.sendWorkerMessage(
-        {
-          type: "OpenNewTab",
-          url,
-          foreground,
-          chromiumVariant: this.options.chromiumVariant,
-        },
-        { tabId, frameId: TOP_FRAME_ID }
-      );
+      getChromiumVariant()
+        .then((chromiumVariant) => {
+          this.sendWorkerMessage(
+            {
+              type: "OpenNewTab",
+              url,
+              foreground,
+              chromiumVariant,
+            },
+            { tabId, frameId: TOP_FRAME_ID }
+          );
+        })
+        .catch((err) => {
+          log("log", "BackgroundProgram#openNewTab", url, err);
+        });
     } else {
       fireAndForget(
         browser.tabs
@@ -2071,7 +2075,6 @@ export default class BackgroundProgram {
     const defaulted = { ...flattenOptions(defaults), ...rawOptions };
     const [unflattened, map] = unflattenOptions(defaulted);
     const options = decode(Options, unflattened, map);
-    const chromiumVariant = await getChromiumVariant();
 
     log("log", "BackgroundProgram#updateOptions", {
       defaults,
@@ -2088,7 +2091,6 @@ export default class BackgroundProgram {
       raw: rawOptions,
       errors: [],
       mac,
-      chromiumVariant,
     };
 
     log.level = options.logLevel;

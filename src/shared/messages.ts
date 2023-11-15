@@ -12,7 +12,7 @@ import type {
   NormalizedKeypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
-import type { ChromiumVariant, OptionsData, PartialOptions } from "./options";
+import type { OptionsData, PartialOptions } from "./options";
 import type { Durations, Stats, TabsPerf } from "./perf";
 
 export type FromBackground =
@@ -103,6 +103,8 @@ export type FromWorker =
   | {
       type: "WorkerScriptAdded";
     };
+
+export type ChromiumVariant = "" | "chrome" | "vivaldi";
 
 export type ToWorker =
   | {
