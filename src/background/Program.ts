@@ -45,6 +45,7 @@ import type {
   ToWorker,
 } from "../shared/messages";
 import {
+  ChromiumVariant,
   diffOptions,
   flattenOptions,
   getDefaults,
@@ -2320,7 +2321,7 @@ export default class BackgroundProgram {
   }
 }
 
-async function getChromiumVariant(): Promise<string> {
+async function getChromiumVariant(): Promise<ChromiumVariant> {
   if (BROWSER !== "chrome") {
     return "";
   }

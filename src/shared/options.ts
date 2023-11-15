@@ -27,13 +27,15 @@ import {
   UnsignedInt,
 } from "./main";
 
+export type ChromiumVariant = "" | "chrome" | "vivaldi";
+
 export type OptionsData = {
   values: Options;
   defaults: Options;
   raw: FlatOptions;
   errors: Array<string>;
   mac: boolean;
-  chromiumVariant: string;
+  chromiumVariant: ChromiumVariant;
 };
 
 export type Options = ReturnType<typeof Options>;

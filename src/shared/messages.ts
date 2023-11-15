@@ -12,7 +12,7 @@ import type {
   NormalizedKeypress,
 } from "./keyboard";
 import type { Box, LogLevel } from "./main";
-import type { OptionsData, PartialOptions } from "./options";
+import type { ChromiumVariant, OptionsData, PartialOptions } from "./options";
 import type { Durations, Stats, TabsPerf } from "./perf";
 
 export type FromBackground =
@@ -129,7 +129,7 @@ export type ToWorker =
       type: "OpenNewTab";
       url: string;
       foreground: boolean;
-      chromiumVariant: string;
+      chromiumVariant: ChromiumVariant;
     }
   | {
       type: "ReverseSelection";
