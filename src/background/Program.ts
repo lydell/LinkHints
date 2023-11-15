@@ -2328,7 +2328,7 @@ async function getChromiumVariant(): Promise<ChromiumVariant> {
     active: true,
     currentWindow: true,
   });
-  return tabs?.[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
+  return tabs[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
 }
 
 function makeEmptyTabState(tabId: number | undefined): TabState {
