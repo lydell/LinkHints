@@ -2323,9 +2323,6 @@ export default class BackgroundProgram {
 }
 
 async function getChromiumVariant(): Promise<ChromiumVariant> {
-  if (BROWSER !== "chrome") {
-    return "";
-  }
   const tabs = await browser.tabs.query({
     active: true,
     currentWindow: true,

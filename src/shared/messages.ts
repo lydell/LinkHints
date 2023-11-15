@@ -104,7 +104,7 @@ export type FromWorker =
       type: "WorkerScriptAdded";
     };
 
-export type ChromiumVariant = "" | "chrome" | "vivaldi";
+export type ChromiumVariant = "chrome" | "vivaldi";
 
 export type ToWorker =
   | {
