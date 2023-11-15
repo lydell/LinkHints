@@ -460,7 +460,7 @@ export default class WorkerProgram {
       case "OpenNewTab": {
         const { url, foreground, chromiumVariant } = message;
         const link = document.createElement("a");
-        const ctrlKey = chromiumVariant !== "vivaldi";
+        const ctrlKey = chromiumVariant !== "vivaldi" || !foreground;
         link.href = url;
         link.dispatchEvent(
           new MouseEvent("click", {
