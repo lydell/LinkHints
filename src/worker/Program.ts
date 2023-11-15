@@ -30,6 +30,7 @@ import {
   walkTextNodes,
 } from "../shared/main";
 import type {
+  ChromiumVariant,
   FromBackground,
   FromWorker,
   ToBackground,
@@ -458,15 +459,10 @@ export default class WorkerProgram {
       // This technique does not seem to work in Firefox, but it's not needed
       // there anyway (see background/Program.ts).
       case "OpenNewTab": {
-        const { url, foreground } = message;
         const link = document.createElement("a");
-        link.href = url;
+        link.href = message.url;
         link.dispatchEvent(
-          new MouseEvent("click", {
-            ctrlKey: true,
-            metaKey: true,
-            shiftKey: foreground,
-          })
+          new MouseEvent("click", getOpenNewTabModifiers(message))
         );
         break;
       }
@@ -1861,4 +1857,27 @@ function temporarilySetFilter(
       }
     },
   };
+}
+
+function getOpenNewTabModifiers({
+  chromiumVariant,
+  foreground,
+}: {
+  chromiumVariant: ChromiumVariant;
+  foreground: boolean;
+}): MouseEventInit {
+  switch (chromiumVariant) {
+    case "chrome":
+      return {
+        ctrlKey: true,
+        metaKey: true,
+        shiftKey: foreground,
+      };
+    case "vivaldi":
+      return {
+        ctrlKey: !foreground,
+        metaKey: true,
+        shiftKey: foreground,
+      };
+  }
 }

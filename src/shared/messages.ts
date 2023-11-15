@@ -104,6 +104,8 @@ export type FromWorker =
       type: "WorkerScriptAdded";
     };
 
+export type ChromiumVariant = "chrome" | "vivaldi";
+
 export type ToWorker =
   | {
       type: "ClickElement";
@@ -129,6 +131,7 @@ export type ToWorker =
       type: "OpenNewTab";
       url: string;
       foreground: boolean;
+      chromiumVariant: ChromiumVariant;
     }
   | {
       type: "ReverseSelection";
