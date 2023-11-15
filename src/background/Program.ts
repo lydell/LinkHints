@@ -1215,8 +1215,8 @@ export default class BackgroundProgram {
         url
       );
     } else if (BROWSER === "chrome") {
-      getChromiumVariant()
-        .then((chromiumVariant) => {
+      fireAndForget(
+        getChromiumVariant().then((chromiumVariant) => {
           this.sendWorkerMessage(
             {
               type: "OpenNewTab",
@@ -1226,10 +1226,9 @@ export default class BackgroundProgram {
             },
             { tabId, frameId: TOP_FRAME_ID }
           );
-        })
-        .catch((err) => {
-          log("log", "BackgroundProgram#openNewTab", url, err);
-        });
+        }),
+        "BackgroundProgram#openNewTab->getChromiumVariant"
+      );
     } else {
       fireAndForget(
         browser.tabs
