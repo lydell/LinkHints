@@ -2322,6 +2322,7 @@ export default class BackgroundProgram {
   }
 }
 
+// Copied from: https://stackoverflow.com/a/77047611
 async function getChromiumVariant(): Promise<ChromiumVariant> {
   const tabs = await browser.tabs.query({
     active: true,
