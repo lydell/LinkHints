@@ -113,6 +113,9 @@ export default class RendererProgram {
     };
 
     const container = document.createElement("div");
+    // Enable popover mode, allowing `.showPopover()` to be called later.
+    // @ts-expect-error This property is missing in the TypeScript version we use.
+    container.popover = "manual";
     container.id = CONTAINER_ID;
     setStyles(container, CONTAINER_STYLES);
 
@@ -396,6 +399,12 @@ export default class RendererProgram {
     // inserted into the DOM.
     if (document.documentElement !== null) {
       document.documentElement.append(this.container.element);
+      // Put the container in the top level. This is needed to stay on top of
+      // popovers and modal dialogs. See:
+      // https://developer.mozilla.org/en-US/docs/Glossary/Top_layer
+      // @ts-expect-error This method is missing in the TypeScript version we use.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      this.container.element.showPopover();
     }
 
     if (this.css.parsed === undefined) {

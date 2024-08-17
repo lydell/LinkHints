@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>top layer</title>
+  </head>
+  <body>
+    <button popovertarget="popover-1">Open Popover 1</button>
+    <button popovertarget="popover-2">Open Popover 2</button>
+    <button onclick="dialog.showModal()">Open Dialog</button>
+
+    <div popover id="popover-1">
+      popover 1:
+      <a href="https://mozilla.org">link inside popover</a>
+    </div>
+
+    <div popover id="popover-2">
+      popover 2:
+      <a href="https://mozilla.org">link inside popover</a>
+    </div>
+
+    <dialog id="dialog">
+      <a href="https://mozilla.org">link inside modal dialog</a>
+    </dialog>
+  </body>
+</html>
