@@ -1318,7 +1318,8 @@ export default class ElementManager {
         return [];
       }
 
-      const box = getVisibleBox(element.getBoundingClientRect(), viewports);
+      const rect = element.getBoundingClientRect();
+      const box = getVisibleBox(rect, viewports);
 
       // Frames are slow to visit. Gmail has ~10 weird frames that are super
       // small. Not sure what they do. But not visiting those saves around ~80ms
@@ -1333,8 +1334,8 @@ export default class ElementManager {
 
       const elementsAtPoint = getElementsFromPoint(
         element,
-        Math.round(box.x + box.width / 2),
-        Math.round(box.y + box.height / 2)
+        Math.round(rect.x + rect.width / 2),
+        Math.round(rect.y + rect.height / 2)
       );
 
       // Make sure that the frame is visible – for example, not `visibility:
