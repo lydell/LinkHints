@@ -2369,7 +2369,6 @@ const CLICK_TYPES: ElementTypes = [
   "clickable-event",
   "label",
   "link",
-  "scrollable",
   "textarea",
 ];
 

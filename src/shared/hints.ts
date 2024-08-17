@@ -6,7 +6,6 @@ export const ElementType = stringUnion({
   clickable: null,
   label: null,
   link: null,
-  scrollable: null,
   selectable: null,
   textarea: null,
 });

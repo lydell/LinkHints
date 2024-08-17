@@ -431,12 +431,6 @@ export default class RendererProgram {
         "resize",
         this.onResize.bind(this),
         "RendererProgram#onResize"
-      ),
-      addEventListener(
-        window,
-        "underflow",
-        this.onResize.bind(this),
-        "RendererProgram#onResize"
       )
     );
 

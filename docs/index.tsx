@@ -133,7 +133,6 @@ const SECTIONS = [
             .
           </li>
           <li>Tracking of elements with click listeners.</li>
-          <li>Tracking of scrollable elements in Firefox.</li>
           <li>Tracking elements and updating hints while showing them.</li>
           <li>Text based hint positioning.</li>
           <li>

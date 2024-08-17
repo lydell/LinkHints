@@ -99,12 +99,12 @@ export const t = {
 
   ELEMENT_TYPES_LOW_QUALITY: elementTypeSet(new Set(["clickable-event"])),
 
-  // Give worse hints to scrollable elements and (selectable) frames. They are
-  // usually very large by nature, but not that commonly used. Also give worse
-  // hints to elements with click listeners only. They often wrap text inputs,
-  // covering the hint for the input.
+  // Give worse hints to selectable frames. They are usually very large by
+  // nature, but not that commonly used. Also give worse hints to elements with
+  // click listeners only. They often wrap text inputs, covering the hint for
+  // the input.
   ELEMENT_TYPES_WORSE: elementTypeSet(
-    new Set(["clickable-event", "scrollable", "selectable"])
+    new Set(["clickable-event", "selectable"])
   ),
 
   // Elements this many pixels high or taller always get their hint placed at the
@@ -181,8 +181,6 @@ export const t = {
     ])
   ),
 
-  VALUES_SCROLLABLE_OVERFLOW: stringSet(new Set(["auto", "scroll"])),
-
   MIN_SIZE_FRAME: unsignedFloat(6), // px
   MIN_SIZE_TEXT_RECT: unsignedFloat(2), // px
   MIN_SIZE_ICON: unsignedFloat(10), // px
@@ -238,10 +236,6 @@ type QueueItem =
       clickable: boolean;
     }
   | {
-      type: "OverflowChanged";
-      target: EventTarget;
-    }
-  | {
       type: "Records";
       records: Array<MutationRecord> | Array<Record>;
       recordIndex: number;
@@ -283,8 +277,6 @@ export default class ElementManager {
   visibleFrames = new Set<HTMLFrameElement | HTMLIFrameElement>();
 
   elementsWithClickListeners = new WeakSet<HTMLElement>();
-
-  elementsWithScrollbars = new WeakSet<HTMLElement>();
 
   shadowRoots = new WeakMap<Element, ShadowRootData>();
 
@@ -354,21 +346,6 @@ export default class ElementManager {
       );
     }
 
-    this.resets.add(
-      addEventListener(
-        window,
-        "overflow",
-        this.onOverflowChange.bind(this),
-        "ElementManager#onOverflowChange"
-      ),
-      addEventListener(
-        window,
-        "underflow",
-        this.onOverflowChange.bind(this),
-        "ElementManager#onOverflowChange"
-      )
-    );
-
     this.injectScript();
 
     // Wait for tweakable values to load before starting the MutationObserver,
@@ -416,7 +393,6 @@ export default class ElementManager {
     this.visibleFrames.clear();
     // `WeakSet`s don’t have a `.clear()` method.
     this.elementsWithClickListeners = new WeakSet();
-    this.elementsWithScrollbars = new WeakSet();
     this.shadowRoots = new WeakMap();
     this.idleCallbackId = undefined;
     this.resets.reset();
@@ -702,11 +678,6 @@ export default class ElementManager {
     }
   }
 
-  onOverflowChange(event: UIEvent): void {
-    const target = getTarget(event);
-    this.queueItem({ type: "OverflowChanged", target });
-  }
-
   onInjectedMessage(message: FromInjected): void {
     switch (message.type) {
       case "ClickableChanged":
@@ -747,21 +718,6 @@ export default class ElementManager {
     const resets = new Resets();
 
     mutationObserve(mutationObserver, shadowRoot);
-
-    resets.add(
-      addEventListener(
-        shadowRoot,
-        "overflow",
-        this.onOverflowChange.bind(this),
-        "ElementManager#onOverflowChange"
-      ),
-      addEventListener(
-        shadowRoot,
-        "underflow",
-        this.onOverflowChange.bind(this),
-        "ElementManager#onOverflowChange"
-      )
-    );
 
     this.shadowRoots.set(shadowRoot.host, {
       shadowRoot,
@@ -1104,26 +1060,6 @@ export default class ElementManager {
           }
           break;
         }
-
-        case "OverflowChanged": {
-          const element = item.target;
-          if (element instanceof HTMLElement) {
-            // An element might have `overflow-x: hidden; overflow-y: auto;`. The events
-            // don't tell which direction changed its overflow, so we must check that
-            // ourselves. We're only interested in elements with scrollbars, not with
-            // hidden overflow.
-            if (isScrollable(element)) {
-              if (!this.elementsWithScrollbars.has(element)) {
-                this.elementsWithScrollbars.add(element);
-                this.addOrRemoveElement("changed", element);
-              }
-            } else if (this.elementsWithScrollbars.has(element)) {
-              this.elementsWithScrollbars.delete(element);
-              this.addOrRemoveElement("changed", element);
-            }
-          }
-          break;
-        }
       }
     }
 
@@ -1389,19 +1325,6 @@ export default class ElementManager {
           !t.VALUES_NON_CONTENTEDITABLE.value.has(element.contentEditable)
         ) {
           return "textarea";
-        }
-
-        if (
-          this.elementsWithScrollbars.has(element) &&
-          // Allow `<html>` (or `<body>`) to get hints only if they are
-          // scrollable and in a frame. This allows focusing frames to scroll
-          // them. In Chrome, `iframeElement.focus()` allows for scrolling a
-          // specific frame, but I haven’t found a good way to show hints only
-          // for _scrollable_ frames. Chrome users can use the "select element"
-          // command instead. See `getElementTypeSelectable`.
-          !(element === document.scrollingElement && window.top === window)
-        ) {
-          return "scrollable";
         }
 
         // `<html>` and `<body>` might have click listeners or role attributes
@@ -1808,18 +1731,6 @@ function getSingleRectPoint({
   range: Range;
   time: TimeTracker;
 }): Point {
-  // Scrollbars are usually on the right side, so put the hint there, making it
-  // easier to see that the hint is for scrolling and reducing overlap.
-  time.start("getSingleRectPoint:scrollable");
-  if (elementType === "scrollable") {
-    return {
-      ...getXY(visibleBox),
-      x: visibleBox.x + visibleBox.width - 1,
-      align: "right",
-      debug: "getSingleRectPoint scrollable",
-    };
-  }
-
   // Always put hints for "tall" elements at the left-center edge – except in
   // selectable mode (long paragraphs). Then it is nicer to put the marker at
   // the start of the text.
@@ -2258,29 +2169,6 @@ function replaceConstants(code: string): string {
   );
 }
 
-function isScrollable(element: HTMLElement): boolean {
-  const computedStyle = window.getComputedStyle(element);
-
-  // `.scrollLeftMax` and `.scrollTopMax` are Firefox-only, but this function is
-  // only called from the "overflow" and "underflow" event listeners, and those
-  // are Firefox-only as well. Those properties are the easiest way to check if
-  // an element overflows in either the X or Y direction.
-  return (
-    // @ts-expect-error See above.
-    (element.scrollLeftMax > 0 &&
-      (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
-        computedStyle.getPropertyValue("overflow-x")
-      ) ||
-        element === document.scrollingElement)) ||
-    // @ts-expect-error See above.
-    (element.scrollTopMax > 0 &&
-      (t.VALUES_SCROLLABLE_OVERFLOW.value.has(
-        computedStyle.getPropertyValue("overflow-y")
-      ) ||
-        element === document.scrollingElement))
-  );
-}
-
 function hasClickListenerProp(element: HTMLElement): boolean {
   // Adding a `onclick="..."` attribute in HTML automatically sets
   // `.onclick` of the element to a function. But in Chrome, `.onclick`
@@ -2333,9 +2221,8 @@ function hintWeight(
   // Use logarithms too make the difference between small and large elements
   // smaller. Instead of an “image card” being 10 times heavier than a
   // navigation link, it’ll only be about 3 times heavier. Give worse hints to
-  // some types, such as scrollable elements, by using a logarithm with a higher
-  // base. A tall scrollable element (1080px) gets a weight slightly smaller
-  // than that of a small link (12px high).
+  // some types by using a logarithm with a higher base. A tall element (1080px)
+  // gets a weight slightly smaller than that of a small link (12px high).
   const lg = t.ELEMENT_TYPES_WORSE.value.has(elementType)
     ? Math.log10
     : Math.log2;

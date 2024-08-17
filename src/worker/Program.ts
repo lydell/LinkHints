@@ -1,6 +1,5 @@
 import type {
   ElementReport,
-  ElementType,
   ElementTypes,
   VisibleElement,
 } from "../shared/hints";
@@ -282,7 +281,6 @@ export default class WorkerProgram {
         const rects = elements.flatMap((elementData) =>
           getTextRectsHelper({
             element: elementData.element,
-            type: elementData.type,
             viewports: current.viewports,
             words: wordsSet,
           })
@@ -865,10 +863,8 @@ export default class WorkerProgram {
             if (maybeItem === undefined || !current.indexes.includes(index)) {
               return [];
             }
-            const { element, type } = maybeItem;
             return getTextRectsHelper({
-              element,
-              type,
+              element: maybeItem.element,
               viewports: current.viewports,
               words: wordsSet,
             });
@@ -1319,7 +1315,7 @@ function visibleElementToElementReport(
 ): ElementReport {
   const text = textContent
     ? element.textContent ?? ""
-    : extractTextHelper(element, type);
+    : extractTextHelper(element);
   return {
     type,
     index,
@@ -1367,14 +1363,7 @@ function updateElementsWithEqualOnes(
   }
 }
 
-function extractTextHelper(element: HTMLElement, type: ElementType): string {
-  // Scrollable elements do have `.textContent`, but it’s not intuitive to
-  // filter them by text (especially since the matching text might be scrolled
-  // away). Treat them more like frames (where you can’t look inside).
-  if (type === "scrollable") {
-    return "";
-  }
-
+function extractTextHelper(element: HTMLElement): string {
   // For text inputs, textareas, checkboxes, selects, etc., use their label text
   // for filtering. For buttons with a label, use both the button text and the
   // label text.
@@ -1396,22 +1385,15 @@ function normalizeWhitespace(string: string): string {
 
 export function getTextRectsHelper({
   element,
-  type,
   viewports,
   words,
   checkElementAtPoint,
 }: {
   element: HTMLElement;
-  type: ElementType;
   viewports: Array<Box>;
   words: Set<string>;
   checkElementAtPoint?: boolean;
 }): Array<Box> {
-  // See `extractTextHelper`.
-  if (type === "scrollable") {
-    return [];
-  }
-
   // See `extractTextHelper`.
   const labels = getLabels(element);
   if (labels !== undefined) {
