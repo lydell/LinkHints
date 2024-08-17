@@ -69,6 +69,13 @@ interface Navigator {
   } | null;
 }
 
+// This is used to identify the Vivaldi browser.
+declare namespace browser.tabs {
+  export interface Tab {
+    vivExtData?: unknown;
+  }
+}
+
 interface ShadowRoot {
   elementFromPoint: Document["elementFromPoint"];
   elementsFromPoint: Document["elementsFromPoint"];

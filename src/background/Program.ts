@@ -33,6 +33,7 @@ import {
   splitEnteredText,
 } from "../shared/main";
 import type {
+  ChromiumVariant,
   FromBackground,
   FromOptions,
   FromPopup,
@@ -1214,13 +1215,19 @@ export default class BackgroundProgram {
         url
       );
     } else if (BROWSER === "chrome") {
-      this.sendWorkerMessage(
-        {
-          type: "OpenNewTab",
-          url,
-          foreground,
-        },
-        { tabId, frameId: TOP_FRAME_ID }
+      fireAndForget(
+        getChromiumVariant().then((chromiumVariant) => {
+          this.sendWorkerMessage(
+            {
+              type: "OpenNewTab",
+              url,
+              foreground,
+              chromiumVariant,
+            },
+            { tabId, frameId: TOP_FRAME_ID }
+          );
+        }),
+        "BackgroundProgram#openNewTab->getChromiumVariant"
       );
     } else {
       fireAndForget(
@@ -2313,6 +2320,15 @@ export default class BackgroundProgram {
       }
     }
   }
+}
+
+// Copied from: https://stackoverflow.com/a/77047611
+async function getChromiumVariant(): Promise<ChromiumVariant> {
+  const tabs = await browser.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+  return tabs[0]?.vivExtData !== undefined ? "vivaldi" : "chrome";
 }
 
 function makeEmptyTabState(tabId: number | undefined): TabState {
