@@ -1159,19 +1159,66 @@ export default class ElementManager {
           };
         }
 
-        // Ignore `<label>` elements with no control and no click listeners.
-        if (
-          type === "label" &&
-          element instanceof HTMLLabelElement &&
-          element.control === null
-        ) {
-          return {
-            isRejected: true,
-            debug: {
-              reason: "<label> with no control and no click listeners",
-              element,
-            },
-          };
+        // Ignore elements that are _sometimes_ natively clickable, that have
+        // no click listeners and aren’t in the state where they _are_ clickable.
+        if (type === "sometimes-clickable") {
+          // `<label>` elements with no control.
+          if (element instanceof HTMLLabelElement && element.control === null) {
+            return {
+              isRejected: true,
+              debug: {
+                reason: "<label> with no control and no click listeners",
+                element,
+              },
+            };
+          }
+
+          switch (element.localName) {
+            // `<details>` is clickable if it has no `<summary>` child.
+            case "details":
+              for (const child of element.children) {
+                if (child.localName === "summary") {
+                  return {
+                    isRejected: true,
+                    debug: {
+                      reason: "<details> with <summary> child",
+                      element,
+                    },
+                  };
+                }
+              }
+              break;
+
+            // `<summary>` is clickable if it is the first `<summary>` child of a `<details>`.
+            case "summary": {
+              if (element.parentElement?.localName !== "details") {
+                return {
+                  isRejected: true,
+                  debug: {
+                    reason: "<summary> not in <details>",
+                    element,
+                  },
+                };
+              }
+              let firstSummary = undefined;
+              for (const child of element.parentElement.children) {
+                if (child.localName === "summary") {
+                  firstSummary = child;
+                  break;
+                }
+              }
+              if (firstSummary !== element) {
+                return {
+                  isRejected: true,
+                  debug: {
+                    reason: "<summary> not first <summary> child of <details>",
+                    element,
+                  },
+                };
+              }
+              break;
+            }
+          }
         }
 
         time.start("loop:measurements");
@@ -1301,21 +1348,6 @@ export default class ElementManager {
       case "audio":
       case "video":
         return "clickable";
-      // <details> is clickable if it has no <summary> child.
-      case "details":
-        return Array.from(element.children).some(
-          (child) => child.localName === "summary"
-        )
-          ? undefined
-          : "clickable";
-      // <summary> is clickable if it is the first <summary> child of a <details>.
-      case "summary":
-        return element.parentElement?.localName === "details" &&
-          Array.from(element.parentElement.children).find(
-            (child) => child.localName === "summary"
-          ) === element
-          ? "clickable"
-          : undefined;
       case "input":
         return element instanceof HTMLInputElement && element.type !== "hidden"
           ? "clickable"
@@ -1377,10 +1409,13 @@ export default class ElementManager {
           return "clickable-event";
         }
 
-        // Match `<label>` elements last so that labels without controls but
-        // with click listeners are matched as clickable.
-        if (element.localName === "label") {
-          return "label";
+        // Match sometimes clickable elements last so that such elements with
+        // click listeners are matched as clickable.
+        switch (element.localName) {
+          case "details":
+          case "summary":
+          case "label":
+            return "sometimes-clickable";
         }
 
         return undefined;

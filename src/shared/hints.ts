@@ -4,7 +4,7 @@ export type ElementType = ReturnType<typeof ElementType>;
 export const ElementType = stringUnion({
   "clickable-event": null,
   clickable: null,
-  label: null,
+  "sometimes-clickable": null, // <label>, <details>, <summary>
   link: null,
   selectable: null,
   textarea: null,

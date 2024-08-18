@@ -2367,7 +2367,7 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
 const CLICK_TYPES: ElementTypes = [
   "clickable",
   "clickable-event",
-  "label",
+  "sometimes-clickable",
   "link",
   "textarea",
 ];
