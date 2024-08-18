@@ -2035,27 +2035,6 @@ function getNonCoveredPoint(
       : elementAtPoint;
   const rect = parent.getBoundingClientRect();
 
-  // `.getBoundingClientRect()` does not include pseudo-elements that are
-  // absolutely positioned so that they go outside of the element, but calling
-  // `.elementFromPoint()` on the pseudo-element _does_ return the element. For
-  // `/###\`-looking tabs, which overlap each other slightly, the slanted parts
-  // are often made using pseudo-elements. When trying to position a hint for
-  // tab 2, `.elementFromPoint()` might return tab 1. So if we get a nonsensical
-  // rect (one that does not cover (x, y)) for the "covering" element it's
-  // better to treat (x, y) as non-covered.
-  // This also happens for Bootstrap v4 checkboxes. They are constructed as
-  // follows: A `<div>` has a bit of `padding-left`. In that padding, the
-  // `<input type="checkbox">` is placed with `label::before` and `label::after`
-  // stacked on top, all using `position: absolute;`. The `<input>` is hidden
-  // via `z-index: -1;` and the pseudo elements are styled as a checkbox and
-  // positioned _outside_ the `<label>` element. So running
-  // `.getElementFromPoint()` where the checkbox looks to be returns the
-  // `<label>` element. Treating the checkbox as non-covered means that the hint
-  // will end up next to the checkbox rather than next to the label text.
-  if (rect.left > x || rect.right <= x || rect.top > y || rect.bottom <= y) {
-    return { x, y };
-  }
-
   time.start("getNonCoveredPoint:attempt2");
   const newX = Math.round(rect.right + 1);
 
