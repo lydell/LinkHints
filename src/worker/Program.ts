@@ -947,14 +947,12 @@ export default class WorkerProgram {
     }
 
     // When clicking a link for real the focus happens between the mousedown and
-    // the mouseup, but moving this line between those two `.dispatchEvent` calls
-    // below causes dropdowns in gmail not to be triggered anymore.
+    // the mouseup.
     // Note: The target element is clicked, but the original element is
     // focused. The idea is that the original element is a link or button, and
     // the target element might be a span or div.
-    element.focus();
-
     targetElement.dispatchEvent(mousedownEvent);
+    element.focus();
     targetElement.dispatchEvent(mouseupEvent);
     let defaultPrevented = !targetElement.dispatchEvent(clickEvent);
 
