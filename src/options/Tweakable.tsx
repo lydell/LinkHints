@@ -337,7 +337,11 @@ export function getTweakableExport(): Record<string, unknown> {
           ? [
               [
                 `${DEBUG_PREFIX}${tMeta.namespace}.${key}`,
-                value instanceof Set ? Array.from(value) : value,
+                value instanceof Set
+                  ? Array.from(value)
+                  : value instanceof RegExp
+                  ? value.source
+                  : value,
               ],
             ]
           : [];
