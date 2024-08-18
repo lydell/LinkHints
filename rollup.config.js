@@ -27,7 +27,7 @@ const transformCSS = require("./src/css").default;
 const config = require("./project.config").default;
 
 const optionalRequire = optionalRequireImport(require);
-const customConfig = optionalRequire("./custom.config") || {};
+const customConfig = optionalRequire("./custom.config.cjs") || {};
 
 const PROD = config.prod;
 

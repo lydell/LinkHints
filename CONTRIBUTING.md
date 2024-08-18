@@ -50,8 +50,8 @@ The most important files:
 
 - `project.config.ts` contains information about the whole project, all in one place. Other config files and build scripts read from it. For example, it maps entrypoint files in `src/` to output files in `compiled/`.
 - `rollup.config.js` defines how `compiled/` is made. Rollup compiles and bundles JavaScript; generates `manifest.json`, HTML files and SVG icons; copies the [WebExtension Polyfill], CSS files, and PNG icons; and defines a couple of global variables (see also `@types/globals.d.ts`).
-- `web-ext-config.js` configures [web-ext], both for building and for running.
-- `custom.config.example.js` can be copied into `custom.config.js` to customize `web-ext run` as well as default options for development.
+- `web-ext-config.cjs` configures [web-ext], both for building and for running.
+- `custom.config.example.cjs` can be copied into `custom.config.cjs` to customize `web-ext run` as well as default options for development.
 - `src/manifest.ts` is called via Rollup and generates `manifest.json`. In fact, all `.ts` files directly inside `src/` are called via Rollup and generate other files.
 - `src/icons.tsx` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape] and [OptiPNG]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
 - `src/html.tsx` generates HTML files. All HTML files are very minimal. JavaScript is used to render content.
@@ -61,7 +61,7 @@ Compilation pipeline:
 
 ```
        project.config.ts                                     .--> dist-chrome/
-       rollup.config.js                 web-ext-config.js   /
+       rollup.config.js                 web-ext-config.cjs  /
 src/ ---------------------> compiled/ ----------------------
                                                             \
                                                              '--> dist-firefox/
@@ -106,7 +106,7 @@ npm run firefox
 
 The extension is automatically reloaded when files inside `compiled/` change.
 
-The above commands are wrappers around `web-ext run`. To customize how Chrome/Firefox is run, copy `custom.config.example.js` to `custom.config.js`. The latter file is gitignored, so you can change it however you wish.
+The above commands are wrappers around `web-ext run`. To customize how Chrome/Firefox is run, copy `custom.config.example.cjs` to `custom.config.cjs`. The latter file is gitignored, so you can change it however you wish.
 
 #### Manual workflow in Chrome
 

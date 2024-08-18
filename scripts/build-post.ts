@@ -58,7 +58,7 @@ async function makeSourceCodeBundle(): Promise<void> {
     "project.config.ts",
     "rollup.config.js",
     "tsconfig.json",
-    "web-ext-config.js",
+    "web-ext-config.cjs",
   ].map((file) => path.join(BASE_DIR, file));
 
   const dirs = ["@types", "docs", "patches", "scripts", "src"];

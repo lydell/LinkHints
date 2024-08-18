@@ -2,7 +2,7 @@ const optionalRequire = require("optional-require")(require);
 
 const config = require("./project.config").default;
 
-const customConfig = optionalRequire("./custom.config") || {};
+const customConfig = optionalRequire("./custom.config.cjs") || {};
 
 module.exports = {
   sourceDir: config.compiled,
