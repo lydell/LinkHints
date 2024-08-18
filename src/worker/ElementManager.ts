@@ -155,7 +155,6 @@ export const t = {
       "switch",
       "tab",
       "textbox",
-      "treeitem",
       // Omitted since they don’t seem useful to click:
       // "gridcell",
       // "progressbar",
@@ -163,6 +162,10 @@ export const t = {
       // "separator",
       // "slider",
       // "tabpanel",
+      // Omitted since they result in a duplicate hint on GitHub, and I’ve never
+      // seen use for them anywhere else (and it’s unclear if they really should
+      // be treated as clickable or not):
+      // "treeitem",
     ])
   ),
 
