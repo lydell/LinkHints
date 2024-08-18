@@ -45,6 +45,41 @@
 
     <p>Simple text</p>
     <p>Simple text with <em>nested</em> element.</p>
+    <p>Simple text with <sup>sup</sup> element.</p>
+    <p>
+      Simple text with
+      <span style="vertical-align: super">fake sup</span> element.
+    </p>
+    <p>
+      Simple text with
+      <sup>sup<sup>sup</sup></sup>
+      element.
+    </p>
+    <p>
+      Simple text with
+      <sup
+        >sup<sup>sup<sup>sup</sup></sup></sup
+      >
+      element.
+    </p>
+    <p>
+      Simple text with
+      <sup
+        >sup<sup
+          >sup<sup>sup<sup>sup</sup></sup></sup
+        ></sup
+      >
+      element. Unfortunately, the hint ends up on the top sup.
+    </p>
+    <p><sup>sup</sup> that starts the element.</p>
+    <p>
+      <a href="#">Link with <sup>sup</sup> element.</a>
+    </p>
+    <p>
+      And a <a href="#">Wrapped link with <sup>sup</sup><br />element.</a>
+    </p>
+    <p>Simple text with <sub>sub</sub> element.</p>
+    <p><sub>sub</sub> that starts the element.</p>
     <p>&nbsp;Simple text surrounded by whitespace&nbsp;</p>
 
     <div>
@@ -78,6 +113,23 @@
       convallis egestas arcu malesuada quisque inceptos. Dictumst nullam augue
       quis ad primis feugiat suscipit, cursus erat class ridiculus torquent
       eleifend accumsan, gravida dis mattis potenti facilisis eu.
+    </p>
+    <p style="width: 300px; line-height: 0.8">
+      Text with very small line-height, causing the lines to overlap. Lorem
+      ipsum dolor sit amet consectetur adipiscing elit nulla quis at iaculis, ac
+      facilisis natoque nibh nascetur potenti taciti integer.
+    </p>
+    <p style="width: 300px; line-height: 0.8; text-indent: 1em">
+      Indented text with very small line-height, causing the lines to overlap.
+      Unfortunately, the hint ends up on line two (the code thinks we have a
+      super-script). Lorem ipsum dolor sit amet consectetur adipiscing elit
+      nulla quis at iaculis, ac facilisis natoque nibh nascetur potenti taciti
+      integer.
+    </p>
+    <p style="width: 300px; text-indent: 1em">
+      Indented text with very regular line-height. Lorem ipsum dolor sit amet
+      consectetur adipiscing elit nulla quis at iaculis, ac facilisis natoque
+      nibh nascetur potenti taciti integer.
     </p>
 
     <p>&lt;img&gt;:</p>
@@ -144,6 +196,7 @@
     </svg>
 
     <div style="height: 100vh"></div>
+    <p>Simple text with <sup>sup</sup> element.</p>
 
     <script>
       for (const canvas of document.querySelectorAll("canvas")) {

@@ -2086,14 +2086,38 @@ function getBestNonEmptyTextPoint({
   //     text text text [F]link
   //     link text text
   //
+  // Unfortunately it is very difficult to tell apart wrapped lines and lines
+  // with `<sup>`, so we do some heuristics.
   if (preferTextStart) {
-    // Prefer the top-most part of the line. In case of a tie, prefer the
-    // left-most one.
-    const leftMostRect = rects.reduce((a, b) =>
+    // We usually prefer the top line (for wrapped text). (If multiple rects are
+    // at the same y coordinate, choose the left-most.)
+    const topMostRect = rects.reduce((a, b) =>
       b.top < a.top ? b : b.top === a.top && b.left < a.left ? b : a
     );
+
+    // But that might be a `<sup>` – then we want don’t want the hint to be at
+    // the `<sup>`, it should be at the start of the text. So also look for the
+    // left-most rect. (Multiple lines might touch the same left-most
+    // x-coordinate; choose the top-most of those.)
+    const leftMostRect = rects.reduce((a, b) =>
+      b.left < a.left ? b : b.left === a.left && b.top < a.top ? b : a
+    );
+
+    const xDistance = topMostRect.left - leftMostRect.left;
+    const yDistance = leftMostRect.top - topMostRect.top;
+
+    const rectsOverlapVertically = leftMostRect.top < topMostRect.bottom;
+
+    // Prefer the top-most rect, but if they overlap vertically (which indicates
+    // we might have a `<sup>` (or `<sub>` at the start of a sentence)), prefer
+    // the one closest to the top-left corner.
+    const rect =
+      rectsOverlapVertically && xDistance > yDistance
+        ? leftMostRect
+        : topMostRect;
+
     return {
-      ...getXY(leftMostRect),
+      ...getXY(rect),
       align,
       debug: "getBestNonEmptyTextPoint preferTextStart",
     };
