@@ -102,8 +102,9 @@ const STEPS = [
           Type other characters to <dfn>filter by text.</dfn>
         </p>
         <p>
-          Try it! Open the below sections by typing part of their text instead
-          of the letters in the yellow boxes <dfn>(hints)</dfn>.
+          Try it! Press {shortcuts.EnterHintsMode_Click} as usual, but open the
+          below sections by typing part of their text instead of the letters in
+          the yellow boxes <dfn>(hints)</dfn>.
         </p>
         <details>
           <summary>1984</summary>
