@@ -4,13 +4,7 @@ const warn = process.argv.includes("--report-unused-disable-directives")
   : "warn";
 
 module.exports = {
-  plugins: [
-    "@typescript-eslint",
-    "import",
-    "react-hooks",
-    "react",
-    "simple-import-sort",
-  ],
+  plugins: ["@typescript-eslint", "react-hooks", "simple-import-sort"],
   reportUnusedDisableDirectives: true,
   env: {
     es2020: true,
@@ -86,41 +80,8 @@ module.exports = {
     curly: warn,
     eqeqeq: warn,
     yoda: warn,
-    "import/no-cycle": error,
-    "import/extensions": [warn, { ts: "never", config: "always" }],
-    "import/first": warn,
-    "import/newline-after-import": warn,
-    "import/no-duplicates": warn,
-    "import/no-extraneous-dependencies": error,
-    "import/no-mutable-exports": error,
-    "import/no-restricted-paths": [
-      error,
-      {
-        basePath: "src",
-        // Disallow these dirs from importing from each other.
-        zones: makeRestrictedPathsZones([
-          "background",
-          "options",
-          "popup",
-          "renderer",
-          "worker",
-        ]),
-      },
-    ],
-    "import/no-useless-path-segments": warn,
     "react-hooks/exhaustive-deps": error,
     "react-hooks/rules-of-hooks": error,
-    "react/button-has-type": error,
-    "react/jsx-boolean-value": warn,
-    "react/jsx-fragments": warn,
-    "react/jsx-key": [error, { checkFragmentShorthand: true }],
-    "react/jsx-no-comment-textnodes": error,
-    "react/jsx-no-target-blank": error,
-    "react/jsx-no-useless-fragment": warn,
-    "react/no-danger": error,
-    "react/no-unescaped-entities": error,
-    "react/no-unused-state": error,
-    "react/self-closing-comp": warn,
   },
   overrides: [
     {
@@ -279,36 +240,10 @@ module.exports = {
       },
     },
     {
-      files: ["docs/**/*.{ts,tsx}", "src/icons.tsx"],
-      rules: {
-        "react/no-danger": "off",
-      },
-    },
-    {
       files: ["rollup.config.js"],
       parserOptions: {
         sourceType: "module",
       },
     },
   ],
-  settings: {
-    "import/resolver": {
-      node: {
-        extensions: [".js", ".jsx", ".ts", ".tsx"],
-      },
-    },
-    react: {
-      version: "18.2",
-    },
-  },
 };
-
-function makeRestrictedPathsZones(dirs) {
-  return [].concat(
-    ...dirs.map((dir) => {
-      const otherDirs = dirs.filter((dir2) => dir2 !== dir);
-      return otherDirs.map((dir2) => ({ target: dir, from: dir2 }));
-    }),
-    ...dirs.map((dir) => ({ target: "shared", from: dir }))
-  );
-}

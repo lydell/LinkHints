@@ -1,6 +1,5 @@
 // This file is allowed to import `tweakable` objects from the other programs.
 // Thanks to Rollup this does not blow up the bundle size.
-/* eslint-disable import/no-restricted-paths */
 
 import { h, VNode } from "preact";
 import { useEffect, useRef } from "preact/hooks";

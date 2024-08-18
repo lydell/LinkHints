@@ -6,7 +6,6 @@ import fs from "fs";
 import optionalRequireImport from "optional-require";
 import path from "path";
 import prettier from "rollup-plugin-prettier";
-// eslint-disable-next-line import/no-extraneous-dependencies
 import register from "sucrase/dist/register";
 
 const jsx = {
