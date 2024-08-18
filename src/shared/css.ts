@@ -17,7 +17,7 @@ export const MAX_Z_INDEX = 2147483647;
 export const SHRUGGIE = "¯\\_(ツ)_/¯";
 
 export const CONTAINER_STYLES = {
-  all: "unset",
+  all: "initial", // Prevent page global CSS from leaking in.
   position: "fixed",
   "z-index": MAX_Z_INDEX.toString(),
   "pointer-events": "none",

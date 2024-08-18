@@ -5,9 +5,34 @@
     <title>styling</title>
   </head>
   <body>
-    <p><a href="#">link</a></p>
-    <p>Elements with extension classes (should not be styled):</p>
-    <p class="hint">hint</p>
-    <p class="status">status</p>
+    <div id="text">
+      <p><a href="#">link</a></p>
+      <p>Elements with extension classes (should not be styled):</p>
+      <p class="hint">hint</p>
+      <p class="status">status</p>
+      <p>And global styles from this page should not leak into Link Hints.</p>
+    </div>
+    <style style="display: block; white-space: pre">
+      html {
+        color: magenta;
+        cursor: nesw-resize;
+        font-size: 32px;
+        font-weight: bold;
+        font-style: italic;
+        letter-spacing: 1em;
+        line-height: 3;
+        text-align: right;
+        text-indent: 3em;
+        text-transform: uppercase;
+        text-shadow: 1px 1px 1px black;
+        word-spacing: 5em;
+      }
+
+      #text,
+      style {
+        all: initial;
+      }
+    </style>
+    <p>Text with global styling.</p>
   </body>
 </html>
