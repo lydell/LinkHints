@@ -909,6 +909,8 @@ export default class WorkerProgram {
       return false;
     }
 
+    const detailsOpen = element instanceof HTMLDetailsElement && element.open;
+
     const targetElement = getTargetElement(element);
 
     const rect = targetElement.getBoundingClientRect();
@@ -955,6 +957,17 @@ export default class WorkerProgram {
     targetElement.dispatchEvent(mousedownEvent);
     targetElement.dispatchEvent(mouseupEvent);
     let defaultPrevented = !targetElement.dispatchEvent(clickEvent);
+
+    // Dispatching a click on a <details> element does not toggle it, at least
+    // at the time of writing. (But dispatching a click on a <summary> element
+    // does toggle it.) We still want to trigger a click event on it (in case
+    // the page has added one), but afterwards, make sure that it actually
+    // toggles as well.
+    if (element instanceof HTMLDetailsElement) {
+      if (element.open === detailsOpen) {
+        element.open = !element.open;
+      }
+    }
 
     if (BROWSER === "firefox") {
       if (cleanup !== undefined) {

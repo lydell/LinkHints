@@ -1298,10 +1298,24 @@ export default class ElementManager {
           : undefined;
       case "button":
       case "select":
-      case "summary":
       case "audio":
       case "video":
         return "clickable";
+      // <details> is clickable if it has no <summary> child.
+      case "details":
+        return Array.from(element.children).some(
+          (child) => child.localName === "summary"
+        )
+          ? undefined
+          : "clickable";
+      // <summary> is clickable if it is the first <summary> child of a <details>.
+      case "summary":
+        return element.parentElement?.localName === "details" &&
+          Array.from(element.parentElement.children).find(
+            (child) => child.localName === "summary"
+          ) === element
+          ? "clickable"
+          : undefined;
       case "input":
         return element instanceof HTMLInputElement && element.type !== "hidden"
           ? "clickable"

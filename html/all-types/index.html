@@ -215,6 +215,24 @@
       <summary>Click to expand</summary>
       <p>Expanded content.</p>
     </details>
+    <details onclick="console.log('click on details without summary!')">
+      <p>Expanded content (no summary).</p>
+    </details>
+    <details>
+      <div>
+        <summary>Nested summary (does not control the details)</summary>
+      </div>
+      <p>Expanded content.</p>
+    </details>
+    <details>
+      <summary>Summary 1</summary>
+      <p>Expanded content.</p>
+      <summary>Summary 2</summary>
+    </details>
+    <details>
+      <p>Expanded content.</p>
+      <summary>Summary last</summary>
+    </details>
 
     <h2>role attribute</h2>
     <p role="button">button</p>
