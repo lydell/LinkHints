@@ -73,7 +73,7 @@ export default (communicator?: {
   onInjectedMessage: (message: FromInjected) => unknown;
   addEventListener: (
     eventName: string,
-    listenter: () => unknown,
+    listener: () => unknown,
     _?: true
   ) => unknown;
 }): void => {
