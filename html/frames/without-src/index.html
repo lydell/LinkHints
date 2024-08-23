@@ -26,12 +26,29 @@
       // Inserting a blank iframe after page load triggers this bug:
       // <bugzil.la/1415539>
       const iframe3 = document.createElement("iframe");
+      const iframe3StandIn = document.createElement("div");
+      iframe3StandIn.style.width = iframe2.offsetWidth + "px";
+      iframe3StandIn.style.height = iframe2.offsetHeight + "px";
+      iframe3StandIn.style.display = "inline-block";
+      document.body.append(iframe3StandIn);
       const a3 = a.cloneNode(true);
       setTimeout(() => {
-        document.body.append(iframe3);
+        iframe3StandIn.replaceWith(iframe3);
         setTimeout(() => {
           iframe3.contentWindow.document.body.append(a3);
         }, 0);
+      }, 1000);
+
+      const iframe4 = document.createElement("iframe");
+      document.body.append(iframe4);
+      setTimeout(() => {
+        iframe4.contentDocument.write(
+          `<!DOCTYPE html><html><body><p><a href="#one">link</a></p></body></html>`
+        );
+        setTimeout(() => {
+          iframe4.contentDocument.write(`<p><a href="#one">link 2</a></p>`);
+          iframe4.contentDocument.close();
+        }, 1000);
       }, 1000);
     </script>
   </body>

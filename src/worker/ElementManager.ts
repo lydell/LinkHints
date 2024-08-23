@@ -8,6 +8,7 @@ import type {
 import {
   addEventListener,
   Box,
+  fireAndForget,
   getElementFromPoint,
   getElementsFromPoint,
   getLabels,
@@ -36,6 +37,7 @@ import injected, {
   CLICKABLE_EVENT_PROPS,
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
   CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
+  DOCUMENT_WRITE_EVENT,
   FLUSH_EVENT,
   FromInjected,
   OPEN_SHADOW_ROOT_CREATED_EVENT,
@@ -60,6 +62,7 @@ const constants = {
     OPEN_SHADOW_ROOT_CREATED_EVENT
   ),
   QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
+  DOCUMENT_WRITE_EVENT: JSON.stringify(DOCUMENT_WRITE_EVENT),
   REGISTER_SECRET_ELEMENT_EVENT: JSON.stringify(REGISTER_SECRET_ELEMENT_EVENT),
   RESET_EVENT: JSON.stringify(RESET_EVENT),
 };
@@ -267,6 +270,8 @@ const infiniteDeadline: Deadline = {
 export default class ElementManager {
   onMutationExternal: (records: Array<MutationRecord>) => unknown;
 
+  onDocumentWriteExternal: () => unknown;
+
   queue: Queue<QueueItem> = makeEmptyQueue();
 
   injectedHasQueue = false;
@@ -289,7 +294,7 @@ export default class ElementManager {
 
   secretElementResets = new Resets();
 
-  resets = new Resets();
+  windowListenerResets = new Resets();
 
   intersectionObserver = new IntersectionObserver(
     this.onIntersection.bind(this)
@@ -305,49 +310,17 @@ export default class ElementManager {
 
   constructor({
     onMutation,
+    onDocumentWrite,
   }: {
     onMutation: (records: Array<MutationRecord>) => unknown;
+    onDocumentWrite: () => unknown;
   }) {
     this.onMutationExternal = onMutation;
+    this.onDocumentWriteExternal = onDocumentWrite;
   }
 
   async start(): Promise<void> {
-    // When adding new event listeners, consider also subscribing in
-    // `onRegisterSecretElement` and `setShadowRoot`.
-    if (BROWSER !== "firefox") {
-      this.resets.add(
-        addEventListener(
-          window,
-          CLICKABLE_CHANGED_EVENT,
-          this.onClickableChanged.bind(this),
-          "ElementManager#onClickableChanged"
-        ),
-        addEventListener(
-          window,
-          QUEUE_EVENT,
-          this.onInjectedQueue.bind(this),
-          "ElementManager#onInjectedQueue"
-        ),
-        addEventListener(
-          window,
-          OPEN_SHADOW_ROOT_CREATED_EVENT,
-          this.onOpenShadowRootCreated.bind(this),
-          "ElementManager#onOpenShadowRootCreated"
-        ),
-        addEventListener(
-          window,
-          CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
-          this.onClosedShadowRootCreated.bind(this),
-          "ElementManager#onClosedShadowRootCreated"
-        ),
-        addEventListener(
-          window,
-          REGISTER_SECRET_ELEMENT_EVENT,
-          this.onRegisterSecretElement.bind(this),
-          "ElementManager#onRegisterSecretElement"
-        )
-      );
-    }
+    this.addWindowListeners();
 
     this.injectScript();
 
@@ -398,7 +371,7 @@ export default class ElementManager {
     this.elementsWithClickListeners = new WeakSet();
     this.shadowRoots = new WeakMap();
     this.idleCallbackId = undefined;
-    this.resets.reset();
+    this.windowListenerResets.reset();
     this.secretElementResets.reset();
     this.sendInjectedEvent(RESET_EVENT);
   }
@@ -423,6 +396,52 @@ export default class ElementManager {
       size,
       t.MAX_INTERSECTION_OBSERVED_ELEMENTS
     );
+  }
+
+  addWindowListeners(): void {
+    // When adding new event listeners, consider also subscribing in
+    // `onRegisterSecretElement` and `setShadowRoot`.
+    if (BROWSER !== "firefox") {
+      this.windowListenerResets.reset();
+      this.windowListenerResets.add(
+        addEventListener(
+          window,
+          CLICKABLE_CHANGED_EVENT,
+          this.onClickableChanged.bind(this),
+          "ElementManager#onClickableChanged"
+        ),
+        addEventListener(
+          window,
+          QUEUE_EVENT,
+          this.onInjectedQueue.bind(this),
+          "ElementManager#onInjectedQueue"
+        ),
+        addEventListener(
+          window,
+          DOCUMENT_WRITE_EVENT,
+          this.onDocumentWrite.bind(this),
+          "ElementManager#onDocumentWrite"
+        ),
+        addEventListener(
+          window,
+          OPEN_SHADOW_ROOT_CREATED_EVENT,
+          this.onOpenShadowRootCreated.bind(this),
+          "ElementManager#onOpenShadowRootCreated"
+        ),
+        addEventListener(
+          window,
+          CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
+          this.onClosedShadowRootCreated.bind(this),
+          "ElementManager#onClosedShadowRootCreated"
+        ),
+        addEventListener(
+          window,
+          REGISTER_SECRET_ELEMENT_EVENT,
+          this.onRegisterSecretElement.bind(this),
+          "ElementManager#onRegisterSecretElement"
+        )
+      );
+    }
   }
 
   injectScript(): void {
@@ -609,6 +628,10 @@ export default class ElementManager {
     this.onInjectedMessage({ type: "Queue", hasQueue: Boolean(event.detail) });
   }
 
+  onDocumentWrite(): void {
+    this.onInjectedMessage({ type: "DocumentWrite" });
+  }
+
   onOpenShadowRootCreated(event: CustomEvent): void {
     const target = getTarget(event);
     if (target instanceof HTMLElement) {
@@ -693,6 +716,19 @@ export default class ElementManager {
 
       case "Queue":
         this.injectedHasQueue = message.hasQueue;
+        break;
+
+      case "DocumentWrite":
+        // This is triggered from a pre-hook; wait for the original method
+        // (`document.open()` or `document.write()`) to be called before
+        // re-adding listeners (since those methods clear the listeners).
+        fireAndForget(
+          Promise.resolve().then(() => {
+            this.addWindowListeners();
+            this.onDocumentWriteExternal();
+          }),
+          "ElementManager#onInjectedMessage DocumentWrite"
+        );
         break;
     }
   }

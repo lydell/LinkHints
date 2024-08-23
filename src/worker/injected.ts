@@ -51,6 +51,7 @@ export const CLOSED_SHADOW_ROOT_CREATED_1_EVENT = `${prefix}ClosedShadowRootCrea
 export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCreated2`;
 
 export const QUEUE_EVENT = `${secretPrefix}Queue`;
+export const DOCUMENT_WRITE_EVENT = `${secretPrefix}DocumentWrite`;
 
 // If an element is not inserted into the page, events fired on it won’t reach
 // ElementManager’s window event listeners. Instead, such elements are
@@ -64,6 +65,7 @@ export const RESET_EVENT = `${secretPrefix}Reset`;
 
 export type FromInjected =
   | { type: "ClickableChanged"; target: EventTarget; clickable: boolean }
+  | { type: "DocumentWrite" }
   | { type: "Queue"; hasQueue: boolean }
   | { type: "ShadowRootCreated"; shadowRoot: ShadowRoot };
 
@@ -959,6 +961,34 @@ export default (communicator?: {
       onRemoveEventListener(...args);
     }
   );
+
+  // `document.open()` clears all listeners on `window`:
+  // https://developer.mozilla.org/en-US/docs/Web/API/Document/open
+  // `document.write()` implicitly calls `document.open()` if needed.
+  // (Internally, it doesn’t actually call the JavaScript `document.open()`).
+  // Hook them, so we can re-apply the listeners.
+  for (const method of ["open", "write"]) {
+    hookManager.hookInto(
+      // @ts-expect-error TypeScript thinks `win.Document` does not exist.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      win.Document.prototype,
+      method,
+      () => {
+        // This is the “regular” hook, which runs _after_ the original method.
+        // The original method removes the listeners on `window`, though, so we
+        // have to run _before_ it, by using the pre-hook (below) instead.
+      },
+      () => {
+        if (communicator !== undefined) {
+          communicator.onInjectedMessage({
+            type: "DocumentWrite",
+          });
+        } else {
+          sendWindowEvent(DOCUMENT_WRITE_EVENT, undefined);
+        }
+      }
+    );
+  }
 
   // Hook into `.onclick` and similar.
   for (const prop of clickableEventProps) {

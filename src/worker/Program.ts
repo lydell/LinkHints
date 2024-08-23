@@ -95,6 +95,7 @@ export default class WorkerProgram {
 
   elementManager = new ElementManager({
     onMutation: this.onMutation.bind(this),
+    onDocumentWrite: this.addWindowListeners.bind(this),
   });
 
   async start(): Promise<void> {
@@ -103,40 +104,9 @@ export default class WorkerProgram {
         browser.runtime.onMessage,
         this.onMessage.bind(this),
         "WorkerProgram#onMessage"
-      ),
-      addEventListener(
-        window,
-        "keydown",
-        this.onKeydown.bind(this),
-        "WorkerProgram#onKeydown",
-        { passive: false }
-      ),
-      addEventListener(
-        window,
-        "keyup",
-        this.onKeyup.bind(this),
-        "WorkerProgram#onKeyup",
-        { passive: false }
-      ),
-      addEventListener(
-        window,
-        "message",
-        this.onWindowMessage.bind(this),
-        "WorkerProgram#onWindowMessage"
-      ),
-      addEventListener(
-        window,
-        "pagehide",
-        this.onPageHide.bind(this),
-        "WorkerProgram#onPageHide"
-      ),
-      addEventListener(
-        window,
-        "pageshow",
-        this.onPageShow.bind(this),
-        "WorkerProgram#onPageShow"
       )
     );
+    this.addWindowListeners();
     await this.elementManager.start();
 
     this.markTutorial();
@@ -169,6 +139,43 @@ export default class WorkerProgram {
       browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
       "WorkerProgram#sendMessage",
       message
+    );
+  }
+
+  addWindowListeners(): void {
+    this.resets.add(
+      addEventListener(
+        window,
+        "keydown",
+        this.onKeydown.bind(this),
+        "WorkerProgram#onKeydown",
+        { passive: false }
+      ),
+      addEventListener(
+        window,
+        "keyup",
+        this.onKeyup.bind(this),
+        "WorkerProgram#onKeyup",
+        { passive: false }
+      ),
+      addEventListener(
+        window,
+        "message",
+        this.onWindowMessage.bind(this),
+        "WorkerProgram#onWindowMessage"
+      ),
+      addEventListener(
+        window,
+        "pagehide",
+        this.onPageHide.bind(this),
+        "WorkerProgram#onPageHide"
+      ),
+      addEventListener(
+        window,
+        "pageshow",
+        this.onPageShow.bind(this),
+        "WorkerProgram#onPageShow"
+      )
     );
   }
 
