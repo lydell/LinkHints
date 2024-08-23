@@ -17,9 +17,7 @@ export const Stats = fieldsAuto({
   url: string,
   numTotalElements: number,
   numTrackedElements: number,
-  numVisibleElements: number,
   numVisibleFrames: number,
-  bailed: number,
   durations: Durations,
 });
 

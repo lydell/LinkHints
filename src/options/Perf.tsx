@@ -215,9 +215,7 @@ function sumStats(
         url: title,
         numTotalElements: sum(({ numTotalElements }) => numTotalElements),
         numTrackedElements: sum(({ numTrackedElements }) => numTrackedElements),
-        numVisibleElements: sum(({ numVisibleElements }) => numVisibleElements),
         numVisibleFrames: sum(({ numVisibleFrames }) => numVisibleFrames),
-        bailed: sum(({ bailed }) => bailed),
         durations: sumDurations(stats.map(({ durations }) => durations)),
       },
     ];
@@ -268,17 +266,13 @@ function statsToRows(allStats: Array<Array<Stats>>): Array<{
         ? {
             numTotalElements: match.numTotalElements.toString(),
             numTrackedElements: match.numTrackedElements.toString(),
-            numVisibleElements: match.numVisibleElements.toString(),
             numVisibleFrames: match.numVisibleFrames.toString(),
-            bailed: match.bailed.toString(),
             durations: match.durations,
           }
         : {
             numTotalElements: "-",
             numTrackedElements: "-",
-            numVisibleElements: "-",
             numVisibleFrames: "-",
-            bailed: "-",
             durations: [],
           };
     });
@@ -296,16 +290,8 @@ function statsToRows(allStats: Array<Array<Stats>>): Array<{
           values: allData.map(({ numTrackedElements }) => numTrackedElements),
         },
         {
-          heading: "# visible elements",
-          values: allData.map(({ numVisibleElements }) => numVisibleElements),
-        },
-        {
           heading: "# visible frames",
           values: allData.map(({ numVisibleFrames }) => numVisibleFrames),
-        },
-        {
-          heading: "# bailed",
-          values: allData.map(({ bailed }) => bailed),
         },
       ],
     };

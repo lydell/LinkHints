@@ -2668,11 +2668,7 @@ function assignHints(
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         b.weight - a.weight ||
         // If the weights are the same, sort by on-screen position, left to
-        // right and then top to bottom (reading order in LTR languages). If you
-        // scroll _down_ to a list of same-weight links they usually end up in
-        // the order naturally, but if you scroll _up_ to the same list the
-        // IntersectionObserver fires in a different order, so it’s important
-        // not to rely on that to get consistent hints.
+        // right and then top to bottom (reading order in LTR languages).
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         comparePositions(a.hintMeasurements, b.hintMeasurements) ||
         // `hintsState.elementsWithHints` changes order as

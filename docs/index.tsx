@@ -82,8 +82,8 @@ const SECTIONS = [
         </p>
         <p>
           Link Hints keeps track of all clickable elements in the background
-          when your browser is idle. This makes{" "}
-          <strong>hints appear quickly regardless of page size.</strong>
+          when your browser is idle, in an attempt to make hints appear more
+          quickly.
         </p>
         <p>
           Other than accurately finding clickable elements, Link Hints also
@@ -122,10 +122,6 @@ const SECTIONS = [
             <a href="https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver">
               MutationObserver
             </a>
-            ,{" "}
-            <a href="https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver">
-              IntersectionObserver
-            </a>{" "}
             and{" "}
             <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback">
               requestIdleCallback

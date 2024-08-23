@@ -88,12 +88,6 @@ const ATTRIBUTES_NOT_CLICKABLE = new Set<string>([
 ]);
 
 export const t = {
-  // The single-page HTML specification has over 70K links! If trying to track all
-  // of those with `IntersectionObserver`, scrolling is noticeably laggy. On my
-  // computer, the lag starts somewhere between 10K and 20K tracked links.
-  // Tracking at most 10K should be enough for regular sites.
-  MAX_INTERSECTION_OBSERVED_ELEMENTS: unsignedInt(10e3),
-
   // If `.getVisibleElements` is taking too long, skip remaining elements.
   // Chrome’s implementation of `document.elementFromPoint` is not optimized for
   // elements with thousands of children, which is rare in practice but present
@@ -280,8 +274,6 @@ export default class ElementManager {
 
   elements = new Map<HTMLElement, ElementType>();
 
-  visibleElements = new Set<HTMLElement>();
-
   visibleFrames = new Set<HTMLFrameElement | HTMLIFrameElement>();
 
   elementsWithClickListeners = new WeakSet<HTMLElement>();
@@ -290,15 +282,9 @@ export default class ElementManager {
 
   idleCallbackId: IdleCallbackID | undefined = undefined;
 
-  bailed = false;
-
   secretElementResets = new Resets();
 
   windowListenerResets = new Resets();
-
-  intersectionObserver = new IntersectionObserver(
-    this.onIntersection.bind(this)
-  );
 
   frameIntersectionObserver = new IntersectionObserver(
     this.onFrameIntersection.bind(this)
@@ -357,7 +343,6 @@ export default class ElementManager {
       cancelIdleCallback(this.idleCallbackId);
     }
 
-    this.intersectionObserver.disconnect();
     this.frameIntersectionObserver.disconnect();
     this.mutationObserver.disconnect();
     this.removalObserver.disconnect();
@@ -365,7 +350,6 @@ export default class ElementManager {
     this.injectedHasQueue = false;
     this.injectedListeners = new Map<string, Array<() => unknown>>();
     this.elements.clear();
-    this.visibleElements.clear();
     this.visibleFrames.clear();
     // `WeakSet`s don’t have a `.clear()` method.
     this.elementsWithClickListeners = new WeakSet();
@@ -374,28 +358,6 @@ export default class ElementManager {
     this.windowListenerResets.reset();
     this.secretElementResets.reset();
     this.sendInjectedEvent(RESET_EVENT);
-  }
-
-  // Stop using the intersection observer for everything except frames. The
-  // reason to still track frames is because it saves more than half a second
-  // when generating hints on the single-page HTML specification.
-  bail(): void {
-    if (this.bailed) {
-      return;
-    }
-
-    const { size } = this.elements;
-
-    this.intersectionObserver.disconnect();
-    this.visibleElements.clear();
-    this.bailed = true;
-
-    log(
-      "warn",
-      "ElementManager#bail",
-      size,
-      t.MAX_INTERSECTION_OBSERVED_ELEMENTS
-    );
   }
 
   addWindowListeners(): void {
@@ -474,9 +436,7 @@ export default class ElementManager {
       url: window.location.href,
       numTotalElements: Array.from(this.getAllElements(document)).length,
       numTrackedElements: this.elements.size,
-      numVisibleElements: this.visibleElements.size,
       numVisibleFrames: this.visibleFrames.size,
-      bailed: this.bailed ? 1 : 0,
       durations,
     };
   }
@@ -542,16 +502,6 @@ export default class ElementManager {
         this.idleCallbackId = undefined;
         this.flushQueue(deadline);
       });
-    }
-  }
-
-  onIntersection(entries: Array<IntersectionObserverEntry>): void {
-    for (const entry of entries) {
-      if (entry.isIntersecting) {
-        this.visibleElements.add(entry.target as HTMLElement);
-      } else {
-        this.visibleElements.delete(entry.target as HTMLElement);
-      }
     }
   }
 
@@ -815,10 +765,6 @@ export default class ElementManager {
     ) {
       switch (mutationType) {
         case "added":
-          // In theory, this can lead to more than
-          // `maxIntersectionObservedElements` frames being tracked by the
-          // intersection observer, but in practice there are never that many
-          // frames. YAGNI.
           this.frameIntersectionObserver.observe(element);
           break;
         case "removed":
@@ -837,44 +783,19 @@ export default class ElementManager {
     if (type === undefined) {
       if (mutationType !== "added") {
         this.elements.delete(element);
-        // Removing an element from the DOM also triggers the
-        // IntersectionObserver (removing it from `this.visibleElements`), but
-        // changing an attribute of an element so that it isn't considered
-        // clickable anymore requires a manual deletion from
-        // `this.visibleElements` since the element might still be on-screen.
-        this.visibleElements.delete(element);
-        this.intersectionObserver.unobserve(element);
         // The element must not be removed from `elementsWithClickListeners`
-        // or `elementsWithScrollbars` (if `mutationType === "removed"`), even
+        // (if `mutationType === "removed"`), even
         // though it might seem logical at first. But the element (or one of
-        // its parents) could temporarily be removed from the paged and then
+        // its parents) could temporarily be removed from the page and then be
         // re-inserted. Then it would still have its click listener, but we
         // wouldn’t know. So instead of removing `element` here a `WeakSet` is
         // used, to avoid memory leaks. An example of this is the sortable
         // table headings on Wikipedia:
         // <https://en.wikipedia.org/wiki/Help:Sorting>
         // this.elementsWithClickListeners.delete(element);
-        // this.elementsWithScrollbars.delete(element);
       }
     } else {
-      const alreadyIntersectionObserved = this.elements.has(element);
       this.elements.set(element, type);
-      if (!alreadyIntersectionObserved && !this.bailed) {
-        // We won’t know if this element is visible or not until the next time
-        // intersection observers are run. If we enter hints mode before that,
-        // we would miss this element. This happens a lot on Gmail. First, the
-        // intersection observer fires on the splash screen. Then _a lot_ of DOM
-        // nodes appear at once when the inbox renders. The mutation observer
-        // fires kind of straight away, but the intersection observer is slow.
-        // If hints mode was entered before that, no elements would be found.
-        // But the elements are clearly visible on screen! For this reason we
-        // consider _all_ new elements as visible until proved otherwise.
-        this.visibleElements.add(element);
-        this.intersectionObserver.observe(element);
-        if (this.elements.size > t.MAX_INTERSECTION_OBSERVED_ELEMENTS.value) {
-          this.bail();
-        }
-      }
     }
 
     if (mutationType === "added") {
@@ -1140,16 +1061,12 @@ export default class ElementManager {
       this.flushQueue(infiniteDeadline);
     }
 
-    this.onIntersection(this.intersectionObserver.takeRecords());
-
     const candidates =
       passedCandidates !== undefined
         ? passedCandidates
         : types === "selectable"
         ? this.getAllElements(document)
-        : this.bailed
-        ? this.elements.keys()
-        : this.visibleElements;
+        : this.elements.keys();
     const range = document.createRange();
     const deduper = new Deduper();
 
