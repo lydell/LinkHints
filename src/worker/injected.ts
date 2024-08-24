@@ -1,24 +1,14 @@
-import { makeRandomToken } from "../shared/main";
-
-// This file is injected as a regular script in all pages and overrides
+// This file is injected as a regular page script in all pages and overrides
 // `.addEventListener` (and friends) so we can detect click listeners.
 // This is a bit fiddly because we try to cover our tracks as good as possible.
 
-// Basically everything in this file has to be inside the `export default`
-// function, since `.toString()` is called on it in ElementManager. This also
-// means that `import`s generally cannot be used in this file. All of the below
-// constants are `.replace()`:ed in by ElementManager, but they are defined in
-// this file so that TypeScript knows about them.
-
-// NOTE: If you add a new constant, you have to update the `constants` object in
-// ElementManager.ts as well!
-
 // To make things even more complicated, in Firefox the `export default`
-// function is actually executed rather than inserted as an inline script. This
-// is to work around Firefox’s CSP limitations. As a bonus, Firefox can
+// function is actually executed from a regular content script. Firefox can
 // communicate with this file directly (via the `communicator` parameter) rather
 // than via very clever usage of DOM events. This works in Firefox due to
 // `.wrappedJSObject`, `exportFunction` and `XPCNativeWrapper`.
+
+// `import`s cannot be used in this file.
 
 // All types of events that likely makes an element clickable. All code and
 // comments that deal with this only refer to "click", though, to keep things
@@ -41,27 +31,23 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // events altogether.
 const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
 
-// Events that don’t need to think about the iframe edge case described above
-// can use this more secure prefix, with a practically unguessable part in it.
-const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
-
 export const CLICKABLE_CHANGED_EVENT = `${prefix}ClickableChanged`;
 export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;
 export const CLOSED_SHADOW_ROOT_CREATED_1_EVENT = `${prefix}ClosedShadowRootCreated1`;
 export const CLOSED_SHADOW_ROOT_CREATED_2_EVENT = `${prefix}ClosedShadowRootCreated2`;
 
-export const QUEUE_EVENT = `${secretPrefix}Queue`;
-export const DOCUMENT_WRITE_EVENT = `${secretPrefix}DocumentWrite`;
+export const QUEUE_EVENT = `${prefix}Queue`;
+export const DOCUMENT_WRITE_EVENT = `${prefix}DocumentWrite`;
 
 // If an element is not inserted into the page, events fired on it won’t reach
 // ElementManager’s window event listeners. Instead, such elements are
 // temporarily inserted into a secret element. This event is used to register
 // the secret element in ElementManager.
-export const REGISTER_SECRET_ELEMENT_EVENT = `${secretPrefix}RegisterSecretElement`;
+export const REGISTER_SECRET_ELEMENT_EVENT = `${prefix}RegisterSecretElement`;
 
 // Events sent from ElementManager to this file.
-export const FLUSH_EVENT = `${secretPrefix}Flush`;
-export const RESET_EVENT = `${secretPrefix}Reset`;
+export const FLUSH_EVENT = `${prefix}Flush`;
+export const RESET_EVENT = `${prefix}Reset`;
 
 export type FromInjected =
   | { type: "ClickableChanged"; target: EventTarget; clickable: boolean }
@@ -69,14 +55,14 @@ export type FromInjected =
   | { type: "Queue"; hasQueue: boolean }
   | { type: "ShadowRootCreated"; shadowRoot: ShadowRoot };
 
-export default (communicator?: {
+export function inject(communicator?: {
   onInjectedMessage: (message: FromInjected) => unknown;
   addEventListener: (
     eventName: string,
     listener: () => unknown,
     _?: true
   ) => unknown;
-}): void => {
+}): void {
   // Refers to the page `window` both in Firefox and other browsers.
   const win = BROWSER === "firefox" ? window.wrappedJSObject ?? window : window;
 
@@ -1007,4 +993,8 @@ export default (communicator?: {
   );
 
   hookManager.conceal();
-};
+}
+
+if (BROWSER !== "firefox") {
+  inject();
+}

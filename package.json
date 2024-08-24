@@ -19,14 +19,14 @@
     "n-ary-huffman": "4.0.0",
     "preact": "10.11.3",
     "preact-shadow-root": "1.0.2",
-    "tiny-decoders": "7.0.1",
-    "webextension-polyfill": "0.10.0"
+    "tiny-decoders": "7.0.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "24.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
     "@rollup/plugin-replace": "5.0.2",
     "@rollup/plugin-sucrase": "5.0.1",
+    "@types/chrome": "0.0.270",
     "@types/cross-spawn": "6.0.2",
     "@types/firefox-webext-browser": "94.0.1",
     "@types/yazl": "2.4.2",

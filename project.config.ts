@@ -65,11 +65,6 @@ export default {
     input: "icons.tsx",
     output: "../icon.svg",
   },
-  needsPolyfill: needsPolyfill(currentBrowser),
-  polyfill: {
-    input: "../node_modules/webextension-polyfill/dist/browser-polyfill.min.js",
-    output: "browser-polyfill.js",
-  },
   background: {
     input: "background/main.ts",
     output: "background.js",
@@ -77,6 +72,10 @@ export default {
   worker: {
     input: "worker/main.ts",
     output: "worker.js",
+  },
+  injected: {
+    input: "worker/injected.ts",
+    output: "injected.js",
   },
   renderer: {
     input: "renderer/main.ts",
@@ -170,17 +169,6 @@ function browserSpecificIgnores(browser: Browser | undefined): Array<string> {
       return ["icons/png-*"];
     case undefined:
       return [];
-  }
-}
-
-function needsPolyfill(browser: Browser | undefined): boolean {
-  switch (browser) {
-    case "firefox":
-      return false;
-
-    case "chrome":
-    case undefined:
-      return true;
   }
 }
 

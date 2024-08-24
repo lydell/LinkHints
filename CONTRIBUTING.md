@@ -29,7 +29,6 @@ If you’d like to make a pull request, here’s what you need to know.
 - [Prettier] for automatic code formatting.
 - [Sucrase] for compiling TypeScript type annotation and JSX.
 - [Preact] for easily making the options UI and the website.
-- [WebExtension Polyfill] for using the `browser` API both in Chrome and Firefox.
 
 ## File overview
 
@@ -49,7 +48,7 @@ These directories are generated and gitignored:
 The most important files:
 
 - `project.config.ts` contains information about the whole project, all in one place. Other config files and build scripts read from it. For example, it maps entrypoint files in `src/` to output files in `compiled/`.
-- `rollup.config.js` defines how `compiled/` is made. Rollup compiles and bundles JavaScript; generates `manifest.json`, HTML files and SVG icons; copies the [WebExtension Polyfill], CSS files, and PNG icons; and defines a couple of global variables (see also `@types/globals.d.ts`).
+- `rollup.config.js` defines how `compiled/` is made. Rollup compiles and bundles JavaScript; generates `manifest.json`, HTML files and SVG icons; copies CSS files and PNG icons; and defines a couple of global variables (see also `@types/globals.d.ts`).
 - `web-ext-config.cjs` configures [web-ext], both for building and for running.
 - `custom.config.example.cjs` can be copied into `custom.config.cjs` to customize `web-ext run` as well as default options for development.
 - `src/manifest.ts` is called via Rollup and generates `manifest.json`. In fact, all `.ts` files directly inside `src/` are called via Rollup and generate other files.
@@ -175,4 +174,3 @@ Note: If you regularly develop for Chrome, you might want to run `npm run build:
 [typescript]: typescriptlang.org/
 [unbranded builds]: https://wiki.mozilla.org/Add-ons/Extension_Signing#Unbranded_Builds
 [web-ext]: https://github.com/mozilla/web-ext
-[webextension polyfill]: https://github.com/mozilla/webextension-polyfill

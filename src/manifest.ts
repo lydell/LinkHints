@@ -6,7 +6,7 @@ type IconSizes = Record<string, string>;
 
 export default (): string =>
   toJSON({
-    manifest_version: 2,
+    manifest_version: 3,
     version: config.meta.version,
     name: config.meta.name,
     author: config.meta.author,
@@ -22,8 +22,7 @@ export default (): string =>
       // Needed to store options.
       "storage",
     ],
-    browser_action: {
-      browser_style: true,
+    action: {
       default_popup: config.popupHtml,
       default_icon: getIcons(config.icons, config.browser),
     },
@@ -31,38 +30,31 @@ export default (): string =>
       page: config.optionsHtml,
       open_in_tab: true,
     },
-    background: {
-      scripts: [
-        config.needsPolyfill ? config.polyfill.output : undefined,
-        config.background.output,
-      ].filter((script) => script !== undefined),
-    },
+    background: getBackground(config.browser),
     content_scripts: [
       {
         matches: ["<all_urls>"],
         all_frames: true,
         match_about_blank: true,
         run_at: "document_start",
-        js: [
-          config.needsPolyfill ? config.polyfill.output : undefined,
-          config.worker.output,
-        ].filter((script) => script !== undefined),
+        js: [config.worker.output],
       },
+      config.browser === "firefox"
+        ? undefined
+        : {
+            matches: ["<all_urls>"],
+            all_frames: true,
+            match_about_blank: true,
+            run_at: "document_start",
+            world: "MAIN",
+            js: [config.injected.output],
+          },
       {
         matches: ["<all_urls>"],
         run_at: "document_start",
-        js: [
-          // We need to put the polyfill both here and above, because Chrome
-          // does not seem to guarantee the content scripts to run in order.
-          // Each `js` array runs in order, but not the `content_scripts` array
-          // it seems. See: https://github.com/lydell/LinkHints/issues/51
-          // It’s a tiny bit wasteful to load the polyfill twice in the top
-          // frame, but it’s not so bad.
-          config.needsPolyfill ? config.polyfill.output : undefined,
-          config.renderer.output,
-        ].filter((script) => script !== undefined),
+        js: [config.renderer.output],
       },
-    ],
+    ].filter((script) => script !== undefined),
   });
 
 function toJSON(obj: Record<string, unknown>): string {
@@ -98,5 +90,25 @@ function getIcons(icons: Icons, browser: Browser | undefined): IconSizes {
     case "chrome":
     case undefined:
       return makeSizes(icons.png);
+  }
+}
+
+function getBackground(browser: Browser | undefined): Record<string, unknown> {
+  switch (browser) {
+    case "firefox":
+      return {
+        scripts: [config.background.output],
+      };
+
+    case "chrome":
+      return {
+        service_worker: config.background.output,
+      };
+
+    case undefined:
+      return {
+        scripts: [config.background.output],
+        service_worker: config.background.output,
+      };
   }
 }

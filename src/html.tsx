@@ -3,12 +3,10 @@ import renderToString from "preact-render-to-string";
 
 export default ({
   title,
-  polyfill,
   js,
   css,
 }: {
   title: string;
-  polyfill: string | undefined;
   js: Array<string>;
   css: Array<string>;
 }): string => {
@@ -22,7 +20,6 @@ export default ({
         ))}
       </head>
       <body>
-        {polyfill !== undefined && <script src={polyfill} />}
         {js.map((src) => (
           <script key={src} src={src} />
         ))}

@@ -40,6 +40,7 @@ setup();
 const main = [
   js(config.background),
   js(config.worker),
+  js(config.injected),
   js(config.renderer),
   js(config.popup),
   js(config.options),
@@ -60,23 +61,18 @@ const main = [
     css: [config.optionsCss.output],
   }),
   css(config.optionsCss),
-  config.needsPolyfill ? copy(config.polyfill) : undefined,
-].flatMap((entry) =>
-  entry === undefined
-    ? []
-    : {
-        ...entry,
-        input: `${config.src}/${entry.input}`,
-        output:
-          typeof entry.output === "object" && !Array.isArray(entry.output)
-            ? {
-                ...entry.output,
-                file: `${config.compiled}/${entry.output.file}`,
-                indent: false,
-              }
-            : entry.output,
-      }
-);
+].flatMap((entry) => ({
+  ...entry,
+  input: `${config.src}/${entry.input}`,
+  output:
+    typeof entry.output === "object" && !Array.isArray(entry.output)
+      ? {
+          ...entry.output,
+          file: `${config.compiled}/${entry.output.file}`,
+          indent: false,
+        }
+      : entry.output,
+}));
 
 const docs = [
   css(config.docs.sharedCss),
@@ -171,7 +167,12 @@ function js({ input, output }) {
       PROD ? prettier({ parser: "babel" }) : undefined,
     ].filter((plugin) => plugin !== undefined),
     onwarn: (warning) => {
-      throw warning;
+      // injected.ts is both imported for exports, and is also used as an entry
+      // point. In the latter case we don’t want to expose any exports as a
+      // global variable.
+      if (warning.code !== "MISSING_NAME_OPTION_FOR_IIFE_EXPORT") {
+        throw warning;
+      }
     },
   };
 }
@@ -245,9 +246,6 @@ function html(files) {
     output: files.html,
     data: {
       title: files.title,
-      polyfill: config.needsPolyfill
-        ? path.relative(path.dirname(files.html), config.polyfill.output)
-        : undefined,
       js: files.js.map((src) => path.relative(path.dirname(files.html), src)),
       css: files.css.map((href) =>
         path.relative(path.dirname(files.html), href)

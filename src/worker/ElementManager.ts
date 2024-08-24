@@ -31,41 +31,20 @@ import {
   unsignedFloat,
   unsignedInt,
 } from "../shared/tweakable";
-import injected, {
+import {
   CLICKABLE_CHANGED_EVENT,
-  CLICKABLE_EVENT_NAMES,
   CLICKABLE_EVENT_PROPS,
   CLOSED_SHADOW_ROOT_CREATED_1_EVENT,
   CLOSED_SHADOW_ROOT_CREATED_2_EVENT,
   DOCUMENT_WRITE_EVENT,
   FLUSH_EVENT,
   FromInjected,
+  inject,
   OPEN_SHADOW_ROOT_CREATED_EVENT,
   QUEUE_EVENT,
   REGISTER_SECRET_ELEMENT_EVENT,
   RESET_EVENT,
 } from "./injected";
-
-// Keep the above imports and this object in sync. See injected.ts.
-const constants = {
-  CLICKABLE_CHANGED_EVENT: JSON.stringify(CLICKABLE_CHANGED_EVENT),
-  CLICKABLE_EVENT_NAMES: JSON.stringify(CLICKABLE_EVENT_NAMES),
-  CLICKABLE_EVENT_PROPS: JSON.stringify(CLICKABLE_EVENT_PROPS),
-  CLOSED_SHADOW_ROOT_CREATED_1_EVENT: JSON.stringify(
-    CLOSED_SHADOW_ROOT_CREATED_1_EVENT
-  ),
-  CLOSED_SHADOW_ROOT_CREATED_2_EVENT: JSON.stringify(
-    CLOSED_SHADOW_ROOT_CREATED_2_EVENT
-  ),
-  FLUSH_EVENT: JSON.stringify(FLUSH_EVENT),
-  OPEN_SHADOW_ROOT_CREATED_EVENT: JSON.stringify(
-    OPEN_SHADOW_ROOT_CREATED_EVENT
-  ),
-  QUEUE_EVENT: JSON.stringify(QUEUE_EVENT),
-  DOCUMENT_WRITE_EVENT: JSON.stringify(DOCUMENT_WRITE_EVENT),
-  REGISTER_SECRET_ELEMENT_EVENT: JSON.stringify(REGISTER_SECRET_ELEMENT_EVENT),
-  RESET_EVENT: JSON.stringify(RESET_EVENT),
-};
 
 const ATTRIBUTES_CLICKABLE = new Set<string>([
   // These are supposed to be used with a `role` attribute. In some GitHub
@@ -308,7 +287,10 @@ export default class ElementManager {
   async start(): Promise<void> {
     this.addWindowListeners();
 
-    this.injectScript();
+    if (BROWSER === "firefox") {
+      inject(this);
+      return;
+    }
 
     // Wait for tweakable values to load before starting the MutationObserver,
     // in case the user has changed `ATTRIBUTES_MUTATION`. After the
@@ -404,31 +386,6 @@ export default class ElementManager {
         )
       );
     }
-  }
-
-  injectScript(): void {
-    // Neither Chrome nor Firefox allow inline scripts in the options page. It’s
-    // not needed there anyway.
-    if (window.location.protocol.endsWith("-extension:")) {
-      return;
-    }
-
-    if (BROWSER === "firefox") {
-      injected(this);
-      return;
-    }
-
-    const rawCode = replaceConstants(injected.toString());
-    const code = `(${rawCode})()`;
-    const script = document.createElement("script");
-
-    // Chrome nicely allows inline scripts inserted by an extension regardless
-    // of CSP. I look forward to the day Firefox works this way too. See
-    // <bugzil.la/1446231> and <bugzil.la/1267027>.
-    script.textContent = code;
-
-    (document.documentElement ?? document).append(script);
-    script.remove();
   }
 
   makeStats(durations: Durations): Stats {
@@ -2167,13 +2124,6 @@ function isWithin(point: Point, box: Box): boolean {
     // Use `<`, not `<=`, since a point at `box.y + box.height` is located at
     // the first pixel _below_ the box.
     point.y < box.y + box.height
-  );
-}
-
-function replaceConstants(code: string): string {
-  return code.replace(
-    RegExp(`\\b(${Object.keys(constants).join("|")})\\b`, "g"),
-    (name) => constants[name as keyof typeof constants]
   );
 }
 
