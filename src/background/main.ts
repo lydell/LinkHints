@@ -13,3 +13,30 @@
 
 console.log("Hello from background script!", chrome);
 export {};
+
+type MessageInfo = {
+  tabId: number;
+  frameId: number;
+  url: string | undefined;
+};
+
+// TODO: This disconnects when the service worker goes to sleep.
+// Apparently, we used it to find iframes removed during hinting (in addition to detecting shutdown).
+// chrome.runtime.onConnect.addListener((port) => {
+//   port.onDisconnect.addListener(({ sender }) => {
+//     const info = sender === undefined ? undefined : makeMessageInfo(sender);
+//     if (info !== undefined) {
+//       // A frame was removed. If in hints mode, hide all hints for elements in
+//       // that frame.
+//       console.log("this.hideElements", info);
+//     }
+//   });
+// });
+
+function makeMessageInfo(
+  sender: chrome.runtime.MessageSender
+): MessageInfo | undefined {
+  return sender.tab?.id !== undefined && sender.frameId !== undefined
+    ? { tabId: sender.tab.id, frameId: sender.frameId, url: sender.url }
+    : undefined;
+}

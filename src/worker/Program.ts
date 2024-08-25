@@ -13,7 +13,6 @@ import {
 } from "../shared/keyboard";
 import {
   addEventListener,
-  addListener,
   Box,
   CONTAINER_ID,
   decode,
@@ -99,29 +98,32 @@ export default class WorkerProgram {
   });
 
   async start(): Promise<void> {
-    this.resets.add(
-      addListener(
-        browser.runtime.onMessage,
-        this.onMessage.bind(this),
-        "WorkerProgram#onMessage"
-      )
-    );
+    // this.resets.add(
+    //   addListener(
+    //     browser.runtime.onMessage,
+    //     this.onMessage.bind(this),
+    //     "WorkerProgram#onMessage"
+    //   )
+    // );
     this.addWindowListeners();
     await this.elementManager.start();
 
     this.markTutorial();
 
     // See `RendererProgram#start`.
-    try {
-      await browser.runtime.sendMessage(
-        wrapMessage({ type: "WorkerScriptAdded" })
-      );
-    } catch {
-      return;
-    }
-    browser.runtime.connect().onDisconnect.addListener(() => {
-      this.stop();
-    });
+    // try {
+    //   await browser.runtime.sendMessage(
+    //     wrapMessage({ type: "WorkerScriptAdded" })
+    //   );
+    // } catch {
+    //   return;
+    // }
+    // TODO: This is not a viable approach anymore, since we get a disconnect
+    // when the service worker goes to sleep.
+    // Is cleanup not possible now? Is it still needed?
+    // chrome.runtime.connect().onDisconnect.addListener(() => {
+    //   this.stop();
+    // });
   }
 
   stop(): void {
