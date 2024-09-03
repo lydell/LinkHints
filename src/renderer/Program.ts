@@ -402,9 +402,12 @@ export default class RendererProgram {
       // Put the container in the top level. This is needed to stay on top of
       // popovers and modal dialogs. See:
       // https://developer.mozilla.org/en-US/docs/Glossary/Top_layer
+      // `.showPopover()` shipped in Firefox 125, released 2024-04-16.
+      // At the time of writing (2024-09-03) that was a bit too recent to be
+      // required, so we use `?.` to only call it if available.
       // @ts-expect-error This method is missing in the TypeScript version we use.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      this.container.element.showPopover();
+      this.container.element.showPopover?.();
     }
 
     if (this.css.parsed === undefined) {
