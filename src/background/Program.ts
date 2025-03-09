@@ -1508,17 +1508,19 @@ export default class BackgroundProgram {
         );
         // Both uBlock Origin and Adblock Plus use `browser.tabs.insertCSS` with
         // `{ display: none !important; }` and `cssOrigin: "user"` to hide
-        // elements. I’ve seen LinkHint’s container to be hidden by a
+        // elements. I’ve seen Link Hints’ container to be hidden by a
         // `[style*="animation:"]` filter. This makes sure that the container
         // cannot be hidden by adblockers.
         // In Chrome, 255 ids have the same specificity as >=256 (for Firefox,
         // it’s 1023). One can increase the specificity even more by adding
         // classes, but I don’t think it’s worth the trouble.
+        // Also, hide the backdrop of Link Hints’ container (it is a popover),
+        // for sites with styles like `::backdrop { background-color: rgba(0, 0, 0, 0.2) }`
         fireAndForget(
           browser.tabs.insertCSS(info.tabId, {
             code: `${`#${CONTAINER_ID}`.repeat(
               255
-            )} { display: block !important; }`,
+            )} { display: block !important; &::backdrop { display: none !important; } }`,
             cssOrigin: "user",
             runAt: "document_start",
           }),
