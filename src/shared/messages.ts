@@ -154,6 +154,7 @@ export type ToWorker =
       oneTimeWindowMessageToken: string;
       mac: boolean;
       isPinned: boolean;
+      blurFocusedElementOnActivation: boolean;
     }
   | {
       type: "UpdateElements";

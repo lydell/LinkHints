@@ -89,6 +89,8 @@ export default class WorkerProgram {
 
   mac = false;
 
+  blurFocusedElementOnActivation = false;
+
   suppressNextKeyup: { key: string; code: string } | undefined = undefined;
 
   resets = new Resets();
@@ -203,6 +205,7 @@ export default class WorkerProgram {
         this.keyTranslations = message.keyTranslations;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
         this.mac = message.mac;
+        this.blurFocusedElementOnActivation = message.blurFocusedElementOnActivation;
 
         if (message.clearElements) {
           this.clearCurrent();
@@ -210,6 +213,18 @@ export default class WorkerProgram {
         break;
 
       case "StartFindElements": {
+        // Blur focused element if option is enabled
+        if (this.blurFocusedElementOnActivation && document.activeElement) {
+          const activeElement = document.activeElement as HTMLElement;
+          if (activeElement.blur && (
+            activeElement.tagName === "INPUT" ||
+            activeElement.tagName === "TEXTAREA" ||
+            activeElement.contentEditable === "true"
+          )) {
+            activeElement.blur();
+          }
+        }
+
         const run = (types: ElementTypes): void => {
           const { oneTimeWindowMessageToken } = this;
           if (oneTimeWindowMessageToken === undefined) {

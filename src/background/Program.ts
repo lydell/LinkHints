@@ -2173,6 +2173,7 @@ export default class BackgroundProgram {
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       mac: this.options.mac,
       isPinned: tabState.isPinned,
+      blurFocusedElementOnActivation: this.options.values.blurFocusedElementOnActivation,
     };
 
     const getKeyboardShortcuts = (

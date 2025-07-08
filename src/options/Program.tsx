@@ -616,6 +616,41 @@ export default class OptionsProgram extends Component<Props, State> {
           />
 
           <Field
+            key="blurFocusedElementOnActivation"
+            id="blurFocusedElementOnActivation"
+            label="Blur focused element when activating hints"
+            description={
+              <p>
+                When enabled, any currently focused element (like input fields or
+                text areas) will be blurred when hints are activated. This can
+                prevent the focused element from capturing keyboard input that
+                should go to the link hints system.
+              </p>
+            }
+            changed={options.blurFocusedElementOnActivation !== defaults.blurFocusedElementOnActivation}
+            render={({ id }) => (
+              <span
+                className="ShrinkwrapChildren"
+                style={{ flex: "1 1 100%" }}
+              >
+                <label className="Spaced Spaced--center">
+                  <input
+                    type="checkbox"
+                    id={id}
+                    checked={options.blurFocusedElementOnActivation}
+                    onChange={(event) => {
+                      this.saveOptions({
+                        blurFocusedElementOnActivation: event.currentTarget.checked,
+                      });
+                    }}
+                  />
+                  <span>Enabled</span>
+                </label>
+              </span>
+            )}
+          />
+
+          <Field
             key="useKeyTranslations"
             id="useKeyTranslations"
             connected={options.useKeyTranslations}

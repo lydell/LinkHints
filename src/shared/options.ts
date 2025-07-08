@@ -51,6 +51,7 @@ export const Options = fieldsAuto({
   keyTranslations: record(KeyPair),
   normalKeyboardShortcuts: array(KeyboardMappingWithModifiers),
   hintsKeyboardShortcuts: array(KeyboardMapping),
+  blurFocusedElementOnActivation: boolean,
 });
 
 const MIN_CHARS = 2;
@@ -126,6 +127,7 @@ export function getDefaults({ mac }: { mac: boolean }): Options {
     logLevel: DEFAULT_LOG_LEVEL,
     useKeyTranslations: false,
     keyTranslations: EN_US_QWERTY_TRANSLATIONS,
+    blurFocusedElementOnActivation: false,
     normalKeyboardShortcuts: [
       {
         shortcut: mainShortcut("j"),
