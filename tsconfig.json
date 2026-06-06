@@ -25,6 +25,7 @@
   },
   "exclude": [
     "compiled*",
-    "html"
+    "html",
+    "web-ext-config.mjs"
   ]
 }
