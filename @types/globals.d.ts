@@ -22,7 +22,11 @@ declare const META_SLUG: string;
 declare const META_TUTORIAL: string;
 declare const META_VERSION: string;
 
+declare const IS_MV3: boolean;
+
 declare const PROD: boolean;
+
+declare function importScripts(...urls: Array<string>): void;
 
 declare function exportFunction<T, F extends (...args: Array<never>) => T>(
   fn: F,
@@ -74,6 +78,53 @@ declare namespace browser.tabs {
   export interface Tab {
     vivExtData?: unknown;
   }
+}
+
+declare namespace browser.scripting {
+  type ExecutionWorld = "ISOLATED" | "MAIN";
+  type StyleOrigin = "AUTHOR" | "USER";
+
+  type InjectionTarget = {
+    tabId: number;
+    allFrames?: boolean;
+    frameIds?: Array<number>;
+  };
+
+  type InjectionResult = {
+    frameId: number;
+    result?: unknown;
+  };
+
+  type ScriptInjection =
+    | {
+        target: InjectionTarget;
+        files: Array<string>;
+        injectImmediately?: boolean;
+        world?: ExecutionWorld;
+      }
+    | {
+        target: InjectionTarget;
+        func: () => unknown;
+        injectImmediately?: boolean;
+        world?: ExecutionWorld;
+      };
+
+  type CSSInjection = {
+    target: InjectionTarget;
+    css?: string;
+    files?: Array<string>;
+    origin?: StyleOrigin;
+  };
+
+  function executeScript(
+    injection: ScriptInjection
+  ): Promise<Array<InjectionResult>>;
+
+  function insertCSS(injection: CSSInjection): Promise<void>;
+}
+
+declare namespace browser.storage {
+  const session: StorageArea | undefined;
 }
 
 interface ShadowRoot {

@@ -68,6 +68,9 @@ export type FromWorker =
       keypress: NormalizedKeypress;
     }
   | {
+      type: "HintIdleTimeout";
+    }
+  | {
       type: "NonKeyboardShortcutKeypress";
       keypress: NormalizedKeypress;
       timestamp: number;
@@ -154,6 +157,7 @@ export type ToWorker =
       oneTimeWindowMessageToken: string;
       mac: boolean;
       isPinned: boolean;
+      hintIdleExpiresAt: number | undefined;
     }
   | {
       type: "UpdateElements";

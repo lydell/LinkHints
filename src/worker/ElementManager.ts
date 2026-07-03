@@ -409,7 +409,10 @@ export default class ElementManager {
   injectScript(): void {
     // Neither Chrome nor Firefox allow inline scripts in the options page. It’s
     // not needed there anyway.
-    if (window.location.protocol.endsWith("-extension:")) {
+    if (
+      window.location.protocol.endsWith("-extension:") ||
+      (IS_MV3 && BROWSER === "chrome")
+    ) {
       return;
     }
 

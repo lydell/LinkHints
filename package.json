@@ -6,6 +6,8 @@
     "firefox": "sucrase-node scripts/wait-for-manifest.ts && npm run web-ext -- run",
     "chrome": "npm run firefox -- --target chromium",
     "compile": "rollup --config --bundleConfigAsCjs",
+    "compile:chrome": "cross-env BROWSER=chrome npm run compile",
+    "compile:firefox": "cross-env BROWSER=firefox npm run compile",
     "watch": "npm run compile -- --watch",
     "build:helper": "npm run compile && sucrase-node scripts/build-clean.ts && npm run web-ext -- build && sucrase-node scripts/build-post.ts",
     "build:chrome": "cross-env BROWSER=chrome npm run build:helper",

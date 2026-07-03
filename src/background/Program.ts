@@ -93,6 +93,7 @@ type HintsState =
       type: "Hinting";
       mode: HintsMode;
       startTime: number;
+      lastActivityTimestamp: number;
       time: TimeTracker;
       stats: Array<Stats>;
       enteredChars: string;
@@ -154,6 +155,8 @@ type HintInput =
 // “frameId: Optional integer. The frame where the code should be injected.
 // Defaults to 0 (the top-level frame).”
 const TOP_FRAME_ID = 0;
+const HINT_SESSION_STORAGE_PREFIX = "hintSession:";
+const CONTENT_SCRIPTS_INJECTED_STORAGE_KEY = "contentScriptsInjected";
 
 export const t = {
   // Some onscreen frames may never respond (if the frame 404s or hasn't loaded
@@ -169,6 +172,11 @@ export const t = {
   // longer interval feels better.
   UPDATE_INTERVAL: unsignedInt(500), // ms
   UPDATE_MIN_TIMEOUT: unsignedInt(100), // ms
+
+  // In MV3, hint mode is intentionally ephemeral. If the user leaves hints
+  // sitting, close them predictably rather than risking stale service worker
+  // state.
+  HINT_IDLE_TIMEOUT: unsignedInt(20e3), // ms
 
   // How long a matched/activated hint should show as highlighted.
   MATCH_HIGHLIGHT_DURATION: unsignedInt(200), // ms
@@ -207,19 +215,6 @@ export default class BackgroundProgram {
   async start(): Promise<void> {
     log("log", "BackgroundProgram#start", BROWSER, PROD);
 
-    try {
-      await this.updateOptions({ isInitial: true });
-    } catch (errorAny) {
-      const error = errorAny as Error;
-      this.options.errors = [error.message];
-    }
-
-    if (!PROD) {
-      await this.restoreTabsPerf();
-    }
-
-    const tabs = await browser.tabs.query({});
-
     this.resets.add(
       addListener(
         browser.runtime.onMessage,
@@ -230,6 +225,16 @@ export default class BackgroundProgram {
         browser.runtime.onConnect,
         this.onConnect.bind(this),
         "BackgroundProgram#onConnect"
+      ),
+      addListener(
+        browser.runtime.onInstalled,
+        this.onInstalled.bind(this),
+        "BackgroundProgram#onInstalled"
+      ),
+      addListener(
+        browser.runtime.onStartup,
+        this.onStartup.bind(this),
+        "BackgroundProgram#onStartup"
       ),
       addListener(
         browser.tabs.onActivated,
@@ -255,6 +260,19 @@ export default class BackgroundProgram {
       )
     );
 
+    try {
+      await this.updateOptions({ isInitial: true });
+    } catch (errorAny) {
+      const error = errorAny as Error;
+      this.options.errors = [error.message];
+    }
+
+    if (!PROD) {
+      await this.restoreTabsPerf();
+    }
+
+    const tabs = await browser.tabs.query({});
+
     for (const tab of tabs) {
       if (tab.id !== undefined) {
         fireAndForget(
@@ -266,9 +284,16 @@ export default class BackgroundProgram {
     }
 
     fireAndForget(
-      browser.browserAction.setBadgeBackgroundColor({ color: COLOR_BADGE }),
+      getAction().setBadgeBackgroundColor({ color: COLOR_BADGE }),
       "BackgroundProgram#start->setBadgeBackgroundColor"
     );
+
+    if (IS_MV3) {
+      fireAndForget(
+        this.closeStoredHintSessions(),
+        "BackgroundProgram#start->closeStoredHintSessions"
+      );
+    }
 
     fireAndForget(
       this.maybeOpenTutorial(),
@@ -286,6 +311,8 @@ export default class BackgroundProgram {
     // manually load the content scripts into existing tabs in Chrome.
     if (BROWSER === "firefox") {
       firefoxWorkaround(tabs);
+    } else if (IS_MV3) {
+      await maybeRunContentScripts(tabs);
     } else {
       await runContentScripts(tabs);
     }
@@ -404,6 +431,16 @@ export default class BackgroundProgram {
       this.tabState.set(info.tabId, tabState);
     }
 
+    if (
+      IS_MV3 &&
+      info !== undefined &&
+      tabStateRaw === undefined &&
+      shouldResetMissingTabState(message)
+    ) {
+      this.forceResetTab(info.tabId, tabState);
+      return;
+    }
+
     switch (message.type) {
       case "FromWorker":
         if (info !== undefined) {
@@ -507,6 +544,10 @@ export default class BackgroundProgram {
           type: "KeypressCaptured",
           keypress: message.keypress,
         });
+        break;
+
+      case "HintIdleTimeout":
+        this.exitInactiveHintsMode(info.tabId);
         break;
 
       case "ReportVisibleFrame": {
@@ -651,9 +692,7 @@ export default class BackgroundProgram {
       case "ClickedLinkNavigatingToOtherPage": {
         const { hintsState } = tabState;
         if (hintsState.type !== "Idle") {
-          // Exit in “Delayed” mode so that the matched hints still show as
-          // highlighted.
-          this.exitHintsMode({ tabId: info.tabId, delayed: true });
+          this.exitHintsMode({ tabId: info.tabId, sendMessages: false });
         }
         break;
       }
@@ -725,6 +764,7 @@ export default class BackgroundProgram {
 
   onTimeout(tabId: number): void {
     this.updateBadge(tabId);
+    this.exitInactiveHintsMode(tabId);
     this.maybeStartHinting(tabId);
     this.updateElements(tabId);
     this.unhighlightHints(tabId);
@@ -777,6 +817,8 @@ export default class BackgroundProgram {
     if (input.type === "Input" && input.keypress.printableKey === undefined) {
       return;
     }
+
+    this.touchHintActivity(tabId);
 
     const isHintKey =
       (input.type === "Input" &&
@@ -899,6 +941,7 @@ export default class BackgroundProgram {
         type: "Idle",
         highlighted: hintsState.highlighted,
       };
+      this.removeHintSessionMetadata(tabId);
       this.setTimeout(tabId, t.MATCH_HIGHLIGHT_DURATION.value);
       this.updateWorkerStateAfterHintActivation({
         tabId,
@@ -1339,10 +1382,13 @@ export default class BackgroundProgram {
         }))
       );
 
+    const now = Date.now();
+
     tabState.hintsState = {
       type: "Hinting",
       mode: hintsState.mode,
       startTime: hintsState.startTime,
+      lastActivityTimestamp: now,
       time,
       stats: hintsState.stats,
       enteredChars: "",
@@ -1360,6 +1406,8 @@ export default class BackgroundProgram {
       frameId: "all_frames",
     });
     this.setTimeout(tabId, t.UPDATE_INTERVAL.value);
+    this.setTimeout(tabId, t.HINT_IDLE_TIMEOUT.value);
+    this.saveHintSessionMetadata(tabId);
 
     time.start("render");
     this.sendRendererMessage(
@@ -1517,13 +1565,12 @@ export default class BackgroundProgram {
         // Also, hide the backdrop of Link Hints’ container (it is a popover),
         // for sites with styles like `::backdrop { background-color: rgba(0, 0, 0, 0.2) }`
         fireAndForget(
-          browser.tabs.insertCSS(info.tabId, {
-            code: `${`#${CONTAINER_ID}`.repeat(
+          insertTabCSS(
+            info.tabId,
+            `${`#${CONTAINER_ID}`.repeat(
               255
-            )} { display: block !important; &::backdrop { display: none !important; } }`,
-            cssOrigin: "user",
-            runAt: "document_start",
-          }),
+            )} { display: block !important; &::backdrop { display: none !important; } }`
+          ),
           "BackgroundProgram#onRendererMessage",
           "Failed to insert adblock workaround CSS",
           message,
@@ -1640,6 +1687,11 @@ export default class BackgroundProgram {
     info: MessageInfo,
     timestamp: number
   ): void {
+    const activeTabState = this.tabState.get(info.tabId);
+    if (activeTabState?.hintsState.type === "Hinting") {
+      this.touchHintActivity(info.tabId);
+    }
+
     const enterHintsMode = (mode: HintsMode): void => {
       this.enterHintsMode({
         tabId: info.tabId,
@@ -1851,6 +1903,7 @@ export default class BackgroundProgram {
       type: "Idle",
       highlighted: tabState.hintsState.highlighted,
     };
+    this.removeHintSessionMetadata(tabId);
 
     if (sendMessages) {
       this.sendWorkerMessage(this.makeWorkerState(tabState), {
@@ -1860,6 +1913,138 @@ export default class BackgroundProgram {
     }
 
     this.updateBadge(tabId);
+  }
+
+  touchHintActivity(tabId: number): void {
+    if (!IS_MV3) {
+      return;
+    }
+
+    const tabState = this.tabState.get(tabId);
+    if (tabState?.hintsState.type !== "Hinting") {
+      return;
+    }
+
+    tabState.hintsState.lastActivityTimestamp = Date.now();
+    this.setTimeout(tabId, t.HINT_IDLE_TIMEOUT.value);
+    this.saveHintSessionMetadata(tabId);
+    this.sendWorkerMessage(
+      this.makeWorkerState(tabState, { refreshToken: false }),
+      {
+        tabId,
+        frameId: "all_frames",
+      }
+    );
+  }
+
+  exitInactiveHintsMode(tabId: number): void {
+    if (!IS_MV3) {
+      return;
+    }
+
+    const tabState = this.tabState.get(tabId);
+    if (tabState?.hintsState.type !== "Hinting") {
+      return;
+    }
+
+    const idleDuration = Date.now() - tabState.hintsState.lastActivityTimestamp;
+    if (idleDuration >= t.HINT_IDLE_TIMEOUT.value) {
+      log("log", "BackgroundProgram#exitInactiveHintsMode", {
+        tabId,
+        idleDuration,
+      });
+      this.exitHintsMode({ tabId });
+    }
+  }
+
+  forceResetTab(tabId: number, tabState: TabState): void {
+    this.tabState.set(tabId, tabState);
+    tabState.hintsState = {
+      type: "Idle",
+      highlighted: [],
+    };
+    tabState.keyboardMode = { type: "FromHintsState" };
+    this.removeHintSessionMetadata(tabId);
+    this.sendRendererMessage({ type: "Unrender" }, { tabId });
+    this.sendWorkerMessage(this.makeWorkerState(tabState), {
+      tabId,
+      frameId: "all_frames",
+    });
+    this.updateBadge(tabId);
+  }
+
+  saveHintSessionMetadata(tabId: number): void {
+    if (!IS_MV3) {
+      return;
+    }
+
+    const sessionStorage = getSessionStorage();
+    const tabState = this.tabState.get(tabId);
+    if (
+      sessionStorage === undefined ||
+      tabState?.hintsState.type !== "Hinting"
+    ) {
+      return;
+    }
+
+    const { hintsState } = tabState;
+    fireAndForget(
+      sessionStorage.set({
+        [makeHintSessionStorageKey(tabId)]: {
+          tabId,
+          mode: hintsState.mode,
+          expiresAt: getHintIdleExpiresAt(hintsState),
+        },
+      }),
+      "BackgroundProgram#saveHintSessionMetadata",
+      tabId
+    );
+  }
+
+  removeHintSessionMetadata(tabId: number): void {
+    if (!IS_MV3) {
+      return;
+    }
+
+    const sessionStorage = getSessionStorage();
+    if (sessionStorage !== undefined) {
+      fireAndForget(
+        sessionStorage.remove(makeHintSessionStorageKey(tabId)),
+        "BackgroundProgram#removeHintSessionMetadata",
+        tabId
+      );
+    }
+  }
+
+  async closeStoredHintSessions(): Promise<void> {
+    const sessionStorage = getSessionStorage();
+    if (sessionStorage === undefined) {
+      return;
+    }
+
+    const stored = await sessionStorage.get();
+    const keys = Object.keys(stored).filter((key) =>
+      key.startsWith(HINT_SESSION_STORAGE_PREFIX)
+    );
+
+    for (const key of keys) {
+      const value = stored[key];
+      const tabId =
+        typeof value === "object" && value !== null && "tabId" in value
+          ? (value as { tabId?: unknown }).tabId
+          : undefined;
+      if (typeof tabId === "number") {
+        const tabState = this.tabState.get(tabId);
+        if (tabState !== undefined) {
+          continue;
+        }
+        this.forceResetTab(tabId, makeEmptyTabState(tabId));
+      }
+    }
+
+    if (keys.length > 0) {
+      await sessionStorage.remove(keys);
+    }
   }
 
   unhighlightHints(tabId: number): void {
@@ -1958,6 +2143,20 @@ export default class BackgroundProgram {
     }
   }
 
+  onInstalled(): void {
+    fireAndForget(
+      resetContentScriptInjectionMarker(),
+      "BackgroundProgram#onInstalled->resetContentScriptInjectionMarker"
+    );
+  }
+
+  onStartup(): void {
+    fireAndForget(
+      resetContentScriptInjectionMarker(),
+      "BackgroundProgram#onStartup->resetContentScriptInjectionMarker"
+    );
+  }
+
   onTabActivated(): void {
     this.updateOptionsPageData();
   }
@@ -2000,6 +2199,7 @@ export default class BackgroundProgram {
     }
 
     this.tabState.delete(tabId);
+    this.removeHintSessionMetadata(tabId);
 
     if (!tabState.isOptionsPage) {
       this.sendOptionsMessage({
@@ -2020,10 +2220,7 @@ export default class BackgroundProgram {
     // Check if we’re allowed to execute content scripts on this page.
     if (!enabled) {
       try {
-        await browser.tabs.executeScript(tabId, {
-          code: "",
-          runAt: "document_start",
-        });
+        await canRunContentScripts(tabId);
         enabled = true;
       } catch {
         enabled = false;
@@ -2033,7 +2230,7 @@ export default class BackgroundProgram {
     const type: IconType = enabled ? "normal" : "disabled";
     const icons = getIcons(type);
     log("log", "BackgroundProgram#updateIcon", tabId, type);
-    await browser.browserAction.setIcon({ path: icons, tabId });
+    await getAction().setIcon({ path: icons, tabId });
   }
 
   updateBadge(tabId: number): void {
@@ -2045,7 +2242,7 @@ export default class BackgroundProgram {
     const { hintsState } = tabState;
 
     fireAndForget(
-      browser.browserAction.setBadgeText({
+      getAction().setBadgeText({
         text: getBadgeText(hintsState),
         tabId,
       }),
@@ -2173,6 +2370,10 @@ export default class BackgroundProgram {
       oneTimeWindowMessageToken: this.oneTimeWindowMessageToken,
       mac: this.options.mac,
       isPinned: tabState.isPinned,
+      hintIdleExpiresAt:
+        IS_MV3 && hintsState.type === "Hinting"
+          ? getHintIdleExpiresAt(hintsState)
+          : undefined,
     };
 
     const getKeyboardShortcuts = (
@@ -2366,6 +2567,58 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
   return tabState;
 }
 
+function shouldResetMissingTabState(message: ToBackground): boolean {
+  switch (message.type) {
+    case "FromWorker":
+      switch (message.message.type) {
+        case "WorkerScriptAdded":
+          return false;
+
+        case "KeyboardShortcutMatched":
+          return !isEnterHintsModeAction(message.message.action);
+
+        default:
+          return true;
+      }
+
+    case "FromRenderer":
+      return message.message.type !== "RendererScriptAdded";
+
+    case "FromOptions":
+    case "FromPopup":
+      return false;
+  }
+}
+
+function isEnterHintsModeAction(action: KeyboardAction): boolean {
+  switch (action) {
+    case "EnterHintsMode_Click":
+    case "EnterHintsMode_BackgroundTab":
+    case "EnterHintsMode_ForegroundTab":
+    case "EnterHintsMode_ManyClick":
+    case "EnterHintsMode_ManyTab":
+    case "EnterHintsMode_Select":
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+function getSessionStorage(): browser.storage.StorageArea | undefined {
+  return browser.storage.session;
+}
+
+function makeHintSessionStorageKey(tabId: number): string {
+  return `${HINT_SESSION_STORAGE_PREFIX}${tabId}`;
+}
+
+function getHintIdleExpiresAt(
+  hintsState: Extract<HintsState, { type: "Hinting" }>
+): number {
+  return hintsState.lastActivityTimestamp + t.HINT_IDLE_TIMEOUT.value;
+}
+
 const CLICK_TYPES: ElementTypes = [
   "clickable",
   "clickable-event",
@@ -2439,6 +2692,70 @@ function shouldCombineHintsForClick(element: ElementWithHint): boolean {
   return url !== undefined && !url.includes("#") && !hasClickListener;
 }
 
+type ContentScriptDetails = Omit<
+  browser.extensionTypes.InjectDetails,
+  "file"
+> & {
+  file: string;
+  world?: browser.scripting.ExecutionWorld;
+};
+
+function getAction(): typeof browser.action {
+  return (
+    IS_MV3 ? browser.action : browser.browserAction
+  ) as typeof browser.action;
+}
+
+async function canRunContentScripts(tabId: number): Promise<void> {
+  if (IS_MV3) {
+    await browser.scripting.executeScript({
+      target: { tabId },
+      func: () => undefined,
+      injectImmediately: true,
+    });
+  } else {
+    await browser.tabs.executeScript(tabId, {
+      code: "",
+      runAt: "document_start",
+    });
+  }
+}
+
+async function insertTabCSS(tabId: number, css: string): Promise<void> {
+  if (IS_MV3) {
+    await browser.scripting.insertCSS({
+      target: { tabId },
+      css,
+      origin: "USER",
+    });
+  } else {
+    await browser.tabs.insertCSS(tabId, {
+      code: css,
+      cssOrigin: "user",
+      runAt: "document_start",
+    });
+  }
+}
+
+async function executeContentScript(
+  tabId: number,
+  details: ContentScriptDetails
+): Promise<Array<unknown>> {
+  if (IS_MV3) {
+    return browser.scripting.executeScript({
+      target: {
+        tabId,
+        allFrames: details.allFrames,
+      },
+      files: [details.file],
+      injectImmediately: true,
+      world: details.world,
+    });
+  }
+
+  return browser.tabs.executeScript(tabId, details);
+}
+
 async function runContentScripts(
   tabs: Array<browser.tabs.Tab>
 ): Promise<Array<Array<unknown>>> {
@@ -2457,6 +2774,9 @@ async function runContentScripts(
                   allFrames: script.all_frames,
                   matchAboutBlank: script.match_about_blank,
                   runAt: script.run_at,
+                  world: (
+                    script as { world?: browser.scripting.ExecutionWorld }
+                  ).world,
                 }))
           );
 
@@ -2467,10 +2787,7 @@ async function runContentScripts(
           return [];
         }
         try {
-          return (await browser.tabs.executeScript(
-            tab.id,
-            details
-          )) as Array<unknown>;
+          return await executeContentScript(tab.id, details);
         } catch {
           // If `executeScript` fails it means that the extension is not
           // allowed to run content scripts in the tab. Example: most
@@ -2480,6 +2797,31 @@ async function runContentScripts(
       })
     )
   );
+}
+
+async function maybeRunContentScripts(
+  tabs: Array<browser.tabs.Tab>
+): Promise<void> {
+  const sessionStorage = getSessionStorage();
+  if (sessionStorage === undefined) {
+    await runContentScripts(tabs);
+    return;
+  }
+
+  const stored = await sessionStorage.get(CONTENT_SCRIPTS_INJECTED_STORAGE_KEY);
+  if (stored[CONTENT_SCRIPTS_INJECTED_STORAGE_KEY] === true) {
+    return;
+  }
+
+  await runContentScripts(tabs);
+  await sessionStorage.set({ [CONTENT_SCRIPTS_INJECTED_STORAGE_KEY]: true });
+}
+
+async function resetContentScriptInjectionMarker(): Promise<void> {
+  const sessionStorage = getSessionStorage();
+  if (sessionStorage !== undefined) {
+    await sessionStorage.remove(CONTENT_SCRIPTS_INJECTED_STORAGE_KEY);
+  }
 }
 
 function firefoxWorkaround(tabs: Array<browser.tabs.Tab>): void {
@@ -2544,24 +2886,23 @@ type IconType = "disabled" | "normal";
 
 function getIcons(type: IconType): Record<string, string> {
   const manifest = browser.runtime.getManifest();
+  const action = manifest.action ?? manifest.browser_action;
   return Object.fromEntries(
-    Object.entries(manifest.browser_action?.default_icon ?? {}).flatMap(
-      ([key, value]) => {
-        if (typeof value === "string") {
-          const newValue = value.replace(/(\$)\w+/, `$1${type}`);
-          // Default icons are always PNG in development to support Chrome. Switch
-          // to SVG in Firefox during development to make it easier to work on the
-          // SVG icon source (automatic reloading). This also requires a
-          // cache-bust.
-          const finalValue =
-            !PROD && BROWSER === "firefox"
-              ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
-              : newValue;
-          return [[key, finalValue]];
-        }
-        return [];
+    Object.entries(action?.default_icon ?? {}).flatMap(([key, value]) => {
+      if (typeof value === "string") {
+        const newValue = value.replace(/(\$)\w+/, `$1${type}`);
+        // Default icons are always PNG in development to support Chrome. Switch
+        // to SVG in Firefox during development to make it easier to work on the
+        // SVG icon source (automatic reloading). This also requires a
+        // cache-bust.
+        const finalValue =
+          !PROD && BROWSER === "firefox"
+            ? `${newValue.replace(/png/g, "svg")}?${iconsChecksum}`
+            : newValue;
+        return [[key, finalValue]];
       }
-    )
+      return [];
+    })
   );
 }
 

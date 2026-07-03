@@ -43,7 +43,14 @@ const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
 
 // Events that don’t need to think about the iframe edge case described above
 // can use this more secure prefix, with a practically unguessable part in it.
-const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
+//
+// In Chrome MV3, this file is bundled twice: once as a packaged MAIN-world
+// content script and once as part of the isolated worker script. They need to
+// agree on event names, so use a deterministic prefix there.
+const secretPrefix =
+  IS_MV3 && BROWSER === "chrome"
+    ? `${prefix}Secret_`
+    : `__${META_SLUG}WebExt_${makeRandomToken()}_`;
 
 export const CLICKABLE_CHANGED_EVENT = `${prefix}ClickableChanged`;
 export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;

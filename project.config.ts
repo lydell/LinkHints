@@ -28,6 +28,7 @@ const FAVICONS: Array<{
 const mainIcon = "icons/main.svg";
 
 const currentBrowser = getBrowser();
+const manifestVersion = currentBrowser === "chrome" ? 3 : 2;
 
 export default {
   meta: {
@@ -48,6 +49,7 @@ export default {
   },
   prod: currentBrowser !== undefined,
   browser: currentBrowser,
+  manifestVersion,
   src: "src",
   compiled: "compiled",
   dist: currentBrowser === undefined ? "dist" : `dist-${currentBrowser}`,
@@ -73,6 +75,14 @@ export default {
   background: {
     input: "background/main.ts",
     output: "background.js",
+  },
+  backgroundServiceWorker: {
+    input: "background/service-worker.js",
+    output: "service-worker.js",
+  },
+  injected: {
+    input: "worker/injected-main.ts",
+    output: "injected.js",
   },
   worker: {
     input: "worker/main.ts",
