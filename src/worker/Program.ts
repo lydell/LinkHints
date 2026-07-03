@@ -152,7 +152,8 @@ export default class WorkerProgram {
       fireAndForget(
         browser.runtime
           .sendMessage(wrapMessage(message))
-          .then(() => undefined, handleError),
+          .then(() => undefined)
+          .catch(handleError),
         "WorkerProgram#sendMessage",
         message
       );

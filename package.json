@@ -14,7 +14,7 @@
     "build:firefox": "cross-env BROWSER=firefox npm run build:helper && cross-env BROWSER=firefox npm run web-ext -- lint",
     "build:all": "npm run build:chrome && npm run build:firefox",
     "png-icons": "sucrase-node scripts/png-icons.ts",
-    "web-ext": "sucrase-node node_modules/.bin/web-ext",
+    "web-ext": "node node_modules/web-ext/bin/web-ext.js --config web-ext-config.mjs --no-config-discovery",
     "test": "run-pty --auto-exit % npm run build:all % eslint . --report-unused-disable-directives % prettier --check . % tsc"
   },
   "dependencies": {

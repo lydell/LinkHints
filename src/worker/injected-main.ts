@@ -1,8 +1,8 @@
 import injected, { RESET_EVENT } from "./injected";
 
 const PROGRAM_KEY = `__${META_SLUG}WebExt_${BUILD_ID}_InjectedMain`;
-const global = window as unknown as Window &
-  Record<string, (() => void) | undefined>;
+const global = window as unknown as Record<string, (() => void) | undefined> &
+  Window;
 
 global[PROGRAM_KEY]?.();
 injected();

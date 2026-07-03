@@ -2022,7 +2022,10 @@ export default class BackgroundProgram {
       return;
     }
 
-    const stored = await sessionStorage.get();
+    const stored = (await sessionStorage.get()) as unknown as Record<
+      string,
+      unknown
+    >;
     const keys = Object.keys(stored).filter((key) =>
       key.startsWith(HINT_SESSION_STORAGE_PREFIX)
     );
@@ -2701,9 +2704,7 @@ type ContentScriptDetails = Omit<
 };
 
 function getAction(): typeof browser.action {
-  return (
-    IS_MV3 ? browser.action : browser.browserAction
-  ) as typeof browser.action;
+  return IS_MV3 ? browser.action : browser.browserAction;
 }
 
 async function canRunContentScripts(tabId: number): Promise<void> {

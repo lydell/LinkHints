@@ -2,8 +2,8 @@ import { fireAndForget } from "../shared/main";
 import WorkerProgram from "./Program";
 
 const PROGRAM_KEY = `__${META_SLUG}WebExt_${BUILD_ID}_WorkerProgram`;
-const global = globalThis as typeof globalThis &
-  Record<string, (() => void) | undefined>;
+const global = globalThis as Record<string, (() => void) | undefined> &
+  typeof globalThis;
 
 // In Firefox, `match_about_blank: true` triggers even if you visit
 // `about:blank` directly, not just blank iframes and `window.open()`.

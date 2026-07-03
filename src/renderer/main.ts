@@ -2,8 +2,8 @@ import { fireAndForget } from "../shared/main";
 import RendererProgram from "./Program";
 
 const PROGRAM_KEY = `__${META_SLUG}WebExt_${BUILD_ID}_RendererProgram`;
-const global = globalThis as typeof globalThis &
-  Record<string, (() => void) | undefined>;
+const global = globalThis as Record<string, (() => void) | undefined> &
+  typeof globalThis;
 
 global[PROGRAM_KEY]?.();
 

@@ -226,7 +226,8 @@ export default class RendererProgram {
       fireAndForget(
         browser.runtime
           .sendMessage(wrapMessage(message))
-          .then(() => undefined, handleError),
+          .then(() => undefined)
+          .catch(handleError),
         "RendererProgram#sendMessage",
         message
       );

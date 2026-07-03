@@ -59,6 +59,9 @@ export type FromWorker =
       type: "ClickedLinkNavigatingToOtherPage";
     }
   | {
+      type: "HintIdleTimeout";
+    }
+  | {
       type: "KeyboardShortcutMatched";
       action: KeyboardAction;
       timestamp: number;
@@ -66,9 +69,6 @@ export type FromWorker =
   | {
       type: "KeypressCaptured";
       keypress: NormalizedKeypress;
-    }
-  | {
-      type: "HintIdleTimeout";
     }
   | {
       type: "NonKeyboardShortcutKeypress";
