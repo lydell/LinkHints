@@ -91,6 +91,8 @@ export default class WorkerProgram {
 
   suppressNextKeyup: { key: string; code: string } | undefined = undefined;
 
+  hintIdleTimeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+
   resets = new Resets();
 
   elementManager = new ElementManager({
@@ -119,9 +121,11 @@ export default class WorkerProgram {
     } catch {
       return;
     }
-    browser.runtime.connect().onDisconnect.addListener(() => {
-      this.stop();
-    });
+    if (!IS_MV3) {
+      browser.runtime.connect().onDisconnect.addListener(() => {
+        this.stop();
+      });
+    }
   }
 
   stop(): void {
@@ -130,16 +134,47 @@ export default class WorkerProgram {
     this.elementManager.stop();
     this.oneTimeWindowMessageToken = undefined;
     this.suppressNextKeyup = undefined;
+    this.updateHintIdleTimeout(undefined);
     this.clearCurrent();
   }
 
   sendMessage(message: FromWorker): void {
     log("log", "WorkerProgram#sendMessage", message.type, message);
-    fireAndForget(
-      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
-      "WorkerProgram#sendMessage",
-      message
-    );
+    const handleError = (error: unknown): void => {
+      if (isStaleExtensionContextError(error)) {
+        this.stop();
+        return;
+      }
+      throw error;
+    };
+
+    try {
+      fireAndForget(
+        browser.runtime
+          .sendMessage(wrapMessage(message))
+          .then(() => undefined)
+          .catch(handleError),
+        "WorkerProgram#sendMessage",
+        message
+      );
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  updateHintIdleTimeout(expiresAt: number | undefined): void {
+    if (this.hintIdleTimeoutId !== undefined) {
+      clearTimeout(this.hintIdleTimeoutId);
+      this.hintIdleTimeoutId = undefined;
+    }
+
+    if (expiresAt !== undefined) {
+      const delay = Math.max(0, expiresAt - Date.now());
+      this.hintIdleTimeoutId = setTimeout(() => {
+        this.hintIdleTimeoutId = undefined;
+        this.sendMessage({ type: "HintIdleTimeout" });
+      }, delay);
+    }
   }
 
   addWindowListeners(): void {
@@ -203,6 +238,9 @@ export default class WorkerProgram {
         this.keyTranslations = message.keyTranslations;
         this.oneTimeWindowMessageToken = message.oneTimeWindowMessageToken;
         this.mac = message.mac;
+        this.updateHintIdleTimeout(
+          window.top === window ? message.hintIdleExpiresAt : undefined
+        );
 
         if (message.clearElements) {
           this.clearCurrent();
@@ -1218,6 +1256,22 @@ function getSelectionDirection(selection: Selection): boolean | undefined {
   range.setStart(anchorNode, selection.anchorOffset);
   range.setEnd(focusNode, selection.focusOffset);
   return !range.collapsed;
+}
+
+function isStaleExtensionContextError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+      ? error
+      : "";
+
+  return (
+    message.includes("Extension context invalidated") ||
+    message.includes(
+      "Could not establish connection. Receiving end does not exist"
+    )
+  );
 }
 
 // Select the text of an element (if any – otherwise select the whole element

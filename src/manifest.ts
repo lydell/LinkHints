@@ -6,7 +6,7 @@ type IconSizes = Record<string, string>;
 
 export default (): string =>
   toJSON({
-    manifest_version: 2,
+    manifest_version: config.manifestVersion,
     version: config.meta.version,
     name: config.meta.name,
     author: config.meta.author,
@@ -14,16 +14,18 @@ export default (): string =>
     homepage_url: config.meta.homepage,
     browser_specific_settings: getBrowserSpecificSettings(config.browser),
     icons: getIcons(config.icons, config.browser),
-    permissions: [
-      // Needed for injecting content scripts in already open tabs on install,
-      // and for checking if tabs are allowed to run content scripts at all (so
-      // that the toolbar button can update).
-      "<all_urls>",
-      // Needed to store options.
-      "storage",
-    ],
-    browser_action: {
-      browser_style: true,
+    permissions: getPermissions(),
+    host_permissions:
+      config.manifestVersion === 3
+        ? [
+            // Needed for injecting content scripts in already open tabs on install,
+            // and for checking if tabs are allowed to run content scripts at all (so
+            // that the toolbar button can update).
+            "<all_urls>",
+          ]
+        : undefined,
+    [config.manifestVersion === 3 ? "action" : "browser_action"]: {
+      browser_style: config.manifestVersion === 3 ? undefined : true,
       default_popup: config.popupHtml,
       default_icon: getIcons(config.icons, config.browser),
     },
@@ -31,13 +33,18 @@ export default (): string =>
       page: config.optionsHtml,
       open_in_tab: true,
     },
-    background: {
-      scripts: [
-        config.needsPolyfill ? config.polyfill.output : undefined,
-        config.background.output,
-      ].filter((script) => script !== undefined),
-    },
+    background: getBackground(),
     content_scripts: [
+      config.manifestVersion === 3
+        ? {
+            matches: ["<all_urls>"],
+            all_frames: true,
+            match_about_blank: true,
+            run_at: "document_start",
+            world: "MAIN",
+            js: [config.injected.output],
+          }
+        : undefined,
       {
         matches: ["<all_urls>"],
         all_frames: true,
@@ -62,7 +69,7 @@ export default (): string =>
           config.renderer.output,
         ].filter((script) => script !== undefined),
       },
-    ],
+    ].filter((script) => script !== undefined),
   });
 
 function toJSON(obj: Record<string, unknown>): string {
@@ -82,6 +89,39 @@ function getBrowserSpecificSettings(browser: Browser | undefined): unknown {
         },
       };
   }
+}
+
+function getPermissions(): Array<string> {
+  const permissions = [
+    // Needed to store options.
+    "storage",
+  ];
+
+  if (config.manifestVersion === 2) {
+    permissions.unshift(
+      // Needed for injecting content scripts in already open tabs on install,
+      // and for checking if tabs are allowed to run content scripts at all (so
+      // that the toolbar button can update).
+      "<all_urls>"
+    );
+  } else {
+    permissions.push("scripting");
+  }
+
+  return permissions;
+}
+
+function getBackground(): unknown {
+  return config.manifestVersion === 3
+    ? {
+        service_worker: config.backgroundServiceWorker.output,
+      }
+    : {
+        scripts: [
+          config.needsPolyfill ? config.polyfill.output : undefined,
+          config.background.output,
+        ].filter((script) => script !== undefined),
+      };
 }
 
 function makeSizes(icons: Array<[number, string]>): IconSizes {

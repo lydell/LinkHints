@@ -186,18 +186,24 @@ export default class RendererProgram {
       return;
     }
 
-    // In Chrome, content scripts continue to live after the extension has been
-    // disabled, uninstalled or reloaded. A way to detect this is to make a
+    // In Chrome MV2, content scripts continue to live after the extension has
+    // been disabled, uninstalled or reloaded. A way to detect this is to make a
     // `Port` and listen for `onDisconnect`. Then one can run some cleanup to
-    // make the effectively disable the script.
+    // effectively disable the script.
+    //
+    // In MV3, the background service worker normally disconnects ports whenever
+    // it idles out. That must not stop content scripts, since they own the
+    // keyboard listeners that wake the service worker back up.
     // In Firefox, content scripts are nuked when uninstalling. `onDisconnect`
     // never runs. Hopefully this changes some day, since we’d ideally want to
     // clean up injected.ts. There does not seem to be any good way of running
     // cleanups when a WebExtension is disabled in Firefox. See:
     // <bugzil.la/1223425>
-    browser.runtime.connect().onDisconnect.addListener(() => {
-      this.stop();
-    });
+    if (!IS_MV3) {
+      browser.runtime.connect().onDisconnect.addListener(() => {
+        this.stop();
+      });
+    }
   }
 
   stop(): void {
@@ -208,11 +214,26 @@ export default class RendererProgram {
 
   sendMessage(message: FromRenderer): void {
     log("log", "RendererProgram#sendMessage", message.type, message);
-    fireAndForget(
-      browser.runtime.sendMessage(wrapMessage(message)).then(() => undefined),
-      "RendererProgram#sendMessage",
-      message
-    );
+    const handleError = (error: unknown): void => {
+      if (isStaleExtensionContextError(error)) {
+        this.stop();
+        return;
+      }
+      throw error;
+    };
+
+    try {
+      fireAndForget(
+        browser.runtime
+          .sendMessage(wrapMessage(message))
+          .then(() => undefined)
+          .catch(handleError),
+        "RendererProgram#sendMessage",
+        message
+      );
+    } catch (error) {
+      handleError(error);
+    }
   }
 
   onMessage(wrappedMessage: FromBackground): void {
@@ -861,6 +882,22 @@ function overlaps(rectA: ClientRect, rectB: ClientRect): boolean {
     rectA.left <= rectB.right &&
     rectA.bottom >= rectB.top &&
     rectA.top <= rectB.bottom
+  );
+}
+
+function isStaleExtensionContextError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+      ? error
+      : "";
+
+  return (
+    message.includes("Extension context invalidated") ||
+    message.includes(
+      "Could not establish connection. Receiving end does not exist"
+    )
   );
 }
 

@@ -59,6 +59,9 @@ export type FromWorker =
       type: "ClickedLinkNavigatingToOtherPage";
     }
   | {
+      type: "HintIdleTimeout";
+    }
+  | {
       type: "KeyboardShortcutMatched";
       action: KeyboardAction;
       timestamp: number;
@@ -154,6 +157,7 @@ export type ToWorker =
       oneTimeWindowMessageToken: string;
       mac: boolean;
       isPinned: boolean;
+      hintIdleExpiresAt: number | undefined;
     }
   | {
       type: "UpdateElements";

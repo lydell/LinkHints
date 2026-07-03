@@ -38,7 +38,11 @@ const { DEFAULT_LOG_LEVEL = "log", DEFAULT_STORAGE_SYNC = null } = PROD
 setup();
 
 const main = [
+  config.manifestVersion === 3
+    ? copy(config.backgroundServiceWorker)
+    : undefined,
   js(config.background),
+  config.manifestVersion === 3 ? js(config.injected) : undefined,
   js(config.worker),
   js(config.renderer),
   js(config.popup),
@@ -316,6 +320,7 @@ function makeGlobals() {
     META_SLUG: JSON.stringify(config.meta.slug),
     META_TUTORIAL: JSON.stringify(config.meta.tutorial),
     META_VERSION: JSON.stringify(config.meta.version),
+    IS_MV3: JSON.stringify(config.manifestVersion === 3),
     PROD: JSON.stringify(PROD),
     // Performance.
     " instanceof Text": "?.nodeType === 3",
