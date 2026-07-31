@@ -414,6 +414,20 @@ export default class ElementManager {
     }
 
     if (BROWSER === "firefox") {
+      // Skip sandboxed iframes without `allow-scripts`. No page scripts can
+      // run in them, so there is nothing for the injected script to detect.
+      // (In Chrome, the below script element simply doesn’t run in such
+      // frames.) More importantly, this avoids breaking the parent page:
+      // `injected()` replaces page prototype methods with `exportFunction`:s
+      // tied to this frame’s content script sandbox, which is nuked if the
+      // frame is removed from the DOM. If the parent page kept references to
+      // the frame’s objects and calls such a method afterwards (like React
+      // effect cleanups calling `.removeEventListener()`), it gets
+      // "TypeError: can't access dead object".
+      // <https://github.com/lydell/LinkHints/issues/99>
+      if (!canRunPageScripts()) {
+        return;
+      }
       injected(this);
       return;
     }
@@ -2167,6 +2181,22 @@ function isWithin(point: Point, box: Box): boolean {
     // Use `<`, not `<=`, since a point at `box.y + box.height` is located at
     // the first pixel _below_ the box.
     point.y < box.y + box.height
+  );
+}
+
+// Whether page scripts can run in this frame. They can’t in sandboxed
+// iframes without the `allow-scripts` keyword. (Content scripts still run in
+// such iframes.) `window.frameElement` is only accessible when the frame and
+// its parent are same-origin, but that’s also the only case where the parent
+// can touch the frame’s objects (and thus be affected by dead hooks).
+function canRunPageScripts(): boolean {
+  const { frameElement } = window;
+  if (frameElement === null || !("sandbox" in frameElement)) {
+    return true;
+  }
+  const iframe = frameElement as HTMLIFrameElement;
+  return (
+    !iframe.hasAttribute("sandbox") || iframe.sandbox.contains("allow-scripts")
   );
 }
 
