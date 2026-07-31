@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sandboxed iframe</title>
+    <style>
+      #status {
+        font-weight: bold;
+      }
+
+      #status.ok {
+        color: green;
+      }
+
+      #status.fail {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sandboxed iframe (the Proton Mail pattern)</h1>
+
+    <p>
+      This replicates what broke Proton Mail in Firefox (<a
+        href="https://github.com/lydell/LinkHints/issues/99"
+        >issue #99</a
+      >): The “email” is rendered into a sandboxed
+      <code>about:blank</code> iframe <em>without</em>
+      <code>allow-scripts</code>. Listeners are attached to the iframe’s
+      <code>body</code> (like Proton’s <code>useIframeDispatchEvents</code>).
+      “Switching email” removes the iframe from the DOM, and a
+      <em>deferred</em> cleanup (like React’s passive effect cleanup) calls
+      <code>removeEventListener</code> on the old <code>body</code>.
+    </p>
+
+    <p>
+      With the bug present, the cleanup throws
+      <code>TypeError: can't access dead object</code> in Firefox, because the
+      hooked <code>removeEventListener</code> died together with the removed
+      frame’s content script sandbox.
+    </p>
+
+    <p>
+      <button id="switch" type="button">Switch email</button>
+      <button id="auto" type="button">Switch 10 times</button>
+      <span id="status"></span>
+    </p>
+
+    <div id="root"></div>
+
+    <pre id="log"></pre>
+
+    <script>
+      "use strict";
+
+      // Same list as Proton’s useIframeDispatchEvents.
+      const EVENTS = ["focus", "keydown", "click", "copy", "dragstart"];
+
+      const root = document.getElementById("root");
+      const logElement = document.getElementById("log");
+      const statusElement = document.getElementById("status");
+
+      let current = undefined;
+      let counter = 0;
+      let numErrors = 0;
+      let numCleanups = 0;
+
+      function log(message) {
+        logElement.textContent += `${message}\n`;
+      }
+
+      function updateStatus() {
+        if (numErrors === 0) {
+          statusElement.textContent =
+            numCleanups === 0 ? "" : `OK (${numCleanups} cleanups)`;
+          statusElement.className = "ok";
+        } else {
+          statusElement.textContent = `FAIL (${numErrors}/${numCleanups} cleanups threw)`;
+          statusElement.className = "fail";
+        }
+      }
+
+      function writeEmail(doc, text) {
+        doc.open();
+        doc.write(
+          '<!DOCTYPE html><html><body style="margin: 0; border: 1px solid #ccc;">' +
+            `<p>Email ${text}</p><a href="#link">A link</a>` +
+            "</body></html>"
+        );
+        doc.close();
+      }
+
+      // React schedules passive effects (and their cleanups) in a macrotask
+      // after the commit, via a MessageChannel.
+      function scheduleCleanup(fn) {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = fn;
+        channel.port2.postMessage(null);
+      }
+
+      function switchEmail() {
+        counter += 1;
+
+        // Mount the new “email”.
+        const iframe = document.createElement("iframe");
+        iframe.src = "about:blank";
+        iframe.setAttribute(
+          "sandbox",
+          "allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        );
+        root.textContent = "";
+        root.append(iframe);
+        writeEmail(iframe.contentDocument, counter);
+
+        // “useEffect”: capture the body and attach listeners.
+        const body = iframe.contentWindow.document.body;
+        const callback = () => {};
+        for (const type of EVENTS) {
+          body.addEventListener(type, callback);
+        }
+
+        const previous = current;
+        current = { iframe, body, callback };
+
+        if (previous !== undefined) {
+          // “Commit phase”: the remount removes the old iframe from the DOM.
+          previous.iframe.remove();
+
+          // “Deferred passive effect cleanup”.
+          scheduleCleanup(() => {
+            numCleanups += 1;
+            try {
+              for (const type of EVENTS) {
+                previous.body.removeEventListener(type, previous.callback);
+              }
+              log(`cleanup after email ${counter}: ok`);
+            } catch (error) {
+              numErrors += 1;
+              log(
+                `cleanup after email ${counter}: ${error.name}: ${error.message}`
+              );
+            }
+            updateStatus();
+          });
+        }
+
+        updateStatus();
+      }
+
+      document
+        .getElementById("switch")
+        .addEventListener("click", () => switchEmail());
+
+      document.getElementById("auto").addEventListener("click", async () => {
+        for (let index = 0; index < 10; index++) {
+          switchEmail();
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+      });
+
+      switchEmail();
+    </script>
+  </body>
+</html>
