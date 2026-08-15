@@ -50,7 +50,7 @@ The most important files:
 
 - `project.config.ts` contains information about the whole project, all in one place. Other config files and build scripts read from it. For example, it maps entrypoint files in `src/` to output files in `compiled/`.
 - `rollup.config.js` defines how `compiled/` is made. Rollup compiles and bundles JavaScript; generates `manifest.json`, HTML files and SVG icons; copies the [WebExtension Polyfill], CSS files, and PNG icons; and defines a couple of global variables (see also `@types/globals.d.ts`).
-- `web-ext-config.cjs` configures [web-ext], both for building and for running.
+- `web-ext-config.mjs` configures [web-ext], both for building and for running.
 - `custom.config.example.cjs` can be copied into `custom.config.cjs` to customize `web-ext run` as well as default options for development.
 - `src/manifest.ts` is called via Rollup and generates `manifest.json`. In fact, all `.ts` files directly inside `src/` are called via Rollup and generate other files.
 - `src/icons.tsx` generates all SVG icons (even outside `compiled/`). `src/icons/` contains PNG versions of those. They can be updated by running `npm run png-icons` (which requires [Inkscape] and [OptiPNG]). You can preview all icons by opening `compiled/icons/test.html` in a browser.
@@ -61,7 +61,7 @@ Compilation pipeline:
 
 ```
        project.config.ts                                     .--> dist-chrome/
-       rollup.config.js                 web-ext-config.cjs  /
+       rollup.config.js                 web-ext-config.mjs  /
 src/ ---------------------> compiled/ ----------------------
                                                             \
                                                              '--> dist-firefox/
