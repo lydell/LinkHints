@@ -443,7 +443,10 @@ export function getElementFromPoint(
   const root = element.getRootNode();
   const doc =
     root instanceof Document || root instanceof ShadowRoot ? root : document;
-  const elementFromPoint = doc.elementFromPoint(x, y);
+  // We typically try to get elements at the very edge horizontally (and in the middle vertically).
+  // Especially when zoomed in, the expected element is not returned then. Adding half a pixel seems
+  // to be more reliable. This is needed for html/tridactyl/index.html and html/google-search-result/index.html.
+  const elementFromPoint = doc.elementFromPoint(x + 0.5, y);
   return elementFromPoint === null
     ? undefined
     : (elementFromPoint as HTMLElement);

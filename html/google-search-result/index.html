@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Google search result</title>
+
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: auto;
+      }
+
+      .result {
+        font-size: small;
+      }
+
+      .flip {
+        display: flex;
+        flex-direction: column-reverse;
+      }
+
+      .flip,
+      .flip h3,
+      .flip .source {
+        transform: scaleY(-1);
+        text-wrap: wrap;
+      }
+
+      a {
+        text-decoration: none;
+      }
+
+      h3 {
+        display: inline-block;
+        margin: 3px 0;
+        font-size: 22px;
+        line-height: 28px;
+      }
+
+      .source {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        min-width: 0;
+        max-width: calc(100% - 36px);
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .icon {
+        margin-right: 12px;
+      }
+
+      .icon img {
+        display: block;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+      }
+
+      .site {
+        display: block;
+        line-height: 20px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: Arial, sans-serif;
+      }
+
+      cite {
+        color: #4d5156;
+        font-style: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .snippet {
+        max-width: 48em;
+        color: #4d5156;
+        line-height: 1.58;
+        overflow: hidden;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Google search result</h1>
+
+    <p>
+      This is a Google Search result as of 2026-08-15. It’s a bit weird because
+      the link is multiline with line bounding boxes that don’t really line up
+      with the content, and it uses <code>scaleY(-1)</code> to change the order
+      of the title and the “source.”
+    </p>
+
+    <p>
+      Check that it gets a hint on all zoom levels. When zoomed in a bit,
+      <code>elementFromPoint</code> does not return the expected element unless
+      we add 0.5 to the x coordinate.
+    </p>
+
+    <div class="result">
+      <div style="position: relative">
+        <div class="flip">
+          <a href="https://edition.cnn.com/">
+            <h3>CNN: Breaking News, Latest News and Videos</h3>
+
+            <div class="source">
+              <div class="row">
+                <div class="icon">
+                  <img
+                    alt=""
+                    src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="red"/></svg>'
+                  />
+                </div>
+
+                <div>
+                  <div class="site">CNN</div>
+                  <cite>https://edition.cnn.com</cite>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="snippet">
+          View the latest news and breaking news today for U.S., world, weather,
+          entertainment, politics and health at <em>CNN</em>.com.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

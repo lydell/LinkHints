@@ -1644,8 +1644,7 @@ function getMeasurements(
   // If this runs in a frame, the element can still be covered by something in a
   // parent frame, but it's not worth the trouble to try and check that.
   const nonCoveredPoint = getNonCoveredPoint(element, {
-    // Rounding upwards is required in html/tridactyl/index.html.
-    x: Math.ceil(hintPoint.x),
+    x: Math.round(hintPoint.x),
     y: Math.round(hintPoint.y),
     maxX,
     time,
