@@ -973,6 +973,14 @@ export default class WorkerProgram {
         element.open = !element.open;
       }
     }
+    // Dispatching a click on an <input type="date"> does not open the date picker,
+    // it just focuses the input field. But the picker can be shown by calling
+    // `.showPicker`. That method also works for some other input types, and calling
+    // it does not seem to cause any issues, even if the click event is able to
+    // open a picker as well (such as for <input type="color">).
+    else if (element instanceof HTMLInputElement) {
+      element.showPicker();
+    }
 
     if (BROWSER === "firefox") {
       if (cleanup !== undefined) {
