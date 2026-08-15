@@ -76,6 +76,11 @@ declare namespace browser.tabs {
   }
 }
 
+// This was missing in `@types/firefox-webext-browser` at the time of writing.
+declare namespace browser.runtime {
+  export function getDocumentId(target: Window): string;
+}
+
 interface ShadowRoot {
   elementFromPoint: Document["elementFromPoint"];
   elementsFromPoint: Document["elementsFromPoint"];
