@@ -778,6 +778,19 @@ export default class BackgroundProgram {
       return;
     }
 
+    if (
+      input.type === "Backspace" &&
+      hintsState.enteredChars === "" &&
+      hintsState.enteredText === ""
+    ) {
+      this.exitHintsMode({ tabId });
+      this.sendWorkerMessage(
+        { type: "Escape" },
+        { tabId, frameId: "all_frames" }
+      );
+      return;
+    }
+
     const isHintKey =
       (input.type === "Input" &&
         input.keypress.printableKey !== undefined &&
