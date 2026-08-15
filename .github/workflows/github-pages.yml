@@ -1,16 +1,21 @@
-name: CI
+name: Deploy GitHub Pages
 
 on:
   push:
     branches:
       - "main"
-  pull_request:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  github-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
 
     steps:
@@ -32,5 +37,17 @@ jobs:
         if: steps.cache-node_modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: npm test
-        run: npm test
+      - name: npm run compile
+        run: npm run compile
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: compiled-docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
