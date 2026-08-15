@@ -76,6 +76,7 @@ type TabState = {
   perf: Perf;
   isOptionsPage: boolean;
   isPinned: boolean;
+  isIncognito: boolean;
 };
 
 type HintsState =
@@ -1217,10 +1218,12 @@ export default class BackgroundProgram {
     // even an upside to the ctrl-click method: The HTTP Referer header is sent,
     // just as if you had clicked the link for real. See: <bugzil.la/1615860>.
     if (t.PREFER_WINDOWS.value) {
+      const tabState = this.tabState.get(tabId);
       fireAndForget(
         browser.windows
           .create({
             focused: foreground,
+            incognito: tabState === undefined ? false : tabState.isIncognito,
             url,
           })
           .then(() => undefined),
@@ -2356,6 +2359,7 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     perf: [],
     isOptionsPage: false,
     isPinned: false,
+    isIncognito: false,
   };
 
   if (tabId !== undefined) {
@@ -2363,13 +2367,14 @@ function makeEmptyTabState(tabId: number | undefined): TabState {
     // `BackgroundProgram#onMessage`. As mentioned over there, that method must
     // _not_ be async. So instead of waiting for `browser.tabs.get` (returning a
     // Promise), we just mutate the tab state as soon as possible. This means
-    // that code trying to access `tabState.isPinned` right after
+    // that code trying to access `tabState.isPinned` or `tabState.isIncognito` right after
     // `makeEmptyTabState` might get the wrong value. At the time of this
     // writing, no code does that so the hack holds.
     browser.tabs
       .get(tabId)
       .then((tab) => {
         tabState.isPinned = tab.pinned;
+        tabState.isIncognito = tab.incognito;
       })
       .catch((error) => {
         log("error", "makeEmptyTabState", `Failed to get tab ${tabId}.`, error);
