@@ -295,10 +295,10 @@ export default class RendererProgram {
           this.updateContainer(
             // `entry.rootBounds` is supposed to be the viewport size, but I've
             // noticed it being way larger in Chrome sometimes, so calculate it
-            // manually there.
-            BROWSER === "chrome"
-              ? getViewport()
-              : entry.rootBounds ?? getViewport()
+            // manually there. Also, setting `::-webkit-scrollbar { width: 12px; }`
+            // causes it to be off in Firefox (resulting in the hints moving
+            // slightly horizontally one frame after rendering).
+            getViewport()
           );
         } catch (error) {
           log(

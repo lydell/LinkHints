@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>webkit-scrollbar</title>
+    <style>
+      ::-webkit-scrollbar {
+        width: 12px;
+      }
+      body {
+        height: 200vh;
+        margin: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      The hint for this link is not supposed to move to the left one frame after
+      rendering (due to the use of
+      <code>::-webkit-scrollbar { width: 12px; }</code> in CSS).
+    </p>
+    <a href="#link">Link</a>
+  </body>
+</html>
