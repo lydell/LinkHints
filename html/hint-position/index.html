@@ -17,6 +17,17 @@
         margin-top: 40px;
       }
 
+      .wrapped-link-with-gaps {
+        background-color: rgba(0, 0, 0, 0.2);
+        line-height: 2;
+        font-size: 8px;
+      }
+
+      .wrapped-link-with-gaps > span {
+        font-size: 16px;
+        vertical-align: top;
+      }
+
       .content-only::after {
         content: "CSS content";
       }
@@ -497,6 +508,26 @@
       some text
       <a href="#"
         >wrapped link text text text text text text text text text text</a
+      >
+    </p>
+
+    <h2>Line-wrapped link with gaps between lines</h2>
+    <p>
+      In the following example, the link has a small font size and large
+      line-height. The span inside has a larger font size. The semi-transparent
+      thick lines are the actual bounding boxes for the link, which don’t quite
+      line up with the text. This makes the search for the best text to place
+      the hint at fail, so we fall back to placing the hint based on the
+      bounding boxes. In this case, we need to be careful not to choose a spot
+      in the gap between the lines: <code>elementFromPoint</code> won’t find the
+      link there.
+    </p>
+    <p style="width: 200px">
+      <a href="#" class="wrapped-link-with-gaps"
+        ><span>wrapped link text text text text text</span></a
+      >
+      <a href="#" class="wrapped-link-with-gaps"
+        ><span>wrapped link text text text text text</span></a
       >
     </p>
 

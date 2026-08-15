@@ -1876,12 +1876,20 @@ function getMultiRectPoint({
   }
 
   time.start("getMultiRectPoint:default");
+  const minX = Math.max(...visibleBoxes.map((box) => box.x));
   const minY = Math.min(...visibleBoxes.map((box) => box.y));
-  const maxY = Math.max(...visibleBoxes.map((box) => box.y + box.height));
+  // Find the box closest to the top-left corner.
+  const sortedBoxes = visibleBoxes
+    .slice()
+    .sort(
+      (a, b) =>
+        Math.hypot(a.x - minX, a.y - minY) - Math.hypot(b.x - minX, b.y - minY)
+    );
+  const closest = sortedBoxes[0];
 
   return {
-    x: Math.min(...visibleBoxes.map((box) => box.x)),
-    y: (minY + maxY) / 2,
+    x: closest.x,
+    y: closest.y + closest.height / 2,
     align: "right",
     debug: "getMultiRectPoint default",
   };
