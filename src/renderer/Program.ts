@@ -123,7 +123,10 @@ export default class RendererProgram {
     // into this shadow root, which is a small optimization. (The override of
     // `.attachShadow` in injected.ts does not apply to code running in the
     // extension context, only in the page context).
-    const shadowRoot = container.attachShadow({ mode: "closed" });
+    // In development, use "open" for testing accessibility via playwright.
+    const shadowRoot = container.attachShadow({
+      mode: PROD ? "closed" : "open",
+    });
 
     const root = document.createElement("div");
     root.className = ROOT_CLASS;

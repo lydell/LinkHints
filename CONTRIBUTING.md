@@ -94,6 +94,16 @@ It is recommended to set up [TypeScript], [ESLint] and [Prettier] integrations i
 
 See `package.json` for details and additional scripts.
 
+### Automated Testing
+
+To run the automated end-to-end tests using Playwright:
+
+```
+npm run test:playwright
+```
+
+This will compile the extension and run tests in Firefox, verifying functionality like the tutorial workflow.
+
 ### Chrome and Firefox
 
 Open Chrome/Firefox, with a new profile where Link Hints is pre-installed:

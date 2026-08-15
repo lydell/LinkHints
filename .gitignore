@@ -1,6 +1,9 @@
 .eslintcache
-custom.config.cjs
+/custom.config.cjs
 /node_modules/
 /compiled/
+/compiled*/
 /compiled-docs/
 /dist*/
+/test-results
+/.tool-versions

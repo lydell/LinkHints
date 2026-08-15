@@ -13,6 +13,7 @@
     "build:all": "npm run build:chrome && npm run build:firefox",
     "png-icons": "sucrase-node scripts/png-icons.ts",
     "web-ext": "sucrase-node node_modules/.bin/web-ext",
+    "test:playwright": "npm run compile && playwright test --project=firefox",
     "test": "run-pty --auto-exit % npm run build:all % eslint . --report-unused-disable-directives % prettier --check . % tsc"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "webextension-polyfill": "0.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@rollup/plugin-commonjs": "24.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
     "@rollup/plugin-replace": "5.0.2",
@@ -41,6 +43,8 @@
     "js-tokens": "8.0.0",
     "minifycss": "1.0.1",
     "optional-require": "1.1.8",
+    "playwright": "^1.57.0",
+    "playwright-webextext": "^0.0.4",
     "preact-render-to-string": "5.2.6",
     "prettier": "2.8.3",
     "readdirp": "3.6.0",
