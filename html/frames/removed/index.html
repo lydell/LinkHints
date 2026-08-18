@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Removed iframe</title>
+  </head>
+  <body>
+    <h1>Removed iframe</h1>
+
+    <p>
+      Click the button to replace the iframe with a new one. The parent page
+      holds a reference to the body of the iframe, and tries to add event
+      listeners to the removed iframe after it was replaced. That is useless,
+      but used to cause an <code>TypeError: can't access dead object</code> in
+      Firefox. This broke Proton Mail.
+    </p>
+
+    <p>
+      <button onclick="switchIframe()">Replace iframe</button>
+      <strong id="result"></strong>
+    </p>
+
+    <div id="root"></div>
+
+    <pre id="log"></pre>
+
+    <script>
+      let current = undefined;
+      let counter = 0;
+
+      function writeIframe(doc, text) {
+        doc.open();
+        doc.write(
+          `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <p>Generation ${text}</p>
+                <p><a href="#link">A link</a>, an <strong id="click1">element with a click listener</strong> and an <strong id="click2">element with onclick</strong>.</p>
+                <script>
+                  click1.addEventListener("click", () => {
+                    click1.style.color = "green";
+                  });
+                  click2.onclick = () => {
+                    click2.style.color = "green";
+                  };
+                <\/script>
+              </body>
+            </html>
+          `
+        );
+        doc.close();
+      }
+
+      function switchIframe() {
+        counter += 1;
+
+        const iframe = document.createElement("iframe");
+        iframe.src = "about:blank";
+        root.replaceChildren(iframe);
+        writeIframe(iframe.contentDocument, counter);
+
+        const previous = current;
+        current = iframe.contentWindow.document.body;
+
+        if (previous !== undefined) {
+          // Things don’t fail if done synchronously after the iframe got removed.
+          setTimeout(() => {
+            try {
+              // Doing stuff like this to elements inside an already removed iframe
+              // is useless, but should not throw errors.
+              previous.addEventListener("focus", () => {});
+              previous.onclick = () => {};
+              result.textContent = "OK";
+              result.style.color = "green";
+            } catch (error) {
+              result.textContent = "FAIL";
+              result.style.color = "red";
+              log.textContent += `${error.name}: ${error.message}\n${error.stack}`;
+            }
+          }, 0);
+        }
+      }
+
+      switchIframe();
+    </script>
+  </body>
+</html>

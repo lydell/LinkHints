@@ -39,11 +39,16 @@ export const CLICKABLE_EVENT_PROPS: Array<string> = CLICKABLE_EVENT_NAMES.map(
 // malicious sites to send these events. Luckily, that doesn’t hurt much. All
 // the page could do is cause false positives or disable detection of click
 // events altogether.
-const prefix = `__${META_SLUG}WebExt_${BUILD_ID}_`;
+// Also used to define `window[iframeWrapName]`. In that case we want the
+// defined name to get lost among all the other stuff on `window`. Lots of
+// things start with `Web`, such as `WebGL` (lots of constructors), `WebTransport`,
+// and `WebSocket`. Having the name start with underscores is bad, since they
+// sort first.
+const prefix = `WebExt_${META_SLUG}_${BUILD_ID}_`;
 
 // Events that don’t need to think about the iframe edge case described above
 // can use this more secure prefix, with a practically unguessable part in it.
-const secretPrefix = `__${META_SLUG}WebExt_${makeRandomToken()}_`;
+const secretPrefix = `WebExt_${META_SLUG}_${makeRandomToken()}_`;
 
 export const CLICKABLE_CHANGED_EVENT = `${prefix}ClickableChanged`;
 export const OPEN_SHADOW_ROOT_CREATED_EVENT = `${prefix}OpenShadowRootCreated`;
@@ -69,6 +74,13 @@ export type FromInjected =
   | { type: "Queue"; hasQueue: boolean }
   | { type: "ShadowRootCreated"; shadowRoot: ShadowRoot };
 
+type IframeWrap = ((
+  fn: (...args: Array<never>) => unknown,
+  originalFn: (...args: Array<never>) => unknown
+) => (this: unknown, ...args: Array<unknown>) => unknown) & {
+  documentId: string;
+};
+
 export default (communicator?: {
   onInjectedMessage: (message: FromInjected) => unknown;
   addEventListener: (
@@ -79,6 +91,53 @@ export default (communicator?: {
 }): void => {
   // Refers to the page `window` both in Firefox and other browsers.
   const win = BROWSER === "firefox" ? window.wrappedJSObject ?? window : window;
+
+  const iframeWrapName = `${prefix}A`;
+
+  const getDocumentId = (target: Window): string => {
+    // This API was added in Firefox 153. At the time of writing, that was too
+    // recent to require as the minimum version. The document ID is used as
+    // an extra precaution against the web page having overridden the
+    // `window[iframeWrapName]` function (despite it being non-configurable),
+    // so it is not essential.
+    // The code is written slightly weirdly to avoid `web-ext lint` reporting
+    // this API as unsupported.
+    const name = "getDocumentId";
+    const api = browser.runtime[name];
+    return typeof api === "function" ? api(target) : "";
+  };
+
+  if (BROWSER === "firefox") {
+    // If an iframe is removed from the DOM, scripts running in it are immediately
+    // killed. If the parent page has a reference to the iframe document, it can
+    // still try to call stuff in it, like `.removeEventListener`. Firefox then
+    // fails with `TypeError: can't access dead object`, since `.removeEventListener`
+    // is overridden using `exportFunction`. The only way I’ve found to get around
+    // this is to define a function in the _parent_ to the iframe, and use that
+    // function in the iframe. Then `.removeEventListener` will be set to a function
+    // defined in the parent, which survives when the iframe is removed, and has a
+    // chance to catch the “dead object” error. Unfortunately, this function _has_
+    // to be exposed on the `window` that can be seen by the web page (`win`).
+    // Defining it on the `window` only seen by the extension still results in the
+    // “dead object” error. Note that we don’t use `exportFunction` here, so the
+    // web page can only see the property (for example in the browser console,
+    // but it is not enumerable with for example `Object.keys`), but they cannot
+    // call it (that results in an exception).
+    const iframeWrap: IframeWrap = (fn, originalFn) =>
+      function (this: unknown, ...args): unknown {
+        try {
+          return apply(fn, this, args);
+        } catch {
+          return apply(originalFn, this, args);
+        }
+      };
+    // The property is non-configurable, but as an extra precaution, add this UUID
+    // to the function, which is very difficult for the page to guess.
+    iframeWrap.documentId = getDocumentId(window);
+    Reflect.defineProperty(win, iframeWrapName, {
+      value: iframeWrap,
+    });
+  }
 
   // These arrays are replaced in by ElementManager; only refer to them once.
   const clickableEventNames = CLICKABLE_EVENT_NAMES;
@@ -266,8 +325,34 @@ export default (communicator?: {
       let newDescriptor = { ...descriptor, [prop]: fn };
 
       if (BROWSER === "firefox") {
+        let wrappedFn = fn;
+        if (window.parent !== window) {
+          let iframeWrap: IframeWrap | undefined = undefined;
+          try {
+            iframeWrap = win.parent[
+              iframeWrapName as unknown as number
+            ] as unknown as IframeWrap;
+          } catch {
+            // Accessing stuff on the parent throws an error if we’re in an iframe
+            // that is on a different origin than the parent. There is no way
+            // checking for this, so try-catch and ignore errors is the way to go.
+          }
+          if (
+            typeof iframeWrap === "function" &&
+            iframeWrap.documentId === getDocumentId(window.parent)
+          ) {
+            const returnValue = iframeWrap(
+              exportFunction(fn, new win.Object(), { defineAs: name }),
+              originalFn
+            );
+            if (typeof returnValue === "function") {
+              wrappedFn = returnValue;
+            }
+          }
+        }
+
         if (prop === "value") {
-          exportFunction(fn, obj, { defineAs: name });
+          exportFunction(wrappedFn, obj, { defineAs: name });
           setLength(obj[name]);
           this.resetFns.push(() => {
             exportFunction(originalFn, obj, { defineAs: name });
@@ -276,7 +361,7 @@ export default (communicator?: {
         }
 
         newDescriptor = Object.assign(new win.Object(), descriptor, {
-          set: exportFunction(fn, new win.Object(), { defineAs: name }),
+          set: exportFunction(wrappedFn, new win.Object(), { defineAs: name }),
         });
       }
 
