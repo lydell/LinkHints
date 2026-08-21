@@ -79,6 +79,9 @@ function getBrowserSpecificSettings(browser: Browser | undefined): unknown {
       return {
         gecko: {
           id: config.meta.geckoId,
+          data_collection_permissions: {
+            required: ["none"],
+          },
         },
       };
   }
